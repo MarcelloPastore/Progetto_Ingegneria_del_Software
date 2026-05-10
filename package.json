@@ -1,0 +1,24 @@
+{
+  "name": "coincasa",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/mongoose": "^5.11.96",
+    "dotenv": "^17.4.2",
+    "eslint": "^10.3.0",
+    "jiti": "^2.7.0",
+    "typescript": "^5.5.3",
+    "typescript-eslint": "^8.59.2"
+  },
+  "private": true,
+  "dependencies": {
+    "fastify": "^5.8.5",
+    "prisma": "^7.8.0",
+    "zod": "^4.4.3"
+  }
+}
