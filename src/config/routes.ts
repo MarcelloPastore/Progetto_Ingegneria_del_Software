@@ -18,12 +18,12 @@ export async function health(app: FastifyInstance) {
 // ─── Auth (no authMiddleware) ─────────────────────────────────────────────────
 
 export async function authRoutes(app: FastifyInstance) {
-    const controller = new AuthController();
+    const authController = new AuthController();
 
-    app.post('/auth/register', controller.register);
-    app.post('/auth/login', controller.login);
-    app.post('/auth/recupera-password', controller.recuperaPassword);
-    app.get('/auth/verifica-email', controller.verificaEmail);
+    app.post('/auth/register', authController.register);
+    app.post('/auth/login', authController.login);
+    app.post('/auth/recupera-password', authController.recuperaPassword);
+    app.get('/auth/verifica-email', authController.verificaEmail);
 }
 
 // ─── Casa ─────────────────────────────────────────────────────────────────────
@@ -55,21 +55,21 @@ export async function casaRoutes(app: FastifyInstance) {
 // ─── Spese ────────────────────────────────────────────────────────────────────
 
 export async function speseRoutes(app: FastifyInstance) {
-    const controller = new SpeseController();
+    const speseController = new SpeseController();
     app.addHook('onRequest', authMiddleware);
 
-    app.get('/case/:idCasa/spese', controller.getAll);
-    app.get('/case/:idCasa/spese/:id', controller.getById);
-    app.post('/case/:idCasa/spese', controller.create);
-    app.put('/case/:idCasa/spese/:id', controller.update);
-    app.delete('/case/:idCasa/spese/:id', controller.delete);
+    app.get('/case/:idCasa/spese', speseController.getAll);
+    app.get('/case/:idCasa/spese/:id', speseController.getById);
+    app.post('/case/:idCasa/spese', speseController.create);
+    app.put('/case/:idCasa/spese/:id', speseController.update);
+    app.delete('/case/:idCasa/spese/:id', speseController.delete);
 
     // Quote
-    app.get('/case/:idCasa/spese/:id/quote', controller.getDivisioneSpese);
-    app.post('/case/:idCasa/spese/:id/quote/:idQuota/paga', controller.pagaQuota);
+    app.get('/case/:idCasa/spese/:id/quote', speseController.getDivisioneSpese);
+    app.post('/case/:idCasa/spese/:id/quote/:idQuota/paga', speseController.pagaQuota);
 
     // Pareggio totale (pareggia i conti)
-    app.post('/case/:idCasa/spese/pareggia', controller.pareggiaConti);
+    app.post('/case/:idCasa/spese/pareggia', speseController.pareggiaConti);
 }
 
 // ─── Turni ────────────────────────────────────────────────────────────────────
