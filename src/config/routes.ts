@@ -1,7 +1,5 @@
 import { FastifyInstance } from "fastify";
 
-import { authMiddleware } from "../middleware/AuthMiddleware";
-import { AuthController } from "../controller/AuthController";
 import { SpeseController } from "../controller/SpeseController";
 import { CasaController } from "../controller/CasaController";
 import { TurnoController } from "../controller/TurnoController";
@@ -10,9 +8,9 @@ import { ProblemaController } from "../controller/ProblemaController";
 // ─── Health ───────────────────────────────────────────────────────────────────
 
 export async function health(app: FastifyInstance) {
-    app.get('/health', async () => {
-        return { status: 'ok' };
-    });
+  app.get("/health", async () => {
+    return { status: "ok" };
+  });
 }
 
 // ─── Auth (no authMiddleware) ─────────────────────────────────────────────────
@@ -26,12 +24,12 @@ export async function health(app: FastifyInstance) {
 // GET  /auth/verifica-email    → Attivazione account tramite link di verifica (UC: Registrazione)
 
 export async function authRoutes(app: FastifyInstance) {
-    const authController = new AuthController();
+  const authController = new AuthController();
 
-    app.post('/auth/register', authController.register);
-    app.post('/auth/login', authController.login);
-    app.post('/auth/recupera-password', authController.recuperaPassword);
-    app.get('/auth/verifica-email', authController.verificaEmail);
+  app.post("/auth/register", authController.register);
+  app.post("/auth/login", authController.login);
+  app.post("/auth/recupera-password", authController.recuperaPassword);
+  app.get("/auth/verifica-email", authController.verificaEmail);
 }
 
 // ─── Hub Casa ─────────────────────────────────────────────────────────────────
@@ -54,26 +52,32 @@ export async function authRoutes(app: FastifyInstance) {
 // GET    /case/:idCasa/invite-link                      → Recupera o rigenera il link/codice di invito
 
 export async function casaRoutes(app: FastifyInstance) {
-    const casaController = new CasaController();
-    app.addHook('onRequest', authMiddleware);
+  const casaController = new CasaController();
+  app.addHook("onRequest", authMiddleware);
 
-    // CRUD casa
-    app.post('/case', casaController.creaCasa);
-    app.get('/case', casaController.getCase);
-    app.get('/case/:idCasa', casaController.getCasa);
-    app.delete('/case/:idCasa', casaController.eliminaCasa);
+  // CRUD casa
+  app.post("/case", casaController.creaCasa);
+  app.get("/case", casaController.getCase);
+  app.get("/case/:idCasa", casaController.getCasa);
+  app.delete("/case/:idCasa", casaController.eliminaCasa);
 
-    // Inquilini
-    app.get('/case/:idCasa/inquilini', casaController.getAllInquilini);
-    app.get('/case/:idCasa/inquilini/:idUtente', casaController.getInquilino)
-    app.post('/case/:idCasa/inquilini', casaController.aggiungiInquilino);
-    app.delete('/case/:idCasa/inquilini/:idUtente', casaController.rimuoviInquilino);
+  // Inquilini
+  app.get("/case/:idCasa/inquilini", casaController.getAllInquilini);
+  app.get("/case/:idCasa/inquilini/:idInquilino", casaController.getInquilino);
+  app.post("/case/:idCasa/inquilini", casaController.aggiungiInquilino);
+  app.delete(
+    "/case/:idCasa/inquilini/:idInquilino",
+    casaController.rimuoviInquilino,
+  );
 
-    // Ruoli
-    app.put('/case/:idCasa/inquilini/:idUtente/ruolo', casaController.modificaRuolo);
+  // Ruoli
+  app.put(
+    "/case/:idCasa/inquilini/:idInquilino/ruolo",
+    casaController.modificaRuolo,
+  );
 
-    // Link di invito
-    app.get('/case/:idCasa/invite-link', casaController.generaLink);
+  // Link di invito
+  app.get("/case/:idCasa/invite-link", casaController.generaLink);
 }
 
 // ─── Spese ────────────────────────────────────────────────────────────────────
@@ -99,29 +103,41 @@ export async function casaRoutes(app: FastifyInstance) {
 // GET    /case/:idCasa/debito/:idInquilino              → Debito verso un singolo inquilino
 
 export async function speseRoutes(app: FastifyInstance) {
-    const speseController = new SpeseController();
-    app.addHook('onRequest', authMiddleware);
+  const speseController = new SpeseController();
+  app.addHook("onRequest", authMiddleware);
 
-    // CRUD spese
-    app.get('/case/:idCasa/spese', speseController.getAllSpese);
-    app.get('/case/:idCasa/spese/:id', speseController.getSpesa);
-    app.post('/case/:idCasa/spese', speseController.addSpesa);
-    app.put('/case/:idCasa/spese/:id', speseController.updateSpesa);
-    app.delete('/case/:idCasa/spese/:id', speseController.deleteSpesa);
+  // CRUD spese
+  app.get("/case/:idCasa/spese", speseController.getAllSpese);
+  app.get("/case/:idCasa/spese/:idSpesa", speseController.getSpesa);
+  app.post("/case/:idCasa/spese", speseController.addSpesa);
+  app.put("/case/:idCasa/spese/:idSpesa", speseController.updateSpesa);
+  app.delete("/case/:idCasa/spese/:idSpesa", speseController.deleteSpesa);
 
-    // Quote
-    app.get('/case/:idCasa/spese/:id/quote', speseController.getDivisioneSpese);
-    app.post('/case/:idCasa/spese/:id/quote/:idQuota/paga', speseController.pagaQuota);
+  // Quote
+  app.get(
+    "/case/:idCasa/spese/:idSpesa/quote",
+    speseController.getDivisioneSpese,
+  );
+  app.post(
+    "/case/:idCasa/spese/:idSpesa/quote/:idQuota/paga",
+    speseController.pagaQuota,
+  );
 
-    // Pareggio totale
-    app.post('/case/:idCasa/spese/pareggia', speseController.pareggiaConti);
+  // Pareggio totale
+  app.post("/case/:idCasa/spese/pareggia", speseController.pareggiaConti);
 
-    // Saldo, Credito e Debito
-    app.get('/case/:idCasa/saldo', speseController.getSaldo);
-    app.get('/case/:idCasa/credito', speseController.getCreditoTot);
-    app.get('/case/:idCasa/debito', speseController.getDebitoTot);
-    app.get('/case/:idCasa/credito/:idInquilino', speseController.getCreditoVersoUtente);
-    app.get('/case/:idCasa/debito/:idInquilino', speseController.getDebitoVersoUtente);
+  // Saldo, Credito e Debito
+  app.get("/case/:idCasa/saldo", speseController.getSaldo);
+  app.get("/case/:idCasa/credito", speseController.getCreditoTot);
+  app.get("/case/:idCasa/debito", speseController.getDebitoTot);
+  app.get(
+    "/case/:idCasa/credito/:idInquilino",
+    speseController.getCreditoVersoUtente,
+  );
+  app.get(
+    "/case/:idCasa/debito/:idInquilino",
+    speseController.getDebitoVersoUtente,
+  );
 }
 
 // ─── Turni ────────────────────────────────────────────────────────────────────
@@ -140,20 +156,26 @@ export async function speseRoutes(app: FastifyInstance) {
 // POST   /case/:idCasa/turni/:idTurno/completa          → Marca il turno come completato e aggiorna la prossima scadenza
 
 export async function turniRoutes(app: FastifyInstance) {
-    const turnoController = new TurnoController();
-    app.addHook('onRequest', authMiddleware);
+  const turnoController = new TurnoController();
+  app.addHook("onRequest", authMiddleware);
 
-    // CRUD turni
-    app.get('/case/:idCasa/turni', turnoController.getAllTurni);
-    app.post('/case/:idCasa/turni', turnoController.creaTurno);
-    app.get('/case/:idCasa/turni/:idTurno', turnoController.getTurno);
-    app.put('/case/:idCasa/turni/:idTurno', turnoController.modificaTurno);
-    app.delete('/case/:idCasa/turni/:idTurno', turnoController.eliminaTurno);
+  // CRUD turni
+  app.get("/case/:idCasa/turni", turnoController.getAllTurni);
+  app.post("/case/:idCasa/turni", turnoController.creaTurno);
+  app.get("/case/:idCasa/turni/:idTurno", turnoController.getTurno);
+  app.put("/case/:idCasa/turni/:idTurno", turnoController.modificaTurno);
+  app.delete("/case/:idCasa/turni/:idTurno", turnoController.eliminaTurno);
 
-    // Assegnazione e gestione
-    app.put('/case/:idCasa/turni/:idTurno/assegna', turnoController.assegnaTurno);
-    app.patch('/case/:idCasa/turni/:idTurno/rotazione', turnoController.toggleRotazioneTurni);
-    app.post('/case/:idCasa/turni/:idTurno/completa', turnoController.completaTurno);
+  // Assegnazione e gestione
+  app.put("/case/:idCasa/turni/:idTurno/assegna", turnoController.assegnaTurno);
+  app.patch(
+    "/case/:idCasa/turni/:idTurno/rotazione",
+    turnoController.toggleRotazioneTurni,
+  );
+  app.post(
+    "/case/:idCasa/turni/:idTurno/completa",
+    turnoController.completaTurno,
+  );
 }
 
 // ─── Problemi ─────────────────────────────────────────────────────────────────
@@ -171,17 +193,33 @@ export async function turniRoutes(app: FastifyInstance) {
 // PATCH  /case/:idCasa/problemi/:idProblema/priorita                    → Aggiorna la priorità (Urgente / Media / Bassa)
 
 export async function problemiRoutes(app: FastifyInstance) {
-    const problemaController = new ProblemaController();
-    app.addHook('onRequest', authMiddleware);
+  const problemaController = new ProblemaController();
+  app.addHook("onRequest", authMiddleware);
 
-    // CRUD problemi
-    app.get('/case/:idCasa/problemi', problemaController.getAllProblemi);
-    app.get('/case/:idCasa/problemi/non-risolti', problemaController.getProblemiNonRisolti);
-    app.post('/case/:idCasa/problemi', problemaController.segnalaProblema);
-    app.delete('/case/:idCasa/problemi/:idProblema', problemaController.eliminaProblema);
+  // CRUD problemi
+  app.get("/case/:idCasa/problemi", problemaController.getAllProblemi);
+  app.get(
+    "/case/:idCasa/problemi/non-risolti",
+    problemaController.getProblemiNonRisolti,
+  );
+  app.post("/case/:idCasa/problemi", problemaController.segnalaProblema);
 
-    // Assegnazione e aggiornamento
-    app.put('/case/:idCasa/problemi/:idProblema/assegna', problemaController.assegnaProblema);
-    app.patch('/case/:idCasa/problemi/:idProblema/stato', problemaController.aggiornaStato);
-    app.patch('/case/:idCasa/problemi/:idProblema/priorita', problemaController.aggiornaPriorita);
+  app.delete(
+    "/case/:idCasa/problemi/:idProblema",
+    problemaController.eliminaProblema,
+  );
+
+  // Assegnazione e aggiornamento
+  app.put(
+    "/case/:idCasa/problemi/:idProblema/assegna",
+    problemaController.assegnaProblema,
+  );
+  app.patch(
+    "/case/:idCasa/problemi/:idProblema/stato",
+    problemaController.aggiornaStato,
+  );
+  app.patch(
+    "/case/:idCasa/problemi/:idProblema/priorita",
+    problemaController.aggiornaPriorita,
+  );
 }
