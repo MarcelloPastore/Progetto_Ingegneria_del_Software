@@ -1,17 +1,48 @@
-import { FastifyRequest, FastifyReply } from 'fastify';
-import jwt from 'jsonwebtoken';
-import { Ruolo } from '../types/enums';
-
-interface JwtPayload {
-    idUtente:    string;
-    ruoloCasa?: Ruolo;  //Il ruolo dipende dalla casa, ma averlo salvato sul token velocizza tutte le altre richieste.
-    // Ho un'idea per il ruolo: viene caricato quando l'utente apre una dashboard.
-    // Refresh all'accesso in una nuova casa.
-}
+import { FastifyRequest, FastifyReply } from "fastify";
+import type { Ruolo } from "@prisma/client";
+import { getJwt } from "../utils/jwt";
 
 export async function authMiddleware(
-    req: FastifyRequest,
-    rep: FastifyReply,
+  req: FastifyRequest,
+  rep: FastifyReply,
 ): Promise<void> {
-    //TODO: Implementare logica di generazione, verifica e refresh token
+  const auth = req.headers.authorization;
+  if (!auth) {
+    rep.code(401).send({ error: "Token mancante" });
+    return;
+  }
+
+  const parts = auth.split(" ");
+  if (parts.length !== 2 || parts[0] !== "Bearer") {
+    rep.code(401).send({ error: "Intestazione Authorization malformata" });
+    return;
+  }
+
+  const token = parts[1];
+
+  try {
+    const jwt = getJwt(req.server);
+    const payload = jwt.verify(token) as Record<string, unknown>;
+
+    const idUtente = (payload["id"] ?? payload["idUtente"]) as
+      | string
+      | undefined;
+    const ruolo = (payload["role"] ?? payload["ruoloCasa"]) as
+      | Ruolo
+      | undefined;
+    const tokenType = payload["type"];
+
+    if (!idUtente || (tokenType !== undefined && tokenType !== "access")) {
+      rep.code(401).send({ error: "Payload token non valido" });
+      return;
+    }
+
+    req.user = {
+      idUtente,
+      ruoloCasa: ruolo,
+    };
+  } catch {
+    rep.code(401).send({ error: "Token non valido" });
+    return;
+  }
 }

@@ -1,10 +1,10 @@
-declare module 'fastify' {
-    interface FastifyRequest {
-        user: {
-            idUtente: string;
-            ruoloCasa?: Ruolo;
-        };
-    }
-}
+import type { Ruolo } from "@prisma/client";
 
-export {};
+declare module "fastify" {
+  interface FastifyRequest {
+    user: {
+      idUtente: string;
+      ruoloCasa?: Ruolo;
+    };
+  }
+}

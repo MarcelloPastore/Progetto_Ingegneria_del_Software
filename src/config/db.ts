@@ -1,13 +1,18 @@
-import mongoose from 'mongoose';
-import dotenv from "dotenv";
-import path from "path";
+import { PrismaClient } from "@prisma/client";
 
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+declare global {
+  var prisma: PrismaClient | undefined;
+}
+
+// Usa pattern globalThis per evitare multiple istanze in hot-reload/dev
+export const prisma = globalThis.prisma ?? new PrismaClient();
+if (process.env.NODE_ENV !== "production") globalThis.prisma = prisma;
 
 export async function connectDB() {
-    const uri = process.env.MONGODB_URI;
-    if (!uri) throw new Error("MONGODB_URI non definita nelle variabili d'ambiente");
-
-    await mongoose.connect(uri);
-    console.log("Connesso a MongoDB");
+  try {
+    await prisma.$connect();
+  } catch (error) {
+    console.error("Errore connessione DB:", error);
+    process.exit(1);
+  }
 }
