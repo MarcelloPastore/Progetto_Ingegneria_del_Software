@@ -16,6 +16,7 @@ export type TurnoConAssegnatario = NonNullable<
 type TurnoCreateData = {
   idCasa: string;
   task: string;
+  cadenzaGiorni: number;
   rotazioneAttiva: boolean;
   assegnatarioCorrente: string;
   ordineRotazione: string[];
@@ -48,16 +49,6 @@ export class TurnoRepository {
       where: { id: idTurno },
       data,
       include: INCLUDE_ASSEGNATARIO,
-    });
-  }
-
-  async updateAssegnatario(
-    idTurno: string,
-    assegnatario: string,
-  ): Promise<TurnoConAssegnatario> {
-    return prisma.turno.update({
-      where: { id: idTurno },
-      data: { assegnatarioCorrente: assegnatario },
     });
   }
 

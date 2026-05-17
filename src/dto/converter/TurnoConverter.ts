@@ -1,57 +1,39 @@
 import { TurnoResponseDto } from "../TurnoDto";
 
-interface OrdineRotazioneSerialized {
-  cadenza: number;
-  ids: string[];
-}
-
-function parseOrdineRotazione(raw: string): OrdineRotazioneSerialized {
-  try {
-    const parsed = JSON.parse(raw);
-    if (
-      parsed &&
-      typeof parsed.cadenza === "number" &&
-      Array.isArray(parsed.ids)
-    ) {
-      return parsed as OrdineRotazioneSerialized;
-    }
-  } catch {
-    // fallthrough
-  }
-  return { cadenza: 1, ids: [] };
-}
-
-function parseIndice(raw: string): number {
-  const n = parseInt(raw, 10);
-  return isNaN(n) ? 0 : n;
-}
-
 function calcolaProssimaData(riferimento: Date, cadenzaGiorni: number): Date {
   const d = new Date(riferimento);
   d.setDate(d.getDate() + cadenzaGiorni);
   return d;
 }
 
-// ─── CONVERTER ────────────────────────────────────────────────────────────────
-
 export class TurnoConverter {
   toDto(turno: any): TurnoResponseDto {
-    const { cadenza, ids } = parseOrdineRotazione(turno.ordineRotazione);
-    const indice = parseIndice(turno.indiceRotazioneCorrente);
+    const ordineRotazione = Array.isArray(turno.ordineRotazione)
+      ? turno.ordineRotazione
+      : [];
+    const indiceRotazione =
+      typeof turno.indiceRotazioneCorrente === "number"
+        ? turno.indiceRotazioneCorrente
+        : 0;
+    const cadenzaGiorni =
+      typeof turno.cadenzaGiorni === "number" && turno.cadenzaGiorni > 0
+        ? turno.cadenzaGiorni
+        : 1;
     const riferimento: Date = turno.dataUltimaPulizia ?? turno.dataCreazione;
-    const dataProssima = calcolaProssimaData(riferimento, cadenza);
+    const dataProssima = calcolaProssimaData(riferimento, cadenzaGiorni);
+    const assegnatarioRel = turno.assegnatarioCorrenteRel;
 
     return {
       id: turno.id,
       task: turno.task,
-      cadenzaGiorni: cadenza,
+      cadenzaGiorni,
       rotazioneAttiva: turno.rotazioneAttiva,
       assegnatario: {
-        id: turno.assegnatarioCorrente.id,
-        username: turno.assegnatarioCorrente.username,
+        id: assegnatarioRel?.id ?? turno.assegnatarioCorrente ?? "",
+        username: assegnatarioRel?.username ?? "",
       },
-      ordineRotazione: ids,
-      indiceRotazioneCorrente: indice,
+      ordineRotazione,
+      indiceRotazioneCorrente: indiceRotazione,
       dataUltimaPulizia: turno.dataUltimaPulizia?.toISOString() ?? null,
       dataProssimaPulizia: dataProssima.toISOString(),
       dataCreazione: turno.dataCreazione.toISOString(),

@@ -1,7 +1,7 @@
-@baseUrl = http://localhost:3000/api/v1
-@idCasa = <ID_CASA>
-@idTurno = <ID_TURNO>
-@idUtente = <ID_UTENTE>
+@baseUrl = http://localhost:23109/api/v1
+@idCasa = 6652f92fb7b8a1d8e0a1a002
+@idTurno = 6a0a476aa9758a8b9b03e003
+@idUtente = 6652f8f1b7b8a1d8e0a1a001
 
 ### Health
 GET {{baseUrl}}/health
@@ -20,7 +20,7 @@ Content-Type: application/json
   "task": "Pulizia cucina",
   "cadenzaGiorni": 7,
   "assegnatario": "{{idUtente}}",
-  "rotazioneTurno": true
+  "rotazioneTurno": false
 }
 
 ### Dettaglio turno

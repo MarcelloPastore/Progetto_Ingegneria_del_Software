@@ -64,6 +64,7 @@ export class TurnoService {
     const turno = await turnoRepository.createTurno({
       idCasa,
       task: dto.task,
+      cadenzaGiorni: dto.cadenzaGiorni,
       rotazioneAttiva: dto.rotazioneTurno,
       assegnatarioCorrente: dto.assegnatario,
       ordineRotazione: idsRotazione,

@@ -131,7 +131,7 @@ model QuotaSpesa {
   utenteRel Utente @relation(fields: [idUtente], references: [id])
   idUtente  String @db.ObjectId
 
-  @@map("QuoteSpese")
+  @@map("Quote_Spese")
 }
 
 model Scadenza {
@@ -155,7 +155,7 @@ model Scadenza {
 model Turno {
   id                      String    @id @default(auto()) @map("_id") @db.ObjectId
   task                    String
-  cadenzaGiorni           Int?
+  cadenzaGiorni           Int
   dataUltimaPulizia       DateTime?
   rotazioneAttiva         Boolean   @default(true)
   ordineRotazione         String[]  @db.ObjectId
