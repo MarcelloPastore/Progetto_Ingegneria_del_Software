@@ -34,16 +34,31 @@ function isToday(isoString: string): boolean {
   );
 }
 
+function aggiornaOrdineRotazione(
+  ordineCorrente: string[],
+  membriIds: string[],
+): string[] {
+  const membriSet = new Set(membriIds);
+  const ordineFiltrato = ordineCorrente.filter((id) => membriSet.has(id));
+  const presenti = new Set(ordineFiltrato);
+  const nuovi = membriIds.filter((id) => !presenti.has(id));
+
+  return [...ordineFiltrato, ...nuovi];
+}
+
+
 export class TurnoService {
   async creaTurno(
     idCasa: string,
     dto: CreaTurnoDto,
   ): Promise<TurnoResponseDto> {
-    const membriIds = await casaRepository.getMembriCasaIds(idCasa);
+    let idsRotazione = [dto.assegnatario];
 
-    const altriIds = membriIds.filter((id: string) => id !== dto.assegnatario);
-
-    const idsRotazione = [dto.assegnatario, ...shuffleTurni(altriIds)];
+    if (dto.rotazioneTurno) {
+      const membriIds = await casaRepository.getMembriCasaIds(idCasa);
+      const altriIds = membriIds.filter((id: string) => id !== dto.assegnatario);
+      idsRotazione = [dto.assegnatario, ...shuffleTurni(altriIds)];
+    }
 
     const turno = await turnoRepository.createTurno({
       idCasa,
@@ -82,34 +97,80 @@ export class TurnoService {
     idTurno: string,
     dto: ModificaTurnoDto,
   ): Promise<TurnoResponseDto> {
+    const turno = await turnoRepository.findTurnoByIdOrThrow(idCasa, idTurno);
+    const membriIds = await casaRepository.getMembriCasaIds(idCasa);
+    const ordineAggiornato = aggiornaOrdineRotazione(
+      turno.ordineRotazione,
+      membriIds,
+    );
 
-    return turnoConverter.toDto(turno);
+    const aggiornamento = await turnoRepository.updateTurno(idTurno, {
+      ...(dto.task !== undefined && { task: dto.task }),
+      ...(dto.cadenzaGiorni !== undefined && { cadenzaGiorni: dto.cadenzaGiorni }),
+      ...(dto.rotazioneTurno !== undefined && {
+        rotazioneAttiva: dto.rotazioneTurno,
+      }),
+      ordineRotazione: ordineAggiornato,
+    });
+
+    return turnoConverter.toDto(aggiornamento);
   }
 
-  async eliminaTurno(idCasa: string, idTurno: string): Promise<void> {}
+  async eliminaTurno(idCasa: string, idTurno: string): Promise<void> {
+    await turnoRepository.findTurnoByIdOrThrow(idCasa, idTurno);
+
+    await turnoRepository.deleteTurno(idCasa, idTurno);
+  }
 
   async assegnaTurno(
     idCasa: string,
     idTurno: string,
     dto: AssegnaTurnoDto,
   ): Promise<TurnoResponseDto> {
+    await turnoRepository.findTurnoByIdOrThrow(idCasa, idTurno);
 
-    return turnoConverter.toDto(turno);
+    const aggiornamento = await turnoRepository.updateTurno(idTurno, {
+      assegnatarioCorrente: dto.idUtente,
+    });
+
+    return turnoConverter.toDto(aggiornamento);
   }
 
   async toggleRotazioneTurni(
     idCasa: string,
     idTurno: string,
   ): Promise<TurnoResponseDto> {
+    const turno = await turnoRepository.findTurnoByIdOrThrow(idCasa, idTurno);
 
-    return turnoConverter.toDto(turno);
+    const aggiornamento = await turnoRepository.updateTurno(idTurno, {
+      rotazioneAttiva: !turno.rotazioneAttiva,
+    });
+
+    return turnoConverter.toDto(aggiornamento);
   }
 
   async completaTurno(
     idCasa: string,
     idTurno: string,
   ): Promise<TurnoResponseDto> {
+    const turno = await turnoRepository.findTurnoByIdOrThrow(idCasa, idTurno);
+    const ordine = turno.ordineRotazione ?? [];
+    const ordineLength = ordine.length;
+    const indiceCorrente = turno.indiceRotazioneCorrente ?? 0;
 
-    return turnoConverter.toDto(turno);
+    const indiceProssimo = ordineLength === 0
+      ? indiceCorrente
+      : (indiceCorrente + 1) % ordineLength;
+    const assegnatarioProssimo = ordineLength === 0
+      ? turno.assegnatarioCorrente
+      : ordine[indiceProssimo];
+
+    const aggiornamento = await turnoRepository.updateTurno(idTurno, {
+      dataUltimaPulizia: new Date(),
+      indiceRotazioneCorrente: indiceProssimo,
+      assegnatarioCorrente: assegnatarioProssimo,
+    });
+
+    return turnoConverter.toDto(aggiornamento);
   }
 }

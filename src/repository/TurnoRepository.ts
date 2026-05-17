@@ -22,12 +22,43 @@ type TurnoCreateData = {
   indiceRotazioneCorrente: number;
 };
 
+type TurnoUpdateData = {
+  task?: string;
+  cadenzaGiorni?: number;
+  rotazioneAttiva?: boolean;
+  ordineRotazione?: string[];
+  assegnatarioCorrente?: string;
+  dataUltimaPulizia?: Date;
+  indiceRotazioneCorrente?: number;
+};
+
 export class TurnoRepository {
   async createTurno(data: TurnoCreateData): Promise<TurnoConAssegnatario> {
     return prisma.turno.create({
       data,
       include: INCLUDE_ASSEGNATARIO,
     });
+  }
+
+  async updateTurno(
+    idTurno: string,
+    data: TurnoUpdateData,
+  ): Promise<TurnoConAssegnatario> {
+    return prisma.turno.update({
+      where: { id: idTurno },
+      data,
+      include: INCLUDE_ASSEGNATARIO,
+    });
+  }
+
+  async updateAssegnatario(
+    idTurno: string,
+    assegnatario: string,
+  ): Promise<TurnoConAssegnatario> {
+    return prisma.turno.update({
+      where: { id: idTurno },
+      data: { assegnatarioCorrente: assegnatario },
+    })
   }
 
   async findTurniByCasa(idCasa: string): Promise<TurnoConAssegnatario[]> {
@@ -45,5 +76,9 @@ export class TurnoRepository {
       where: { id: idTurno, idCasa },
       include: INCLUDE_ASSEGNATARIO,
     });
+  }
+  
+  async deleteTurno(idCasa: string, idTurno: string): Promise<void> {
+    await prisma.turno.delete({ where: { id: idTurno, idCasa } });
   }
 }
