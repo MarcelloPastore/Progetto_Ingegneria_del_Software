@@ -30,7 +30,7 @@ enum Priorita {
 // ─── MODELS ───────────────────────────────────────────────────────────────────
 model Utente {
   id                    String    @id @default(auto()) @map("_id") @db.ObjectId
-  username              String    @unique
+  username              String
   email                 String    @unique
   passwordHash          String
   nome                  String
@@ -109,7 +109,7 @@ model Spesa {
   anticipataDaRel Utente?   @relation("SpesaAnticipata", fields: [anticipataDa], references: [id])
   anticipataDa    String?   @db.ObjectId
   scadenzaRel     Scadenza? @relation(fields: [idScadenza], references: [id])
-  idScadenza      String?   @db.ObjectId
+  idScadenza      String?   @unique @db.ObjectId
 
   partecipanti    String[] @db.ObjectId
   partecipantiRel Utente[] @relation("SpesaPartecipanti", fields: [partecipanti], references: [id])
@@ -143,10 +143,9 @@ model Scadenza {
   cadenzaGiorni Int?
   dataCreazione DateTime @default(now())
 
-  casaRel  Casa    @relation(fields: [idCasa], references: [id])
-  idCasa   String  @db.ObjectId
-  spesaRel Spesa?  @relation(fields: [idSpesa], references: [id])
-  idSpesa  String? @db.ObjectId
+  casaRel  Casa   @relation(fields: [idCasa], references: [id])
+  idCasa   String @db.ObjectId
+  spesaRel Spesa? @relation
 
   turni Turno[]
 
@@ -210,7 +209,7 @@ model Storico {
 model Documento {
   id              String   @id @default(auto()) @map("_id") @db.ObjectId
   nome            String
-  urlStorage      String
+  urlStorage      String   @unique
   hashFile        String
   mimeType        String
   dataCaricamento DateTime @default(now())
