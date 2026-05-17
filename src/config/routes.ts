@@ -1,9 +1,12 @@
 import { FastifyInstance } from "fastify";
 
-import { SpeseController } from "../controller/SpeseController";
-import { CasaController } from "../controller/CasaController";
+//import { AuthController } from "../controller/AuthController";
+//import { authMiddleware } from "../middleware/AuthMiddleware";
+//import { SpeseController } from "../controller/SpeseController";
+//import { CasaController } from "../controller/CasaController";
 import { TurnoController } from "../controller/TurnoController";
-import { ProblemaController } from "../controller/ProblemaController";
+//import { ProblemaController } from "../controller/ProblemaController";
+import { TurnoService } from "../service/TurnoService";
 
 // ─── Health ───────────────────────────────────────────────────────────────────
 
@@ -22,15 +25,19 @@ export async function health(app: FastifyInstance) {
 // POST /auth/login             → Login con email+password, restituisce JWT (UC: Login)
 // POST /auth/recupera-password → Invio codice di recupero via email (UC: Recupero Password)
 // GET  /auth/verifica-email    → Attivazione account tramite link di verifica (UC: Registrazione)
+// POST /auth/refresh-token     → Ottiene un nuovo JWT usando un refresh token (UC: Login - variante)
+// POST /auth/reset-password    → Reset password usando codice di recupero (UC: Recupero Password - variante)
 
-export async function authRoutes(app: FastifyInstance) {
+/*export async function authRoutes(app: FastifyInstance) {
   const authController = new AuthController();
 
   app.post("/auth/register", authController.register);
   app.post("/auth/login", authController.login);
   app.post("/auth/recupera-password", authController.recuperaPassword);
   app.get("/auth/verifica-email", authController.verificaEmail);
-}
+  app.post("/auth/refresh-token", authController.refreshToken);
+  app.post("/auth/reset-password", authController.resetPassword);
+}*/
 
 // ─── Hub Casa ─────────────────────────────────────────────────────────────────
 //
@@ -51,7 +58,7 @@ export async function authRoutes(app: FastifyInstance) {
 //
 // GET    /case/:idCasa/invite-link                      → Recupera o rigenera il link/codice di invito
 
-export async function casaRoutes(app: FastifyInstance) {
+/*export async function casaRoutes(app: FastifyInstance) {
   const casaController = new CasaController();
   app.addHook("onRequest", authMiddleware);
 
@@ -78,7 +85,7 @@ export async function casaRoutes(app: FastifyInstance) {
 
   // Link di invito
   app.get("/case/:idCasa/invite-link", casaController.generaLink);
-}
+}*/
 
 // ─── Spese ────────────────────────────────────────────────────────────────────
 //
@@ -102,7 +109,7 @@ export async function casaRoutes(app: FastifyInstance) {
 // GET    /case/:idCasa/credito/:idInquilino             → Credito verso un singolo inquilino
 // GET    /case/:idCasa/debito/:idInquilino              → Debito verso un singolo inquilino
 
-export async function speseRoutes(app: FastifyInstance) {
+/*export async function speseRoutes(app: FastifyInstance) {
   const speseController = new SpeseController();
   app.addHook("onRequest", authMiddleware);
 
@@ -138,7 +145,7 @@ export async function speseRoutes(app: FastifyInstance) {
     "/case/:idCasa/debito/:idInquilino",
     speseController.getDebitoVersoUtente,
   );
-}
+}*/
 
 // ─── Turni ────────────────────────────────────────────────────────────────────
 //
@@ -146,6 +153,7 @@ export async function speseRoutes(app: FastifyInstance) {
 // Boundary:   TurniScreens, DashboardScreen
 //
 // GET    /case/:idCasa/turni                            → Lista turni della casa
+// GET    /case/:idCasa/turni/turni_odierni              → Solo i turni previsti per oggi (per Dashboard)
 // POST   /case/:idCasa/turni                            → Crea un nuovo turno (UC: Creazione Turno con Rotazione Automatica)
 // GET    /case/:idCasa/turni/:idTurno                   → Dettaglio di un singolo turno
 // PUT    /case/:idCasa/turni/:idTurno                   → Modifica un turno esistente (solo HomeAdmin)
@@ -156,11 +164,13 @@ export async function speseRoutes(app: FastifyInstance) {
 // POST   /case/:idCasa/turni/:idTurno/completa          → Marca il turno come completato e aggiorna la prossima scadenza
 
 export async function turniRoutes(app: FastifyInstance) {
-  const turnoController = new TurnoController();
-  app.addHook("onRequest", authMiddleware);
+  const turniService = new TurnoService();
+  const turnoController = new TurnoController(turniService);
+  //app.addHook("onRequest", authMiddleware);
 
   // CRUD turni
   app.get("/case/:idCasa/turni", turnoController.getAllTurni);
+  app.get("/case/:idCasa/turni/turni_odierni", turnoController.getTurniOdierni);
   app.post("/case/:idCasa/turni", turnoController.creaTurno);
   app.get("/case/:idCasa/turni/:idTurno", turnoController.getTurno);
   app.put("/case/:idCasa/turni/:idTurno", turnoController.modificaTurno);
@@ -192,7 +202,7 @@ export async function turniRoutes(app: FastifyInstance) {
 // PATCH  /case/:idCasa/problemi/:idProblema/stato                       → Aggiorna lo stato (Segnalato → Assegnato → Risolto)
 // PATCH  /case/:idCasa/problemi/:idProblema/priorita                    → Aggiorna la priorità (Urgente / Media / Bassa)
 
-export async function problemiRoutes(app: FastifyInstance) {
+/*export async function problemiRoutes(app: FastifyInstance) {
   const problemaController = new ProblemaController();
   app.addHook("onRequest", authMiddleware);
 
@@ -222,4 +232,4 @@ export async function problemiRoutes(app: FastifyInstance) {
     "/case/:idCasa/problemi/:idProblema/priorita",
     problemaController.aggiornaPriorita,
   );
-}
+}*/

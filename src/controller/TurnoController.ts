@@ -3,108 +3,181 @@ import {
   AssegnaTurnoDto,
   CreaTurnoDto,
   ModificaTurnoDto,
-  TurnoResponseDto,
   CreaTurnoSchema,
   ModificaTurnoSchema,
   AssegnaTurnoSchema,
 } from "../dto/TurnoDto";
-import { TurniService } from "../service/TurniService";
-import { CasaPayload, TurnoPayload } from "../types/params";
+import { TurnoService } from "../service/TurnoService";
+import { CasaParams, TurnoParams } from "../types/params";
 
 export class TurnoController {
+  constructor(private turniService: TurnoService) {}
+
+  //TODO: Implementare verifiche dei permessi HomaAdmin
+  //TODO: Implementare error code differenziati per API
+
+  /**
+   * GET /case/:idCasa/turni
+   */
   getAllTurni = async (
-    request: FastifyRequest<{ Params: CasaPayload }>,
+    request: FastifyRequest<{ Params: CasaParams }>,
     reply: FastifyReply,
   ) => {
-    const { idCasa } = request.params;
-    const user = request.user as JwtCustomPayload;
-
-    // TODO: implementare
-    const responseDto: TurnoResponseDto[] = [];
-    return reply.status(200).send(responseDto);
+    try {
+      const turni = await this.turniService.getAllTurni(request.params.idCasa);
+      return reply.status(200).send(turni);
+    } catch (error) {
+      return reply.status(500).send({ message: "Errore interno del server" });
+    }
   };
 
+  /**
+   * GET /case/:idCasa/turni/oggi
+   */
+  getTurniOdierni = async (
+    request: FastifyRequest<{ Params: CasaParams }>,
+    reply: FastifyReply,
+  ) => {
+    try {
+      const turni = await this.turniService.getTurniOdierni(
+        request.params.idCasa,
+      );
+      return reply.status(200).send(turni);
+    } catch (error) {
+      return reply.status(500).send({ message: "Errore interno del server" });
+    }
+  };
+
+  /**
+   * POST /case/:idCasa/turni
+   */
   creaTurno = async (
-    request: FastifyRequest<{ Params: CasaPayload; Body: CreaTurnoDto }>,
+    request: FastifyRequest<{ Params: CasaParams; Body: CreaTurnoDto }>,
     reply: FastifyReply,
   ) => {
-    const { idCasa } = request.params;
-    const body = CreaTurnoSchema.safeParse(request.body);
-    const user = request.user as JwtCustomPayload;
-
-    TurniService.creaTurno(idCasa, body.data);
-
-    // TODO: implementare
-    return reply.status(201).send({ message: "Turno creato" });
+    try {
+      const dto = CreaTurnoSchema.parse(request.body);
+      const result = await this.turniService.creaTurno(
+        request.params.idCasa,
+        dto,
+      );
+      return reply.status(201).send(result);
+    } catch (error) {
+      return reply.status(400).send({ message: "Dati non validi" });
+    }
   };
 
+  /**
+   * GET /case/:idCasa/turni/:idTurno
+   */
   getTurno = async (
-    request: FastifyRequest<{ Params: TurnoPayload }>,
+    request: FastifyRequest<{ Params: TurnoParams }>,
     reply: FastifyReply,
   ) => {
-    const { idCasa, idTurno } = request.params;
-    const user = request.user as JwtCustomPayload;
-
-    // TODO: implementare
-    const responseDto = {} as TurnoResponseDto;
-    return reply.status(200).send(responseDto);
+    try {
+      const result = await this.turniService.getTurno(
+        request.params.idCasa,
+        request.params.idTurno,
+      );
+      return reply.status(200).send(result);
+    } catch (error) {
+      return reply.status(404).send({ message: "Turno non trovato" });
+    }
   };
 
+  /**
+   * PATCH /case/:idCasa/turni/:idTurno
+   */
   modificaTurno = async (
-    request: FastifyRequest<{ Params: TurnoPayload; Body: ModificaTurnoDto }>,
+    request: FastifyRequest<{ Params: TurnoParams; Body: ModificaTurnoDto }>,
     reply: FastifyReply,
   ) => {
-    const { idCasa, idTurno } = request.params;
-    const body = ModificaTurnoSchema.safeParse(request.body);
-    const user = request.user as JwtCustomPayload;
-
-    // TODO: implementare
-    return reply.status(200).send({ message: "Turno modificato" });
+    try {
+      const dto = ModificaTurnoSchema.parse(request.body);
+      const result = await this.turniService.modificaTurno(
+        request.params.idCasa,
+        request.params.idTurno,
+        dto,
+      );
+      return reply.status(200).send(result);
+    } catch (error) {
+      return reply.status(400).send({ message: "Dati non validi" });
+    }
   };
 
+  /**
+   * DELETE /case/:idCasa/turni/:idTurno
+   */
   eliminaTurno = async (
-    request: FastifyRequest<{ Params: TurnoPayload }>,
+    request: FastifyRequest<{ Params: TurnoParams }>,
     reply: FastifyReply,
   ) => {
-    const { idCasa, idTurno } = request.params;
-    const user = request.user as JwtCustomPayload;
-
-    TurniService.eliminaTurno(idCasa, idTurno);
-    // TODO: implementare
-    return reply.status(204).send();
+    try {
+      await this.turniService.eliminaTurno(
+        request.params.idCasa,
+        request.params.idTurno,
+      );
+      return reply.status(204).send();
+    } catch (error) {
+      return reply.status(500).send({ message: "Errore interno del server" });
+    }
   };
 
+  /**
+   * PUT /case/:idCasa/turni/:idTurno/assegna
+   */
   assegnaTurno = async (
-    request: FastifyRequest<{ Params: TurnoPayload; Body: AssegnaTurnoDto }>,
+    request: FastifyRequest<{ Params: TurnoParams; Body: AssegnaTurnoDto }>,
     reply: FastifyReply,
   ) => {
-    const { idCasa, idTurno } = request.params;
-    const body = AssegnaTurnoSchema.safeParse(request.body);
-    const user = request.user as JwtCustomPayload;
-
-    // TODO: implementare
-    return reply.status(200).send({ message: "Turno assegnato" });
+    try {
+      const dto = AssegnaTurnoSchema.parse(request.body);
+      const result = await this.turniService.assegnaTurno(
+        request.params.idCasa,
+        request.params.idTurno,
+        dto,
+      );
+      return reply.status(200).send(result);
+    } catch (error) {
+      return reply
+        .status(400)
+        .send({ message: "Dati non validi" });
+    }
   };
 
+  /**
+   * PATCH /case/:idCasa/turni/:idTurno/rotazione
+   */
   toggleRotazioneTurni = async (
-    request: FastifyRequest<{ Params: TurnoPayload }>,
+    request: FastifyRequest<{ Params: TurnoParams }>,
     reply: FastifyReply,
   ) => {
-    const { idCasa, idTurno } = request.params;
-    const user = request.user as JwtCustomPayload;
-
-    // TODO: implementare
-    return reply.status(200).send({ message: "Rotazione modificabile" });
+    try {
+      const result = await this.turniService.toggleRotazioneTurni(
+        request.params.idCasa,
+        request.params.idTurno,
+      );
+      return reply.status(200).send(result);
+    } catch (error) {
+      return reply.status(500).send({ message: "Errore interno del server" });
+    }
   };
 
+  /**
+   * POST /case/:idCasa/turni/:idTurno/completa
+   */
   completaTurno = async (
-    request: FastifyRequest<{ Params: TurnoPayload }>,
+    request: FastifyRequest<{ Params: TurnoParams }>,
     reply: FastifyReply,
   ) => {
-    const { idCasa, idTurno } = request.params;
-    const user = request.user as JwtCustomPayload;
-
-    // TODO: implementare
-    return reply.status(200).send({ message: "Turno completato" });
+    try {
+      const result = await this.turniService.completaTurno(
+        request.params.idCasa,
+        request.params.idTurno,
+      );
+      return reply.status(200).send(result);
+    } catch (error) {
+      return reply.status(500).send({ message: "Errore interno del server" });
+    }
   };
 }

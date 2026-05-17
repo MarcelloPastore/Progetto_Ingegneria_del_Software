@@ -1,21 +1,26 @@
-export interface CasaPayload {
+export interface CasaParams {
   idCasa: string;
 }
 
 // - TurnoController -
-export interface TurnoPayload extends CasaPayload {
+export interface TurnoParams extends CasaParams {
   idTurno: string;
 }
 
 // - SpesaController -
-export interface SpesaPayload extends CasaPayload {
+export interface SpesaParams extends CasaParams {
   idSpesa: string;
 }
 
-export interface QuotaPayload extends SpesaPayload {
+export interface QuotaParams extends SpesaParams {
   idQuota: string;
 }
 
-export interface InquilinoPayload extends CasaPayload {
+export interface InquilinoParams extends CasaParams {
   idInquilino: string;
+}
+
+// - ProblemiController -
+export interface ProblemaParams extends CasaParams {
+  idProblema: string;
 }
