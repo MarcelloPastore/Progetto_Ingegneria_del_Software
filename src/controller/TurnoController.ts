@@ -139,9 +139,7 @@ export class TurnoController {
       );
       return reply.status(200).send(result);
     } catch (error) {
-      return reply
-        .status(400)
-        .send({ message: "Dati non validi" });
+      return reply.status(400).send({ message: "Dati non validi" });
     }
   };
 

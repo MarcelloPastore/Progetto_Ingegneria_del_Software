@@ -1,0 +1,55 @@
+@baseUrl = http://localhost:3000/api/v1
+@idCasa = <ID_CASA>
+@idTurno = <ID_TURNO>
+@idUtente = <ID_UTENTE>
+
+### Health
+GET {{baseUrl}}/health
+
+### Lista turni
+GET {{baseUrl}}/case/{{idCasa}}/turni
+
+### Turni odierni
+GET {{baseUrl}}/case/{{idCasa}}/turni/turni_odierni
+
+### Crea turno
+POST {{baseUrl}}/case/{{idCasa}}/turni
+Content-Type: application/json
+
+{
+  "task": "Pulizia cucina",
+  "cadenzaGiorni": 7,
+  "assegnatario": "{{idUtente}}",
+  "rotazioneTurno": true
+}
+
+### Dettaglio turno
+GET {{baseUrl}}/case/{{idCasa}}/turni/{{idTurno}}
+
+### Modifica turno
+PUT {{baseUrl}}/case/{{idCasa}}/turni/{{idTurno}}
+Content-Type: application/json
+
+{
+  "task": "Pulizia cucina e bagno",
+  "cadenzaGiorni": 14,
+  "rotazioneTurno": false
+}
+
+### Assegna turno
+PUT {{baseUrl}}/case/{{idCasa}}/turni/{{idTurno}}/assegna
+Content-Type: application/json
+
+{
+  "idUtente": "{{idUtente}}"
+}
+
+### Toggle rotazione
+PATCH {{baseUrl}}/case/{{idCasa}}/turni/{{idTurno}}/rotazione
+
+### Completa turno
+POST {{baseUrl}}/case/{{idCasa}}/turni/{{idTurno}}/completa
+
+### Elimina turno
+DELETE {{baseUrl}}/case/{{idCasa}}/turni/{{idTurno}}
+

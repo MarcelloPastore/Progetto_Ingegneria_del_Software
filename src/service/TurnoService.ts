@@ -46,7 +46,6 @@ function aggiornaOrdineRotazione(
   return [...ordineFiltrato, ...nuovi];
 }
 
-
 export class TurnoService {
   async creaTurno(
     idCasa: string,
@@ -56,7 +55,9 @@ export class TurnoService {
 
     if (dto.rotazioneTurno) {
       const membriIds = await casaRepository.getMembriCasaIds(idCasa);
-      const altriIds = membriIds.filter((id: string) => id !== dto.assegnatario);
+      const altriIds = membriIds.filter(
+        (id: string) => id !== dto.assegnatario,
+      );
       idsRotazione = [dto.assegnatario, ...shuffleTurni(altriIds)];
     }
 
@@ -106,7 +107,9 @@ export class TurnoService {
 
     const aggiornamento = await turnoRepository.updateTurno(idTurno, {
       ...(dto.task !== undefined && { task: dto.task }),
-      ...(dto.cadenzaGiorni !== undefined && { cadenzaGiorni: dto.cadenzaGiorni }),
+      ...(dto.cadenzaGiorni !== undefined && {
+        cadenzaGiorni: dto.cadenzaGiorni,
+      }),
       ...(dto.rotazioneTurno !== undefined && {
         rotazioneAttiva: dto.rotazioneTurno,
       }),
@@ -158,12 +161,10 @@ export class TurnoService {
     const ordineLength = ordine.length;
     const indiceCorrente = turno.indiceRotazioneCorrente ?? 0;
 
-    const indiceProssimo = ordineLength === 0
-      ? indiceCorrente
-      : (indiceCorrente + 1) % ordineLength;
-    const assegnatarioProssimo = ordineLength === 0
-      ? turno.assegnatarioCorrente
-      : ordine[indiceProssimo];
+    const indiceProssimo =
+      ordineLength === 0 ? indiceCorrente : (indiceCorrente + 1) % ordineLength;
+    const assegnatarioProssimo =
+      ordineLength === 0 ? turno.assegnatarioCorrente : ordine[indiceProssimo];
 
     const aggiornamento = await turnoRepository.updateTurno(idTurno, {
       dataUltimaPulizia: new Date(),

@@ -58,7 +58,7 @@ export class TurnoRepository {
     return prisma.turno.update({
       where: { id: idTurno },
       data: { assegnatarioCorrente: assegnatario },
-    })
+    });
   }
 
   async findTurniByCasa(idCasa: string): Promise<TurnoConAssegnatario[]> {
@@ -77,7 +77,7 @@ export class TurnoRepository {
       include: INCLUDE_ASSEGNATARIO,
     });
   }
-  
+
   async deleteTurno(idCasa: string, idTurno: string): Promise<void> {
     await prisma.turno.delete({ where: { id: idTurno, idCasa } });
   }
