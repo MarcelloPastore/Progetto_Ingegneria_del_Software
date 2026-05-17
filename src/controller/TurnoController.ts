@@ -9,12 +9,12 @@ import {
 } from "../dto/TurnoDto";
 import { TurnoService } from "../service/TurnoService";
 import { CasaParams, TurnoParams } from "../types/params";
+import { mapErrorToHttp } from "../errors/errorMapper";
 
 export class TurnoController {
   constructor(private turniService: TurnoService) {}
 
   //TODO: Implementare verifiche dei permessi HomaAdmin
-  //TODO: Implementare error code differenziati per API
 
   /**
    * GET /case/:idCasa/turni
@@ -27,7 +27,8 @@ export class TurnoController {
       const turni = await this.turniService.getAllTurni(request.params.idCasa);
       return reply.status(200).send(turni);
     } catch (error) {
-      return reply.status(500).send({ message: "Errore interno del server" });
+      const mapped = mapErrorToHttp(error);
+      return reply.status(mapped.statusCode).send({ message: mapped.message });
     }
   };
 
@@ -44,7 +45,8 @@ export class TurnoController {
       );
       return reply.status(200).send(turni);
     } catch (error) {
-      return reply.status(500).send({ message: "Errore interno del server" });
+      const mapped = mapErrorToHttp(error);
+      return reply.status(mapped.statusCode).send({ message: mapped.message });
     }
   };
 
@@ -63,7 +65,8 @@ export class TurnoController {
       );
       return reply.status(201).send(result);
     } catch (error) {
-      return reply.status(400).send({ message: "Dati non validi" });
+      const mapped = mapErrorToHttp(error);
+      return reply.status(mapped.statusCode).send({ message: mapped.message });
     }
   };
 
@@ -81,7 +84,8 @@ export class TurnoController {
       );
       return reply.status(200).send(result);
     } catch (error) {
-      return reply.status(404).send({ message: "Turno non trovato" });
+      const mapped = mapErrorToHttp(error);
+      return reply.status(mapped.statusCode).send({ message: mapped.message });
     }
   };
 
@@ -101,7 +105,8 @@ export class TurnoController {
       );
       return reply.status(200).send(result);
     } catch (error) {
-      return reply.status(400).send({ message: "Dati non validi" });
+      const mapped = mapErrorToHttp(error);
+      return reply.status(mapped.statusCode).send({ message: mapped.message });
     }
   };
 
@@ -119,7 +124,8 @@ export class TurnoController {
       );
       return reply.status(204).send();
     } catch (error) {
-      return reply.status(500).send({ message: "Errore interno del server" });
+      const mapped = mapErrorToHttp(error);
+      return reply.status(mapped.statusCode).send({ message: mapped.message });
     }
   };
 
@@ -139,7 +145,8 @@ export class TurnoController {
       );
       return reply.status(200).send(result);
     } catch (error) {
-      return reply.status(400).send({ message: "Dati non validi" });
+      const mapped = mapErrorToHttp(error);
+      return reply.status(mapped.statusCode).send({ message: mapped.message });
     }
   };
 
@@ -157,7 +164,8 @@ export class TurnoController {
       );
       return reply.status(200).send(result);
     } catch (error) {
-      return reply.status(500).send({ message: "Errore interno del server" });
+      const mapped = mapErrorToHttp(error);
+      return reply.status(mapped.statusCode).send({ message: mapped.message });
     }
   };
 
@@ -175,7 +183,8 @@ export class TurnoController {
       );
       return reply.status(200).send(result);
     } catch (error) {
-      return reply.status(500).send({ message: "Errore interno del server" });
+      const mapped = mapErrorToHttp(error);
+      return reply.status(mapped.statusCode).send({ message: mapped.message });
     }
   };
 }

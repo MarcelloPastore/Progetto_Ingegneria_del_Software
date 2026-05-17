@@ -1,5 +1,18 @@
 import { TurnoResponseDto } from "../TurnoDto";
 
+interface TurnoForDto {
+  id: string;
+  task: string;
+  cadenzaGiorni?: number | null;
+  rotazioneAttiva: boolean;
+  assegnatarioCorrente?: string | null;
+  assegnatarioCorrenteRel?: { id: string; username: string } | null;
+  ordineRotazione?: string[] | null;
+  indiceRotazioneCorrente?: number | null;
+  dataUltimaPulizia?: Date | null;
+  dataCreazione: Date;
+}
+
 function calcolaProssimaData(riferimento: Date, cadenzaGiorni: number): Date {
   const d = new Date(riferimento);
   d.setDate(d.getDate() + cadenzaGiorni);
@@ -7,7 +20,7 @@ function calcolaProssimaData(riferimento: Date, cadenzaGiorni: number): Date {
 }
 
 export class TurnoConverter {
-  toDto(turno: any): TurnoResponseDto {
+  toDto(turno: TurnoForDto): TurnoResponseDto {
     const ordineRotazione = Array.isArray(turno.ordineRotazione)
       ? turno.ordineRotazione
       : [];
