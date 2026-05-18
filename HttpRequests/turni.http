@@ -1,7 +1,7 @@
 @baseUrl = http://localhost:23109/api/v1
-@idCasa = 6652f92fb7b8a1d8e0a1a002
-@idTurno = 6a0a476aa9758a8b9b03e003
-@idUtente = 6652f8f1b7b8a1d8e0a1a001
+@idCasa = 6659f0b4e6a3c2f6a2d1a111
+@idTurno = 6a0a476aa9758a8b9b03e004
+@idUtente = 6659f0b4e6a3c2f6a2d1a333
 
 ### Health
 GET {{baseUrl}}/health
@@ -10,7 +10,7 @@ GET {{baseUrl}}/health
 GET {{baseUrl}}/case/{{idCasa}}/turni
 
 ### Turni odierni
-GET {{baseUrl}}/case/{{idCasa}}/turni/turni_odierni
+GET {{baseUrl}}/case/{{idCasa}}/turni/oggi
 
 ### Crea turno
 POST {{baseUrl}}/case/{{idCasa}}/turni
@@ -18,7 +18,7 @@ Content-Type: application/json
 
 {
   "task": "Pulizia cucina",
-  "cadenzaGiorni": 7,
+  "cadenzaGiorni": 14,
   "assegnatario": "{{idUtente}}",
   "rotazioneTurno": false
 }

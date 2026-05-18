@@ -2,7 +2,7 @@ import { FastifyInstance } from "fastify";
 
 //import { AuthController } from "../controller/AuthController";
 //import { authMiddleware } from "../middleware/AuthMiddleware";
-//import { SpeseController } from "../controller/SpeseController";
+//import { SpesaController } from "../controller/SpesaController";
 //import { CasaController } from "../controller/CasaController";
 import { TurnoController } from "../controller/TurnoController";
 //import { ProblemaController } from "../controller/ProblemaController";
@@ -89,7 +89,7 @@ export async function health(app: FastifyInstance) {
 
 // ─── Spese ────────────────────────────────────────────────────────────────────
 //
-// Controller: SpeseController
+// Controller: SpesaController
 // Boundary:   SpeseScreens, DashboardScreen
 //
 // GET    /case/:idCasa/spese                            → Lista spese della casa (con filtri opzionali per periodo/stato)
@@ -110,7 +110,7 @@ export async function health(app: FastifyInstance) {
 // GET    /case/:idCasa/debito/:idInquilino              → Debito verso un singolo inquilino
 
 /*export async function speseRoutes(app: FastifyInstance) {
-  const speseController = new SpeseController();
+  const speseController = new SpesaController();
   app.addHook("onRequest", authMiddleware);
 
   // CRUD spese
@@ -170,7 +170,7 @@ export async function turniRoutes(app: FastifyInstance) {
 
   // CRUD turni
   app.get("/case/:idCasa/turni", turnoController.getAllTurni);
-  app.get("/case/:idCasa/turni/turni_odierni", turnoController.getTurniOdierni);
+  app.get("/case/:idCasa/turni/oggi", turnoController.getTurniOdierni);
   app.post("/case/:idCasa/turni", turnoController.creaTurno);
   app.get("/case/:idCasa/turni/:idTurno", turnoController.getTurno);
   app.put("/case/:idCasa/turni/:idTurno", turnoController.modificaTurno);

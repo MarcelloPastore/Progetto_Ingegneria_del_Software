@@ -49,6 +49,7 @@ describe("TurnoConverter", () => {
       rotazioneAttiva: false,
       assegnatarioCorrente: "u1",
       assegnatarioCorrenteRel: { id: "u1", username: "mario" },
+      // @ts-ignore
       ordineRotazione: "not-an-array",
       indiceRotazioneCorrente: undefined,
       dataUltimaPulizia: null,

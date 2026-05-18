@@ -96,8 +96,8 @@ describe("TurnoService", () => {
     mocks.findTurnoByIdOrThrow.mockResolvedValue({
       ...baseTurno,
       ordineRotazione: ["u1", "u2"],
-      indiceRotazioneCorrente: 0,
-      assegnatarioCorrente: "u1",
+      indiceRotazioneCorrente: 1,
+      assegnatarioCorrente: "u2",
     });
     mocks.updateTurno.mockResolvedValue({ ...baseTurno });
 
@@ -107,8 +107,8 @@ describe("TurnoService", () => {
     expect(mocks.updateTurno).toHaveBeenCalledWith(
       "t1",
       expect.objectContaining({
-        indiceRotazioneCorrente: 1,
-        assegnatarioCorrente: "u2",
+        indiceRotazioneCorrente: 0,
+        assegnatarioCorrente: "u1",
         dataUltimaPulizia: expect.any(Date),
       }),
     );
