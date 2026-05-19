@@ -38,10 +38,10 @@ export async function registerInfrastructure(
   });
 }
 
-export async function registerApiRoutes(
+export function registerApiRoutes(
   app: FastifyInstance,
   prefix = "/api/v1",
-): Promise<void> {
+): void {
   app.register(health, { prefix });
   app.register(authRoutes, { prefix });
   app.register(debugRoutes, { prefix });

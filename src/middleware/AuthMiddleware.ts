@@ -20,7 +20,7 @@ const getBearerToken = (authorizationHeader?: string): string => {
   return parts[1];
 };
 
-const getUserFromPayload = (payload: Record<string, unknown>) => {
+const getUserFromPayload = (payload: unknown) => {
   if (typeof payload !== "object" || payload === null) {
     throw new InvalidTokenPayloadError();
   }
@@ -39,10 +39,7 @@ const getUserFromPayload = (payload: Record<string, unknown>) => {
   return { idUtente };
 };
 
-export async function authMiddleware(
-  req: FastifyRequest,
-  rep: FastifyReply,
-): Promise<void> {
+export function authMiddleware(req: FastifyRequest, rep: FastifyReply): void {
   try {
     const token = getBearerToken(req.headers.authorization);
     const jwt = getJwt(req.server);

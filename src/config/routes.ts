@@ -4,14 +4,14 @@ import { AuthController } from "../controller/AuthController";
 import { authMiddleware } from "../middleware/AuthMiddleware";
 
 // ─── Health ───────────────────────────────────────────────────────────────────
-export async function health(app: FastifyInstance) {
-  app.get("/health", async () => {
+export function health(app: FastifyInstance) {
+  app.get("/health", () => {
     return { status: "ok" };
   });
 }
 
 // ─── Auth (no authMiddleware) ─────────────────────────────────────────────────
-export async function authRoutes(app: FastifyInstance) {
+export function authRoutes(app: FastifyInstance) {
   const authController = new AuthController();
 
   app.post(
@@ -33,11 +33,11 @@ export async function authRoutes(app: FastifyInstance) {
 }
 
 // ─── Debug/Protected (con authMiddleware) ─────────────────────────────────────
-export async function debugRoutes(app: FastifyInstance) {
+export function debugRoutes(app: FastifyInstance) {
   app.get(
     "/protected",
     { preHandler: authMiddleware },
-    async (request: FastifyRequest) => {
+    (request: FastifyRequest) => {
       const user = request.user;
 
       return {

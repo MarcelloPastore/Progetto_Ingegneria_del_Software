@@ -7,6 +7,7 @@
     "build": "tsc"
   },
   "devDependencies": {
+    "@sonar/scan": "^4.3.6",
     "@types/eslint-plugin-security": "^3.0.1",
     "@types/jsonwebtoken": "^9.0.10",
     "dotenv": "^17.4.2",
@@ -14,6 +15,7 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.5",
     "eslint-plugin-security": "^4.0.0",
+    "eslint-plugin-sonarjs": "^4.0.3",
     "jiti": "^2.7.0",
     "prettier": "^3.8.3",
     "prisma": "6.19.0",
