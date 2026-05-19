@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { ZodError } from "zod";
+import { JsonWebTokenError, TokenExpiredError } from "jsonwebtoken";
 import { HttpError } from "./httpErrors";
 
 type HttpErrorPayload = {
@@ -18,10 +19,33 @@ export function mapErrorToHttp(error: unknown): HttpErrorPayload {
   }
 
   if (error instanceof ZodError) {
+    const details = error.issues
+      .map((issue) => {
+        const path = issue.path.length ? issue.path.join(".") : "body";
+        return `${path}: ${issue.message}`;
+      })
+      .join("; ");
+
     return {
       statusCode: 400,
-      message: "Dati non validi",
+      message: details || "Dati non validi",
       code: "BAD_REQUEST",
+    };
+  }
+
+  if (error instanceof TokenExpiredError) {
+    return {
+      statusCode: 401,
+      message: "Token scaduto",
+      code: "TOKEN_EXPIRED",
+    };
+  }
+
+  if (error instanceof JsonWebTokenError) {
+    return {
+      statusCode: 401,
+      message: "Token non valido",
+      code: "INVALID_TOKEN",
     };
   }
 

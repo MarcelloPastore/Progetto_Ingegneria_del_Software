@@ -49,7 +49,7 @@ describe("TurnoConverter", () => {
       rotazioneAttiva: false,
       assegnatarioCorrente: "u1",
       assegnatarioCorrenteRel: { id: "u1", username: "mario" },
-      // @ts-ignore
+      // @ts-expect-error Simulazione di dati non validi
       ordineRotazione: "not-an-array",
       indiceRotazioneCorrente: undefined,
       dataUltimaPulizia: null,
