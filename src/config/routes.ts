@@ -29,7 +29,7 @@ export async function authRoutes(app: FastifyInstance) {
     authController.login,
   );
   app.post("/auth/recupera-password", authController.recuperaPassword);
-  app.get("/auth/verifica-email", authController.verificaEmail);
+  app.post("/auth/verifica-email", authController.verificaEmail);
 }
 
 // ─── Debug/Protected (con authMiddleware) ─────────────────────────────────────

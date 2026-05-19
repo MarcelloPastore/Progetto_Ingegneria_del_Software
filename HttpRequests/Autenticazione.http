@@ -8,6 +8,7 @@ Content-Type: application/json
 {
   "email": "alice@example.com",
   "password": "SecurePass123!",
+  "username": "alice123",
   "nome": "Alice",
   "cognome": "Rossi"
 }
@@ -20,6 +21,7 @@ Content-Type: application/json
 {
   "email": "bob@example.com",
   "password": "SecurePass456!",
+  "username": "bob456",
   "nome": "Bob",
   "cognome": "Verdi"
 }
@@ -58,6 +60,7 @@ Content-Type: application/json
 {
   "email": "alice@example.com",
   "password": "DifferentPassword789!",
+  "username": "alice789",
   "nome": "Alice2",
   "cognome": "Rossi2"
 }
@@ -72,7 +75,6 @@ Content-Type: application/json
 }
 
 > {%
-    // Estrai il token dalla risposta e salvalo in una variabile di sessione
     client.global.set("auth_token", response.body.token);
     client.global.set("user_id", response.body.user.id);
     console.log("✓ Token salvato: " + response.body.token.substring(0, 20) + "...");
@@ -113,21 +115,18 @@ POST http://localhost:2310/api/v1/auth/register
 Content-Type: application/json
 
 {
-  "email": "test@example.com",
-  "password": "Short123",
-  "nome": "Test",
-  "cognome": "User"
+  "email": "",
+  "password": "",
+  "username": "",
+  "nome": "",
+  "cognome": ""
 }
-
-### 15. REGISTER - Nome/cognome vuoti (validation error)
-POST http://localhost:2310/api/v1/auth/register
+### 15. VERIFICA - Verifica email Alice
+POST http://localhost:2310/api/v1/auth/verifica-email
 Content-Type: application/json
 
 {
-  "email": "test2@example.com",
-  "password": "ValidPassword123!",
-  "nome": "",
-  "cognome": ""
+  "email": "alice@example.com"
 }
 
 

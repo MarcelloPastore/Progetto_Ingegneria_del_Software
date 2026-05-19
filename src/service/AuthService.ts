@@ -1,24 +1,15 @@
 import { prisma } from "../config/db";
-import bcrypt from "bcrypt";
-import { z } from "zod";
+import argon2 from "argon2";
+import {
+  RegisterSchema,
+  LoginSchema,
+  EmailSchema,
+} from "../schemas/authSchemas";
 import { RegisterData, PublicUser } from "../dto/auth.dto";
 import {
   DuplicateUserError,
   InvalidCredentialsError,
 } from "../errors/appErrors";
-
-const RegisterSchema = z.object({
-  email: z.email(),
-  username: z.string().min(3).max(50),
-  password: z.string().min(10).max(128),
-  nome: z.string().min(1).max(100),
-  cognome: z.string().min(1).max(100),
-});
-
-const LoginSchema = z.object({
-  email: z.email(),
-  password: z.string(),
-});
 
 export class AuthService {
   async registerWithValidation(
@@ -74,7 +65,9 @@ export class AuthService {
       throw new DuplicateUserError();
     }
 
-    const hashedPassword = await bcrypt.hash(data.password, 10);
+    const hashedPassword = await argon2.hash(data.password, {
+      type: argon2.argon2id,
+    });
 
     return prisma.utente.create({
       data: {
@@ -95,7 +88,7 @@ export class AuthService {
 
     if (!user) return null;
 
-    const match = await bcrypt.compare(password, user.password);
+    const match = await argon2.verify(user.password, password);
     if (!match) return null;
 
     return {
@@ -104,6 +97,36 @@ export class AuthService {
       username: user.username,
       nome: user.nome,
       cognome: user.cognome,
+    };
+  }
+
+  async verificaEmail(data: unknown): Promise<{ ok: boolean; date: string }> {
+    const validation = EmailSchema.safeParse(data);
+    if (!validation.success) {
+      throw validation.error;
+    }
+
+    const user = await prisma.utente.findUnique({
+      where: { email: validation.data.email },
+    });
+
+    if (!user) {
+      throw new InvalidCredentialsError();
+    }
+
+    const now = new Date();
+
+    await prisma.utente.update({
+      where: { id: user.id },
+      data: {
+        emailVerificata: true,
+        dataVerificaMail: now,
+      },
+    });
+
+    return {
+      ok: true,
+      date: now.toISOString(),
     };
   }
 }
