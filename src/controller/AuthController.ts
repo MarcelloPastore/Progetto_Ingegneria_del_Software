@@ -44,13 +44,16 @@ export class AuthController {
       const jwt = getJwt(request.server);
       const token = jwt.sign({
         id: user.id,
-        role: user.ruolo,
         type: "access",
       });
 
       return reply.send({
         token,
-        user: { id: user.id, nome: user.nome, ruolo: user.ruolo },
+        user: {
+          id: user.id,
+          username: user.username,
+          nome: user.nome,
+        },
       });
     } catch (error) {
       return this.handleAuthFailure(reply, error);

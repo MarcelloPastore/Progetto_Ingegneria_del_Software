@@ -7,30 +7,220 @@ datasource db {
   url      = env("MONGODB_URI")
 }
 
-model User {
-  id       String  @id @default(auto()) @map("_id") @db.ObjectId
-  email    String  @unique
-  password String
-  nome     String
-  cognome  String
-  ruolo    Ruolo   @default(Inquilino)
-  casa     Casa?   @relation(fields: [casaId], references: [id])
-  casaId   String? @db.ObjectId
-
-  @@map("Utenti")
-}
-
-model Casa {
-  id        String @id @default(auto()) @map("_id") @db.ObjectId
-  nome      String
-  indirizzo String
-  utenti    User[]
-
-  @@map("Case")
-}
+// ─── ENUMS ────────────────────────────────────────────────────────────────────
 
 enum Ruolo {
   SysAdmin
   HomeAdmin
   Inquilino
+}
+
+enum Stato {
+  Segnalato
+  Assegnato
+  Risolto
+}
+
+enum Priorita {
+  Urgente
+  Media
+  Bassa
+}
+
+// ─── MODELS ───────────────────────────────────────────────────────────────────
+model Utente {
+  id                    String    @id @default(auto()) @map("_id") @db.ObjectId
+  username              String    @unique
+  email                 String    @unique
+  password              String
+  nome                  String
+  cognome               String
+  emailVerificata       Boolean   @default(false)
+  dataVerificaMail      DateTime?
+  tokenVerifica         String?
+  tokenRecuperoPassword String?
+  scadenzaTokenRecupero DateTime?
+  fcmToken              String?
+  dataCreazione         DateTime  @default(now())
+
+  membroCasa          MembroCasa[]
+  spesePossedute      Spesa[]      @relation("SpesaOwner")
+  speseAnticiapte     Spesa[]      @relation("SpesaAnticipata")
+  spesePartecipate    Spesa[]      @relation("SpesaPartecipanti", fields: [spesePartecipatoIds], references: [id])
+  spesePartecipatoIds String[]     @db.ObjectId
+  quotePagate         QuotaSpesa[]
+  casaCreata          Casa[]       @relation("CasaCreator")
+  problemiSegnalati   Problema[]   @relation("ProblemaSegnalato")
+  problemiAssegnati   Problema[]   @relation("ProblemaAssegnato")
+  storicoProblemi     Storico[]
+  documentiCaricati   Documento[]
+  turniAssegnati      Turno[]      @relation("AssegnatarioTurno")
+  turniCreati         Turno[]      @relation("CreatoreTurno")
+
+  @@map("Utenti")
+}
+
+model Casa {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  nome          String
+  indirizzo     String
+  citta         String
+  inviteLink    String   @unique
+  tipoCasa      String
+  dataCreazione DateTime @default(now())
+
+  creatorRel Utente @relation("CasaCreator", fields: [creator], references: [id])
+  creator    String @db.ObjectId
+
+  membri    MembroCasa[]
+  spese     Spesa[]
+  scadenze  Scadenza[]
+  turni     Turno[]
+  problemi  Problema[]
+  documenti Documento[]
+  quote     QuotaSpesa[]
+
+  @@map("Case")
+}
+
+model MembroCasa {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  dataIngresso DateTime @default(now())
+  ruolo        Ruolo    @default(Inquilino)
+
+  utenteRel Utente @relation(fields: [idUtente], references: [id])
+  idUtente  String @db.ObjectId
+  casaRel   Casa   @relation(fields: [idCasa], references: [id])
+  idCasa    String @db.ObjectId
+
+  @@unique([idUtente, idCasa])
+  @@map("MembriCasa")
+}
+
+model Spesa {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  descrizione   String
+  importo       Float
+  dataCreazione DateTime @default(now())
+
+  casaRel         Casa      @relation(fields: [idCasa], references: [id])
+  idCasa          String    @db.ObjectId
+  ownerRel        Utente    @relation("SpesaOwner", fields: [owner], references: [id])
+  owner           String    @db.ObjectId
+  anticipataDaRel Utente?   @relation("SpesaAnticipata", fields: [anticipataDa], references: [id])
+  anticipataDa    String?   @db.ObjectId
+  scadenzaRel     Scadenza? @relation(fields: [idScadenza], references: [id])
+  idScadenza      String?   @unique @db.ObjectId
+
+  partecipanti    String[] @db.ObjectId
+  partecipantiRel Utente[] @relation("SpesaPartecipanti", fields: [partecipanti], references: [id])
+
+  quote QuotaSpesa[]
+
+  @@map("Spese")
+}
+
+model QuotaSpesa {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  quota         Float
+  dataPagamento DateTime?
+
+  spesaRel  Spesa  @relation(fields: [idSpesa], references: [id])
+  idSpesa   String @db.ObjectId
+  casaRel   Casa   @relation(fields: [idCasa], references: [id])
+  idCasa    String @db.ObjectId
+  utenteRel Utente @relation(fields: [idUtente], references: [id])
+  idUtente  String @db.ObjectId
+
+  @@map("Quote_Spese")
+}
+
+model Scadenza {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  nome          String
+  descrizione   String
+  dataScadenza  DateTime
+  isRicorrente  Boolean  @default(false)
+  cadenzaGiorni Int?
+  dataCreazione DateTime @default(now())
+
+  casaRel  Casa   @relation(fields: [idCasa], references: [id])
+  idCasa   String @db.ObjectId
+  spesaRel Spesa? @relation
+
+  turni Turno[]
+
+  @@map("Scadenze")
+}
+
+model Turno {
+  id                      String    @id @default(auto()) @map("_id") @db.ObjectId
+  task                    String
+  cadenzaGiorni           Int
+  dataUltimaPulizia       DateTime?
+  rotazioneAttiva         Boolean   @default(true)
+  ordineRotazione         String[]  @db.ObjectId
+  indiceRotazioneCorrente Int       @default(0)
+  dataCreazione           DateTime  @default(now())
+
+  casaRel                 Casa      @relation(fields: [idCasa], references: [id])
+  idCasa                  String    @db.ObjectId
+  assegnatarioCorrenteRel Utente    @relation("AssegnatarioTurno", fields: [assegnatarioCorrente], references: [id])
+  assegnatarioCorrente    String    @db.ObjectId
+  scadenzaRel             Scadenza? @relation(fields: [idScadenza], references: [id])
+  idScadenza              String?   @db.ObjectId
+  idCreatoreRel           Utente    @relation("CreatoreTurno", fields: [idCreatore], references: [id])
+  idCreatore              String    @db.ObjectId
+
+  @@map("Turni")
+}
+
+model Problema {
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  nome            String
+  descrizione     String
+  priorita        Priorita  @default(Media)
+  stato           Stato     @default(Segnalato)
+  dataCreazione   DateTime  @default(now())
+  dataRisoluzione DateTime?
+
+  casaRel         Casa    @relation(fields: [idCasa], references: [id])
+  idCasa          String  @db.ObjectId
+  segnalataDaRel  Utente  @relation("ProblemaSegnalato", fields: [segnalataDa], references: [id])
+  segnalataDa     String  @db.ObjectId
+  assegnatarioRel Utente? @relation("ProblemaAssegnato", fields: [assegnatario], references: [id])
+  assegnatario    String? @db.ObjectId
+
+  storicoStato Storico[]
+
+  @@map("Problemi")
+}
+
+model Storico {
+  id    String   @id @default(auto()) @map("_id") @db.ObjectId
+  stato Stato
+  data  DateTime @default(now())
+
+  problemaRel Problema @relation(fields: [idProblema], references: [id])
+  idProblema  String   @db.ObjectId
+  utenteRel   Utente   @relation(fields: [utente], references: [id])
+  utente      String   @db.ObjectId
+
+  @@map("Storico")
+}
+
+model Documento {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  nome            String
+  urlStorage      String   @unique
+  hashFile        String
+  mimeType        String
+  dataCaricamento DateTime @default(now())
+
+  casaRel       Casa   @relation(fields: [idCasa], references: [id])
+  idCasa        String @db.ObjectId
+  caricatoDaRel Utente @relation(fields: [caricatoDa], references: [id])
+  caricatoDa    String @db.ObjectId
+
+  @@map("Documenti")
 }

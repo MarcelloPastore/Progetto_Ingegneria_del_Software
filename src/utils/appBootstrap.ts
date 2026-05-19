@@ -6,24 +6,14 @@ import { authRoutes, health, debugRoutes } from "../config/routes";
 
 type InfrastructureOptions = {
   jwtSecret: string;
+  jwtAccessTtl: string;
 };
-
-export function getRequiredEnv(name: string): string {
-  const value = process.env[name];
-
-  if (!value) {
-    throw new Error(`Variabile d'ambiente ${name} mancante`);
-  }
-
-  return value;
-}
 
 export async function registerInfrastructure(
   app: FastifyInstance,
-  { jwtSecret }: InfrastructureOptions,
+  { jwtSecret, jwtAccessTtl }: InfrastructureOptions,
 ): Promise<void> {
   await app.register(fastifyHelmet, {
-    // Backend API per client mobile/web: hardening header senza CSP HTML.
     contentSecurityPolicy: false,
     crossOriginEmbedderPolicy: false,
     crossOriginResourcePolicy: false,
@@ -44,7 +34,7 @@ export async function registerInfrastructure(
 
   await app.register(fastifyJwt, {
     secret: jwtSecret,
-    sign: { expiresIn: process.env.JWT_ACCESS_TTL ?? "14d" },
+    sign: { expiresIn: jwtAccessTtl },
   });
 }
 

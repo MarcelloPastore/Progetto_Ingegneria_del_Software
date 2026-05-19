@@ -1,5 +1,4 @@
 import { FastifyRequest, FastifyReply } from "fastify";
-import type { Ruolo } from "@prisma/client";
 import { getJwt } from "../utils/jwt";
 import { mapErrorToHttp } from "../errors/errorMapper";
 import {
@@ -22,15 +21,22 @@ const getBearerToken = (authorizationHeader?: string): string => {
 };
 
 const getUserFromPayload = (payload: Record<string, unknown>) => {
-  const idUtente = (payload["id"] ?? payload["idUtente"]) as string | undefined;
-  const ruolo = (payload["role"] ?? payload["ruoloCasa"]) as Ruolo | undefined;
-  const tokenType = payload["type"];
-
-  if (!idUtente || (tokenType !== undefined && tokenType !== "access")) {
+  if (typeof payload !== "object" || payload === null) {
     throw new InvalidTokenPayloadError();
   }
 
-  return { idUtente, ruoloCasa: ruolo };
+  const p = payload as Record<string, unknown>;
+  const idValue = p.id ?? p.idUtente;
+  const tokenType = p.type;
+  const idUtente =
+    typeof idValue === "string" && idValue.length > 0 ? idValue : undefined;
+  const tokenTypeStr = typeof tokenType === "string" ? tokenType : undefined;
+
+  if (!idUtente || (tokenTypeStr !== undefined && tokenTypeStr !== "access")) {
+    throw new InvalidTokenPayloadError();
+  }
+
+  return { idUtente };
 };
 
 export async function authMiddleware(

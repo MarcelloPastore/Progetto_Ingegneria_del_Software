@@ -1,6 +1,5 @@
 import { prisma } from "../config/db";
 import bcrypt from "bcrypt";
-import { Ruolo } from "@prisma/client";
 import { z } from "zod";
 import { RegisterData, PublicUser } from "../dto/auth.dto";
 import {
@@ -10,6 +9,7 @@ import {
 
 const RegisterSchema = z.object({
   email: z.email(),
+  username: z.string().min(3).max(50),
   password: z.string().min(10).max(128),
   nome: z.string().min(1).max(100),
   cognome: z.string().min(1).max(100),
@@ -58,23 +58,31 @@ export class AuthService {
   }
 
   async register(data: RegisterData) {
-    const existingUser = await prisma.user.findUnique({
+    const existingByEmail = await prisma.utente.findUnique({
       where: { email: data.email },
     });
 
-    if (existingUser) {
+    if (existingByEmail) {
+      throw new DuplicateUserError();
+    }
+
+    const existingByUsername = await prisma.utente.findUnique({
+      where: { username: data.username },
+    });
+
+    if (existingByUsername) {
       throw new DuplicateUserError();
     }
 
     const hashedPassword = await bcrypt.hash(data.password, 10);
 
-    return prisma.user.create({
+    return prisma.utente.create({
       data: {
         email: data.email,
+        username: data.username,
         password: hashedPassword,
         nome: data.nome,
         cognome: data.cognome,
-        ruolo: data.ruolo ?? Ruolo.Inquilino, //@TODO togliere ruolo
       },
     });
   }
@@ -83,7 +91,7 @@ export class AuthService {
     email: string,
     password: string,
   ): Promise<PublicUser | null> {
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.utente.findUnique({ where: { email } });
 
     if (!user) return null;
 
@@ -93,9 +101,9 @@ export class AuthService {
     return {
       id: user.id,
       email: user.email,
+      username: user.username,
       nome: user.nome,
       cognome: user.cognome,
-      ruolo: user.ruolo,
     };
   }
 }
