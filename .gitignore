@@ -13,3 +13,4 @@ yarn-error.log*
 
 .vscode/*
 /src/generated/prisma
+/dist/

@@ -12,24 +12,24 @@ export async function health(app: FastifyInstance) {
 
 // ─── Auth (no authMiddleware) ─────────────────────────────────────────────────
 export async function authRoutes(app: FastifyInstance) {
-  const controller = new AuthController();
+  const authController = new AuthController();
 
   app.post(
     "/auth/register",
     {
       config: { rateLimit: { max: 10, timeWindow: "1 minute" } },
     },
-    controller.register,
+    authController.register,
   );
   app.post(
     "/auth/login",
     {
       config: { rateLimit: { max: 5, timeWindow: "1 minute" } },
     },
-    controller.login,
+    authController.login,
   );
-  app.post("/auth/recupera-password", controller.recuperaPassword);
-  app.get("/auth/verifica-email", controller.verificaEmail);
+  app.post("/auth/recupera-password", authController.recuperaPassword);
+  app.get("/auth/verifica-email", authController.verificaEmail);
 }
 
 // ─── Debug/Protected (con authMiddleware) ─────────────────────────────────────
