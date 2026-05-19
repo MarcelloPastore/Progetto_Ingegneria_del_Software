@@ -38,6 +38,7 @@ const baseTurno = {
   indiceRotazioneCorrente: 0,
   dataUltimaPulizia: null,
   dataCreazione: new Date("2026-05-18T00:00:00.000Z"),
+  idCreatore: "u1",
 };
 
 describe("TurnoService", () => {
@@ -50,15 +51,20 @@ describe("TurnoService", () => {
     mocks.createTurno.mockResolvedValue({ ...baseTurno });
 
     const service = new TurnoService();
-    await service.creaTurno("c1", {
-      task: "Pulizia cucina",
-      cadenzaGiorni: 7,
-      assegnatario: "u1",
-      rotazioneTurno: true,
-    });
+    await service.creaTurno(
+      "c1",
+      {
+        task: "Pulizia cucina",
+        cadenzaGiorni: 7,
+        assegnatario: "u1",
+        rotazioneTurno: true,
+      },
+      "u1",
+    );
 
     expect(mocks.createTurno).toHaveBeenCalledTimes(1);
     const dataArg = mocks.createTurno.mock.calls[0][0];
+    expect(dataArg.idCreatore).toBe("u1");
     expect(dataArg.cadenzaGiorni).toBe(7);
     expect(dataArg.ordineRotazione[0]).toBe("u1");
     expect(dataArg.ordineRotazione).toEqual(
@@ -75,11 +81,16 @@ describe("TurnoService", () => {
     mocks.updateTurno.mockResolvedValue({ ...baseTurno });
 
     const service = new TurnoService();
-    await service.modificaTurno("c1", "t1", {
-      task: "Pulizia bagno",
-      cadenzaGiorni: 14,
-      rotazioneTurno: false,
-    });
+    await service.modificaTurno(
+      "c1",
+      "t1",
+      {
+        task: "Pulizia bagno",
+        cadenzaGiorni: 14,
+        rotazioneTurno: false,
+      },
+      "u1",
+    );
 
     expect(mocks.updateTurno).toHaveBeenCalledWith(
       "t1",
@@ -102,7 +113,7 @@ describe("TurnoService", () => {
     mocks.updateTurno.mockResolvedValue({ ...baseTurno });
 
     const service = new TurnoService();
-    await service.completaTurno("c1", "t1");
+    await service.completaTurno("c1", "t1", "u2");
 
     expect(mocks.updateTurno).toHaveBeenCalledWith(
       "t1",

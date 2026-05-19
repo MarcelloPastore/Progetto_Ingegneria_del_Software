@@ -10,6 +10,7 @@ import {
   TurnoRepository,
 } from "../repository/TurnoRepository";
 import { CasaRepository } from "../repository/CasaRepository";
+import { ForbiddenError } from "../errors/httpErrors";
 
 const turnoConverter = new TurnoConverter();
 const turnoRepository = new TurnoRepository();
@@ -47,9 +48,43 @@ function aggiornaOrdineRotazione(
 }
 
 export class TurnoService {
+  private async assertIdCreatoreTurno(
+    idCasa: string,
+    idTurno: string,
+    idUtente: string,
+  ): Promise<TurnoConAssegnatario> {
+    const turno = await turnoRepository.findTurnoByIdOrThrow(idCasa, idTurno);
+
+    // @ts-ignore
+    if (turno.idCreatore !== idUtente) {
+      throw new ForbiddenError(
+        "Solo l'idCreatore del turno puo modificare o eliminare",
+      );
+    }
+
+    return turno;
+  }
+
+  private async assertAssegnatarioCorrente(
+    idCasa: string,
+    idTurno: string,
+    idUtente: string,
+  ): Promise<TurnoConAssegnatario> {
+    const turno = await turnoRepository.findTurnoByIdOrThrow(idCasa, idTurno);
+
+    if (turno.assegnatarioCorrente !== idUtente) {
+      throw new ForbiddenError(
+        "Solo l'assegnatario corrente puo completare il turno",
+      );
+    }
+
+    return turno;
+  }
+
   async creaTurno(
     idCasa: string,
     dto: CreaTurnoDto,
+    idCreatore: string,
   ): Promise<TurnoResponseDto> {
     let idsRotazione = [dto.assegnatario];
 
@@ -69,6 +104,7 @@ export class TurnoService {
       assegnatarioCorrente: dto.assegnatario,
       ordineRotazione: idsRotazione,
       indiceRotazioneCorrente: 0,
+      idCreatore,
     });
 
     return turnoConverter.toDto(turno);
@@ -98,8 +134,13 @@ export class TurnoService {
     idCasa: string,
     idTurno: string,
     dto: ModificaTurnoDto,
+    idUtente: string,
   ): Promise<TurnoResponseDto> {
-    const turno = await turnoRepository.findTurnoByIdOrThrow(idCasa, idTurno);
+    const turno = await this.assertIdCreatoreTurno(
+      idCasa,
+      idTurno,
+      idUtente,
+    );
     const membriIds = await casaRepository.getMembriCasaIds(idCasa);
     const ordineAggiornato = aggiornaOrdineRotazione(
       turno.ordineRotazione,
@@ -120,10 +161,28 @@ export class TurnoService {
     return turnoConverter.toDto(aggiornamento);
   }
 
-  async eliminaTurno(idCasa: string, idTurno: string): Promise<void> {
-    await turnoRepository.findTurnoByIdOrThrow(idCasa, idTurno);
+  async eliminaTurno(
+    idCasa: string,
+    idTurno: string,
+    idUtente: string,
+  ): Promise<void> {
+    await this.assertIdCreatoreTurno(idCasa, idTurno, idUtente);
 
     await turnoRepository.deleteTurno(idCasa, idTurno);
+  }
+
+  async autoassegnaTurno(
+    idCasa: string,
+    idTurno: string,
+    idUtente: string,
+  ): Promise<TurnoResponseDto> {
+    await turnoRepository.findTurnoByIdOrThrow(idCasa, idTurno);
+
+    const aggiornamento = await turnoRepository.updateTurno(idTurno, {
+      assegnatarioCorrente: idUtente,
+    });
+
+    return turnoConverter.toDto(aggiornamento);
   }
 
   async assegnaTurno(
@@ -156,8 +215,13 @@ export class TurnoService {
   async completaTurno(
     idCasa: string,
     idTurno: string,
+    idUtente: string,
   ): Promise<TurnoResponseDto> {
-    const turno = await turnoRepository.findTurnoByIdOrThrow(idCasa, idTurno);
+    const turno = await this.assertAssegnatarioCorrente(
+      idCasa,
+      idTurno,
+      idUtente,
+    );
     const ordine = turno.ordineRotazione ?? [];
     const ordineLength = ordine.length;
     const indiceCorrente = turno.indiceRotazioneCorrente ?? 0;

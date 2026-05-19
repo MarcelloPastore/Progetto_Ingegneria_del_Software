@@ -21,6 +21,7 @@ type TurnoCreateData = {
   assegnatarioCorrente: string;
   ordineRotazione: string[];
   indiceRotazioneCorrente: number;
+  idCreatore: string;
 };
 
 type TurnoUpdateData = {

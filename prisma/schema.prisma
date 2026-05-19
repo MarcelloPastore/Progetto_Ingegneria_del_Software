@@ -54,7 +54,8 @@ model Utente {
   problemiAssegnati   Problema[]   @relation("ProblemaAssegnato")
   storicoProblemi     Storico[]
   documentiCaricati   Documento[]
-  turniAssegnati      Turno[]
+  turniAssegnati      Turno[]      @relation("AssegnatarioTurno")
+  turniCreati         Turno[]      @relation("CreatoreTurno")
 
   @@map("Utenti")
 }
@@ -164,10 +165,12 @@ model Turno {
 
   casaRel                 Casa      @relation(fields: [idCasa], references: [id])
   idCasa                  String    @db.ObjectId
-  assegnatarioCorrenteRel Utente    @relation(fields: [assegnatarioCorrente], references: [id])
+  assegnatarioCorrenteRel Utente    @relation("AssegnatarioTurno", fields: [assegnatarioCorrente], references: [id])
   assegnatarioCorrente    String    @db.ObjectId
   scadenzaRel             Scadenza? @relation(fields: [idScadenza], references: [id])
   idScadenza              String?   @db.ObjectId
+  idCreatoreRel           Utente    @relation("CreatoreTurno", fields: [idCreatore], references: [id])
+  idCreatore              String    @db.ObjectId
 
   @@map("Turni")
 }

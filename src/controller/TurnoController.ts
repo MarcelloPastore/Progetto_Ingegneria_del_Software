@@ -14,8 +14,6 @@ import { mapErrorToHttp } from "../errors/errorMapper";
 export class TurnoController {
   constructor(private turniService: TurnoService) {}
 
-  //TODO: Implementare verifiche dei permessi HomaAdmin
-
   /**
    * GET /case/:idCasa/turni
    */
@@ -62,6 +60,7 @@ export class TurnoController {
       const result = await this.turniService.creaTurno(
         request.params.idCasa,
         dto,
+        request.user.idUtente,
       );
       return reply.status(201).send(result);
     } catch (error) {
@@ -102,6 +101,7 @@ export class TurnoController {
         request.params.idCasa,
         request.params.idTurno,
         dto,
+        request.user.idUtente,
       );
       return reply.status(200).send(result);
     } catch (error) {
@@ -121,8 +121,29 @@ export class TurnoController {
       await this.turniService.eliminaTurno(
         request.params.idCasa,
         request.params.idTurno,
+        request.user.idUtente,
       );
       return reply.status(204).send();
+    } catch (error) {
+      const mapped = mapErrorToHttp(error);
+      return reply.status(mapped.statusCode).send({ message: mapped.message });
+    }
+  };
+
+  /**
+   * PUT /case/:idCasa/turni/:idTurno/autoassegna
+   */
+  autoassegnaTurno = async (
+    request: FastifyRequest<{ Params: TurnoParams }>,
+    reply: FastifyReply,
+  ) => {
+    try {
+      const result = await this.turniService.autoassegnaTurno(
+        request.params.idCasa,
+        request.params.idTurno,
+        request.user.idUtente,
+      );
+      return reply.status(200).send(result);
     } catch (error) {
       const mapped = mapErrorToHttp(error);
       return reply.status(mapped.statusCode).send({ message: mapped.message });
@@ -180,6 +201,7 @@ export class TurnoController {
       const result = await this.turniService.completaTurno(
         request.params.idCasa,
         request.params.idTurno,
+        request.user.idUtente,
       );
       return reply.status(200).send(result);
     } catch (error) {

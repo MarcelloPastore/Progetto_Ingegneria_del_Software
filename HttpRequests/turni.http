@@ -1,19 +1,24 @@
 @baseUrl = http://localhost:23109/api/v1
+@token = REPLACE_WITH_JWT
 @idCasa = 6659f0b4e6a3c2f6a2d1a111
 @idTurno = 6a0a476aa9758a8b9b03e004
 @idUtente = 6659f0b4e6a3c2f6a2d1a333
 
 ### Health
 GET {{baseUrl}}/health
+Authorization: Bearer {{token}}
 
 ### Lista turni
 GET {{baseUrl}}/case/{{idCasa}}/turni
+Authorization: Bearer {{token}}
 
 ### Turni odierni
 GET {{baseUrl}}/case/{{idCasa}}/turni/oggi
+Authorization: Bearer {{token}}
 
 ### Crea turno
 POST {{baseUrl}}/case/{{idCasa}}/turni
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -25,9 +30,11 @@ Content-Type: application/json
 
 ### Dettaglio turno
 GET {{baseUrl}}/case/{{idCasa}}/turni/{{idTurno}}
+Authorization: Bearer {{token}}
 
 ### Modifica turno
 PUT {{baseUrl}}/case/{{idCasa}}/turni/{{idTurno}}
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -38,6 +45,7 @@ Content-Type: application/json
 
 ### Assegna turno
 PUT {{baseUrl}}/case/{{idCasa}}/turni/{{idTurno}}/assegna
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -46,10 +54,12 @@ Content-Type: application/json
 
 ### Toggle rotazione
 PATCH {{baseUrl}}/case/{{idCasa}}/turni/{{idTurno}}/rotazione
+Authorization: Bearer {{token}}
 
 ### Completa turno
 POST {{baseUrl}}/case/{{idCasa}}/turni/{{idTurno}}/completa
+Authorization: Bearer {{token}}
 
 ### Elimina turno
 DELETE {{baseUrl}}/case/{{idCasa}}/turni/{{idTurno}}
-
+Authorization: Bearer {{token}}
