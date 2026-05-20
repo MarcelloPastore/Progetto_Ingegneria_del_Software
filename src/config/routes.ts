@@ -13,13 +13,24 @@ import { TurnoController } from "../controller/TurnoController";
 import { SpesaService } from "../service/SpesaService";
 import { TurnoService } from "../service/TurnoService";
 
-import {CasaParams, SpesaParams, TurnoParams} from "../types/params";
+import {
+  CasaParams,
+  InquilinoParams,
+  QuotaParams,
+  SpesaParams,
+  TurnoParams,
+} from "../types/params";
 import {
   AssegnaTurnoDto,
   CreaTurnoDto,
   ModificaTurnoDto,
 } from "../dto/TurnoDto";
-
+import {
+  CreaSpesaDto,
+  ModificaSpesaDto,
+  PagaQuotaDto,
+  PareggiaContiDto,
+} from "../dto/SpesaDto";
 
 // ─── Health ───────────────────────────────────────────────────────────────────
 
@@ -147,36 +158,37 @@ export async function speseRoutes(app: FastifyInstance) {
     { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.getSpesa,
   );
-  app.post(
+  app.post<{ Params: CasaParams; Body: CreaSpesaDto }>(
     "/case/:idCasa/spese",
     { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.addSpesa,
   );
-  app.put(
+  // TODO: Solo l'owner della spesa può modificarla/eliminarla
+  app.put<{ Params: SpesaParams; Body: ModificaSpesaDto }>(
     "/case/:idCasa/spese/:idSpesa",
     { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.updateSpesa,
   );
-  app.delete(
+  app.delete<{ Params: SpesaParams }>(
     "/case/:idCasa/spese/:idSpesa",
     { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.deleteSpesa,
   );
 
   // Quote
-  app.get(
+  app.get<{ Params: SpesaParams }>(
     "/case/:idCasa/spese/:idSpesa/quote",
     { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.getDivisioneSpese,
   );
-  app.post(
+  app.post<{ Params: QuotaParams; Body: PagaQuotaDto }>(
     "/case/:idCasa/spese/:idSpesa/quote/:idQuota/paga",
     { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.pagaQuota,
   );
 
   // Pareggio totale
-  app.post(
+  app.post<{ Params: CasaParams; Body: PareggiaContiDto }>(
     "/case/:idCasa/spese/pareggia",
     { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.pareggiaConti,
@@ -198,12 +210,12 @@ export async function speseRoutes(app: FastifyInstance) {
     { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.getDebitoTot,
   );
-  app.get(
+  app.get<{ Params: InquilinoParams }>(
     "/case/:idCasa/credito/:idInquilino",
     { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.getCreditoVersoUtente,
   );
-  app.get(
+  app.get<{ Params: InquilinoParams }>(
     "/case/:idCasa/debito/:idInquilino",
     { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.getDebitoVersoUtente,

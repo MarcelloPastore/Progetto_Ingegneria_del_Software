@@ -55,7 +55,7 @@ export class TurnoService {
   ): Promise<TurnoConAssegnatario> {
     const turno = await turnoRepository.findTurnoByIdOrThrow(idCasa, idTurno);
 
-    // @ts-ignore
+    // @ts-expect-error idCreatore esiste e funziona
     if (turno.idCreatore !== idUtente) {
       throw new ForbiddenError(
         "Solo l'idCreatore del turno puo modificare o eliminare",
@@ -136,11 +136,7 @@ export class TurnoService {
     dto: ModificaTurnoDto,
     idUtente: string,
   ): Promise<TurnoResponseDto> {
-    const turno = await this.assertIdCreatoreTurno(
-      idCasa,
-      idTurno,
-      idUtente,
-    );
+    const turno = await this.assertIdCreatoreTurno(idCasa, idTurno, idUtente);
     const membriIds = await casaRepository.getMembriCasaIds(idCasa);
     const ordineAggiornato = aggiornaOrdineRotazione(
       turno.ordineRotazione,

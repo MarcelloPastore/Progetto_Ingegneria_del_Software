@@ -1,7 +1,7 @@
 import Fastify from 'fastify';
 import 'dotenv/config';
 import { connectDB } from './src/config/db';
-import {health, turniRoutes} from "./src/config/routes";
+import {health, speseRoutes, turniRoutes} from "./src/config/routes";
 //import {authRoutes, casaRoutes, health, problemiRoutes, speseRoutes, turniRoutes} from "./src/config/routes";
 
 const app = Fastify({ logger: true });
@@ -12,7 +12,7 @@ async function main() {
 
     app.register(health, {prefix: '/api/v1'});
     // app.register(authRoutes, {prefix: '/api/v1'});
-    // app.register(speseRoutes, {prefix: '/api/v1'});
+    app.register(speseRoutes, {prefix: '/api/v1'});
     // app.register(casaRoutes, {prefix: '/api/v1'});
     app.register(turniRoutes, {prefix: '/api/v1'});
     // app.register(problemiRoutes, {prefix: '/api/v1'});
