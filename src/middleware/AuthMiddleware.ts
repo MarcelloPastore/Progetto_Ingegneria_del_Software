@@ -1,10 +1,12 @@
 import { FastifyRequest, FastifyReply } from "fastify";
+import { prisma } from "../config/db";
 import { getJwt } from "../utils/jwt";
 import { mapErrorToHttp } from "../errors/errorMapper";
 import {
   MissingAuthTokenError,
   MalformedAuthorizationHeaderError,
   InvalidTokenPayloadError,
+  AuthenticatedUserNotFoundError,
 } from "../errors/appErrors";
 
 const getBearerToken = (authorizationHeader?: string): string => {
@@ -39,13 +41,43 @@ const getUserFromPayload = (payload: unknown) => {
   return { idUtente };
 };
 
-export function authMiddleware(req: FastifyRequest, rep: FastifyReply): void {
+export async function authMiddleware(
+  req: FastifyRequest,
+  rep: FastifyReply,
+): Promise<void> {
   try {
     const token = getBearerToken(req.headers.authorization);
     const jwt = getJwt(req.server);
     const payload = jwt.verify(token) as Record<string, unknown>;
 
-    req.user = getUserFromPayload(payload);
+    const { idUtente } = getUserFromPayload(payload);
+    const user = await prisma.utente.findUnique({
+      where: { id: idUtente },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!user) {
+      const mapped = mapErrorToHttp(new AuthenticatedUserNotFoundError());
+      const responsePayload: {
+        error: string;
+        details?: Record<string, string[]>;
+      } = {
+        error: mapped.message,
+      };
+
+      if (mapped.details) {
+        responsePayload.details = mapped.details;
+      }
+
+      await rep.code(mapped.statusCode).send(responsePayload);
+      return;
+    }
+
+    req.user = {
+      idUtente: user.id,
+    };
   } catch (error) {
     const mapped = mapErrorToHttp(error);
     const responsePayload: {
@@ -59,6 +91,6 @@ export function authMiddleware(req: FastifyRequest, rep: FastifyReply): void {
       responsePayload.details = mapped.details;
     }
 
-    rep.code(mapped.statusCode).send(responsePayload);
+    await rep.code(mapped.statusCode).send(responsePayload);
   }
 }

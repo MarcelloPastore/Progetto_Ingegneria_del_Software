@@ -32,3 +32,10 @@ export class InvalidTokenPayloadError extends Error {
     this.name = "InvalidTokenPayloadError";
   }
 }
+
+export class AuthenticatedUserNotFoundError extends Error {
+  constructor() {
+    super("Utente autenticato non trovato");
+    this.name = "AuthenticatedUserNotFoundError";
+  }
+}

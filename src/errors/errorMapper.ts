@@ -3,6 +3,7 @@ import { ZodError } from "zod";
 import { JsonWebTokenError, TokenExpiredError } from "jsonwebtoken";
 import {
   DuplicateUserError,
+  AuthenticatedUserNotFoundError,
   InvalidCredentialsError,
   MissingAuthTokenError,
   MalformedAuthorizationHeaderError,
@@ -95,6 +96,14 @@ export function mapErrorToHttp(error: unknown): HttpErrorPayload {
     };
   }
 
+  if (error instanceof AuthenticatedUserNotFoundError) {
+    return {
+      statusCode: 401,
+      message: error.message,
+      code: "AUTHENTICATED_USER_NOT_FOUND",
+    };
+  }
+
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     if (error.code === "P2025") {
       return {
@@ -108,6 +117,6 @@ export function mapErrorToHttp(error: unknown): HttpErrorPayload {
   return {
     statusCode: 500,
     message: "Errore interno del server",
-    code: "INTERNAL_ERROR",
+    code: "INTERNAL_SERVER_ERROR",
   };
 }
