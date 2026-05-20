@@ -25,7 +25,7 @@ export class SpeseController {
     // Verificare se necessario
     private readonly service = new SpeseService();
 
-    getAll = async (
+    getAllSpese = async (
         req: FastifyRequest<{ Params: IdCasaParams }>,
         reply: FastifyReply,
     ) => {
