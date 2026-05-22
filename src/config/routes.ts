@@ -28,7 +28,6 @@ import {
 import {
   CreaSpesaDto,
   ModificaSpesaDto,
-  PagaQuotaDto,
   PareggiaContiDto,
 } from "../dto/SpesaDto";
 
@@ -183,11 +182,11 @@ export async function speseRoutes(app: FastifyInstance) {
     speseController.getDivisioneSpese,
   );
   app.get<{ Params: QuotaParams }>(
-      "/case/:idCasa/spese/:idSpesa/quote/:idQuota",
-      { preHandler: requireRole(Ruolo.Inquilino) },
-      speseController.getQuota,
-  )
-  app.post<{ Params: QuotaParams; Body: PagaQuotaDto }>(
+    "/case/:idCasa/spese/:idSpesa/quote/:idQuota",
+    { preHandler: requireRole(Ruolo.Inquilino) },
+    speseController.getQuota,
+  );
+  app.post<{ Params: QuotaParams }>(
     "/case/:idCasa/spese/:idSpesa/quote/:idQuota/paga",
     { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.pagaQuota,

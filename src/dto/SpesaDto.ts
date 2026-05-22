@@ -48,7 +48,7 @@ export const PareggiaContiSchema = z.object({
     .array(z.string().min(1))
     .min(1, "Almeno un creditore")
     .describe(
-      "Pareggia tutti i debiti del debitore autenticato verso uno o piu coinquilini"
+      "Pareggia tutti i debiti del debitore autenticato verso uno o piu coinquilini",
     ),
 });
 export type PareggiaContiDto = z.infer<typeof PareggiaContiSchema>;

@@ -1,51 +1,93 @@
 import {
   CreaSpesaDto,
   ModificaSpesaDto,
-  PagaQuotaDto,
   QuotaSpesaDto,
-  SpesaDettaglioDto,
   SpesaResponseDto,
   SaldoResponseDto,
   CreditoResponseDto,
   DebitoResponseDto,
   PareggiaContiDto,
 } from "../dto/SpesaDto";
+import {
+  SpesaConRelazioni,
+  SpesaRepository,
+} from "../repository/SpesaRepository";
+
+const spesaRepository = new SpesaRepository();
+
+function toDateOnlyString(value?: Date | null): string | null {
+  if (!value) {
+    return null;
+  }
+  return value.toISOString().split("T")[0];
+}
+
+function toAssegnatario(
+  rel?: { id: string; username: string } | null,
+  fallbackId?: string | null,
+): { id: string; username: string } {
+  return {
+    id: rel?.id ?? fallbackId ?? "",
+    username: rel?.username ?? "",
+  };
+}
+
+function toSpesaDto(spesa: SpesaConRelazioni): SpesaResponseDto {
+  const scadenza = spesa.scadenzaRel;
+  const cadenzaMesi = scadenza?.cadenzaGiorni
+    ? Math.max(1, Math.round(scadenza.cadenzaGiorni / 30))
+    : null;
+
+  return {
+    id: spesa.id,
+    descrizione: spesa.descrizione,
+    importo: spesa.importo,
+    dataCreazione: spesa.dataCreazione.toISOString(),
+    dataScadenza: toDateOnlyString(scadenza?.dataScadenza),
+    isRicorrente: scadenza?.isRicorrente ?? false,
+    cadenzaMesi,
+    owner: toAssegnatario(spesa.ownerRel, spesa.owner),
+    anticipataDa: spesa.anticipataDa
+      ? toAssegnatario(spesa.anticipataDaRel, spesa.anticipataDa)
+      : null,
+    partecipanti: Array.isArray(spesa.partecipantiRel)
+      ? spesa.partecipantiRel.map((p) => toAssegnatario(p, p.id))
+      : (spesa.partecipanti ?? []).map((id) => toAssegnatario(null, id)),
+  };
+}
 
 export class SpesaService {
-  /** @throws NotFoundError */
   async getAllSpese(idCasa: string): Promise<SpesaResponseDto[]> {
-    throw new Error("Not implemented");
+    const spese = await spesaRepository.findSpeseByCasa(idCasa);
+
+    return spese.map((s: SpesaConRelazioni) => toSpesaDto(s));
   }
 
-  /** @throws NotFoundError */
   async getSpesa(
     idCasa: string,
     idSpesa: string,
     idUtente: string,
-  ): Promise<SpesaDettaglioDto> {
+  ): Promise<SpesaResponseDto> {
     throw new Error("Not implemented");
   }
 
-  /** @throws NotFoundError */
   async addSpesa(
     idCasa: string,
     dto: CreaSpesaDto,
     idUtente: string,
-  ): Promise<SpesaDettaglioDto> {
+  ): Promise<SpesaResponseDto> {
     throw new Error("Not implemented");
   }
 
-  /** @throws NotFoundError @throws ForbiddenError */
   async updateSpesa(
     idCasa: string,
     idSpesa: string,
     dto: ModificaSpesaDto,
     idUtente: string,
-  ): Promise<SpesaDettaglioDto> {
+  ): Promise<SpesaResponseDto> {
     throw new Error("Not implemented");
   }
 
-  /** @throws NotFoundError @throws ForbiddenError */
   async deleteSpesa(
     idCasa: string,
     idSpesa: string,
@@ -54,26 +96,30 @@ export class SpesaService {
     throw new Error("Not implemented");
   }
 
-  /** @throws NotFoundError */
   async getDivisioneSpese(
     idCasa: string,
     idSpesa: string,
-  ): Promise<QuotaSpesaDto> {
+  ): Promise<QuotaSpesaDto[]> {
     throw new Error("Not implemented");
   }
 
-  /** @throws NotFoundError @throws ForbiddenError */
   async pagaQuota(
     idCasa: string,
     idSpesa: string,
     idQuota: string,
-    dto: PagaQuotaDto,
     idUtente: string,
   ): Promise<QuotaSpesaDto> {
     throw new Error("Not implemented");
   }
 
-  /** @throws NotFoundError */
+  async getQuota(
+    idCasa: string,
+    idSpesa: string,
+    idQuota: string,
+  ): Promise<QuotaSpesaDto> {
+    throw new Error("Not implemented");
+  }
+
   async pareggiaConti(
     idCasa: string,
     idUtente: string,
@@ -82,12 +128,10 @@ export class SpesaService {
     throw new Error("Not implemented");
   }
 
-  /** @throws NotFoundError */
   async getSaldo(idCasa: string, idUtente: string): Promise<SaldoResponseDto> {
     throw new Error("Not implemented");
   }
 
-  /** @throws NotFoundError */
   async getCredito(
     idCasa: string,
     idUtente: string,
@@ -95,7 +139,6 @@ export class SpesaService {
     throw new Error("Not implemented");
   }
 
-  /** @throws NotFoundError */
   async getDebito(
     idCasa: string,
     idUtente: string,
@@ -103,7 +146,6 @@ export class SpesaService {
     throw new Error("Not implemented");
   }
 
-  /** @throws NotFoundError */
   async getCreditoVersoUtente(
     idCasa: string,
     idInquilino: string,
@@ -112,7 +154,6 @@ export class SpesaService {
     throw new Error("Not implemented");
   }
 
-  /** @throws NotFoundError */
   async getDebitoVersoUtente(
     idCasa: string,
     idInquilino: string,

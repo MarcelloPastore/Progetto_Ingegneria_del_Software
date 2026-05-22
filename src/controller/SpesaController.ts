@@ -11,8 +11,6 @@ import {
   CreaSpesaSchema,
   ModificaSpesaDto,
   ModificaSpesaSchema,
-  PagaQuotaDto,
-  PagaQuotaSchema,
   PareggiaContiDto,
   PareggiaContiSchema,
 } from "../dto/SpesaDto";
@@ -200,36 +198,34 @@ export class SpesaController {
    * GET /case/:idCasa/spese/:idSpesa/quote/:idQuota
    */
   getQuota = async (
-      request: FastifyRequest<{ Params: QuotaParams }>,
-      reply: FastifyReply,
+    request: FastifyRequest<{ Params: QuotaParams }>,
+    reply: FastifyReply,
   ) => {
     try {
       const quota = await this.speseService.getQuota(
-          request.params.idCasa,
-          request.params.idSpesa,
-          request.params.idQuota,
+        request.params.idCasa,
+        request.params.idSpesa,
+        request.params.idQuota,
       );
       return reply.status(200).send(quota);
     } catch (error) {
       const mapped = mapErrorToHttp(error);
       return reply.status(mapped.statusCode).send({ message: mapped.message });
     }
-  }
+  };
 
   /**
    * POST /case/:idCasa/spese/:idSpesa/quote/:idQuota/paga
    */
   pagaQuota = async (
-    request: FastifyRequest<{ Params: QuotaParams; Body: PagaQuotaDto }>,
+    request: FastifyRequest<{ Params: QuotaParams }>,
     reply: FastifyReply,
   ) => {
     try {
-      const dto = PagaQuotaSchema.parse(request.body ?? {});
       const quote = await this.speseService.pagaQuota(
         request.params.idCasa,
         request.params.idSpesa,
         request.params.idQuota,
-        dto,
         request.user.idUtente,
       );
       return reply.status(200).send(quote);
