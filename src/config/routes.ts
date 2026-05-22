@@ -126,13 +126,14 @@ export async function health(app: FastifyInstance) {
 // Boundary:   SpeseScreens, DashboardScreen
 //
 // GET    /case/:idCasa/spese                            → Lista spese della casa (con filtri opzionali per periodo/stato)
-// GET    /case/:idCasa/spese/:id                        → Dettaglio di una singola spesa
+// GET    /case/:idCasa/spese/:idSpesa                        → Dettaglio di una singola spesa
 // POST   /case/:idCasa/spese                            → Crea una nuova spesa e calcola le quote (UC: Aggiunta Nuova Spesa)
-// PUT    /case/:idCasa/spese/:id                        → Modifica una spesa esistente (solo owner spesa)
-// DELETE /case/:idCasa/spese/:id                        → Elimina una spesa (solo owner spesa)
+// PUT    /case/:idCasa/spese/:idSpesa                        → Modifica una spesa esistente (solo owner spesa)
+// DELETE /case/:idCasa/spese/:idSpesa                        → Elimina una spesa (solo owner spesa)
 //
-// GET    /case/:idCasa/spese/:id/quote                  → Ripartizione quote della spesa (UC: Aggiunta Nuova Spesa)
-// POST   /case/:idCasa/spese/:id/quote/:idQuota/paga    → Registra il pagamento di una quota (UC: Pagamento Quota)
+// GET    /case/:idCasa/spese/:idSpesa/quote                  → Ripartizione quote della spesa (UC: Aggiunta Nuova Spesa)
+// GET    /case/:idCasa/spese/:idSpesa/quote/:idQuota         → Dettaglio di una singola quota
+// POST   /case/:idCasa/spese/:idSpesa/quote/:idQuota/paga    → Registra il pagamento di una quota (UC: Pagamento Quota)
 //
 // POST   /case/:idCasa/spese/pareggia                   → Pareggio totale dei conti (UC: Pagamento Quota - variante)
 //
@@ -181,6 +182,11 @@ export async function speseRoutes(app: FastifyInstance) {
     { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.getDivisioneSpese,
   );
+  app.get<{ Params: QuotaParams }>(
+      "/case/:idCasa/spese/:idSpesa/quote/:idQuota",
+      { preHandler: requireRole(Ruolo.Inquilino) },
+      speseController.getQuota,
+  )
   app.post<{ Params: QuotaParams; Body: PagaQuotaDto }>(
     "/case/:idCasa/spese/:idSpesa/quote/:idQuota/paga",
     { preHandler: requireRole(Ruolo.Inquilino) },

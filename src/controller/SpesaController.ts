@@ -197,6 +197,26 @@ export class SpesaController {
   };
 
   /**
+   * GET /case/:idCasa/spese/:idSpesa/quote/:idQuota
+   */
+  getQuota = async (
+      request: FastifyRequest<{ Params: QuotaParams }>,
+      reply: FastifyReply,
+  ) => {
+    try {
+      const quota = await this.speseService.getQuota(
+          request.params.idCasa,
+          request.params.idSpesa,
+          request.params.idQuota,
+      );
+      return reply.status(200).send(quota);
+    } catch (error) {
+      const mapped = mapErrorToHttp(error);
+      return reply.status(mapped.statusCode).send({ message: mapped.message });
+    }
+  }
+
+  /**
    * POST /case/:idCasa/spese/:idSpesa/quote/:idQuota/paga
    */
   pagaQuota = async (

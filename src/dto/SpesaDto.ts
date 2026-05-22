@@ -5,18 +5,18 @@ export const CreaSpesaSchema = z
   .object({
     descrizione: z.string().min(1, "Campo obbligatorio"),
     importo: z.number().positive("Importo deve essere positivo"),
-    dataScadenza: z.string().date().optional(), // data pagamento prevista
+    dataScadenza: z.string().date().optional(),
     partecipanti: z.array(z.string().min(1)).min(1, "Almeno un partecipante"),
-    anticipataDa: z.string().min(1).optional(), // chi ha anticipato il totale
-    isRicorrente: z.boolean().default(false), // solo HomeAdmin può attivarlo
-    cadenzaMesi: z.number().int().positive().optional(), // obbligatorio se isRicorrente
+    anticipataDa: z.string().min(1).optional(),
+    isRicorrente: z.boolean().default(false),
+    cadenzaGiorni: z.number().int().positive().optional(),
   })
   .superRefine((data, ctx) => {
-    if (data.isRicorrente && !data.cadenzaMesi) {
+    if (data.isRicorrente && !data.cadenzaGiorni) {
       ctx.addIssue({
         code: "custom",
-        path: ["cadenzaMesi"],
-        message: "cadenzaMesi è obbligatorio per spese ricorrenti",
+        path: ["cadenzaGiorni"],
+        message: "La frequenza è obbligatoria per spese ricorrenti",
       });
     }
   });
@@ -30,39 +30,50 @@ export const ModificaSpesaSchema = z
     partecipanti: z.array(z.string().min(1)).min(1).optional(),
     anticipataDa: z.string().min(1).nullable().optional(),
     isRicorrente: z.boolean().optional(),
-    cadenzaMesi: z.number().int().positive().optional(),
+    cadenzaGiorni: z.number().int().positive().optional(),
   })
   .superRefine((data, ctx) => {
-    if (data.isRicorrente === true && !data.cadenzaMesi) {
+    if (data.isRicorrente === true && !data.cadenzaGiorni) {
       ctx.addIssue({
         code: "custom",
-        path: ["cadenzaMesi"],
-        message: "cadenzaMesi è obbligatorio quando si attiva la ricorrenza",
+        path: ["cadenzaGiorni"],
+        message: "La frequenza è obbligatoria per spese ricorrenti",
       });
     }
   });
 export type ModificaSpesaDto = z.infer<typeof ModificaSpesaSchema>;
 
-export const PagaQuotaSchema = z.object({
-  dataPagamento: z.string().datetime().optional(),
-});
-export type PagaQuotaDto = z.infer<typeof PagaQuotaSchema>;
-
 export const PareggiaContiSchema = z.object({
   idUtentiCreditori: z
     .array(z.string().min(1))
-    .optional()
-    .describe("Se vuoto o assente: pareggia con tutti i coinquilini"),
+    .min(1, "Almeno un creditore")
+    .describe(
+      "Pareggia tutti i debiti del debitore autenticato verso uno o piu coinquilini"
+    ),
 });
 export type PareggiaContiDto = z.infer<typeof PareggiaContiSchema>;
 
-export const QuotaSpesaSchema = z.object({
+export const SpesaInfoSchema = z.object({
   id: z.string(),
+  descrizione: z.string(),
+  importo: z.number(),
+  anticipataDa: AssegnatarioInfoSchema.nullable(),
+});
+export type SpesaInfoDto = z.infer<typeof SpesaInfoSchema>;
+
+export const QuotaSpesaSchema = z.object({
   quota: z.number(),
   dataPagamento: z.string().datetime().nullable(),
   utente: AssegnatarioInfoSchema,
+  spesa: SpesaInfoSchema,
 });
 export type QuotaSpesaDto = z.infer<typeof QuotaSpesaSchema>;
+
+export const PartecipanteSaldoSchema = z.object({
+  utente: AssegnatarioInfoSchema,
+  saldato: z.boolean(),
+});
+export type PartecipanteSaldoDto = z.infer<typeof PartecipanteSaldoSchema>;
 
 export const SpesaResponseSchema = z.object({
   id: z.string(),
@@ -74,17 +85,12 @@ export const SpesaResponseSchema = z.object({
   cadenzaMesi: z.number().int().positive().nullable(),
   owner: AssegnatarioInfoSchema,
   anticipataDa: AssegnatarioInfoSchema.nullable(),
-  partecipanti: z.array(AssegnatarioInfoSchema),
+  partecipanti: z.array(PartecipanteSaldoSchema),
 });
 export type SpesaResponseDto = z.infer<typeof SpesaResponseSchema>;
 
-export const SpesaDettaglioSchema = SpesaResponseSchema.extend({
-  quote: z.array(QuotaSpesaSchema),
-});
-export type SpesaDettaglioDto = z.infer<typeof SpesaDettaglioSchema>;
-
 export const PareggioContiResponseSchema = z.object({
-  quotePareggiate: z.number().int(),
+  quoteSaldate: z.number().int(),
   nuovoSaldo: z.number(),
 });
 export type PareggioContiResponseDto = z.infer<
