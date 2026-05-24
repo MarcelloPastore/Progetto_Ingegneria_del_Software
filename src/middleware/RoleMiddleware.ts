@@ -13,7 +13,7 @@ function checkRole(ruolo: Ruolo | undefined, role: Ruolo) {
   const requiredLevel = roleHierarchy[role];
 
   if (userLevel < requiredLevel) {
-    throw new ForbiddenError("");
+    throw new ForbiddenError("Ruolo insufficiente per questa azione.");
   }
 }
 
