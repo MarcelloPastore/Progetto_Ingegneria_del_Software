@@ -46,7 +46,6 @@ export class SpesaController {
       const spesa = await this.speseService.getSpesa(
         request.params.idCasa,
         request.params.idSpesa,
-        request.user.idUtente,
       );
       return reply.status(200).send(spesa);
     } catch (error) {
@@ -206,6 +205,7 @@ export class SpesaController {
         request.params.idCasa,
         request.params.idSpesa,
         request.params.idQuota,
+        request.user.idUtente,
       );
       return reply.status(200).send(quota);
     } catch (error) {

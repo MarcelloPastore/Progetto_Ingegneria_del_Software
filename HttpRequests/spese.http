@@ -1,0 +1,99 @@
+@baseUrl = http://localhost:23109/api/v1
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMGRjZTgxMTA1OTY3ZTBhMjRjOTg1ZSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzkyODk3NjUsImV4cCI6MTc4MDQ5OTM2NX0.LhubUfYntsnHtvBTdwz-HSiESQ_eg_UtyUGXs3X9gCM
+@idCasa = 6659f0b4e6a3c2f6a2d1a111
+@idSpesa = 6a135999c0f64bb0550766d8
+@idQuota = 7a0a476aa9758a8b9b03e005
+@idInquilino = 6659f0b4e6a3c2f6a2d1a333
+@idUtente = 6a0dce81105967e0a24c985e
+
+### Health
+GET {{baseUrl}}/health
+
+### Lista spese
+GET {{baseUrl}}/case/{{idCasa}}/spese
+Authorization: Bearer {{token}}
+
+### Dettaglio spesa
+GET {{baseUrl}}/case/{{idCasa}}/spese/{{idSpesa}}
+Authorization: Bearer {{token}}
+
+### Crea spesa
+POST {{baseUrl}}/case/{{idCasa}}/spese
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "descrizione": "Spesa supermercato",
+  "importo": 120.50,
+  "dataScadenza": "2026-05-31",
+  "partecipanti": [
+    "{{idUtente}}",
+    "{{idInquilino}}"
+  ],
+  "isRicorrente": true,
+  "cadenzaGiorni": 30
+}
+
+### Modifica spesa
+PUT {{baseUrl}}/case/{{idCasa}}/spese/{{idSpesa}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "descrizione": "Spesa supermercato aggiornata",
+  "importo": 150.75,
+  "partecipanti": [
+    "{{idUtente}}",
+    "{{idInquilino}}"
+  ],
+  "isRicorrente": false
+}
+
+### Elimina spesa
+DELETE {{baseUrl}}/case/{{idCasa}}/spese/{{idSpesa}}
+Authorization: Bearer {{token}}
+
+### Divisione quote
+GET {{baseUrl}}/case/{{idCasa}}/spese/{{idSpesa}}/quote
+Authorization: Bearer {{token}}
+
+### Dettaglio quota
+GET {{baseUrl}}/case/{{idCasa}}/spese/{{idSpesa}}/quote/{{idQuota}}
+Authorization: Bearer {{token}}
+
+### Paga quota
+POST {{baseUrl}}/case/{{idCasa}}/spese/{{idSpesa}}/quote/{{idQuota}}/paga
+Authorization: Bearer {{token}}
+
+### Pareggia conti
+POST {{baseUrl}}/case/{{idCasa}}/spese/pareggia
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "idUtentiCreditori": [
+    "{{idUtente}}"
+  ]
+}
+
+### Saldo
+GET {{baseUrl}}/case/{{idCasa}}/saldo
+Authorization: Bearer {{token}}
+
+### Credito totale
+GET {{baseUrl}}/case/{{idCasa}}/credito
+Authorization: Bearer {{token}}
+
+### Debito totale
+GET {{baseUrl}}/case/{{idCasa}}/debito
+Authorization: Bearer {{token}}
+
+### Credito verso utente
+GET {{baseUrl}}/case/{{idCasa}}/credito/{{idInquilino}}
+Authorization: Bearer {{token}}
+
+### Debito verso utente
+GET {{baseUrl}}/case/{{idCasa}}/debito/{{idInquilino}}
+Authorization: Bearer {{token}}
+
+

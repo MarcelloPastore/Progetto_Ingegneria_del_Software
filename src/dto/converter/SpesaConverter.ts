@@ -1,7 +1,4 @@
-import {
-  QuotaSpesaDto,
-  SpesaResponseDto,
-} from "../SpesaDto";
+import { QuotaSpesaDto, SpesaResponseDto } from "../SpesaDto";
 
 interface AssegnatarioInfo {
   id: string;
@@ -14,27 +11,34 @@ interface ScadenzaInfo {
   cadenzaGiorni?: number | null;
 }
 
-interface SpesaForDto {
+interface SpesaInfoForDto {
   id: string;
   descrizione: string;
   importo: number;
+  anticipataDa?: string | null;
+  anticipataDaRel?: AssegnatarioInfo | null;
+}
+
+interface SpesaForDto extends SpesaInfoForDto {
   dataCreazione: Date;
   owner?: string | null;
   ownerRel?: AssegnatarioInfo | null;
-  anticipataDa?: string | null;
-  anticipataDaRel?: AssegnatarioInfo | null;
   partecipanti?: string[] | null;
   partecipantiRel?: AssegnatarioInfo[] | null;
   scadenzaRel?: ScadenzaInfo | null;
-  quote?: QuotaForDto[] | null;
+  quote?: QuotaForSpesaDto[] | null;
 }
 
-interface QuotaForDto {
+interface QuotaForSpesaDto {
   id: string;
   quota: number;
   dataPagamento?: Date | null;
   idUtente?: string | null;
   utenteRel?: AssegnatarioInfo | null;
+}
+
+interface QuotaForDto extends QuotaForSpesaDto {
+  spesaRel: SpesaInfoForDto;
 }
 
 function toDateOnlyString(value?: Date | null): string | null {
@@ -61,18 +65,45 @@ function toAssegnatario(
   };
 }
 
+function toSpesaInfo(spesa: SpesaInfoForDto) {
+  return {
+    id: spesa.id,
+    descrizione: spesa.descrizione,
+    importo: spesa.importo,
+    anticipataDa: spesa.anticipataDa
+      ? toAssegnatario(spesa.anticipataDaRel, spesa.anticipataDa)
+      : null,
+  };
+}
+
 export class SpesaConverter {
   toQuotaDto(quota: QuotaForDto): QuotaSpesaDto {
     return {
-      id: quota.id,
       quota: quota.quota,
       dataPagamento: quota.dataPagamento?.toISOString() ?? null,
       utente: toAssegnatario(quota.utenteRel, quota.idUtente),
+      spesa: toSpesaInfo(quota.spesaRel),
     };
   }
 
   toSpesaDto(spesa: SpesaForDto): SpesaResponseDto {
     const scadenza = spesa.scadenzaRel;
+    const quote = Array.isArray(spesa.quote) ? spesa.quote : [];
+    const partecipantiDaQuote = quote.length
+      ? quote.map((q) => ({
+          utente: toAssegnatario(q.utenteRel, q.idUtente),
+          saldato: Boolean(q.dataPagamento),
+        }))
+      : null;
+    const partecipantiFallback = Array.isArray(spesa.partecipantiRel)
+      ? spesa.partecipantiRel.map((p) => ({
+          utente: toAssegnatario(p, p.id),
+          saldato: false,
+        }))
+      : (spesa.partecipanti ?? []).map((id) => ({
+          utente: toAssegnatario(null, id),
+          saldato: false,
+        }));
 
     return {
       id: spesa.id,
@@ -86,9 +117,7 @@ export class SpesaConverter {
       anticipataDa: spesa.anticipataDa
         ? toAssegnatario(spesa.anticipataDaRel, spesa.anticipataDa)
         : null,
-      partecipanti: Array.isArray(spesa.partecipantiRel)
-        ? spesa.partecipantiRel.map((p) => toAssegnatario(p, p.id))
-        : (spesa.partecipanti ?? []).map((id) => toAssegnatario(null, id)),
+      partecipanti: partecipantiDaQuote ?? partecipantiFallback,
     };
   }
 }
