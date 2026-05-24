@@ -30,9 +30,9 @@ enum Priorita {
 // ─── MODELS ───────────────────────────────────────────────────────────────────
 model Utente {
   id                    String    @id @default(auto()) @map("_id") @db.ObjectId
-  username              String
+  username              String    @unique
   email                 String    @unique
-  passwordHash          String
+  password              String
   nome                  String
   cognome               String
   emailVerificata       Boolean   @default(false)
