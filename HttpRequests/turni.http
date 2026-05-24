@@ -6,7 +6,6 @@
 
 ### Health
 GET {{baseUrl}}/health
-Authorization: Bearer {{token}}
 
 ### Lista turni
 GET {{baseUrl}}/case/{{idCasa}}/turni
