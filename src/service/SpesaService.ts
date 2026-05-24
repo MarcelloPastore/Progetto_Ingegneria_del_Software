@@ -46,6 +46,48 @@ function ensureAnticipataDaInPartecipanti(
   }
 }
 
+type ScadenzaUpdate = {
+  nome: string;
+  descrizione: string;
+  dataScadenza: Date;
+  isRicorrente: boolean;
+  cadenzaGiorni?: number | null;
+};
+
+function buildScadenzaUpdate(
+  dto: ModificaSpesaDto,
+  spesa: SpesaConRelazioni,
+  descrizione: string,
+): ScadenzaUpdate | undefined {
+  if (dto.dataScadenza) {
+    return {
+      nome: `Spesa: ${descrizione}`,
+      descrizione,
+      dataScadenza: new Date(dto.dataScadenza),
+      isRicorrente:
+        dto.isRicorrente ?? spesa.scadenzaRel?.isRicorrente ?? false,
+      cadenzaGiorni:
+        dto.cadenzaGiorni ?? spesa.scadenzaRel?.cadenzaGiorni ?? null,
+    };
+  }
+
+  if (dto.isRicorrente === undefined && dto.cadenzaGiorni === undefined) {
+    return undefined;
+  }
+
+  if (!spesa.scadenzaRel) {
+    return undefined;
+  }
+
+  return {
+    nome: `Spesa: ${descrizione}`,
+    descrizione,
+    dataScadenza: spesa.scadenzaRel.dataScadenza,
+    isRicorrente: dto.isRicorrente ?? spesa.scadenzaRel.isRicorrente,
+    cadenzaGiorni: dto.cadenzaGiorni ?? spesa.scadenzaRel.cadenzaGiorni ?? null,
+  };
+}
+
 function buildQuoteData(
   partecipanti: string[],
   importo: number,
@@ -70,7 +112,8 @@ function hasPagamentiNonAnticipatari(spesa: SpesaConRelazioni): boolean {
   const quote = Array.isArray(spesa.quote) ? spesa.quote : [];
 
   return quote.some(
-    (q) => q.dataPagamento && (anticipataDa ? q.idUtente !== anticipataDa : true),
+    (q) =>
+      q.dataPagamento && (anticipataDa ? q.idUtente !== anticipataDa : true),
   );
 }
 
@@ -97,10 +140,7 @@ export class SpesaService {
     return spese.map((spesa) => spesaConverter.toSpesaDto(spesa));
   }
 
-  async getSpesa(
-    idCasa: string,
-    idSpesa: string,
-  ): Promise<SpesaResponseDto> {
+  async getSpesa(idCasa: string, idSpesa: string): Promise<SpesaResponseDto> {
     const spesa = await spesaRepository.findSpesaByIdOrThrow(idCasa, idSpesa);
 
     return spesaConverter.toSpesaDto(spesa);
@@ -111,10 +151,7 @@ export class SpesaService {
     dto: CreaSpesaDto,
     idUtente: string,
   ): Promise<SpesaResponseDto> {
-    const partecipanti = ensurePartecipantiValidi(
-      dto.partecipanti,
-      idUtente,
-    );
+    const partecipanti = ensurePartecipantiValidi(dto.partecipanti, idUtente);
     const anticipataDa = dto.anticipataDa ?? null;
     if (anticipataDa !== null && anticipataDa !== idUtente) {
       throw new ConflictError(
@@ -123,11 +160,7 @@ export class SpesaService {
     }
     ensureAnticipataDaInPartecipanti(anticipataDa, partecipanti);
 
-    const quote = buildQuoteData(
-      partecipanti,
-      dto.importo,
-      anticipataDa,
-    );
+    const quote = buildQuoteData(partecipanti, dto.importo, anticipataDa);
     const scadenza = dto.dataScadenza
       ? {
           nome: `Spesa: ${dto.descrizione}`,
@@ -175,8 +208,7 @@ export class SpesaService {
     const partecipanti = dto.partecipanti
       ? ensurePartecipantiValidi(dto.partecipanti, spesa.owner)
       : spesa.partecipanti;
-    const anticipataDa =
-      dto.anticipataDa === null ? null : spesa.anticipataDa;
+    const anticipataDa = dto.anticipataDa === null ? null : spesa.anticipataDa;
     ensureAnticipataDaInPartecipanti(anticipataDa, partecipanti);
 
     const importo = dto.importo ?? spesa.importo;
@@ -190,28 +222,7 @@ export class SpesaService {
       ? buildQuoteData(partecipanti, importo, anticipataDa ?? null)
       : undefined;
 
-    const scadenza = dto.dataScadenza
-      ? {
-          nome: `Spesa: ${descrizione}`,
-          descrizione,
-          dataScadenza: new Date(dto.dataScadenza),
-          isRicorrente: dto.isRicorrente ?? spesa.scadenzaRel?.isRicorrente ?? false,
-          cadenzaGiorni:
-            dto.cadenzaGiorni ?? spesa.scadenzaRel?.cadenzaGiorni ?? null,
-        }
-      : dto.isRicorrente !== undefined || dto.cadenzaGiorni !== undefined
-        ? spesa.scadenzaRel
-          ? {
-              nome: `Spesa: ${descrizione}`,
-              descrizione,
-              dataScadenza: spesa.scadenzaRel.dataScadenza,
-              isRicorrente:
-                dto.isRicorrente ?? spesa.scadenzaRel.isRicorrente,
-              cadenzaGiorni:
-                dto.cadenzaGiorni ?? spesa.scadenzaRel.cadenzaGiorni ?? null,
-            }
-          : undefined
-        : undefined;
+    const scadenza = buildScadenzaUpdate(dto, spesa, descrizione);
 
     const aggiornamento = await spesaRepository.updateSpesa(
       idCasa,
@@ -244,11 +255,7 @@ export class SpesaService {
       );
     }
 
-    await spesaRepository.deleteSpesa(
-      idCasa,
-      idSpesa,
-      spesa.idScadenza,
-    );
+    await spesaRepository.deleteSpesa(idCasa, idSpesa, spesa.idScadenza);
   }
 
   async getDivisioneSpese(

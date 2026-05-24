@@ -11,6 +11,7 @@ import {
 } from "../repository/TurnoRepository";
 import { CasaRepository } from "../repository/CasaRepository";
 import { ForbiddenError } from "../errors/httpErrors";
+import { randomInt } from "crypto";
 
 const turnoConverter = new TurnoConverter();
 const turnoRepository = new TurnoRepository();
@@ -19,7 +20,7 @@ const casaRepository = new CasaRepository();
 function shuffleTurni(ids: string[]): string[] {
   const copy = [...ids];
   for (let i = copy.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = randomInt(i + 1);
     [copy[i], copy[j]] = [copy[j], copy[i]];
   }
   return copy;

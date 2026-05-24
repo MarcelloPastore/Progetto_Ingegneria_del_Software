@@ -1,11 +1,22 @@
 import { z } from "zod";
 import { AssegnatarioInfoSchema } from "./AssegnatarioDto";
 
+const isoDateString = z
+  .string()
+  .refine((value) => !Number.isNaN(Date.parse(value)), {
+    message: "Data non valida",
+  });
+const isoDateTimeString = z
+  .string()
+  .refine((value) => !Number.isNaN(Date.parse(value)), {
+    message: "Data/ora non valida",
+  });
+
 export const CreaSpesaSchema = z
   .object({
     descrizione: z.string().min(1, "Campo obbligatorio"),
     importo: z.number().positive("Importo deve essere positivo"),
-    dataScadenza: z.string().date().optional(),
+    dataScadenza: isoDateString.optional(),
     partecipanti: z.array(z.string().min(1)).min(1, "Almeno un partecipante"),
     anticipataDa: z.string().min(1).optional(),
     isRicorrente: z.boolean().default(false),
@@ -26,7 +37,7 @@ export const ModificaSpesaSchema = z
   .object({
     descrizione: z.string().min(1).optional(),
     importo: z.number().positive().optional(),
-    dataScadenza: z.string().date().optional(),
+    dataScadenza: isoDateString.optional(),
     partecipanti: z.array(z.string().min(1)).min(1).optional(),
     anticipataDa: z.string().min(1).nullable().optional(),
     isRicorrente: z.boolean().optional(),
@@ -63,7 +74,7 @@ export type SpesaInfoDto = z.infer<typeof SpesaInfoSchema>;
 
 export const QuotaSpesaSchema = z.object({
   quota: z.number(),
-  dataPagamento: z.string().datetime().nullable(),
+  dataPagamento: isoDateTimeString.nullable(),
   utente: AssegnatarioInfoSchema,
   spesa: SpesaInfoSchema,
 });
@@ -79,8 +90,8 @@ export const SpesaResponseSchema = z.object({
   id: z.string(),
   descrizione: z.string(),
   importo: z.number(),
-  dataCreazione: z.string().datetime(),
-  dataScadenza: z.string().date().nullable(),
+  dataCreazione: isoDateTimeString,
+  dataScadenza: isoDateString.nullable(),
   isRicorrente: z.boolean(),
   cadenzaMesi: z.number().int().positive().nullable(),
   owner: AssegnatarioInfoSchema,

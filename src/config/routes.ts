@@ -33,8 +33,8 @@ import {
 
 // ─── Health ───────────────────────────────────────────────────────────────────
 
-export async function health(app: FastifyInstance) {
-  app.get("/health", async () => {
+export function health(app: FastifyInstance) {
+  app.get("/health", () => {
     return { status: "ok" };
   });
 }
@@ -51,69 +51,69 @@ export async function health(app: FastifyInstance) {
 // POST /auth/verifica-codice   → Verifica codice di recupero (UC: Recupero Password - variante)
 // POST /auth/reset-password    → Reset password (UC: Recupero Password - variante)
 
-export async function authRoutes(app: FastifyInstance) {
+export function authRoutes(app: FastifyInstance) {
   const authController = new AuthController();
 
   app.post(
-      "/auth/register",
-      {
-        config: { rateLimit: { max: 10, timeWindow: "1 minute" } },
-      },
-      authController.register,
+    "/auth/register",
+    {
+      config: { rateLimit: { max: 10, timeWindow: "1 minute" } },
+    },
+    authController.register,
   );
   app.post(
-      "/auth/login",
-      {
-        config: { rateLimit: { max: 5, timeWindow: "1 minute" } },
-      },
-      authController.login,
-  );
-
-  app.post(
-      "/auth/recupera-password",
-      {
-        config: { rateLimit: { max: 3, timeWindow: "5 minutes" } },
-      },
-      authController.recuperaPassword,
-  );
-  app.post(
-      "/auth/verifica-codice-recupero",
-      {
-        config: { rateLimit: { max: 5, timeWindow: "5 minutes" } },
-      },
-      authController.verificaCodiceRecupero,
-  );
-  app.post(
-      "/auth/reset-password",
-      {
-        config: { rateLimit: { max: 5, timeWindow: "5 minutes" } },
-      },
-      authController.resetPassword,
+    "/auth/login",
+    {
+      config: { rateLimit: { max: 5, timeWindow: "1 minute" } },
+    },
+    authController.login,
   );
 
   app.post(
-      "/auth/verifica-email",
-      {
-        config: { rateLimit: { max: 10, timeWindow: "5 minutes" } },
-      },
-      authController.verificaEmail,
+    "/auth/recupera-password",
+    {
+      config: { rateLimit: { max: 3, timeWindow: "5 minutes" } },
+    },
+    authController.recuperaPassword,
+  );
+  app.post(
+    "/auth/verifica-codice-recupero",
+    {
+      config: { rateLimit: { max: 5, timeWindow: "5 minutes" } },
+    },
+    authController.verificaCodiceRecupero,
+  );
+  app.post(
+    "/auth/reset-password",
+    {
+      config: { rateLimit: { max: 5, timeWindow: "5 minutes" } },
+    },
+    authController.resetPassword,
+  );
+
+  app.post(
+    "/auth/verifica-email",
+    {
+      config: { rateLimit: { max: 10, timeWindow: "5 minutes" } },
+    },
+    authController.verificaEmail,
   );
 }
 
 // ─── Debug/Protected (con authMiddleware) ─────────────────────────────────────
 export function debugRoutes(app: FastifyInstance) {
   app.get(
-      "/protected",
-      { preHandler: authMiddleware },
-      (request: FastifyRequest) => {
-        const user = request.user;
+    "/protected",
+    { preHandler: authMiddleware },
+    (request: FastifyRequest) => {
+      const user = request.user;
 
-        return {
-          ok: true,
-          message: "Accesso autorizzato",
-          user,
-        };
-      },
+      return {
+        ok: true,
+        message: "Accesso autorizzato",
+        user,
+      };
+    },
   );
 }
 
@@ -188,7 +188,7 @@ export function debugRoutes(app: FastifyInstance) {
 // GET    /case/:idCasa/credito/:idInquilino             → Credito verso un singolo inquilino
 // GET    /case/:idCasa/debito/:idInquilino              → Debito verso un singolo inquilino
 
-export async function speseRoutes(app: FastifyInstance) {
+export function speseRoutes(app: FastifyInstance) {
   const speseService = new SpesaService();
   const speseController = new SpesaController(speseService);
   app.addHook("onRequest", authMiddleware);
@@ -288,7 +288,7 @@ export async function speseRoutes(app: FastifyInstance) {
 // PATCH  /case/:idCasa/turni/:idTurno/rotazione         → Attiva/disattiva la rotazione automatica (solo HomeAdmin)
 // POST   /case/:idCasa/turni/:idTurno/completa          → Marca il turno come completato e aggiorna la prossima scadenza
 
-export async function turniRoutes(app: FastifyInstance) {
+export function turniRoutes(app: FastifyInstance) {
   const turniService = new TurnoService();
   const turnoController = new TurnoController(turniService);
   app.addHook("onRequest", authMiddleware);

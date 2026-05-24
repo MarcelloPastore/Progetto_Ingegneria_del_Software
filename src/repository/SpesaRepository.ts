@@ -142,13 +142,10 @@ export class SpesaRepository {
   ): Promise<SpesaConRelazioni> {
     return prisma.$transaction(async (tx) => {
       const updateData: Prisma.SpesaUpdateInput = {
-        ...(data.descrizione !== undefined && { descrizione: data.descrizione }),
+        ...(data.descrizione !== undefined && {
+          descrizione: data.descrizione,
+        }),
         ...(data.importo !== undefined && { importo: data.importo }),
-        ...(data.anticipataDa !== undefined
-          ? data.anticipataDa
-            ? { anticipataDaRel: { connect: { id: data.anticipataDa } } }
-            : { anticipataDaRel: { disconnect: true } }
-          : {}),
         ...(data.partecipanti
           ? {
               partecipantiRel: {
@@ -180,6 +177,12 @@ export class SpesaRepository {
             }
           : {}),
       };
+
+      if (data.anticipataDa !== undefined) {
+        updateData.anticipataDaRel = data.anticipataDa
+          ? { connect: { id: data.anticipataDa } }
+          : { disconnect: true };
+      }
 
       await tx.spesa.update({
         where: { id: idSpesa },

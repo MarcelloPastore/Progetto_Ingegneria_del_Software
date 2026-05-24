@@ -63,7 +63,9 @@ describe("TurnoService", () => {
     );
 
     expect(mocks.createTurno).toHaveBeenCalledTimes(1);
-    const dataArg = mocks.createTurno.mock.calls[0][0];
+    const [dataArg] = mocks.createTurno.mock.calls[0] as [
+      { idCreatore: string; cadenzaGiorni: number; ordineRotazione: string[] },
+    ];
     expect(dataArg.idCreatore).toBe("u1");
     expect(dataArg.cadenzaGiorni).toBe(7);
     expect(dataArg.ordineRotazione[0]).toBe("u1");
@@ -115,13 +117,17 @@ describe("TurnoService", () => {
     const service = new TurnoService();
     await service.completaTurno("c1", "t1", "u2");
 
-    expect(mocks.updateTurno).toHaveBeenCalledWith(
-      "t1",
-      expect.objectContaining({
-        indiceRotazioneCorrente: 0,
-        assegnatarioCorrente: "u1",
-        dataUltimaPulizia: expect.any(Date),
-      }),
-    );
+    expect(mocks.updateTurno).toHaveBeenCalledTimes(1);
+    const [, updateArg] = mocks.updateTurno.mock.calls[0] as [
+      string,
+      {
+        indiceRotazioneCorrente: number;
+        assegnatarioCorrente: string;
+        dataUltimaPulizia: Date;
+      },
+    ];
+    expect(updateArg.indiceRotazioneCorrente).toBe(0);
+    expect(updateArg.assegnatarioCorrente).toBe("u1");
+    expect(updateArg.dataUltimaPulizia).toBeInstanceOf(Date);
   });
 });

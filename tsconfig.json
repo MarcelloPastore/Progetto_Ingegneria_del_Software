@@ -8,5 +8,5 @@
     "skipLibCheck": true,
     "outDir": "dist"
   },
-  "include": ["src", "index.ts", "test/**/*", "eslint.config.ts", "vitest.config.ts"]
+  "include": ["src", "index.ts", "test/**/*", "eslint.config.ts", "prisma.config.ts", "vitest.config.ts"]
 }
