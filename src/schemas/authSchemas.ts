@@ -16,3 +16,18 @@ export const LoginSchema = z.object({
 export const EmailSchema = z.object({
   email: z.email(),
 });
+
+export const RequestPasswordResetSchema = z.object({
+  email: z.email(),
+});
+
+export const VerifyPasswordResetCodeSchema = z.object({
+  email: z.email(),
+  codice: z.string().regex(/^\d{6}$/, "Il codice deve contenere 6 cifre"),
+});
+
+export const ResetPasswordSchema = z.object({
+  email: z.email(),
+  codice: z.string().regex(/^\d{6}$/, "Il codice deve contenere 6 cifre"),
+  nuovaPassword: z.string().min(10).max(128),
+});

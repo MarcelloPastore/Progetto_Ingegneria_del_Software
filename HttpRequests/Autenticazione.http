@@ -129,6 +129,38 @@ Content-Type: application/json
   "email": "alice@example.com"
 }
 
+### 16. RECUPERA PASSWORD - Richiedi codice temporaneo
+POST http://localhost:2310/api/v1/auth/recupera-password
+Content-Type: application/json
+
+{
+  "email": "alice@example.com"
+}
+
+> {%
+    client.global.set("reset_code", response.body.codice);
+    console.log("✓ Codice recupero salvato: " + response.body.codice);
+%}
+
+### 17. RECUPERA PASSWORD - Verifica codice
+POST http://localhost:2310/api/v1/auth/verifica-codice-recupero
+Content-Type: application/json
+
+{
+  "email": "alice@example.com",
+  "codice": "{{ reset_code }}"
+}
+
+### 18. RECUPERA PASSWORD - Reset password con codice valido
+POST http://localhost:2310/api/v1/auth/reset-password
+Content-Type: application/json
+
+{
+  "email": "alice@example.com",
+  "codice": "{{ reset_code }}",
+  "nuovaPassword": "NuovaPassword123!"
+}
+
 
 ### NOTE SUI TEST:
 ###
@@ -142,4 +174,5 @@ Content-Type: application/json
 ###   - auth_token: token JWT di Alice (disponibile per i test successivi)
 ###   - user_id: ID utente Alice
 ###   - auth_token_bob: token JWT di Bob
+###   - reset_code: codice di recupero password generato dalla API
 ###   Usale nei test futuri con {{ auth_token }} o {{ user_id }}

@@ -28,8 +28,36 @@ export function authRoutes(app: FastifyInstance) {
     },
     authController.login,
   );
-  app.post("/auth/recupera-password", authController.recuperaPassword);
-  app.post("/auth/verifica-email", authController.verificaEmail);
+
+  app.post(
+    "/auth/recupera-password",
+    {
+      config: { rateLimit: { max: 3, timeWindow: "5 minutes" } },
+    },
+    authController.recuperaPassword,
+  );
+  app.post(
+    "/auth/verifica-codice-recupero",
+    {
+      config: { rateLimit: { max: 5, timeWindow: "5 minutes" } },
+    },
+    authController.verificaCodiceRecupero,
+  );
+  app.post(
+    "/auth/reset-password",
+    {
+      config: { rateLimit: { max: 5, timeWindow: "5 minutes" } },
+    },
+    authController.resetPassword,
+  );
+
+  app.post(
+    "/auth/verifica-email",
+    {
+      config: { rateLimit: { max: 10, timeWindow: "5 minutes" } },
+    },
+    authController.verificaEmail,
+  );
 }
 
 // ─── Debug/Protected (con authMiddleware) ─────────────────────────────────────

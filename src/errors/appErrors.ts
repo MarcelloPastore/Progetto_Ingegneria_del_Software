@@ -39,3 +39,17 @@ export class AuthenticatedUserNotFoundError extends Error {
     this.name = "AuthenticatedUserNotFoundError";
   }
 }
+
+export class UserNotFoundError extends Error {
+  constructor() {
+    super("Utente non trovato");
+    this.name = "UserNotFoundError";
+  }
+}
+
+export class InvalidOrExpiredResetCodeError extends Error {
+  constructor() {
+    super("Codice di recupero non valido o scaduto");
+    this.name = "InvalidOrExpiredResetCodeError";
+  }
+}

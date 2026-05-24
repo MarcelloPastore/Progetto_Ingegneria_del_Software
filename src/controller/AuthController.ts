@@ -60,11 +60,40 @@ export class AuthController {
     }
   };
 
-  recuperaPassword = async (_request: FastifyRequest, reply: FastifyReply) => {
-    return reply.send({
-      ok: true,
-      date: new Date().toISOString(),
-    });
+  recuperaPassword = async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const result = await authService.requestPasswordResetWithValidation(
+        request.body,
+      );
+      return reply.send(result);
+    } catch (error) {
+      return this.handleAuthFailure(reply, error);
+    }
+  };
+
+  verificaCodiceRecupero = async (
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ) => {
+    try {
+      const result = await authService.verifyPasswordResetCodeWithValidation(
+        request.body,
+      );
+      return reply.send(result);
+    } catch (error) {
+      return this.handleAuthFailure(reply, error);
+    }
+  };
+
+  resetPassword = async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const result = await authService.resetPasswordWithValidation(
+        request.body,
+      );
+      return reply.send(result);
+    } catch (error) {
+      return this.handleAuthFailure(reply, error);
+    }
   };
   verificaEmail = async (
     request: FastifyRequest<{ Body: { email: string } }>,

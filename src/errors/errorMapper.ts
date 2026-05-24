@@ -8,6 +8,8 @@ import {
   MissingAuthTokenError,
   MalformedAuthorizationHeaderError,
   InvalidTokenPayloadError,
+  UserNotFoundError,
+  InvalidOrExpiredResetCodeError,
 } from "./appErrors";
 
 export type HttpErrorPayload = {
@@ -101,6 +103,22 @@ export function mapErrorToHttp(error: unknown): HttpErrorPayload {
       statusCode: 401,
       message: error.message,
       code: "AUTHENTICATED_USER_NOT_FOUND",
+    };
+  }
+
+  if (error instanceof UserNotFoundError) {
+    return {
+      statusCode: 404,
+      message: error.message,
+      code: "USER_NOT_FOUND",
+    };
+  }
+
+  if (error instanceof InvalidOrExpiredResetCodeError) {
+    return {
+      statusCode: 400,
+      message: error.message,
+      code: "INVALID_OR_EXPIRED_RESET_CODE",
     };
   }
 
