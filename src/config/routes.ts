@@ -10,7 +10,7 @@ import { SpesaController } from "../controller/SpesaController";
 //import { ProblemaController } from "../controller/ProblemaController";
 import { TurnoController } from "../controller/TurnoController";
 
-//import { SpesaService } from "../service/SpesaService";
+import { SpesaService } from "../service/SpesaService";
 import { TurnoService } from "../service/TurnoService";
 
 import {
