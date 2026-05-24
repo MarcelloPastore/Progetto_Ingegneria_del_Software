@@ -89,7 +89,7 @@ export class AuthService {
       throw new DuplicateUserError();
     }
 
-    const existingByUsername = await prisma.utente.findUnique({
+    const existingByUsername = await prisma.utente.findFirst({
       where: { username: data.username },
     });
 
@@ -105,7 +105,7 @@ export class AuthService {
       data: {
         email: data.email,
         username: data.username,
-        password: hashedPassword,
+        passwordHash: hashedPassword,
         nome: data.nome,
         cognome: data.cognome,
       },
@@ -120,7 +120,7 @@ export class AuthService {
 
     if (!user) return null;
 
-    const match = await argon2.verify(user.password, password);
+    const match = await argon2.verify(user.passwordHash, password);
     if (!match) return null;
 
     return {
@@ -258,7 +258,7 @@ export class AuthService {
     await prisma.utente.update({
       where: { id: user.id },
       data: {
-        password: hashedPassword,
+        passwordHash: hashedPassword,
       },
     });
 
