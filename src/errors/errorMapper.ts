@@ -34,14 +34,6 @@ const toValidationDetails = (issues: ZodError["issues"]) => {
 };
 
 export function mapErrorToHttp(error: unknown): HttpErrorPayload {
-  if (error instanceof HttpError) {
-    return {
-      statusCode: error.statusCode,
-      message: error.message,
-      code: error.code,
-    };
-  }
-
   if (error instanceof ZodError) {
     return {
       statusCode: 400,

@@ -1,0 +1,178 @@
+### 1. HEALTH CHECK
+GET http://localhost:2310/api/v1/health
+
+### 2. REGISTER - Nuovo utente
+POST http://localhost:2310/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "email": "alice@example.com",
+  "password": "SecurePass123!",
+  "username": "alice123",
+  "nome": "Alice",
+  "cognome": "Rossi"
+}
+
+
+### 3. REGISTER - Secondo utente
+POST http://localhost:2310/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "email": "bob@example.com",
+  "password": "SecurePass456!",
+  "username": "bob456",
+  "nome": "Bob",
+  "cognome": "Verdi"
+}
+
+### 4. LOGIN - Credenziali corrette (Alice)
+POST http://localhost:2310/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "alice@example.com",
+  "password": "SecurePass123!"
+}
+
+### 5. LOGIN - Password sbagliata
+POST http://localhost:2310/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "alice@example.com",
+  "password": "WrongPassword"
+}
+
+### 6. LOGIN - Email non esistente
+POST http://localhost:2310/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "nonexistent@example.com",
+  "password": "AnyPassword123!"
+}
+
+### 7. REGISTER - Email duplicata (dovrebbe fallire)
+POST http://localhost:2310/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "email": "alice@example.com",
+  "password": "DifferentPassword789!",
+  "username": "alice789",
+  "nome": "Alice2",
+  "cognome": "Rossi2"
+}
+
+### 8. LOGIN - Alice per ottenere token
+POST http://localhost:2310/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "alice@example.com",
+  "password": "SecurePass123!"
+}
+
+> {%
+    client.global.set("auth_token", response.body.token);
+    client.global.set("user_id", response.body.user.id);
+    console.log("✓ Token salvato: " + response.body.token.substring(0, 20) + "...");
+    console.log("✓ User ID: " + response.body.user.id);
+%}
+
+### 9. LOGIN - Bob per ottenere token (alternativo)
+POST http://localhost:2310/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "bob@example.com",
+  "password": "SecurePass456!"
+}
+
+> {%
+    client.global.set("auth_token_bob", response.body.token);
+    console.log("✓ Token Bob salvato: " + response.body.token.substring(0, 20) + "...");
+%}
+
+### 10. PROTECTED - Accedi con token (Alice)
+GET http://localhost:2310/api/v1/protected
+Authorization: Bearer {{ auth_token }}
+
+### 11. PROTECTED - Accedi con token (Bob - alternativo)
+GET http://localhost:2310/api/v1/protected
+Authorization: Bearer {{ auth_token_bob }}
+
+### 12. PROTECTED - Senza token (dovrebbe fallire 401)
+GET http://localhost:2310/api/v1/protected
+
+### 13. PROTECTED - Con token non valido (dovrebbe fallire 401)
+GET http://localhost:2310/api/v1/protected
+Authorization: Bearer invalid.token.here
+
+### 14. REGISTER - Password troppo corta (validation error)
+POST http://localhost:2310/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "email": "",
+  "password": "",
+  "username": "",
+  "nome": "",
+  "cognome": ""
+}
+### 15. VERIFICA - Verifica email Alice
+POST http://localhost:2310/api/v1/auth/verifica-email
+Content-Type: application/json
+
+{
+  "email": "alice@example.com"
+}
+
+### 16. RECUPERA PASSWORD - Richiedi codice temporaneo
+POST http://localhost:2310/api/v1/auth/recupera-password
+Content-Type: application/json
+
+{
+  "email": "alice@example.com"
+}
+
+> {%
+    client.global.set("reset_code", response.body.codice);
+    console.log("✓ Codice recupero salvato: " + response.body.codice);
+%}
+
+### 17. RECUPERA PASSWORD - Verifica codice
+POST http://localhost:2310/api/v1/auth/verifica-codice-recupero
+Content-Type: application/json
+
+{
+  "email": "alice@example.com",
+  "codice": "{{ reset_code }}"
+}
+
+### 18. RECUPERA PASSWORD - Reset password con codice valido
+POST http://localhost:2310/api/v1/auth/reset-password
+Content-Type: application/json
+
+{
+  "email": "alice@example.com",
+  "codice": "{{ reset_code }}",
+  "nuovaPassword": "NuovaPassword123!"
+}
+
+
+### NOTE SUI TEST:
+###
+### • Per test manuali con curl:
+###   1. Register: curl -X POST http://localhost:2310/api/v1/auth/register -H "Content-Type: application/json" -d '{"email":"user@test.com","password":"SecurePass123!","nome":"Nome","cognome":"Cognome"}'
+###   2. Login: curl -X POST http://localhost:2310/api/v1/auth/login -H "Content-Type: application/json" -d '{"email":"user@test.com","password":"SecurePass123!"}' | jq
+###   3. Estrai token: TOKEN=$(curl -s -X POST http://localhost:2310/api/v1/auth/login -H "Content-Type: application/json" -d '{"email":"user@test.com","password":"SecurePass123!"}' | jq -r '.token')
+###   4. Usa token: curl -H "Authorization: Bearer ${TOKEN}" http://localhost:2310/api/v1/protected
+###
+### • VARIABILI SALVATE AUTOMATICAMENTE:
+###   - auth_token: token JWT di Alice (disponibile per i test successivi)
+###   - user_id: ID utente Alice
+###   - auth_token_bob: token JWT di Bob
+###   - reset_code: codice di recupero password generato dalla API
+###   Usale nei test futuri con {{ auth_token }} o {{ user_id }}
