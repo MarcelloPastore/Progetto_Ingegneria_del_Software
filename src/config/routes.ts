@@ -1,10 +1,10 @@
-import { FastifyInstance } from "fastify";
-
+import { FastifyInstance, FastifyRequest } from "fastify";
 import { Ruolo } from "@prisma/client";
-import { requireRole } from "../middleware/RoleMiddleware";
 
-//import { AuthController } from "../controller/AuthController";
-//import { authMiddleware } from "../middleware/AuthMiddleware";
+import { requireRole } from "../middleware/RoleMiddleware";
+import { authMiddleware } from "../middleware/AuthMiddleware";
+
+import { AuthController } from "../controller/AuthController";
 import { SpesaController } from "../controller/SpesaController";
 //import { CasaController } from "../controller/CasaController";
 import { TurnoController } from "../controller/TurnoController";
@@ -48,28 +48,74 @@ export async function health(app: FastifyInstance) {
 // POST /auth/login             → Login con email+password, restituisce JWT (UC: Login)
 // POST /auth/recupera-password → Invio codice di recupero via email (UC: Recupero Password)
 // GET  /auth/verifica-email    → Attivazione account tramite link di verifica (UC: Registrazione)
-// POST /auth/reset-password    → Reset password usando codice di recupero (UC: Recupero Password - variante)
+// POST /auth/verifica-codice   → Verifica codice di recupero (UC: Recupero Password - variante)
+// POST /auth/reset-password    → Reset password (UC: Recupero Password - variante)
 
-/*export async function authRoutes(app: FastifyInstance) {
+export async function authRoutes(app: FastifyInstance) {
   const authController = new AuthController();
 
-  app.post("/auth/register",
-    {
-      config: { rateLimit: { max: 10, timeWindow: "1 minute" } },
-    },
-    authController.register
+  app.post(
+      "/auth/register",
+      {
+        config: { rateLimit: { max: 10, timeWindow: "1 minute" } },
+      },
+      authController.register,
   );
-  app.post("/auth/login",
-    {
-      config: { rateLimit: { max: 5, timeWindow: "1 minute" } },
-    },
-    authController.login
+  app.post(
+      "/auth/login",
+      {
+        config: { rateLimit: { max: 5, timeWindow: "1 minute" } },
+      },
+      authController.login,
   );
-  app.post("/auth/recupera-password", authController.recuperaPassword);
-  app.get("/auth/verifica-email", authController.verificaEmail);
-  app.post("/auth/refresh-token", authController.refreshToken);
-  app.post("/auth/reset-password", authController.resetPassword);
-}*/
+
+  app.post(
+      "/auth/recupera-password",
+      {
+        config: { rateLimit: { max: 3, timeWindow: "5 minutes" } },
+      },
+      authController.recuperaPassword,
+  );
+  app.post(
+      "/auth/verifica-codice-recupero",
+      {
+        config: { rateLimit: { max: 5, timeWindow: "5 minutes" } },
+      },
+      authController.verificaCodiceRecupero,
+  );
+  app.post(
+      "/auth/reset-password",
+      {
+        config: { rateLimit: { max: 5, timeWindow: "5 minutes" } },
+      },
+      authController.resetPassword,
+  );
+
+  app.post(
+      "/auth/verifica-email",
+      {
+        config: { rateLimit: { max: 10, timeWindow: "5 minutes" } },
+      },
+      authController.verificaEmail,
+  );
+}
+
+// ─── Debug/Protected (con authMiddleware) ─────────────────────────────────────
+export function debugRoutes(app: FastifyInstance) {
+  app.get(
+      "/protected",
+      { preHandler: authMiddleware },
+      (request: FastifyRequest) => {
+        const user = request.user;
+
+        return {
+          ok: true,
+          message: "Accesso autorizzato",
+          user,
+        };
+      },
+  );
+}
 
 // ─── Hub Casa ─────────────────────────────────────────────────────────────────
 //
@@ -145,7 +191,7 @@ export async function health(app: FastifyInstance) {
 export async function speseRoutes(app: FastifyInstance) {
   const speseService = new SpesaService();
   const speseController = new SpesaController(speseService);
-  //app.addHook("onRequest", authMiddleware);
+  app.addHook("onRequest", authMiddleware);
 
   // CRUD spese
   app.get<{ Params: CasaParams }>(
@@ -163,7 +209,6 @@ export async function speseRoutes(app: FastifyInstance) {
     { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.addSpesa,
   );
-  // TODO: Solo l'owner della spesa può modificarla/eliminarla
   app.put<{ Params: SpesaParams; Body: ModificaSpesaDto }>(
     "/case/:idCasa/spese/:idSpesa",
     { preHandler: requireRole(Ruolo.Inquilino) },
@@ -246,11 +291,10 @@ export async function speseRoutes(app: FastifyInstance) {
 export async function turniRoutes(app: FastifyInstance) {
   const turniService = new TurnoService();
   const turnoController = new TurnoController(turniService);
-  //app.addHook("onRequest", authMiddleware);
+  app.addHook("onRequest", authMiddleware);
 
   app.get<{ Params: CasaParams }>(
     "/case/:idCasa/turni",
-    { preHandler: requireRole(Ruolo.Inquilino) },
     turnoController.getAllTurni,
   );
   app.get<{ Params: CasaParams }>(
