@@ -1,26 +1,25 @@
-import Fastify from 'fastify';
-import 'dotenv/config';
-import { connectDB } from './src/config/db';
-import {health, turniRoutes} from "./src/config/routes";
-//import {authRoutes, casaRoutes, health, problemiRoutes, speseRoutes, turniRoutes} from "./src/config/routes";
+import Fastify from "fastify";
+import { connectDB } from "./src/config/db";
+import { env } from "./src/config/env";
 
-const app = Fastify({ logger: true });
-const myPort = process.env.PORT ? Number(process.env.PORT) : 3000;
+import {
+  registerInfrastructure,
+  registerApiRoutes,
+} from "./src/utils/appBootstrap";
 
-async function main() {
+const app = Fastify({ logger: true, bodyLimit: 1_048_576 });
+
+void (async () => {
+  try {
     await connectDB();
-
-    app.register(health, {prefix: '/api/v1'});
-    // app.register(authRoutes, {prefix: '/api/v1'});
-    // app.register(speseRoutes, {prefix: '/api/v1'});
-    // app.register(casaRoutes, {prefix: '/api/v1'});
-    app.register(turniRoutes, {prefix: '/api/v1'});
-    // app.register(problemiRoutes, {prefix: '/api/v1'});
-
-    await app.listen({ port: myPort });
-}
-
-main().catch((err) => {
-    app.log.error(err);
+    await registerInfrastructure(app, {
+      jwtSecret: env.JWT_SECRET,
+      jwtAccessTtl: env.JWT_ACCESS_TTL,
+    });
+    registerApiRoutes(app);
+    await app.listen({ port: env.PORT });
+  } catch (err) {
+    console.error("Errore durante l'avvio:", err);
     process.exit(1);
-});
+  }
+})();

@@ -1,10 +1,10 @@
-import { FastifyInstance } from "fastify";
-
+import { FastifyInstance, FastifyRequest } from "fastify";
 import { Ruolo } from "@prisma/client";
-import { requireRole } from "../middleware/RoleMiddleware";
 
-//import { AuthController } from "../controller/AuthController";
-//import { authMiddleware } from "../middleware/AuthMiddleware";
+import { requireRole } from "../middleware/RoleMiddleware";
+import { authMiddleware } from "../middleware/AuthMiddleware";
+
+import { AuthController } from "../controller/AuthController";
 import { SpesaController } from "../controller/SpesaController";
 //import { CasaController } from "../controller/CasaController";
 import { TurnoController } from "../controller/TurnoController";
@@ -13,18 +13,28 @@ import { TurnoController } from "../controller/TurnoController";
 import { SpesaService } from "../service/SpesaService";
 import { TurnoService } from "../service/TurnoService";
 
-import {CasaParams, SpesaParams, TurnoParams} from "../types/params";
+import {
+  CasaParams,
+  InquilinoParams,
+  QuotaParams,
+  SpesaParams,
+  TurnoParams,
+} from "../types/params";
 import {
   AssegnaTurnoDto,
   CreaTurnoDto,
   ModificaTurnoDto,
 } from "../dto/TurnoDto";
-
+import {
+  CreaSpesaDto,
+  ModificaSpesaDto,
+  PareggiaContiDto,
+} from "../dto/SpesaDto";
 
 // ─── Health ───────────────────────────────────────────────────────────────────
 
-export async function health(app: FastifyInstance) {
-  app.get("/health", async () => {
+export function health(app: FastifyInstance) {
+  app.get("/health", () => {
     return { status: "ok" };
   });
 }
@@ -38,28 +48,74 @@ export async function health(app: FastifyInstance) {
 // POST /auth/login             → Login con email+password, restituisce JWT (UC: Login)
 // POST /auth/recupera-password → Invio codice di recupero via email (UC: Recupero Password)
 // GET  /auth/verifica-email    → Attivazione account tramite link di verifica (UC: Registrazione)
-// POST /auth/reset-password    → Reset password usando codice di recupero (UC: Recupero Password - variante)
+// POST /auth/verifica-codice   → Verifica codice di recupero (UC: Recupero Password - variante)
+// POST /auth/reset-password    → Reset password (UC: Recupero Password - variante)
 
-/*export async function authRoutes(app: FastifyInstance) {
+export function authRoutes(app: FastifyInstance) {
   const authController = new AuthController();
 
-  app.post("/auth/register",
+  app.post(
+    "/auth/register",
     {
       config: { rateLimit: { max: 10, timeWindow: "1 minute" } },
     },
-    authController.register
+    authController.register,
   );
-  app.post("/auth/login",
+  app.post(
+    "/auth/login",
     {
       config: { rateLimit: { max: 5, timeWindow: "1 minute" } },
     },
-    authController.login
+    authController.login,
   );
-  app.post("/auth/recupera-password", authController.recuperaPassword);
-  app.get("/auth/verifica-email", authController.verificaEmail);
-  app.post("/auth/refresh-token", authController.refreshToken);
-  app.post("/auth/reset-password", authController.resetPassword);
-}*/
+
+  app.post(
+    "/auth/recupera-password",
+    {
+      config: { rateLimit: { max: 3, timeWindow: "5 minutes" } },
+    },
+    authController.recuperaPassword,
+  );
+  app.post(
+    "/auth/verifica-codice-recupero",
+    {
+      config: { rateLimit: { max: 5, timeWindow: "5 minutes" } },
+    },
+    authController.verificaCodiceRecupero,
+  );
+  app.post(
+    "/auth/reset-password",
+    {
+      config: { rateLimit: { max: 5, timeWindow: "5 minutes" } },
+    },
+    authController.resetPassword,
+  );
+
+  app.post(
+    "/auth/verifica-email",
+    {
+      config: { rateLimit: { max: 10, timeWindow: "5 minutes" } },
+    },
+    authController.verificaEmail,
+  );
+}
+
+// ─── Debug/Protected (con authMiddleware) ─────────────────────────────────────
+export function debugRoutes(app: FastifyInstance) {
+  app.get(
+    "/protected",
+    { preHandler: authMiddleware },
+    (request: FastifyRequest) => {
+      const user = request.user;
+
+      return {
+        ok: true,
+        message: "Accesso autorizzato",
+        user,
+      };
+    },
+  );
+}
 
 // ─── Hub Casa ─────────────────────────────────────────────────────────────────
 //
@@ -115,13 +171,14 @@ export async function health(app: FastifyInstance) {
 // Boundary:   SpeseScreens, DashboardScreen
 //
 // GET    /case/:idCasa/spese                            → Lista spese della casa (con filtri opzionali per periodo/stato)
-// GET    /case/:idCasa/spese/:id                        → Dettaglio di una singola spesa
+// GET    /case/:idCasa/spese/:idSpesa                        → Dettaglio di una singola spesa
 // POST   /case/:idCasa/spese                            → Crea una nuova spesa e calcola le quote (UC: Aggiunta Nuova Spesa)
-// PUT    /case/:idCasa/spese/:id                        → Modifica una spesa esistente (solo owner spesa)
-// DELETE /case/:idCasa/spese/:id                        → Elimina una spesa (solo owner spesa)
+// PUT    /case/:idCasa/spese/:idSpesa                        → Modifica una spesa esistente (solo owner spesa)
+// DELETE /case/:idCasa/spese/:idSpesa                        → Elimina una spesa (solo owner spesa)
 //
-// GET    /case/:idCasa/spese/:id/quote                  → Ripartizione quote della spesa (UC: Aggiunta Nuova Spesa)
-// POST   /case/:idCasa/spese/:id/quote/:idQuota/paga    → Registra il pagamento di una quota (UC: Pagamento Quota)
+// GET    /case/:idCasa/spese/:idSpesa/quote                  → Ripartizione quote della spesa (UC: Aggiunta Nuova Spesa)
+// GET    /case/:idCasa/spese/:idSpesa/quote/:idQuota         → Dettaglio di una singola quota
+// POST   /case/:idCasa/spese/:idSpesa/quote/:idQuota/paga    → Registra il pagamento di una quota (UC: Pagamento Quota)
 //
 // POST   /case/:idCasa/spese/pareggia                   → Pareggio totale dei conti (UC: Pagamento Quota - variante)
 //
@@ -131,10 +188,10 @@ export async function health(app: FastifyInstance) {
 // GET    /case/:idCasa/credito/:idInquilino             → Credito verso un singolo inquilino
 // GET    /case/:idCasa/debito/:idInquilino              → Debito verso un singolo inquilino
 
-export async function speseRoutes(app: FastifyInstance) {
+export function speseRoutes(app: FastifyInstance) {
   const speseService = new SpesaService();
   const speseController = new SpesaController(speseService);
-  //app.addHook("onRequest", authMiddleware);
+  app.addHook("onRequest", authMiddleware);
 
   // CRUD spese
   app.get<{ Params: CasaParams }>(
@@ -147,36 +204,41 @@ export async function speseRoutes(app: FastifyInstance) {
     { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.getSpesa,
   );
-  app.post(
+  app.post<{ Params: CasaParams; Body: CreaSpesaDto }>(
     "/case/:idCasa/spese",
     { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.addSpesa,
   );
-  app.put(
+  app.put<{ Params: SpesaParams; Body: ModificaSpesaDto }>(
     "/case/:idCasa/spese/:idSpesa",
     { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.updateSpesa,
   );
-  app.delete(
+  app.delete<{ Params: SpesaParams }>(
     "/case/:idCasa/spese/:idSpesa",
     { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.deleteSpesa,
   );
 
   // Quote
-  app.get(
+  app.get<{ Params: SpesaParams }>(
     "/case/:idCasa/spese/:idSpesa/quote",
     { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.getDivisioneSpese,
   );
-  app.post(
+  app.get<{ Params: QuotaParams }>(
+    "/case/:idCasa/spese/:idSpesa/quote/:idQuota",
+    { preHandler: requireRole(Ruolo.Inquilino) },
+    speseController.getQuota,
+  );
+  app.post<{ Params: QuotaParams }>(
     "/case/:idCasa/spese/:idSpesa/quote/:idQuota/paga",
     { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.pagaQuota,
   );
 
   // Pareggio totale
-  app.post(
+  app.post<{ Params: CasaParams; Body: PareggiaContiDto }>(
     "/case/:idCasa/spese/pareggia",
     { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.pareggiaConti,
@@ -198,12 +260,12 @@ export async function speseRoutes(app: FastifyInstance) {
     { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.getDebitoTot,
   );
-  app.get(
+  app.get<{ Params: InquilinoParams }>(
     "/case/:idCasa/credito/:idInquilino",
     { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.getCreditoVersoUtente,
   );
-  app.get(
+  app.get<{ Params: InquilinoParams }>(
     "/case/:idCasa/debito/:idInquilino",
     { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.getDebitoVersoUtente,
@@ -226,14 +288,13 @@ export async function speseRoutes(app: FastifyInstance) {
 // PATCH  /case/:idCasa/turni/:idTurno/rotazione         → Attiva/disattiva la rotazione automatica (solo HomeAdmin)
 // POST   /case/:idCasa/turni/:idTurno/completa          → Marca il turno come completato e aggiorna la prossima scadenza
 
-export async function turniRoutes(app: FastifyInstance) {
+export function turniRoutes(app: FastifyInstance) {
   const turniService = new TurnoService();
   const turnoController = new TurnoController(turniService);
-  //app.addHook("onRequest", authMiddleware);
+  app.addHook("onRequest", authMiddleware);
 
   app.get<{ Params: CasaParams }>(
     "/case/:idCasa/turni",
-    { preHandler: requireRole(Ruolo.Inquilino) },
     turnoController.getAllTurni,
   );
   app.get<{ Params: CasaParams }>(
