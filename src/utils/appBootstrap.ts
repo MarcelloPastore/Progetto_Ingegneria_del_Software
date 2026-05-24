@@ -2,7 +2,13 @@ import type { FastifyInstance } from "fastify";
 import fastifyJwt from "@fastify/jwt";
 import fastifyHelmet from "@fastify/helmet";
 import fastifyRateLimit from "@fastify/rate-limit";
-import { authRoutes, health, debugRoutes } from "../config/routes";
+import {
+  authRoutes,
+  health,
+  debugRoutes,
+  speseRoutes,
+  turniRoutes,
+} from "../config/routes";
 
 type InfrastructureOptions = {
   jwtSecret: string;
@@ -45,4 +51,6 @@ export function registerApiRoutes(
   void app.register(health, { prefix });
   void app.register(authRoutes, { prefix });
   void app.register(debugRoutes, { prefix });
+  void app.register(turniRoutes, { prefix });
+  void app.register(speseRoutes, { prefix });
 }

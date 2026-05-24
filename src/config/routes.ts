@@ -5,19 +5,31 @@ import { requireRole } from "../middleware/RoleMiddleware";
 import { authMiddleware } from "../middleware/AuthMiddleware";
 
 import { AuthController } from "../controller/AuthController";
-//import { SpesaController } from "../controller/SpesaController";
+import { SpesaController } from "../controller/SpesaController";
 //import { CasaController } from "../controller/CasaController";
 //import { ProblemaController } from "../controller/ProblemaController";
 import { TurnoController } from "../controller/TurnoController";
 
 //import { SpesaService } from "../service/SpesaService";
 import { TurnoService } from "../service/TurnoService";
-import { CasaParams, /*SpesaParams,*/ TurnoParams } from "../types/params";
+
+import {
+  CasaParams,
+  InquilinoParams,
+  QuotaParams,
+  SpesaParams,
+  TurnoParams,
+} from "../types/params";
 import {
   AssegnaTurnoDto,
   CreaTurnoDto,
   ModificaTurnoDto,
 } from "../dto/TurnoDto";
+import {
+  CreaSpesaDto,
+  ModificaSpesaDto,
+  PareggiaContiDto,
+} from "../dto/SpesaDto";
 
 // ─── Health ───────────────────────────────────────────────────────────────────
 export function health(app: FastifyInstance) {
@@ -35,7 +47,8 @@ export function health(app: FastifyInstance) {
 // POST /auth/login             → Login con email+password, restituisce JWT (UC: Login)
 // POST /auth/recupera-password → Invio codice di recupero via email (UC: Recupero Password)
 // GET  /auth/verifica-email    → Attivazione account tramite link di verifica (UC: Registrazione)
-// POST /auth/reset-password    → Reset password usando codice di recupero (UC: Recupero Password - variante)
+// POST /auth/verifica-codice   → Verifica codice di recupero (UC: Recupero Password - variante)
+// POST /auth/reset-password    → Reset password (UC: Recupero Password - variante)
 
 export function authRoutes(app: FastifyInstance) {
   const authController = new AuthController();
@@ -157,13 +170,14 @@ export function debugRoutes(app: FastifyInstance) {
 // Boundary:   SpeseScreens, DashboardScreen
 //
 // GET    /case/:idCasa/spese                            → Lista spese della casa (con filtri opzionali per periodo/stato)
-// GET    /case/:idCasa/spese/:id                        → Dettaglio di una singola spesa
+// GET    /case/:idCasa/spese/:idSpesa                        → Dettaglio di una singola spesa
 // POST   /case/:idCasa/spese                            → Crea una nuova spesa e calcola le quote (UC: Aggiunta Nuova Spesa)
-// PUT    /case/:idCasa/spese/:id                        → Modifica una spesa esistente (solo owner spesa)
-// DELETE /case/:idCasa/spese/:id                        → Elimina una spesa (solo owner spesa)
+// PUT    /case/:idCasa/spese/:idSpesa                        → Modifica una spesa esistente (solo owner spesa)
+// DELETE /case/:idCasa/spese/:idSpesa                        → Elimina una spesa (solo owner spesa)
 //
-// GET    /case/:idCasa/spese/:id/quote                  → Ripartizione quote della spesa (UC: Aggiunta Nuova Spesa)
-// POST   /case/:idCasa/spese/:id/quote/:idQuota/paga    → Registra il pagamento di una quota (UC: Pagamento Quota)
+// GET    /case/:idCasa/spese/:idSpesa/quote                  → Ripartizione quote della spesa (UC: Aggiunta Nuova Spesa)
+// GET    /case/:idCasa/spese/:idSpesa/quote/:idQuota         → Dettaglio di una singola quota
+// POST   /case/:idCasa/spese/:idSpesa/quote/:idQuota/paga    → Registra il pagamento di una quota (UC: Pagamento Quota)
 //
 // POST   /case/:idCasa/spese/pareggia                   → Pareggio totale dei conti (UC: Pagamento Quota - variante)
 //
@@ -173,11 +187,10 @@ export function debugRoutes(app: FastifyInstance) {
 // GET    /case/:idCasa/credito/:idInquilino             → Credito verso un singolo inquilino
 // GET    /case/:idCasa/debito/:idInquilino              → Debito verso un singolo inquilino
 
-/*
 export function speseRoutes(app: FastifyInstance) {
   const speseService = new SpesaService();
   const speseController = new SpesaController(speseService);
-  //app.addHook("onRequest", authMiddleware);
+  app.addHook("onRequest", authMiddleware);
 
   // CRUD spese
   app.get<{ Params: CasaParams }>(
@@ -190,36 +203,41 @@ export function speseRoutes(app: FastifyInstance) {
     { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.getSpesa,
   );
-  app.post(
+  app.post<{ Params: CasaParams; Body: CreaSpesaDto }>(
     "/case/:idCasa/spese",
     { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.addSpesa,
   );
-  app.put(
+  app.put<{ Params: SpesaParams; Body: ModificaSpesaDto }>(
     "/case/:idCasa/spese/:idSpesa",
     { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.updateSpesa,
   );
-  app.delete(
+  app.delete<{ Params: SpesaParams }>(
     "/case/:idCasa/spese/:idSpesa",
     { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.deleteSpesa,
   );
 
   // Quote
-  app.get(
+  app.get<{ Params: SpesaParams }>(
     "/case/:idCasa/spese/:idSpesa/quote",
     { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.getDivisioneSpese,
   );
-  app.post(
+  app.get<{ Params: QuotaParams }>(
+    "/case/:idCasa/spese/:idSpesa/quote/:idQuota",
+    { preHandler: requireRole(Ruolo.Inquilino) },
+    speseController.getQuota,
+  );
+  app.post<{ Params: QuotaParams }>(
     "/case/:idCasa/spese/:idSpesa/quote/:idQuota/paga",
     { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.pagaQuota,
   );
 
   // Pareggio totale
-  app.post(
+  app.post<{ Params: CasaParams; Body: PareggiaContiDto }>(
     "/case/:idCasa/spese/pareggia",
     { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.pareggiaConti,
@@ -241,18 +259,17 @@ export function speseRoutes(app: FastifyInstance) {
     { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.getDebitoTot,
   );
-  app.get(
+  app.get<{ Params: InquilinoParams }>(
     "/case/:idCasa/credito/:idInquilino",
     { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.getCreditoVersoUtente,
   );
-  app.get(
+  app.get<{ Params: InquilinoParams }>(
     "/case/:idCasa/debito/:idInquilino",
     { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.getDebitoVersoUtente,
   );
 }
-*/
 
 // ─── Turni ────────────────────────────────────────────────────────────────────
 //
@@ -277,7 +294,6 @@ export function turniRoutes(app: FastifyInstance) {
 
   app.get<{ Params: CasaParams }>(
     "/case/:idCasa/turni",
-    { preHandler: requireRole(Ruolo.Inquilino) },
     turnoController.getAllTurni,
   );
   app.get<{ Params: CasaParams }>(

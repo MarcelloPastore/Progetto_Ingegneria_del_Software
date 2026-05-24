@@ -18,7 +18,14 @@ export default [
     : []),
 
   {
-    files: ["src/**/*.ts", "index.ts", "eslint.config.ts", "prisma.config.ts"],
+    files: [
+      "src/**/*.ts",
+      "test/**/*.ts",
+      "index.ts",
+      "eslint.config.ts",
+      "prisma.config.ts",
+      "vitest.config.ts",
+    ],
     languageOptions: {
       parserOptions: {
         projectService: true,

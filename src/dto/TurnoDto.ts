@@ -1,6 +1,12 @@
 import { z } from "zod";
 import { AssegnatarioInfoSchema } from "./AssegnatarioDto";
 
+const isoDateTimeString = z
+  .string()
+  .refine((value) => !Number.isNaN(Date.parse(value)), {
+    message: "Data/ora non valida",
+  });
+
 export const CreaTurnoSchema = z.object({
   task: z.string().min(1, "Campo obbligatorio"),
   cadenzaGiorni: z
@@ -32,9 +38,9 @@ export const TurnoResponseSchema = z.object({
   assegnatario: AssegnatarioInfoSchema,
   ordineRotazione: z.string().array(),
   indiceRotazioneCorrente: z.number().int(),
-  dataUltimaPulizia: z.string().datetime().nullable(),
-  dataProssimaPulizia: z.string().datetime(),
-  dataCreazione: z.string().datetime(),
+  dataUltimaPulizia: isoDateTimeString.nullable(),
+  dataProssimaPulizia: isoDateTimeString,
+  dataCreazione: isoDateTimeString,
 });
 export type TurnoResponseDto = z.infer<typeof TurnoResponseSchema>;
 

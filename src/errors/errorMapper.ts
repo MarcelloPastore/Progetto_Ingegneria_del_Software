@@ -11,6 +11,7 @@ import {
   UserNotFoundError,
   InvalidOrExpiredResetCodeError,
 } from "./appErrors";
+import { HttpError } from "./httpErrors";
 
 export type HttpErrorPayload = {
   statusCode: number;

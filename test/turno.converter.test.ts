@@ -61,4 +61,3 @@ describe("TurnoConverter", () => {
     expect(dto.ordineRotazione).toEqual([]);
   });
 });
-

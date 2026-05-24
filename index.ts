@@ -1,6 +1,7 @@
 import Fastify from "fastify";
 import { connectDB } from "./src/config/db";
 import { env } from "./src/config/env";
+
 import {
   registerInfrastructure,
   registerApiRoutes,
