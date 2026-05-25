@@ -11,7 +11,7 @@ import {
 } from "../repository/TurnoRepository";
 import { CasaRepository } from "../repository/CasaRepository";
 import { ForbiddenError } from "../errors/httpErrors";
-import { randomInt } from "crypto";
+import { randomInt } from "node:crypto";
 
 const turnoConverter = new TurnoConverter();
 const turnoRepository = new TurnoRepository();
