@@ -20,7 +20,7 @@ import {
   QuotaParams,
   SpesaParams,
   TurnoParams,
-  ProblemaParams
+  ProblemaParams,
 } from "../types/params";
 import {
   AssegnaTurnoDto,
@@ -32,7 +32,12 @@ import {
   ModificaSpesaDto,
   PareggiaContiDto,
 } from "../dto/SpesaDto";
-import {AggiornaPrioritaDto, AggiornaStatoDto, AssegnaProblemaDto, CreaProblemaDto} from "../dto/ProblemaDto";
+import {
+  AggiornaPrioritaDto,
+  AggiornaStatoDto,
+  AssegnaProblemaDto,
+  CreaProblemaDto,
+} from "../dto/ProblemaDto";
 
 // ─── Health ───────────────────────────────────────────────────────────────────
 export function health(app: FastifyInstance) {
@@ -138,7 +143,7 @@ export function debugRoutes(app: FastifyInstance) {
 //
 // GET    /case/:idCasa/invite-link                      → Recupera o rigenera il link/codice di invito
 
-/*export async function casaRoutes(app: FastifyInstance) {
+/*export function casaRoutes(app: FastifyInstance) {
   const casaController = new CasaController();
   app.addHook("onRequest", authMiddleware);
 
@@ -361,54 +366,54 @@ export function turniRoutes(app: FastifyInstance) {
 // PATCH  /case/:idCasa/problemi/:idProblema/stato                       → Aggiorna lo stato (Segnalato → Assegnato → Risolto)
 // PATCH  /case/:idCasa/problemi/:idProblema/priorita                    → Aggiorna la priorità (Urgente / Media / Bassa)
 
-export async function problemiRoutes(app: FastifyInstance) {
-  const problemiService = new ProblemaService()
+export function problemiRoutes(app: FastifyInstance) {
+  const problemiService = new ProblemaService();
   const problemaController = new ProblemaController(problemiService);
   app.addHook("onRequest", authMiddleware);
 
   app.get<{ Params: CasaParams }>(
-      "/case/:idCasa/problemi",
-      { preHandler: requireRole(Ruolo.Inquilino) },
-      problemaController.getAllProblemi,
+    "/case/:idCasa/problemi",
+    { preHandler: requireRole(Ruolo.Inquilino) },
+    problemaController.getAllProblemi,
   );
   app.get<{ Params: CasaParams }>(
-      "/case/:idCasa/problemi/non-risolti",
-      { preHandler: requireRole(Ruolo.Inquilino) },
-      problemaController.getProblemiNonRisolti,
+    "/case/:idCasa/problemi/non-risolti",
+    { preHandler: requireRole(Ruolo.Inquilino) },
+    problemaController.getProblemiNonRisolti,
   );
   app.get<{ Params: ProblemaParams }>(
-      "/case/:idCasa/problemi/:idProblema",
-      { preHandler: requireRole(Ruolo.Inquilino) },
-      problemaController.getProblema,
+    "/case/:idCasa/problemi/:idProblema",
+    { preHandler: requireRole(Ruolo.Inquilino) },
+    problemaController.getProblema,
   );
   app.post<{ Params: CasaParams; Body: CreaProblemaDto }>(
-      "/case/:idCasa/problemi",
-      { preHandler: requireRole(Ruolo.Inquilino) },
-      problemaController.segnalaProblema,
+    "/case/:idCasa/problemi",
+    { preHandler: requireRole(Ruolo.Inquilino) },
+    problemaController.segnalaProblema,
   );
   app.delete<{ Params: ProblemaParams }>(
-      "/case/:idCasa/problemi/:idProblema",
-      { preHandler: requireRole(Ruolo.HomeAdmin) },
-      problemaController.eliminaProblema,
+    "/case/:idCasa/problemi/:idProblema",
+    { preHandler: requireRole(Ruolo.HomeAdmin) },
+    problemaController.eliminaProblema,
   );
   app.put<{ Params: ProblemaParams }>(
-      "/case/:idCasa/problemi/:idProblema/autoassegna",
-      { preHandler: requireRole(Ruolo.Inquilino) },
-      problemaController.autoassegnaProblema,
+    "/case/:idCasa/problemi/:idProblema/autoassegna",
+    { preHandler: requireRole(Ruolo.Inquilino) },
+    problemaController.autoassegnaProblema,
   );
   app.put<{ Params: ProblemaParams; Body: AssegnaProblemaDto }>(
-      "/case/:idCasa/problemi/:idProblema/assegna",
-      { preHandler: requireRole(Ruolo.HomeAdmin) },
-      problemaController.assegnaProblema,
+    "/case/:idCasa/problemi/:idProblema/assegna",
+    { preHandler: requireRole(Ruolo.HomeAdmin) },
+    problemaController.assegnaProblema,
   );
   app.patch<{ Params: ProblemaParams; Body: AggiornaStatoDto }>(
-      "/case/:idCasa/problemi/:idProblema/stato",
-      { preHandler: requireRole(Ruolo.Inquilino) },
-      problemaController.aggiornaStato,
+    "/case/:idCasa/problemi/:idProblema/stato",
+    { preHandler: requireRole(Ruolo.Inquilino) },
+    problemaController.aggiornaStato,
   );
   app.patch<{ Params: ProblemaParams; Body: AggiornaPrioritaDto }>(
-      "/case/:idCasa/problemi/:idProblema/priorita",
-      { preHandler: requireRole(Ruolo.Inquilino) },
-      problemaController.aggiornaPriorita,
+    "/case/:idCasa/problemi/:idProblema/priorita",
+    { preHandler: requireRole(Ruolo.Inquilino) },
+    problemaController.aggiornaPriorita,
   );
 }
