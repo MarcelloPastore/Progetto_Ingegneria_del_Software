@@ -17,3 +17,4 @@ yarn-error.log*
 /dist/
 /.scannerwork/.sonar_lock
 /.scannerwork/report-task.txt
+/scripts/

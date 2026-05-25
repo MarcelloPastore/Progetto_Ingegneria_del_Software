@@ -114,7 +114,9 @@ export class TurnoService {
   async getAllTurni(idCasa: string): Promise<TurnoListItemDto[]> {
     const turni = await turnoRepository.findTurniByCasa(idCasa);
 
-    return turni.map((t: TurnoConAssegnatario) => turnoConverter.toListItemDto(t));
+    return turni.map((t: TurnoConAssegnatario) =>
+      turnoConverter.toListItemDto(t),
+    );
   }
 
   async getTurniOdierni(idCasa: string): Promise<TurnoResponseDto[]> {
