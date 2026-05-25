@@ -47,3 +47,11 @@ export const ProblemaResponseSchema = z.object({
   dataRisoluzione: isoDateTimeString.nullable(),
 });
 export type ProblemaResponseDto = z.infer<typeof ProblemaResponseSchema>;
+
+export const ProblemaListItemSchema = z.object({
+  descrizione: z.string(),
+  assegnatario: AssegnatarioInfoSchema.nullable(),
+  stato: StatoSchema,
+  priorita: PrioritaSchema,
+});
+export type ProblemaListItemDto = z.infer<typeof ProblemaListItemSchema>;
