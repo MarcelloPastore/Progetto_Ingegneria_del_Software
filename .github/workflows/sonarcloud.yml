@@ -20,10 +20,10 @@ jobs:
           distribution: 'temurin'
 
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
+        uses: SonarSource/sonarcloud-github-action@v2
         with:
-          args: >
-            -Dsonar.organization=MarcelloPastore
-            -Dsonar.projectKey=MarcelloPastore_Progetto_Ingegneria_del_Software
+          projectBaseDir: .
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_PROJECT_KEY: MarcelloPastore_Progetto_Ingegneria_del_Software
+          SONAR_ORGANIZATION: MarcelloPastore
