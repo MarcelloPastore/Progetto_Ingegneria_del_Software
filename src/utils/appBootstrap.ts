@@ -50,11 +50,11 @@ export function registerApiRoutes(
   app: FastifyInstance,
   prefix = "/api/v1",
 ): void {
-  void app.register(health, { prefix });
-  void app.register(authRoutes, { prefix });
-  //void app.register(casaRoutes, { prefix });
-  void app.register(debugRoutes, { prefix });
-  void app.register(turniRoutes, { prefix });
-  void app.register(speseRoutes, { prefix });
-  void app.register(problemiRoutes, { prefix });
+  app.register(health, { prefix });
+  app.register(authRoutes, { prefix });
+  //app.register(casaRoutes, { prefix });
+  app.register(debugRoutes, { prefix });
+  app.register(turniRoutes, { prefix });
+  app.register(speseRoutes, { prefix });
+  app.register(problemiRoutes, { prefix });
 }
