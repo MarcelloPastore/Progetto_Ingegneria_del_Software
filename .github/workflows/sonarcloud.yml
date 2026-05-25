@@ -26,4 +26,4 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_PROJECT_KEY: MarcelloPastore_Progetto_Ingegneria_del_Software
-          SONAR_ORGANIZATION: MarcelloPastore
+          SONAR_ORGANIZATION: marcellopastore
