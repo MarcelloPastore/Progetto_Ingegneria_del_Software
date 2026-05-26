@@ -207,14 +207,14 @@ flutter pub get
 flutter devices
 ```
 
-6) Avvia l'app:
+6) Avvia l'iphone 14 nel simulator:
 
 ```
-flutter run
+xcrun simctl boot "iPhone 14"
 ```
 
-Se hai piu device attivi, usa:
+avvia l'app con run & debug su main.dart
 
 ```
-flutter run -d <device_id>
+
 ```

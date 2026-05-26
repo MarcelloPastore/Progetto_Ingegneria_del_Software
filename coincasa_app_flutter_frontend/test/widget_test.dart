@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:coincasa_app/ui/screens/Autenticazione/account_activated_screen.dart';
-import 'package:coincasa_app/ui/screens/Autenticazione/register_screen.dart';
+import 'package:coincasa_app/features/auth/auth.dart';
 
 void main() {
   testWidgets('registration opens the check email screen with valid fields', (
