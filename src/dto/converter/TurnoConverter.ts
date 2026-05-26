@@ -1,4 +1,4 @@
-import { TurnoResponseDto } from "../TurnoDto";
+import { TurnoListItemDto, TurnoResponseDto } from "../TurnoDto";
 
 interface TurnoForDto {
   id: string;
@@ -20,6 +20,25 @@ function calcolaProssimaData(riferimento: Date, cadenzaGiorni: number): Date {
 }
 
 export class TurnoConverter {
+  toListItemDto(turno: TurnoForDto): TurnoListItemDto {
+    const cadenzaGiorni =
+      typeof turno.cadenzaGiorni === "number" && turno.cadenzaGiorni > 0
+        ? turno.cadenzaGiorni
+        : 1;
+    const riferimento: Date = turno.dataUltimaPulizia ?? turno.dataCreazione;
+    const dataProssima = calcolaProssimaData(riferimento, cadenzaGiorni);
+    const assegnatarioRel = turno.assegnatarioCorrenteRel;
+
+    return {
+      task: turno.task,
+      assegnatarioCorrente: {
+        id: assegnatarioRel?.id ?? turno.assegnatarioCorrente ?? "",
+        username: assegnatarioRel?.username ?? "",
+      },
+      dataProssimaPulizia: dataProssima.toISOString(),
+    };
+  }
+
   toDto(turno: TurnoForDto): TurnoResponseDto {
     const ordineRotazione = Array.isArray(turno.ordineRotazione)
       ? turno.ordineRotazione

@@ -13,3 +13,8 @@ yarn-error.log*
 .env
 
 .vscode/*
+/src/generated/prisma
+/dist/
+/.scannerwork/.sonar_lock
+/.scannerwork/report-task.txt
+/scripts/

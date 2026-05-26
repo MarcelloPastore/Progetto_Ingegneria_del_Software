@@ -8,6 +8,7 @@ import {
   InvalidTokenPayloadError,
   AuthenticatedUserNotFoundError,
 } from "../errors/appErrors";
+import { Ruolo } from "@prisma/client";
 
 const getBearerToken = (authorizationHeader?: string): string => {
   if (!authorizationHeader) {
@@ -30,15 +31,20 @@ const getUserFromPayload = (payload: unknown) => {
   const p = payload as Record<string, unknown>;
   const idValue = p.id ?? p.idUtente;
   const tokenType = p.type;
+  const ruoloCasa = p.ruoloCasa;
   const idUtente =
     typeof idValue === "string" && idValue.length > 0 ? idValue : undefined;
   const tokenTypeStr = typeof tokenType === "string" ? tokenType : undefined;
+  const ruoloCasaStr = typeof ruoloCasa === "string" ? ruoloCasa : undefined;
+  const ruoloCasaValue = ruoloCasaStr
+    ? (Ruolo[ruoloCasaStr as keyof typeof Ruolo] ?? undefined)
+    : undefined;
 
   if (!idUtente || (tokenTypeStr !== undefined && tokenTypeStr !== "access")) {
     throw new InvalidTokenPayloadError();
   }
 
-  return { idUtente };
+  return { idUtente, ruoloCasa: ruoloCasaValue };
 };
 
 export async function authMiddleware(
@@ -50,7 +56,7 @@ export async function authMiddleware(
     const jwt = getJwt(req.server);
     const payload = jwt.verify(token) as Record<string, unknown>;
 
-    const { idUtente } = getUserFromPayload(payload);
+    const { idUtente, ruoloCasa } = getUserFromPayload(payload);
     const user = await prisma.utente.findUnique({
       where: { id: idUtente },
       select: {
@@ -77,6 +83,7 @@ export async function authMiddleware(
 
     req.user = {
       idUtente: user.id,
+      ruoloCasa,
     };
   } catch (error) {
     const mapped = mapErrorToHttp(error);
