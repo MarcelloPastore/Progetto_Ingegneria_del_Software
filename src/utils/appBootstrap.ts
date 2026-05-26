@@ -4,6 +4,7 @@ import fastifyHelmet from "@fastify/helmet";
 import fastifyRateLimit from "@fastify/rate-limit";
 import {
   authRoutes,
+  casaRoutes,
   health,
   debugRoutes,
   speseRoutes,
@@ -51,6 +52,7 @@ export function registerApiRoutes(
   void app.register(health, { prefix });
   void app.register(authRoutes, { prefix });
   void app.register(debugRoutes, { prefix });
+  void app.register(casaRoutes, { prefix });
   void app.register(turniRoutes, { prefix });
   void app.register(speseRoutes, { prefix });
 }

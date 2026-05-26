@@ -5,11 +5,12 @@ import { requireRole } from "../middleware/RoleMiddleware";
 import { authMiddleware } from "../middleware/AuthMiddleware";
 
 import { AuthController } from "../controller/AuthController";
+import { CasaController } from "../controller/CasaController";
 import { SpesaController } from "../controller/SpesaController";
-//import { CasaController } from "../controller/CasaController";
 //import { ProblemaController } from "../controller/ProblemaController";
 import { TurnoController } from "../controller/TurnoController";
 
+import { CasaService } from "../service/CasaService";
 import { SpesaService } from "../service/SpesaService";
 import { TurnoService } from "../service/TurnoService";
 
@@ -25,6 +26,11 @@ import {
   CreaTurnoDto,
   ModificaTurnoDto,
 } from "../dto/TurnoDto";
+import {
+  AggiungiInquilinoDto,
+  CreaCasaDto,
+  ModificaRuoloDto,
+} from "../dto/CasaDto";
 import {
   CreaSpesaDto,
   ModificaSpesaDto,
@@ -135,34 +141,63 @@ export function debugRoutes(app: FastifyInstance) {
 //
 // GET    /case/:idCasa/invite-link                      → Recupera o rigenera il link/codice di invito
 
-/*export async function casaRoutes(app: FastifyInstance) {
-  const casaController = new CasaController();
+export function casaRoutes(app: FastifyInstance) {
+  const casaService = new CasaService();
+  const casaController = new CasaController(casaService);
   app.addHook("onRequest", authMiddleware);
 
   // CRUD casa
-  app.post("/case", casaController.creaCasa);
+  app.post<{ Body: CreaCasaDto }>("/case", casaController.creaCasa);
   app.get("/case", casaController.getCase);
-  app.get("/case/:idCasa", casaController.getCasa);
-  app.delete("/case/:idCasa", casaController.eliminaCasa);
+  app.get<{ Params: CasaParams }>(
+    "/case/:idCasa",
+    { preHandler: requireRole(Ruolo.Inquilino) },
+    casaController.getCasa,
+  );
+  app.delete<{ Params: CasaParams }>(
+    "/case/:idCasa",
+    { preHandler: requireRole(Ruolo.HomeAdmin) },
+    casaController.eliminaCasa,
+  );
 
   // Inquilini
-  app.get("/case/:idCasa/inquilini", casaController.getAllInquilini);
-  app.get("/case/:idCasa/inquilini/:idInquilino", casaController.getInquilino);
-  app.post("/case/:idCasa/inquilini", casaController.aggiungiInquilino);
-  app.delete(
+  app.get<{ Params: CasaParams }>(
+    "/case/:idCasa/inquilini",
+    { preHandler: requireRole(Ruolo.Inquilino) },
+    casaController.getAllInquilini,
+  );
+  app.get<{ Params: InquilinoParams }>(
     "/case/:idCasa/inquilini/:idInquilino",
+    { preHandler: requireRole(Ruolo.Inquilino) },
+    casaController.getInquilino,
+  );
+  app.post<{ Params: CasaParams; Body: AggiungiInquilinoDto }>(
+    "/case/:idCasa/inquilini",
+    casaController.aggiungiInquilino,
+  );
+  app.delete<{ Params: InquilinoParams }>(
+    "/case/:idCasa/inquilini/:idInquilino",
+    { preHandler: requireRole(Ruolo.HomeAdmin) },
     casaController.rimuoviInquilino,
   );
 
   // Ruoli
-  app.put(
+  app.put<{ Params: InquilinoParams; Body: ModificaRuoloDto }>(
     "/case/:idCasa/inquilini/:idInquilino/ruolo",
+    { preHandler: requireRole(Ruolo.HomeAdmin) },
     casaController.modificaRuolo,
   );
 
   // Link di invito
-  app.get("/case/:idCasa/invite-link", casaController.generaLink);
-}*/
+  app.get<{
+    Params: CasaParams;
+    Querystring?: { rigenera?: string | boolean };
+  }>(
+    "/case/:idCasa/invite-link",
+    { preHandler: requireRole(Ruolo.HomeAdmin) },
+    casaController.generaLink,
+  );
+}
 
 // ─── Spese ────────────────────────────────────────────────────────────────────
 //
