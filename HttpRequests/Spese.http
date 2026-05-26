@@ -1,5 +1,5 @@
 @baseUrl = http://localhost:23109/api/v1
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZFV0ZW50ZSI6IjZhMGRjZTgxMTA1OTY3ZTBhMjRjOTg1ZSIsInJ1b2xvQ2FzYSI6IklucXVpbGlubyIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3Nzk3Mzc0OTEsImV4cCI6MTc4MDk0NzA5MX0.--9CiCaBo-R5BacWOK0hwQx_uINEGrtf-DziLAwzhiE
+@token = test
 @idCasa = 6659f0b4e6a3c2f6a2d1a111
 @idSpesa = 6a135999c0f64bb0550766d8
 @idQuota = 7a0a476aa9758a8b9b03e005
