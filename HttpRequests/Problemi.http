@@ -1,7 +1,7 @@
 @baseUrl = http://localhost:23109/api/v1
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZFV0ZW50ZSI6IjZhMGRjZTgxMTA1OTY3ZTBhMjRjOTg1ZSIsInJ1b2xvQ2FzYSI6IklucXVpbGlubyIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3Nzk3Mzc0OTEsImV4cCI6MTc4MDk0NzA5MX0.--9CiCaBo-R5BacWOK0hwQx_uINEGrtf-DziLAwzhiE
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMGRjZTgxMTA1OTY3ZTBhMjRjOTg1ZSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzkyODk3NjUsImV4cCI6MTc4MDQ5OTM2NX0.LhubUfYntsnHtvBTdwz-HSiESQ_eg_UtyUGXs3X9gCM
 @idCasa = 6659f0b4e6a3c2f6a2d1a111
-@idProblema = <id_problema>
+@idProblema = 6a15779fa6671b99c1727d53
 @idUtente = 6a0dce81105967e0a24c985e
 
 ### Health
