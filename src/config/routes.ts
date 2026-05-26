@@ -7,10 +7,11 @@ import { authMiddleware } from "../middleware/AuthMiddleware";
 import { AuthController } from "../controller/AuthController";
 import { SpesaController } from "../controller/SpesaController";
 //import { CasaController } from "../controller/CasaController";
-//import { ProblemaController } from "../controller/ProblemaController";
+import { ProblemaController } from "../controller/ProblemaController";
 import { TurnoController } from "../controller/TurnoController";
 
 import { SpesaService } from "../service/SpesaService";
+import { ProblemaService } from "../service/ProblemaService";
 import { TurnoService } from "../service/TurnoService";
 
 import {
@@ -19,6 +20,7 @@ import {
   QuotaParams,
   SpesaParams,
   TurnoParams,
+  ProblemaParams,
 } from "../types/params";
 import {
   AssegnaTurnoDto,
@@ -30,6 +32,12 @@ import {
   ModificaSpesaDto,
   PareggiaContiDto,
 } from "../dto/SpesaDto";
+import {
+  AggiornaPrioritaDto,
+  AggiornaStatoDto,
+  AssegnaProblemaDto,
+  CreaProblemaDto,
+} from "../dto/ProblemaDto";
 
 // ─── Health ───────────────────────────────────────────────────────────────────
 export function health(app: FastifyInstance) {
@@ -135,7 +143,7 @@ export function debugRoutes(app: FastifyInstance) {
 //
 // GET    /case/:idCasa/invite-link                      → Recupera o rigenera il link/codice di invito
 
-/*export async function casaRoutes(app: FastifyInstance) {
+/*export function casaRoutes(app: FastifyInstance) {
   const casaController = new CasaController();
   app.addHook("onRequest", authMiddleware);
 
@@ -282,8 +290,8 @@ export function speseRoutes(app: FastifyInstance) {
 // GET    /case/:idCasa/turni/:idTurno                   → Dettaglio di un singolo turno
 // PUT    /case/:idCasa/turni/:idTurno                   → Modifica un turno esistente (solo HomeAdmin)
 // DELETE /case/:idCasa/turni/:idTurno                   → Elimina un turno (solo HomeAdmin)
-// PUT    /case/:idCasa/turni/:idTurno/autoassegna       → Auto-assegnazione del turno a sé stessi (Inquilino)
-// PUT    /case/:idCasa/turni/:idTurno/assegna           → Assegnazione del turno ad Inquilino (solo HomeAdmin)
+// PUT    /case/:idCasa/turni/:idTurno/autoassegna       → Assegna il turno a sé stessi (Inquilino)
+// PUT    /case/:idCasa/turni/:idTurno/assegna           → Assegna il turno ad Inquilino (solo HomeAdmin)
 // PATCH  /case/:idCasa/turni/:idTurno/rotazione         → Attiva/disattiva la rotazione automatica (solo HomeAdmin)
 // POST   /case/:idCasa/turni/:idTurno/completa          → Marca il turno come completato e aggiorna la prossima scadenza
 
@@ -350,41 +358,62 @@ export function turniRoutes(app: FastifyInstance) {
 //
 // GET    /case/:idCasa/problemi                                         → Lista problemi della casa (aperti e risolti)
 // GET    /case/:idCasa/problemi/non-risolti                             → Solo i problemi non risolti (per Dashboard)
+// GET    /case/:idCasa/problemi/:idProblema                             → Dettaglio di un singolo problema
 // POST   /case/:idCasa/problemi                                         → Segnala un nuovo problema (UC: Segnalazione Problema)
 // DELETE /case/:idCasa/problemi/:idProblema                             → Elimina un problema (solo HomeAdmin)
-//
-// PUT    /case/:idCasa/problemi/:idProblema/assegna                     → Assegna/de-assegna il problema a sé stessi (UC: Assegnazione e Risoluzione)
+// PUT    /case/:idCasa/turni/:idTurno/autoassegna                       → Assegna/de-assegna il problema a sé stessi (Inquilino)
+// PUT    /case/:idCasa/problemi/:idProblema/assegna                     → Assegna/de-assegna il problema ad Inquilino (solo HomeAdmin)
 // PATCH  /case/:idCasa/problemi/:idProblema/stato                       → Aggiorna lo stato (Segnalato → Assegnato → Risolto)
 // PATCH  /case/:idCasa/problemi/:idProblema/priorita                    → Aggiorna la priorità (Urgente / Media / Bassa)
 
-/*export async function problemiRoutes(app: FastifyInstance) {
-  const problemaController = new ProblemaController();
+export function problemiRoutes(app: FastifyInstance) {
+  const problemiService = new ProblemaService();
+  const problemaController = new ProblemaController(problemiService);
   app.addHook("onRequest", authMiddleware);
 
-  // CRUD problemi
-  app.get("/case/:idCasa/problemi", problemaController.getAllProblemi);
-  app.get(
+  app.get<{ Params: CasaParams }>(
+    "/case/:idCasa/problemi",
+    { preHandler: requireRole(Ruolo.Inquilino) },
+    problemaController.getAllProblemi,
+  );
+  app.get<{ Params: CasaParams }>(
     "/case/:idCasa/problemi/non-risolti",
+    { preHandler: requireRole(Ruolo.Inquilino) },
     problemaController.getProblemiNonRisolti,
   );
-  app.post("/case/:idCasa/problemi", problemaController.segnalaProblema);
-
-  app.delete(
+  app.get<{ Params: ProblemaParams }>(
     "/case/:idCasa/problemi/:idProblema",
+    { preHandler: requireRole(Ruolo.Inquilino) },
+    problemaController.getProblema,
+  );
+  app.post<{ Params: CasaParams; Body: CreaProblemaDto }>(
+    "/case/:idCasa/problemi",
+    { preHandler: requireRole(Ruolo.Inquilino) },
+    problemaController.segnalaProblema,
+  );
+  app.delete<{ Params: ProblemaParams }>(
+    "/case/:idCasa/problemi/:idProblema",
+    { preHandler: requireRole(Ruolo.HomeAdmin) },
     problemaController.eliminaProblema,
   );
-
-  // Assegnazione e aggiornamento
-  app.put(
+  app.put<{ Params: ProblemaParams }>(
+    "/case/:idCasa/problemi/:idProblema/autoassegna",
+    { preHandler: requireRole(Ruolo.Inquilino) },
+    problemaController.autoassegnaProblema,
+  );
+  app.put<{ Params: ProblemaParams; Body: AssegnaProblemaDto }>(
     "/case/:idCasa/problemi/:idProblema/assegna",
+    { preHandler: requireRole(Ruolo.HomeAdmin) },
     problemaController.assegnaProblema,
   );
-  app.patch(
+  app.patch<{ Params: ProblemaParams; Body: AggiornaStatoDto }>(
     "/case/:idCasa/problemi/:idProblema/stato",
+    { preHandler: requireRole(Ruolo.Inquilino) },
     problemaController.aggiornaStato,
   );
-  app.patch(
+  app.patch<{ Params: ProblemaParams; Body: AggiornaPrioritaDto }>(
     "/case/:idCasa/problemi/:idProblema/priorita",
+    { preHandler: requireRole(Ruolo.Inquilino) },
     problemaController.aggiornaPriorita,
   );
-}*/
+}

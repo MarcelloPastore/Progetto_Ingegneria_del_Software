@@ -116,3 +116,11 @@ export type CreditoResponseDto = z.infer<typeof CreditoResponseSchema>;
 
 export const DebitoResponseSchema = z.object({ debito: z.number() });
 export type DebitoResponseDto = z.infer<typeof DebitoResponseSchema>;
+
+export const SpesaListItemSchema = z.object({
+  descrizione: z.string(),
+  dataCreazione: isoDateTimeString,
+  anticipataDa: AssegnatarioInfoSchema.nullable(),
+  importoTotale: z.number(),
+});
+export type SpesaListItemDto = z.infer<typeof SpesaListItemSchema>;

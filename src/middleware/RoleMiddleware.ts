@@ -19,7 +19,6 @@ function checkRole(ruolo: Ruolo | undefined, role: Ruolo) {
 
 export function requireRole(role: Ruolo) {
   return (req: FastifyRequest) => {
-    const ruoloCasa = req.user?.ruoloCasa as Ruolo | undefined;
-    checkRole(ruoloCasa, role);
+    checkRole(req.user?.ruoloCasa, role);
   };
 }

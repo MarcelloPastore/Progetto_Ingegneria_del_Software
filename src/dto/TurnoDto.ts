@@ -49,3 +49,10 @@ export const DataTurnoSchema = z.object({
   dataProssimaPuliza: z.string(),
 });
 export type DataTurnoDto = z.infer<typeof DataTurnoSchema>;
+
+export const TurnoListItemSchema = z.object({
+  task: z.string(),
+  assegnatarioCorrente: AssegnatarioInfoSchema,
+  dataProssimaPulizia: isoDateTimeString,
+});
+export type TurnoListItemDto = z.infer<typeof TurnoListItemSchema>;
