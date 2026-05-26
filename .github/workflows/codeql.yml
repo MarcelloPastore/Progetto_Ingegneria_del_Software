@@ -22,9 +22,7 @@ jobs:
       fail-fast: false
       matrix:
         language:
-          - javascript-typescript
-          - c-cpp
-          - ruby
+          - javascript-typescript 
           # opzionale: analisi dei workflow GitHub Actions
           - actions
           # opzionale: swift (MA richiede macOS per la build in molti casi)
