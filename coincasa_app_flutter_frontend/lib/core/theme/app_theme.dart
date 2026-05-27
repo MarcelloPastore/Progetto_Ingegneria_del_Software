@@ -6,6 +6,8 @@ import '../constants/app_sizes.dart';
 export '../constants/app_sizes.dart';
 
 abstract final class AppColors {
+  static const transparent = Color(0x00000000);
+
   static const brandPrimary = Color(0xFF5228AD);
   static const brandPrimaryDark = Color(0xFF4C2A9E);
   static const brandSecondary = Color(0xFF6E41D1);
@@ -57,6 +59,15 @@ abstract final class AppColors {
   static const lockHole = Color(0xFFB86800);
   static const lockShackle = Color(0xFFB9B4C0);
   static const envelopeRed = Color(0xFFE84545);
+
+  static const turniTabSurface = Color(0xFFE1E0E7);
+  static const turniDropdownSelectedText = Color(0xFFD98DFF);
+  static const turniAssigneeMenuSurface = Color(0xFF4B3A2B);
+  static const turniAssignMeSurface = Color(0xFF214B23);
+  static const turniAssigneeSurface = Color(0xFF5A4528);
+  static const turniAssigneeDivider = Color(0xFF6D5435);
+  static const turniAssigneeBorder = Color(0xFFFF8A1C);
+  static const turniAssigneeSelectedSurface = Color(0xFF7B6B57);
 }
 
 abstract final class AppTextStyles {
