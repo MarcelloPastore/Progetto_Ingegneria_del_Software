@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:coincasa_app/core/theme/app_theme.dart';
-import 'package:coincasa_app/features/casa/casa.dart';
+import 'package:coincasa_app/features/auth/screens/login_screen.dart';
 
 class AccountActivatedScreen extends StatelessWidget {
   const AccountActivatedScreen({super.key, required this.email});
@@ -54,8 +54,7 @@ class AccountActivatedScreen extends StatelessWidget {
                             Navigator.pushAndRemoveUntil(
                               context,
                               MaterialPageRoute(
-                                builder: (context) =>
-                                    CasaWelcomeScreen(email: email),
+                                builder: (context) => const LoginScreen(),
                               ),
                               (route) => false,
                             );
@@ -75,7 +74,7 @@ class AccountActivatedScreen extends StatelessWidget {
                             ),
                           ),
                           child: const Text(
-                            'Continua',
+                            'Vai al login',
                             style: AppTextStyles.button,
                           ),
                         ),

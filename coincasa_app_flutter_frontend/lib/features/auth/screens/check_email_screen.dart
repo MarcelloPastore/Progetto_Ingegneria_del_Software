@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import 'package:coincasa_app/core/theme/app_theme.dart';
-import 'package:coincasa_app/features/auth/screens/account_activated_screen.dart';
+import 'package:coincasa_app/features/auth/screens/login_screen.dart';
 
 class CheckEmailScreen extends StatelessWidget {
   final String email;
@@ -32,13 +32,11 @@ class CheckEmailScreen extends StatelessWidget {
                           alignment: Alignment.centerRight,
                           child: TextButton(
                             onPressed: () {
-                              Navigator.push(
-                                context,
+                              Navigator.of(context).pushAndRemoveUntil(
                                 MaterialPageRoute(
-                                  builder: (context) => AccountActivatedScreen(
-                                    email: normalizedEmail,
-                                  ),
+                                  builder: (context) => const LoginScreen(),
                                 ),
+                                (route) => false,
                               );
                             },
                             style: TextButton.styleFrom(

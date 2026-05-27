@@ -1,4 +1,16 @@
-// import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+
+class TurniHomeScreen extends StatelessWidget {
+  const TurniHomeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Turni')),
+      body: const Center(child: Text('Schermata turni in lavorazione.')),
+    );
+  }
+}
 // import 'package:intl/intl.dart';
 
 // // ---------------------------------------------------------------------------

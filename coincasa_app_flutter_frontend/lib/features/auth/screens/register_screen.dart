@@ -103,8 +103,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       if (!mounted) return;
 
-      Navigator.push(
-        context,
+      Navigator.of(context).push(
         MaterialPageRoute(builder: (context) => CheckEmailScreen(email: email)),
       );
     } on ApiException catch (error) {

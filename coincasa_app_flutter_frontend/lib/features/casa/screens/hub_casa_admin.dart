@@ -194,9 +194,10 @@ class _HouseHeaderCard extends StatelessWidget {
   final _HubCasaData data;
 
   String get _address {
-    final parts = [data.casa.indirizzo, data.casa.citta]
-        .where((part) => part.trim().isNotEmpty)
-        .join(' - ');
+    final parts = [
+      data.casa.indirizzo,
+      data.casa.citta,
+    ].where((part) => part.trim().isNotEmpty).join(' - ');
     return '${data.casa.tipoCasa.isEmpty ? 'Casa' : data.casa.tipoCasa} - $parts';
   }
 
@@ -355,10 +356,7 @@ class _StatisticChip extends StatelessWidget {
 }
 
 class _ManagementSection extends StatelessWidget {
-  const _ManagementSection({
-    required this.data,
-    required this.onCasaUpdated,
-  });
+  const _ManagementSection({required this.data, required this.onCasaUpdated});
 
   final _HubCasaData data;
   final VoidCallback onCasaUpdated;
