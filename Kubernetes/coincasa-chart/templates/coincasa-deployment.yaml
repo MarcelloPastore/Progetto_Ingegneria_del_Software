@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: {{ .Values.namespace }}
+  name: {{ .Values.deployment.name }}
+  labels:
+    app: {{ .Values.appLabel }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.appLabel }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.appLabel }}
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - {{ .Values.appLabel }}
+            topologyKey: "kubernetes.io/hostname"
+
+      securityContext:
+        runAsNonRoot: true
+
+      dnsPolicy: "None"
+      dnsConfig:
+        nameservers:
+          - 1.1.1.1
+          - 9.9.9.9
+        searches:
+          - coincasa.svc.cluster.local
+          - svc.cluster.local
+          - cluster.local
+
+      containers:
+      - name: {{ .Values.appLabel }}
+        securityContext:
+          runAsUser: 10001
+          runAsGroup: 10001
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          seccompProfile:
+            type: RuntimeDefault
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+          - containerPort: {{ .Values.deployment.containerPort }}
+
+        livenessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: 2310
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: 2310
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          failureThreshold: 3
+
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+            ephemeral-storage: "2Gi"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+            ephemeral-storage: "4Gi"
+
+        envFrom:
+          - configMapRef:
+              name: coincasa-env
+          - secretRef:
+              name: coincasa-secrets

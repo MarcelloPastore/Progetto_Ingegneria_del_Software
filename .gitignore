@@ -18,3 +18,6 @@ yarn-error.log*
 /.scannerwork/.sonar_lock
 /.scannerwork/report-task.txt
 /scripts/
+Kubernetes/coincasa-chart/templates/coincasa-secrets.yaml
+Kubernetes/coincasa-chart/templates/env-mongo-secret.yaml
+Kubernetes/comandi-kubectl.txt
