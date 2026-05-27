@@ -58,4 +58,23 @@ export class CasaController {
       return reply.status(mapped.statusCode).send({ message: mapped.message });
     }
   };
+
+  /**
+   * GET /case/:idCasa/invite-link
+   */
+  getInviteLink = async (
+    request: FastifyRequest<{ Params: CasaParams }>,
+    reply: FastifyReply,
+  ) => {
+    try {
+      const casa = await this.casaService.getCasa(
+        request.params.idCasa,
+        request.user.idUtente,
+      );
+      return reply.status(200).send({ inviteLink: casa.inviteLink });
+    } catch (error) {
+      const mapped = mapErrorToHttp(error);
+      return reply.status(mapped.statusCode).send({ message: mapped.message });
+    }
+  };
 }

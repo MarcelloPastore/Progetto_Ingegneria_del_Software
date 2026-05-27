@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:coincasa_app/core/api/api_client.dart';
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/features/casa/screens/casa_creata_successo.dart';
 import 'package:coincasa_app/features/casa/screens/compilazione_form_crea_casa.dart'; // ← aggiunto
@@ -246,6 +247,24 @@ class _RiepilogoCasaScreenState extends State<RiepilogoCasaScreen> {
           ),
         ),
       );
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _isCreating = false;
+      });
+      final message = switch (error.statusCode) {
+        401 => 'Sessione scaduta o login mancante. Accedi e riprova.',
+        404 => 'Endpoint creazione casa non disponibile. Riavvia il backend.',
+        _ => 'Impossibile creare la casa. Riprova.',
+      };
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: AppColors.statusNegative,
+          ),
+        );
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -255,7 +274,7 @@ class _RiepilogoCasaScreenState extends State<RiepilogoCasaScreen> {
         ..hideCurrentSnackBar()
         ..showSnackBar(
           const SnackBar(
-            content: Text('Impossibile creare la casa. Riprova.'),
+            content: Text('Errore di connessione al server. Riprova.'),
             backgroundColor: AppColors.statusNegative,
           ),
         );

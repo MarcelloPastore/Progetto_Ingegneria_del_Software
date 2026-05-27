@@ -144,6 +144,10 @@ export function casaRoutes(app: FastifyInstance) {
   // CRUD casa
   app.post<{ Body: CreaCasaDto }>("/case", casaController.creaCasa);
   app.get("/case", casaController.getCase);
+  app.get<{ Params: CasaParams }>(
+    "/case/:idCasa/invite-link",
+    casaController.getInviteLink,
+  );
   app.get("/case/:idCasa", casaController.getCasa);
 }
 
