@@ -4,11 +4,11 @@ import fastifyHelmet from "@fastify/helmet";
 import fastifyRateLimit from "@fastify/rate-limit";
 import {
   authRoutes,
+  casaRoutes,
   health,
   debugRoutes,
   speseRoutes,
   turniRoutes,
-  //casaRoutes,
   problemiRoutes,
 } from "../config/routes";
 
@@ -50,11 +50,11 @@ export function registerApiRoutes(
   app: FastifyInstance,
   prefix = "/api/v1",
 ): void {
-   app.register(health, { prefix });
-   app.register(authRoutes, { prefix });
-  //app.register(casaRoutes, { prefix });
-   app.register(debugRoutes, { prefix });
-   app.register(turniRoutes, { prefix });
-   app.register(speseRoutes, { prefix });
-   app.register(problemiRoutes, { prefix });
+  void app.register(health, { prefix });
+  void app.register(authRoutes, { prefix });
+  void app.register(casaRoutes, { prefix });
+  void app.register(debugRoutes, { prefix });
+  void app.register(turniRoutes, { prefix });
+  void app.register(speseRoutes, { prefix });
+  void app.register(problemiRoutes, { prefix });
 }
