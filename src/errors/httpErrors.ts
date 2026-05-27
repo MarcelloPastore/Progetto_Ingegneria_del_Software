@@ -20,3 +20,9 @@ export class ConflictError extends HttpError {
     super(409, message, "CONFLICT");
   }
 }
+
+export class NotFoundError extends HttpError {
+  constructor(message = "Risorsa non trovata") {
+    super(404, message, "NOT_FOUND");
+  }
+}

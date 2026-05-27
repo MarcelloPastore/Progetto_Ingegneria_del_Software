@@ -1,7 +1,7 @@
 import { Ruolo } from "@prisma/client";
 import { FastifyRequest } from "fastify";
 import { prisma } from "../config/db";
-import { ForbiddenError } from "../errors/httpErrors";
+import { ForbiddenError, NotFoundError } from "../errors/httpErrors";
 
 function checkRole(ruolo: Ruolo | undefined, role: Ruolo) {
   const roleHierarchy: Record<Ruolo, number> = {
@@ -38,6 +38,15 @@ async function resolveRuoloCasa(
   });
 
   if (!membro) {
+    const casa = await prisma.casa.findUnique({
+      where: { id: idCasa },
+      select: { id: true },
+    });
+
+    if (!casa) {
+      throw new NotFoundError("Casa non trovata");
+    }
+
     return undefined;
   }
 
