@@ -3,6 +3,22 @@ import { Ruolo } from "@prisma/client";
 import { prisma } from "../config/db";
 import { CreaCasaDto } from "../dto/CasaDto";
 
+const membroSelect = {
+  id: true,
+  idUtente: true,
+  ruolo: true,
+  dataIngresso: true,
+  utenteRel: {
+    select: {
+      id: true,
+      username: true,
+      nome: true,
+      cognome: true,
+      email: true,
+    },
+  },
+};
+
 export class CasaRepository {
   private readonly casaSelect = {
     id: true,
@@ -13,11 +29,7 @@ export class CasaRepository {
     inviteLink: true,
   };
 
-  async createCasa(
-    data: CreaCasaDto,
-    idUtente: string,
-    inviteLink: string,
-  ) {
+  async createCasa(data: CreaCasaDto, idUtente: string, inviteLink: string) {
     return prisma.casa.create({
       data: {
         nome: data.nome,
@@ -54,6 +66,79 @@ export class CasaRepository {
         OR: [{ creator: idUtente }, { membri: { some: { idUtente } } }],
       },
       select: this.casaSelect,
+    });
+  }
+
+  async getCasaById(idCasa: string) {
+    return prisma.casa.findUnique({
+      where: { id: idCasa },
+      select: this.casaSelect,
+    });
+  }
+
+  async deleteCasa(idCasa: string) {
+    const problemi = await prisma.problema.findMany({
+      where: { idCasa },
+      select: { id: true },
+    });
+    const idProblemi = problemi.map((p) => p.id);
+
+    await prisma.storico.deleteMany({
+      where: { idProblema: { in: idProblemi } },
+    });
+    await prisma.documento.deleteMany({ where: { idCasa } });
+    await prisma.problema.deleteMany({ where: { idCasa } });
+    await prisma.turno.deleteMany({ where: { idCasa } });
+    await prisma.scadenza.deleteMany({ where: { idCasa } });
+    await prisma.quotaSpesa.deleteMany({ where: { idCasa } });
+    await prisma.spesa.deleteMany({ where: { idCasa } });
+    await prisma.membroCasa.deleteMany({ where: { idCasa } });
+    await prisma.casa.delete({ where: { id: idCasa } });
+  }
+
+  async getMembroCasa(idCasa: string, idUtente: string) {
+    return prisma.membroCasa.findUnique({
+      where: { idUtente_idCasa: { idUtente, idCasa } },
+      select: membroSelect,
+    });
+  }
+
+  async getMembriCasa(idCasa: string) {
+    return prisma.membroCasa.findMany({
+      where: { idCasa },
+      select: membroSelect,
+      orderBy: { dataIngresso: "asc" },
+    });
+  }
+
+  async addMembroCasa(idCasa: string, idUtente: string) {
+    return prisma.membroCasa.create({
+      data: {
+        idCasa,
+        idUtente,
+        ruolo: Ruolo.Inquilino,
+      },
+      select: membroSelect,
+    });
+  }
+
+  async updateRuoloMembro(idCasa: string, idUtente: string, ruolo: Ruolo) {
+    return prisma.membroCasa.update({
+      where: { idUtente_idCasa: { idUtente, idCasa } },
+      data: { ruolo },
+      select: membroSelect,
+    });
+  }
+
+  async removeMembroCasa(idCasa: string, idUtente: string) {
+    await prisma.membroCasa.delete({
+      where: { idUtente_idCasa: { idUtente, idCasa } },
+    });
+  }
+
+  async countHomeAdmin(idCasa: string) {
+    return prisma.membroCasa.count({
+      where: { idCasa, ruolo: Ruolo.HomeAdmin },
     });
   }
 

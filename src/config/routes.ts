@@ -30,7 +30,11 @@ import {
   ModificaSpesaDto,
   PareggiaContiDto,
 } from "../dto/SpesaDto";
-import { CreaCasaDto } from "../dto/CasaDto";
+import {
+  AggiungiInquilinoDto,
+  CreaCasaDto,
+  ModificaRuoloInquilinoDto,
+} from "../dto/CasaDto";
 
 // ─── Health ───────────────────────────────────────────────────────────────────
 
@@ -148,7 +152,38 @@ export function casaRoutes(app: FastifyInstance) {
     "/case/:idCasa/invite-link",
     casaController.getInviteLink,
   );
-  app.get("/case/:idCasa", casaController.getCasa);
+  app.get<{ Params: CasaParams }>("/case/:idCasa", casaController.getCasa);
+  app.delete<{ Params: CasaParams }>(
+    "/case/:idCasa",
+    //{ preHandler: requireRole(Ruolo.HomeAdmin) },
+    casaController.eliminaCasa,
+  );
+
+  // Inquilini
+  app.get<{ Params: CasaParams }>(
+    "/case/:idCasa/inquilini",
+    //{ preHandler: requireRole(Ruolo.Inquilino) },
+    casaController.getInquilini,
+  );
+  app.get<{ Params: InquilinoParams }>(
+    "/case/:idCasa/inquilini/:idInquilino",
+    //{ preHandler: requireRole(Ruolo.Inquilino) },
+    casaController.getInquilino,
+  );
+  app.post<{ Params: CasaParams; Body: AggiungiInquilinoDto }>(
+    "/case/:idCasa/inquilini",
+    casaController.aggiungiInquilino,
+  );
+  app.delete<{ Params: InquilinoParams }>(
+    "/case/:idCasa/inquilini/:idInquilino",
+    //{ preHandler: requireRole(Ruolo.HomeAdmin) },
+    casaController.rimuoviInquilino,
+  );
+  app.put<{ Params: InquilinoParams; Body: ModificaRuoloInquilinoDto }>(
+    "/case/:idCasa/inquilini/:idInquilino/ruolo",
+    //{ preHandler: requireRole(Ruolo.HomeAdmin) },
+    casaController.modificaRuoloInquilino,
+  );
 }
 
 // ─── Spese ────────────────────────────────────────────────────────────────────
@@ -182,78 +217,78 @@ export function speseRoutes(app: FastifyInstance) {
   // CRUD spese
   app.get<{ Params: CasaParams }>(
     "/case/:idCasa/spese",
-    { preHandler: requireRole(Ruolo.Inquilino) },
+    //{ preHandler: requireRole(Ruolo.Inquilino) },
     speseController.getAllSpese,
   );
   app.get<{ Params: SpesaParams }>(
     "/case/:idCasa/spese/:idSpesa",
-    { preHandler: requireRole(Ruolo.Inquilino) },
+    //{ preHandler: requireRole(Ruolo.Inquilino) },
     speseController.getSpesa,
   );
   app.post<{ Params: CasaParams; Body: CreaSpesaDto }>(
     "/case/:idCasa/spese",
-    { preHandler: requireRole(Ruolo.Inquilino) },
+    //{ preHandler: requireRole(Ruolo.Inquilino) },
     speseController.addSpesa,
   );
   app.put<{ Params: SpesaParams; Body: ModificaSpesaDto }>(
     "/case/:idCasa/spese/:idSpesa",
-    { preHandler: requireRole(Ruolo.Inquilino) },
+    //{ preHandler: requireRole(Ruolo.Inquilino) },
     speseController.updateSpesa,
   );
   app.delete<{ Params: SpesaParams }>(
     "/case/:idCasa/spese/:idSpesa",
-    { preHandler: requireRole(Ruolo.Inquilino) },
+    //{ preHandler: requireRole(Ruolo.Inquilino) },
     speseController.deleteSpesa,
   );
 
   // Quote
   app.get<{ Params: SpesaParams }>(
     "/case/:idCasa/spese/:idSpesa/quote",
-    { preHandler: requireRole(Ruolo.Inquilino) },
+    //{ preHandler: requireRole(Ruolo.Inquilino) },
     speseController.getDivisioneSpese,
   );
   app.get<{ Params: QuotaParams }>(
     "/case/:idCasa/spese/:idSpesa/quote/:idQuota",
-    { preHandler: requireRole(Ruolo.Inquilino) },
+    //{ preHandler: requireRole(Ruolo.Inquilino) },
     speseController.getQuota,
   );
   app.post<{ Params: QuotaParams }>(
     "/case/:idCasa/spese/:idSpesa/quote/:idQuota/paga",
-    { preHandler: requireRole(Ruolo.Inquilino) },
+    //{ preHandler: requireRole(Ruolo.Inquilino) },
     speseController.pagaQuota,
   );
 
   // Pareggio totale
   app.post<{ Params: CasaParams; Body: PareggiaContiDto }>(
     "/case/:idCasa/spese/pareggia",
-    { preHandler: requireRole(Ruolo.Inquilino) },
+    //{ preHandler: requireRole(Ruolo.Inquilino) },
     speseController.pareggiaConti,
   );
 
   // Saldo, Credito e Debito
   app.get<{ Params: CasaParams }>(
     "/case/:idCasa/saldo",
-    { preHandler: requireRole(Ruolo.Inquilino) },
+    //{ preHandler: requireRole(Ruolo.Inquilino) },
     speseController.getSaldo,
   );
   app.get<{ Params: CasaParams }>(
     "/case/:idCasa/credito",
-    { preHandler: requireRole(Ruolo.Inquilino) },
+    //{ preHandler: requireRole(Ruolo.Inquilino) },
     speseController.getCreditoTot,
   );
   app.get<{ Params: CasaParams }>(
     "/case/:idCasa/debito",
-    { preHandler: requireRole(Ruolo.Inquilino) },
+    //{ preHandler: requireRole(Ruolo.Inquilino) },
     speseController.getDebitoTot,
   );
   app.get<{ Params: InquilinoParams }>(
     "/case/:idCasa/credito/:idInquilino",
-    { preHandler: requireRole(Ruolo.Inquilino) },
+    //{ preHandler: requireRole(Ruolo.Inquilino) },
     speseController.getCreditoVersoUtente,
   );
   app.get<{ Params: InquilinoParams }>(
     "/case/:idCasa/debito/:idInquilino",
-    { preHandler: requireRole(Ruolo.Inquilino) },
+    //{ preHandler: requireRole(Ruolo.Inquilino) },
     speseController.getDebitoVersoUtente,
   );
 }
@@ -285,47 +320,47 @@ export function turniRoutes(app: FastifyInstance) {
   );
   app.get<{ Params: CasaParams }>(
     "/case/:idCasa/turni/oggi",
-    { preHandler: requireRole(Ruolo.Inquilino) },
+    //{ preHandler: requireRole(Ruolo.Inquilino) },
     turnoController.getTurniOdierni,
   );
   app.post<{ Params: CasaParams; Body: CreaTurnoDto }>(
     "/case/:idCasa/turni",
-    { preHandler: requireRole(Ruolo.Inquilino) },
+    //{ preHandler: requireRole(Ruolo.Inquilino) },
     turnoController.creaTurno,
   );
   app.get<{ Params: TurnoParams }>(
     "/case/:idCasa/turni/:idTurno",
-    { preHandler: requireRole(Ruolo.Inquilino) },
+    //{ preHandler: requireRole(Ruolo.Inquilino) },
     turnoController.getTurno,
   );
   app.put<{ Params: TurnoParams; Body: ModificaTurnoDto }>(
     "/case/:idCasa/turni/:idTurno",
-    { preHandler: requireRole(Ruolo.Inquilino) },
+    //{ preHandler: requireRole(Ruolo.Inquilino) },
     turnoController.modificaTurno,
   );
   app.delete<{ Params: TurnoParams }>(
     "/case/:idCasa/turni/:idTurno",
-    { preHandler: requireRole(Ruolo.Inquilino) },
+    //{ preHandler: requireRole(Ruolo.Inquilino) },
     turnoController.eliminaTurno,
   );
   app.put<{ Params: TurnoParams }>(
     "/case/:idCasa/turni/:idTurno/autoassegna",
-    { preHandler: requireRole(Ruolo.Inquilino) },
+    //{ preHandler: requireRole(Ruolo.Inquilino) },
     turnoController.autoassegnaTurno,
   );
   app.put<{ Params: TurnoParams; Body: AssegnaTurnoDto }>(
     "/case/:idCasa/turni/:idTurno/assegna",
-    { preHandler: requireRole(Ruolo.HomeAdmin) },
+    //{ preHandler: requireRole(Ruolo.HomeAdmin) },
     turnoController.assegnaTurno,
   );
   app.patch<{ Params: TurnoParams }>(
     "/case/:idCasa/turni/:idTurno/rotazione",
-    { preHandler: requireRole(Ruolo.HomeAdmin) },
+    //{ preHandler: requireRole(Ruolo.HomeAdmin) },
     turnoController.toggleRotazioneTurni,
   );
   app.post<{ Params: TurnoParams }>(
     "/case/:idCasa/turni/:idTurno/completa",
-    { preHandler: requireRole(Ruolo.Inquilino) },
+    //{ preHandler: requireRole(Ruolo.Inquilino) },
     turnoController.completaTurno,
   );
 }
