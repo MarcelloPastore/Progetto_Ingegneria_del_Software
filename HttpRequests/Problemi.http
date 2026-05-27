@@ -1,0 +1,76 @@
+@baseUrl = http://localhost:23109/api/v1
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMGRjZTgxMTA1OTY3ZTBhMjRjOTg1ZSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzkyODk3NjUsImV4cCI6MTc4MDQ5OTM2NX0.LhubUfYntsnHtvBTdwz-HSiESQ_eg_UtyUGXs3X9gCM
+@idCasa = 6659f0b4e6a3c2f6a2d1a111
+@idProblema = 6a15779fa6671b99c1727d53
+@idUtente = 6a0dce81105967e0a24c985e
+
+### Health
+GET {{baseUrl}}/health
+
+### Lista problemi
+GET {{baseUrl}}/case/{{idCasa}}/problemi
+Authorization: Bearer {{token}}
+
+### Lista problemi non risolti
+GET {{baseUrl}}/case/{{idCasa}}/problemi/non-risolti
+Authorization: Bearer {{token}}
+
+### Dettaglio problema
+GET {{baseUrl}}/case/{{idCasa}}/problemi/{{idProblema}}
+Authorization: Bearer {{token}}
+
+### Segnala problema
+POST {{baseUrl}}/case/{{idCasa}}/problemi
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nome": "Perdita in bagno",
+  "descrizione": "Perdita dal rubinetto del lavandino",
+  "priorita": "Media"
+}
+
+### Elimina problema
+DELETE {{baseUrl}}/case/{{idCasa}}/problemi/{{idProblema}}
+Authorization: Bearer {{token}}
+
+### Auto-assegna problema (Inquilino)
+PUT {{baseUrl}}/case/{{idCasa}}/problemi/{{idProblema}}/autoassegna
+Authorization: Bearer {{token}}
+
+### Assegna problema (HomeAdmin)
+PUT {{baseUrl}}/case/{{idCasa}}/problemi/{{idProblema}}/assegna
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "idUtente": "{{idUtente}}"
+}
+
+### De-assegna problema (HomeAdmin)
+PUT {{baseUrl}}/case/{{idCasa}}/problemi/{{idProblema}}/assegna
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "idUtente": null
+}
+
+### Aggiorna stato problema
+PATCH {{baseUrl}}/case/{{idCasa}}/problemi/{{idProblema}}/stato
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "stato": "Risolto"
+}
+
+### Aggiorna priorita problema
+PATCH {{baseUrl}}/case/{{idCasa}}/problemi/{{idProblema}}/priorita
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "priorita": "Urgente"
+}
+

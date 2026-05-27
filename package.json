@@ -4,7 +4,10 @@
   "description": "",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage"
   },
   "devDependencies": {
     "@sonar/scan": "^4.3.6",
@@ -23,8 +26,9 @@
     "prettier": "^3.8.3",
     "prisma": "6.19.0",
     "typescript": "^5.5.3",
-    "typescript-eslint": "^8.59.2",
-    "vitest": "^4.1.7"
+   "typescript-eslint": "^8.59.2",
+    "vitest": "^4.1.7",
+    "vi": "^1.0.0"
   },
   "private": true,
   "dependencies": {

@@ -2,6 +2,7 @@ import {
   CreaTurnoDto,
   ModificaTurnoDto,
   AssegnaTurnoDto,
+  TurnoListItemDto,
   TurnoResponseDto,
 } from "../dto/TurnoDto";
 import { TurnoConverter } from "../dto/converter/TurnoConverter";
@@ -11,7 +12,7 @@ import {
 } from "../repository/TurnoRepository";
 import { CasaRepository } from "../repository/CasaRepository";
 import { ForbiddenError } from "../errors/httpErrors";
-import { randomInt } from "crypto";
+import { randomInt } from "node:crypto";
 
 const turnoConverter = new TurnoConverter();
 const turnoRepository = new TurnoRepository();
@@ -110,10 +111,12 @@ export class TurnoService {
     return turnoConverter.toDto(turno);
   }
 
-  async getAllTurni(idCasa: string): Promise<TurnoResponseDto[]> {
+  async getAllTurni(idCasa: string): Promise<TurnoListItemDto[]> {
     const turni = await turnoRepository.findTurniByCasa(idCasa);
 
-    return turni.map((t: TurnoConAssegnatario) => turnoConverter.toDto(t));
+    return turni.map((t: TurnoConAssegnatario) =>
+      turnoConverter.toListItemDto(t),
+    );
   }
 
   async getTurniOdierni(idCasa: string): Promise<TurnoResponseDto[]> {
