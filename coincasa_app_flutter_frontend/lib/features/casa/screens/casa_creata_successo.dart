@@ -19,6 +19,9 @@ class CasaCreataSuccessoScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final houseName = name.trim();
+    final displayedInviteCode = inviteCode.trim().isEmpty
+        ? 'Codice non disponibile'
+        : inviteCode.trim();
     final title = houseName.isEmpty
         ? 'Casa Creata!'
         : '${houseName.toLowerCase().startsWith('casa ') ? houseName : 'Casa $houseName'} Creata!';
@@ -40,7 +43,7 @@ class CasaCreataSuccessoScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Image.asset(
-                        'assets/Icons/pngtree-green-check-mark-icon-symbol-of-approval-and-confirmation-png-image_15397347 1.png',
+                        'assets/Icons/green_check_mark.png',
                         width: 96,
                         height: 96,
                         fit: BoxFit.contain,
@@ -96,7 +99,7 @@ class CasaCreataSuccessoScreen extends StatelessWidget {
                                     child: FittedBox(
                                       fit: BoxFit.scaleDown,
                                       child: Text(
-                                        inviteCode,
+                                        displayedInviteCode,
                                         textAlign: TextAlign.center,
                                         style: AppTextStyles
                                             .dashboardBalanceAmount
@@ -208,7 +211,12 @@ class CasaCreataSuccessoScreen extends StatelessWidget {
   }
 
   Future<void> _copyInviteCode(BuildContext context) async {
-    await Clipboard.setData(ClipboardData(text: inviteCode));
+    final code = inviteCode.trim();
+    if (code.isEmpty) {
+      return;
+    }
+
+    await Clipboard.setData(ClipboardData(text: code));
     if (!context.mounted) return;
 
     ScaffoldMessenger.of(context)

@@ -82,24 +82,25 @@ class _CompilazioneFormCreaCasaScreenState
 
     if (isValid) {
       if (widget.fromSummary) {
-        Navigator.of(context).pop({
+        Navigator.of(context).pop(<String, String>{
           'name': _nameController.text.trim(),
           'city': _cityController.text.trim(),
           'address': _addressController.text.trim(),
           'type': _selectedType ?? '',
         });
-      } else {
-        Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) => RiepilogoCasaScreen(
-              name: _nameController.text.trim(),
-              city: _cityController.text.trim(),
-              address: _addressController.text.trim(),
-              type: _selectedType ?? '',
-            ),
-          ),
-        );
+        return;
       }
+
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => RiepilogoCasaScreen(
+            name: _nameController.text.trim(),
+            city: _cityController.text.trim(),
+            address: _addressController.text.trim(),
+            type: _selectedType ?? '',
+          ),
+        ),
+      );
     }
   }
 
@@ -252,7 +253,7 @@ class _CompilazioneFormCreaCasaScreenState
                     DropdownButtonFormField<String>(
                       initialValue: _selectedType,
                       decoration: _inputDecoration(hintText: 'Seleziona tipo'),
-                      dropdownColor: AppColors.textMutedLight,
+                      dropdownColor: AppColors.inputFillDark,
                       borderRadius: BorderRadius.circular(AppSizes.radius16),
                       items: const [
                         DropdownMenuItem(

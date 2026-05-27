@@ -6,7 +6,7 @@ import { authMiddleware } from "../middleware/AuthMiddleware";
 
 import { AuthController } from "../controller/AuthController";
 import { SpesaController } from "../controller/SpesaController";
-//import { CasaController } from "../controller/CasaController";
+import { CasaController } from "../controller/CasaController";
 import { TurnoController } from "../controller/TurnoController";
 //import { ProblemaController } from "../controller/ProblemaController";
 
@@ -30,6 +30,7 @@ import {
   ModificaSpesaDto,
   PareggiaContiDto,
 } from "../dto/SpesaDto";
+import { CreaCasaDto } from "../dto/CasaDto";
 
 // ─── Health ───────────────────────────────────────────────────────────────────
 
@@ -136,34 +137,15 @@ export function debugRoutes(app: FastifyInstance) {
 //
 // GET    /case/:idCasa/invite-link                      → Recupera o rigenera il link/codice di invito
 
-/*export async function casaRoutes(app: FastifyInstance) {
+export function casaRoutes(app: FastifyInstance) {
   const casaController = new CasaController();
   app.addHook("onRequest", authMiddleware);
 
   // CRUD casa
-  app.post("/case", casaController.creaCasa);
+  app.post<{ Body: CreaCasaDto }>("/case", casaController.creaCasa);
   app.get("/case", casaController.getCase);
   app.get("/case/:idCasa", casaController.getCasa);
-  app.delete("/case/:idCasa", casaController.eliminaCasa);
-
-  // Inquilini
-  app.get("/case/:idCasa/inquilini", casaController.getAllInquilini);
-  app.get("/case/:idCasa/inquilini/:idInquilino", casaController.getInquilino);
-  app.post("/case/:idCasa/inquilini", casaController.aggiungiInquilino);
-  app.delete(
-    "/case/:idCasa/inquilini/:idInquilino",
-    casaController.rimuoviInquilino,
-  );
-
-  // Ruoli
-  app.put(
-    "/case/:idCasa/inquilini/:idInquilino/ruolo",
-    casaController.modificaRuolo,
-  );
-
-  // Link di invito
-  app.get("/case/:idCasa/invite-link", casaController.generaLink);
-}*/
+}
 
 // ─── Spese ────────────────────────────────────────────────────────────────────
 //

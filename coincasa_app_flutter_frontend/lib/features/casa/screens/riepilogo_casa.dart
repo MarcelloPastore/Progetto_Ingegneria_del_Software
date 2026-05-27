@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/features/casa/screens/casa_creata_successo.dart';
 import 'package:coincasa_app/features/casa/screens/compilazione_form_crea_casa.dart'; // ← aggiunto
 import 'package:coincasa_app/core/theme/app_theme.dart';
@@ -29,6 +30,7 @@ class _RiepilogoCasaScreenState extends State<RiepilogoCasaScreen> {
   late String address;
   late String type;
   late String role;
+  bool _isCreating = false;
 
   @override
   void initState() {
@@ -134,7 +136,7 @@ class _RiepilogoCasaScreenState extends State<RiepilogoCasaScreen> {
 
               // ── Bottone Crea casa ────────────────────────────────────────
               FilledButton(
-                onPressed: () => _createCasa(),
+                onPressed: _isCreating ? null : () => _createCasa(),
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(AppSizes.p56),
                   backgroundColor: AppColors.brandPrimary,
@@ -144,7 +146,7 @@ class _RiepilogoCasaScreenState extends State<RiepilogoCasaScreen> {
                   ),
                 ),
                 child: Text(
-                  'Crea casa',
+                  _isCreating ? 'Creazione...' : 'Crea casa',
                   style: AppTextStyles.buttonCompact.copyWith(fontSize: 16),
                 ),
               ),
@@ -153,7 +155,7 @@ class _RiepilogoCasaScreenState extends State<RiepilogoCasaScreen> {
                 child: Text(
                   'oppure',
                   style: AppTextStyles.divider.copyWith(
-                    color: AppColors.textOnDark.withOpacity(0.7),
+                    color: AppColors.textOnDark.withValues(alpha: 0.7),
                     fontSize: 13,
                   ),
                 ),
@@ -219,12 +221,45 @@ class _RiepilogoCasaScreenState extends State<RiepilogoCasaScreen> {
   }
 
   Future<void> _createCasa() async {
-    await Navigator.of(context).pushReplacement(
-      MaterialPageRoute<void>(
-        builder: (_) =>
-            CasaCreataSuccessoScreen(name: name, inviteCode: 'CX-4821'),
-      ),
-    );
+    if (_isCreating) {
+      return;
+    }
+
+    setState(() {
+      _isCreating = true;
+    });
+
+    try {
+      final casa = await ApiProvider.casa.create({
+        'nome': name.trim(),
+        'citta': city.trim(),
+        'indirizzo': address.trim(),
+        'tipoCasa': type.trim(),
+      });
+
+      if (!mounted) return;
+      await Navigator.of(context).pushReplacement(
+        MaterialPageRoute<void>(
+          builder: (_) => CasaCreataSuccessoScreen(
+            name: casa.nome,
+            inviteCode: casa.inviteCode,
+          ),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isCreating = false;
+      });
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Impossibile creare la casa. Riprova.'),
+            backgroundColor: AppColors.statusNegative,
+          ),
+        );
+    }
   }
 
   Widget _buildDetailRow(String label, String value, {Color? valueColor}) {
@@ -232,21 +267,29 @@ class _RiepilogoCasaScreenState extends State<RiepilogoCasaScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       child: Row(
         children: [
-          Text(
-            label,
-            style: const TextStyle(
-              color: Color(0xFF8B8ABC),
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
+          SizedBox(
+            width: 88,
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: Color(0xFF8B8ABC),
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
-          const Spacer(),
-          Text(
-            value,
-            style: TextStyle(
-              color: valueColor ?? Colors.white,
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
+          const SizedBox(width: AppSizes.p12),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: valueColor ?? Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ],

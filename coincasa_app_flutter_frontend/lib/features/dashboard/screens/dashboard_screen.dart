@@ -1,10 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import 'package:coincasa_app/core/api/api_provider.dart';
+import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  late final Future<String> _nomeCasaFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _nomeCasaFuture = _loadNomeCasa();
+  }
+
+  Future<String> _loadNomeCasa() async {
+    final caseUtente = await ApiProvider.casa.list();
+    if (caseUtente.isEmpty) {
+      return 'Nessuna casa';
+    }
+
+    final casa = caseUtente.first;
+    final nomeCasa = _formatNomeCasa(casa);
+    return nomeCasa.isEmpty ? 'Casa senza nome' : nomeCasa;
+  }
+
+  String _formatNomeCasa(Casa casa) {
+    final nome = casa.nome.trim();
+    if (nome.isEmpty) {
+      return '';
+    }
+
+    return nome.toLowerCase().startsWith('casa ') ? nome : 'Casa $nome';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,28 +58,28 @@ class DashboardScreen extends StatelessWidget {
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: const [
-                  _EmptyDashboardHeader(),
-                  SizedBox(height: AppSizes.p12),
-                  _EmptyBalanceCard(),
-                  SizedBox(height: AppSizes.p28),
-                  _EmptyMessageSection(
+                children: [
+                  _EmptyDashboardHeader(nomeCasaFuture: _nomeCasaFuture),
+                  const SizedBox(height: AppSizes.p12),
+                  const _EmptyBalanceCard(),
+                  const SizedBox(height: AppSizes.p28),
+                  const _EmptyMessageSection(
                     title: 'SALUTE DELLA CASA',
                     message: 'Nessun turno creato...',
                     height: 126,
                   ),
-                  SizedBox(height: AppSizes.p28),
-                  _EmptyMessageSection(
+                  const SizedBox(height: AppSizes.p28),
+                  const _EmptyMessageSection(
                     title: 'PROSSIME SCADENZE',
                     message: 'Nessuna scadenza presente...',
                     height: 150,
                   ),
-                  SizedBox(height: AppSizes.p28),
-                  _EmptyProblemsSection(),
-                  SizedBox(height: AppSizes.p28),
-                  _EmptyTodayTurnSection(),
-                  SizedBox(height: AppSizes.p28),
-                  _EmptyCalendarSection(),
+                  const SizedBox(height: AppSizes.p28),
+                  const _EmptyProblemsSection(),
+                  const SizedBox(height: AppSizes.p28),
+                  const _EmptyTodayTurnSection(),
+                  const SizedBox(height: AppSizes.p28),
+                  const _EmptyCalendarSection(),
                 ],
               ),
             ),
@@ -70,13 +105,15 @@ class DashboardScreen extends StatelessWidget {
 }
 
 class _EmptyDashboardHeader extends StatelessWidget {
-  const _EmptyDashboardHeader();
+  const _EmptyDashboardHeader({required this.nomeCasaFuture});
+
+  final Future<String> nomeCasaFuture;
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
+    return Row(
       children: [
-        CircleAvatar(
+        const CircleAvatar(
           radius: AppSizes.p23,
           backgroundColor: AppColors.surfaceTint,
           child: Image(
@@ -86,16 +123,30 @@ class _EmptyDashboardHeader extends StatelessWidget {
             fit: BoxFit.contain,
           ),
         ),
-        SizedBox(width: AppSizes.p14),
+        const SizedBox(width: AppSizes.p14),
         Expanded(
-          child: Text(
-            'Casa Verdi',
-            style: AppTextStyles.dashboardHeaderTitle,
-            textAlign: TextAlign.center,
+          child: FutureBuilder<String>(
+            future: nomeCasaFuture,
+            builder: (context, snapshot) {
+              final nomeCasa = switch (snapshot.connectionState) {
+                ConnectionState.none ||
+                ConnectionState.waiting => 'Caricamento...',
+                _ when snapshot.hasError => 'Casa non disponibile',
+                _ => snapshot.data ?? 'Nessuna casa',
+              };
+
+              return Text(
+                nomeCasa,
+                style: AppTextStyles.dashboardHeaderTitle,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              );
+            },
           ),
         ),
-        SizedBox(width: AppSizes.p14),
-        CircleAvatar(
+        const SizedBox(width: AppSizes.p14),
+        const CircleAvatar(
           radius: AppSizes.p23,
           backgroundColor: AppColors.brandSecondary,
           child: Image(

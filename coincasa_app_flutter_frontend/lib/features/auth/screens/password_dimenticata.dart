@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:coincasa_app/core/theme/app_theme.dart';
 
-import 'attesa_invio_codice_screen.dart';
+import 'inserisci_codice_screen.dart';
 import 'login_screen.dart';
 
 class PasswordDimenticataScreen extends StatefulWidget {
@@ -98,7 +98,7 @@ class _PasswordDimenticataScreenState extends State<PasswordDimenticataScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (context) =>
-                      AttesaInvioCodiceScreen(email: normalizedEmail),
+                      InserisciCodiceScreen(email: normalizedEmail),
                 ),
               );
             },
