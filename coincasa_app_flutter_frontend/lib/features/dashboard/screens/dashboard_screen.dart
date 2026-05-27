@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -13,23 +14,36 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  late final Future<String> _nomeCasaFuture;
+  late final Future<_DashboardData> _dashboardDataFuture;
 
   @override
   void initState() {
     super.initState();
-    _nomeCasaFuture = _loadNomeCasa();
+    _dashboardDataFuture = _loadDashboardData();
   }
 
-  Future<String> _loadNomeCasa() async {
+  Future<_DashboardData> _loadDashboardData() async {
     final caseUtente = await ApiProvider.casa.list();
     if (caseUtente.isEmpty) {
-      return 'Nessuna casa';
+      return const _DashboardData(nomeCasa: 'Nessuna casa');
     }
 
     final casa = caseUtente.first;
     final nomeCasa = _formatNomeCasa(casa);
-    return nomeCasa.isEmpty ? 'Casa senza nome' : nomeCasa;
+    final displayName = nomeCasa.isEmpty ? 'Casa senza nome' : nomeCasa;
+
+    final amounts = await Future.wait<double>([
+      ApiProvider.spese.getSaldo(casa.id),
+      ApiProvider.spese.getCreditoTot(casa.id),
+      ApiProvider.spese.getDebitoTot(casa.id),
+    ]);
+
+    return _DashboardData(
+      nomeCasa: displayName,
+      saldo: amounts[0],
+      credito: amounts[1],
+      debito: amounts[2],
+    );
   }
 
   String _formatNomeCasa(Casa casa) {
@@ -45,7 +59,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
-      bottomNavigationBar: const _DashboardBottomNav(),
+      bottomNavigationBar: const HouseQuickNav(currentRoute: '/dashboard'),
       body: SafeArea(
         child: Stack(
           children: [
@@ -59,20 +73,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _EmptyDashboardHeader(nomeCasaFuture: _nomeCasaFuture),
+                  _EmptyDashboardHeader(
+                    dashboardDataFuture: _dashboardDataFuture,
+                  ),
                   const SizedBox(height: AppSizes.p12),
-                  const _EmptyBalanceCard(),
+                  _EmptyBalanceCard(dashboardDataFuture: _dashboardDataFuture),
                   const SizedBox(height: AppSizes.p28),
                   const _EmptyMessageSection(
                     title: 'SALUTE DELLA CASA',
                     message: 'Nessun turno creato...',
                     height: 126,
+                    routeName: '/turni',
                   ),
                   const SizedBox(height: AppSizes.p28),
                   const _EmptyMessageSection(
                     title: 'PROSSIME SCADENZE',
                     message: 'Nessuna scadenza presente...',
                     height: 150,
+                    routeName: '/scadenze',
                   ),
                   const SizedBox(height: AppSizes.p28),
                   const _EmptyProblemsSection(),
@@ -87,7 +105,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
               right: AppSizes.p10,
               bottom: AppSizes.p24,
               child: FloatingActionButton(
-                onPressed: () {},
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Funzione non ancora implementata.'),
+                    ),
+                  );
+                },
                 backgroundColor: AppColors.brandAccent,
                 elevation: AppSizes.p6,
                 child: const Icon(
@@ -104,35 +128,59 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
-class _EmptyDashboardHeader extends StatelessWidget {
-  const _EmptyDashboardHeader({required this.nomeCasaFuture});
+class _DashboardData {
+  const _DashboardData({
+    required this.nomeCasa,
+    this.saldo,
+    this.credito,
+    this.debito,
+  });
 
-  final Future<String> nomeCasaFuture;
+  final String nomeCasa;
+  final double? saldo;
+  final double? credito;
+  final double? debito;
+}
+
+class _EmptyDashboardHeader extends StatelessWidget {
+  const _EmptyDashboardHeader({required this.dashboardDataFuture});
+
+  final Future<_DashboardData> dashboardDataFuture;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const CircleAvatar(
-          radius: AppSizes.p23,
-          backgroundColor: AppColors.surfaceTint,
-          child: Image(
-            image: AssetImage('assets/Icons/Profilo_utente_icona.png'),
-            width: AppSizes.p27,
-            height: AppSizes.p27,
-            fit: BoxFit.contain,
+        InkWell(
+          onTap: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Gestione account non ancora implementata.'),
+              ),
+            );
+          },
+          customBorder: const CircleBorder(),
+          child: const CircleAvatar(
+            radius: AppSizes.p23,
+            backgroundColor: AppColors.surfaceTint,
+            child: Image(
+              image: AssetImage('assets/Icons/Profilo_utente_icona.png'),
+              width: AppSizes.p27,
+              height: AppSizes.p27,
+              fit: BoxFit.contain,
+            ),
           ),
         ),
         const SizedBox(width: AppSizes.p14),
         Expanded(
-          child: FutureBuilder<String>(
-            future: nomeCasaFuture,
+          child: FutureBuilder<_DashboardData>(
+            future: dashboardDataFuture,
             builder: (context, snapshot) {
               final nomeCasa = switch (snapshot.connectionState) {
                 ConnectionState.none ||
                 ConnectionState.waiting => 'Caricamento...',
                 _ when snapshot.hasError => 'Casa non disponibile',
-                _ => snapshot.data ?? 'Nessuna casa',
+                _ => snapshot.data?.nomeCasa ?? 'Nessuna casa',
               };
 
               return Text(
@@ -146,14 +194,18 @@ class _EmptyDashboardHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(width: AppSizes.p14),
-        const CircleAvatar(
-          radius: AppSizes.p23,
-          backgroundColor: AppColors.brandSecondary,
-          child: Image(
-            image: AssetImage('assets/Icons/Icona_dashboard.png'),
-            width: AppSizes.p28,
-            height: AppSizes.p28,
-            fit: BoxFit.contain,
+        InkWell(
+          onTap: () => Navigator.of(context).pushNamed('/casa'),
+          customBorder: const CircleBorder(),
+          child: const CircleAvatar(
+            radius: AppSizes.p23,
+            backgroundColor: AppColors.brandSecondary,
+            child: Image(
+              image: AssetImage('assets/Icons/Icona_dashboard.png'),
+              width: AppSizes.p28,
+              height: AppSizes.p28,
+              fit: BoxFit.contain,
+            ),
           ),
         ),
       ],
@@ -162,103 +214,142 @@ class _EmptyDashboardHeader extends StatelessWidget {
 }
 
 class _EmptyBalanceCard extends StatelessWidget {
-  const _EmptyBalanceCard();
+  const _EmptyBalanceCard({required this.dashboardDataFuture});
+
+  final Future<_DashboardData> dashboardDataFuture;
+
+  String _formatAmount(double? value, {bool showPlus = false}) {
+    if (value == null) {
+      return '\u20AC0';
+    }
+
+    final rounded = value.toStringAsFixed(2);
+    final normalized = rounded.endsWith('.00')
+        ? rounded.substring(0, rounded.length - 3)
+        : rounded;
+    final prefix = value < 0
+        ? '-'
+        : showPlus && value > 0
+        ? '+'
+        : '';
+
+    return '$prefix\u20AC${normalized.replaceFirst('-', '')}';
+  }
+
+  Color _saldoColor(double? saldo) {
+    if (saldo == null || saldo >= 0) {
+      return AppColors.statusPositive;
+    }
+
+    return AppColors.statusNegative;
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          'IL TUO SALDO',
-          style: AppTextStyles.dashboardHeaderSubtitle.copyWith(
-            color: AppColors.textMuted,
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
+    return InkWell(
+      onTap: () => Navigator.of(context).pushNamed('/spese'),
+      borderRadius: BorderRadius.circular(AppSizes.radius8),
+      child: Column(
+        children: [
+          Text(
+            'IL TUO SALDO',
+            style: AppTextStyles.dashboardHeaderSubtitle.copyWith(
+              color: AppColors.textMuted,
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+            ),
+            textAlign: TextAlign.center,
           ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: AppSizes.p10),
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: AppSizes.p18),
-          decoration: BoxDecoration(
-            color: AppColors.surfaceDarkElevated,
-            borderRadius: BorderRadius.circular(AppSizes.radius8),
-            boxShadow: const [
-              BoxShadow(
-                color: AppColors.shadowStrong,
-                blurRadius: AppSizes.p8,
-                offset: Offset(0, AppSizes.p5),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.fromLTRB(
-            AppSizes.p18,
-            AppSizes.p10,
-            AppSizes.p14,
-            AppSizes.p18,
-          ),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  const SizedBox(width: AppSizes.p30),
-                  Expanded(
-                    child: Text(
-                      'Totale',
-                      style: AppTextStyles.dashboardBalanceTitle.copyWith(
-                        fontSize: 20,
-                      ),
-                      textAlign: TextAlign.center,
+          const SizedBox(height: AppSizes.p10),
+          FutureBuilder<_DashboardData>(
+            future: dashboardDataFuture,
+            builder: (context, snapshot) {
+              final data = snapshot.data;
+              final saldo = data?.saldo;
+
+              return Container(
+                margin: const EdgeInsets.symmetric(horizontal: AppSizes.p18),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceDarkElevated,
+                  borderRadius: BorderRadius.circular(AppSizes.radius8),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: AppColors.shadowStrong,
+                      blurRadius: AppSizes.p8,
+                      offset: Offset(0, AppSizes.p5),
                     ),
-                  ),
-                  SvgPicture.asset(
-                    'assets/Icons/Arrow up-right.svg',
-                    width: AppSizes.p30,
-                    height: AppSizes.p30,
-                    colorFilter: const ColorFilter.mode(
-                      AppColors.brandAccent,
-                      BlendMode.srcIn,
-                    ),
-                  ),
-                ],
-              ),
-              Text(
-                '€0',
-                style: AppTextStyles.dashboardBalanceAmount.copyWith(
-                  color: AppColors.statusPositive,
-                  fontSize: 25,
+                  ],
                 ),
-              ),
-              const SizedBox(height: AppSizes.p18),
-              Row(
-                children: [
-                  Expanded(
-                    child: _BalanceMetric(
-                      label: 'Da ricevere',
-                      value: '+€0',
-                      valueColor: AppColors.statusPositive,
-                      align: CrossAxisAlignment.center,
+                padding: const EdgeInsets.fromLTRB(
+                  AppSizes.p18,
+                  AppSizes.p10,
+                  AppSizes.p14,
+                  AppSizes.p18,
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        const SizedBox(width: AppSizes.p30),
+                        Expanded(
+                          child: Text(
+                            'Totale',
+                            style: AppTextStyles.dashboardBalanceTitle
+                                .copyWith(fontSize: 20),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        SvgPicture.asset(
+                          'assets/Icons/Arrow up-right.svg',
+                          width: AppSizes.p30,
+                          height: AppSizes.p30,
+                          colorFilter: const ColorFilter.mode(
+                            AppColors.brandAccent,
+                            BlendMode.srcIn,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  Container(
-                    width: 1,
-                    height: AppSizes.p42,
-                    color: AppColors.dividerOnDark,
-                  ),
-                  Expanded(
-                    child: _BalanceMetric(
-                      label: 'Devi pagare',
-                      value: '€0',
-                      valueColor: AppColors.statusNegative,
-                      align: CrossAxisAlignment.center,
+                    Text(
+                      _formatAmount(saldo),
+                      style: AppTextStyles.dashboardBalanceAmount.copyWith(
+                        color: _saldoColor(saldo),
+                        fontSize: 25,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                    const SizedBox(height: AppSizes.p18),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _BalanceMetric(
+                            label: 'Da ricevere',
+                            value: _formatAmount(data?.credito, showPlus: true),
+                            valueColor: AppColors.statusPositive,
+                            align: CrossAxisAlignment.center,
+                          ),
+                        ),
+                        Container(
+                          width: 1,
+                          height: AppSizes.p42,
+                          color: AppColors.dividerOnDark,
+                        ),
+                        Expanded(
+                          child: _BalanceMetric(
+                            label: 'Devi pagare',
+                            value: _formatAmount(data?.debito),
+                            valueColor: AppColors.statusNegative,
+                            align: CrossAxisAlignment.center,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -306,11 +397,13 @@ class _EmptyMessageSection extends StatelessWidget {
     required this.title,
     required this.message,
     required this.height,
+    this.routeName,
   });
 
   final String title;
   final String message;
   final double height;
+  final String? routeName;
 
   @override
   Widget build(BuildContext context) {
@@ -319,20 +412,26 @@ class _EmptyMessageSection extends StatelessWidget {
       children: [
         _CenteredSectionTitle(title),
         const SizedBox(height: AppSizes.p10),
-        Container(
-          height: height,
-          decoration: BoxDecoration(
-            color: AppColors.surfaceDarkElevated,
-            borderRadius: BorderRadius.circular(AppSizes.radius8),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            message,
-            style: AppTextStyles.dashboardCardSubtitleOnDark.copyWith(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
+        InkWell(
+          onTap: routeName == null
+              ? null
+              : () => Navigator.of(context).pushNamed(routeName!),
+          borderRadius: BorderRadius.circular(AppSizes.radius8),
+          child: Container(
+            height: height,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceDarkElevated,
+              borderRadius: BorderRadius.circular(AppSizes.radius8),
             ),
-            textAlign: TextAlign.center,
+            alignment: Alignment.center,
+            child: Text(
+              message,
+              style: AppTextStyles.dashboardCardSubtitleOnDark.copyWith(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+              ),
+              textAlign: TextAlign.center,
+            ),
           ),
         ),
       ],
@@ -350,41 +449,45 @@ class _EmptyProblemsSection extends StatelessWidget {
       children: [
         const _CenteredSectionTitle('PROBLEMI APERTI'),
         const SizedBox(height: AppSizes.p10),
-        Container(
-          height: 246,
-          decoration: BoxDecoration(
-            color: AppColors.surfaceDarkElevated,
-            borderRadius: BorderRadius.circular(AppSizes.radius8),
-            boxShadow: const [
-              BoxShadow(
-                color: AppColors.shadowStrong,
-                blurRadius: AppSizes.p8,
-                offset: Offset(0, AppSizes.p5),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.fromLTRB(
-            AppSizes.p10,
-            AppSizes.p15,
-            AppSizes.p20,
-            AppSizes.p17,
-          ),
-          child: Column(
-            children: [
-              const _StatusRow(
-                title: 'Nessun problema',
-                status: 'urgente',
-                titleColor: AppColors.statusPositive,
-              ),
-              const Spacer(),
-              Text(
-                'Vedi tutti',
-                style: AppTextStyles.dashboardSectionLink.copyWith(
-                  color: AppColors.brandAccent,
-                  fontSize: 16,
+        InkWell(
+          onTap: () => Navigator.of(context).pushNamed('/problemi'),
+          borderRadius: BorderRadius.circular(AppSizes.radius8),
+          child: Container(
+            height: 246,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceDarkElevated,
+              borderRadius: BorderRadius.circular(AppSizes.radius8),
+              boxShadow: const [
+                BoxShadow(
+                  color: AppColors.shadowStrong,
+                  blurRadius: AppSizes.p8,
+                  offset: Offset(0, AppSizes.p5),
                 ),
-              ),
-            ],
+              ],
+            ),
+            padding: const EdgeInsets.fromLTRB(
+              AppSizes.p10,
+              AppSizes.p15,
+              AppSizes.p20,
+              AppSizes.p17,
+            ),
+            child: Column(
+              children: [
+                const _StatusRow(
+                  title: 'Nessun problema',
+                  status: 'urgente',
+                  titleColor: AppColors.statusPositive,
+                ),
+                const Spacer(),
+                Text(
+                  'Vedi tutti',
+                  style: AppTextStyles.dashboardSectionLink.copyWith(
+                    color: AppColors.brandAccent,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ],
@@ -402,28 +505,32 @@ class _EmptyTodayTurnSection extends StatelessWidget {
       children: [
         const _CenteredSectionTitle('TURNO DI OGGI'),
         const SizedBox(height: AppSizes.p10),
-        Container(
-          decoration: BoxDecoration(
-            color: AppColors.surfaceDarkElevated,
-            borderRadius: BorderRadius.circular(AppSizes.radius8),
-            boxShadow: const [
-              BoxShadow(
-                color: AppColors.shadowStrong,
-                blurRadius: AppSizes.p8,
-                offset: Offset(0, AppSizes.p5),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.fromLTRB(
-            AppSizes.p14,
-            AppSizes.p16,
-            AppSizes.p20,
-            AppSizes.p16,
-          ),
-          child: const _StatusRow(
-            title: 'Nessuna pulizia da fare!',
-            status: 'oggi',
-            titleColor: AppColors.textOnDark,
+        InkWell(
+          onTap: () => Navigator.of(context).pushNamed('/turni'),
+          borderRadius: BorderRadius.circular(AppSizes.radius8),
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.surfaceDarkElevated,
+              borderRadius: BorderRadius.circular(AppSizes.radius8),
+              boxShadow: const [
+                BoxShadow(
+                  color: AppColors.shadowStrong,
+                  blurRadius: AppSizes.p8,
+                  offset: Offset(0, AppSizes.p5),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.fromLTRB(
+              AppSizes.p14,
+              AppSizes.p16,
+              AppSizes.p20,
+              AppSizes.p16,
+            ),
+            child: const _StatusRow(
+              title: 'Nessuna pulizia da fare!',
+              status: 'oggi',
+              titleColor: AppColors.textOnDark,
+            ),
           ),
         ),
       ],
@@ -501,82 +608,88 @@ class _EmptyCalendarSection extends StatelessWidget {
       children: [
         const _CenteredSectionTitle('CALENDARIO SCADENZE'),
         const SizedBox(height: AppSizes.p10),
-        ClipRRect(
+        InkWell(
+          onTap: () => Navigator.of(context).pushNamed('/scadenze'),
           borderRadius: BorderRadius.circular(AppSizes.radius8),
-          child: DecoratedBox(
-            decoration: const BoxDecoration(color: AppColors.surfaceDark),
-            child: Column(
-              children: [
-                Container(
-                  height: AppSizes.p48,
-                  color: AppColors.brandSecondary,
-                  alignment: Alignment.center,
-                  child: const Text(
-                    'Aprile',
-                    style: TextStyle(
-                      color: AppColors.textOnDark,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppSizes.radius8),
+            child: DecoratedBox(
+              decoration: const BoxDecoration(color: AppColors.surfaceDark),
+              child: Column(
+                children: [
+                  Container(
+                    height: AppSizes.p48,
+                    color: AppColors.brandSecondary,
+                    alignment: Alignment.center,
+                    child: const Text(
+                      'Aprile',
+                      style: TextStyle(
+                        color: AppColors.textOnDark,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSizes.p20,
-                    AppSizes.p18,
-                    AppSizes.p20,
-                    AppSizes.p30,
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: _weekDays
-                            .map(
-                              (day) => Expanded(
-                                child: Text(
-                                  day,
-                                  textAlign: TextAlign.center,
-                                  style: AppTextStyles.dashboardCalendarWeekday
-                                      .copyWith(
-                                        color: AppColors.textOnDark,
-                                        fontSize: 13,
-                                      ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSizes.p20,
+                      AppSizes.p18,
+                      AppSizes.p20,
+                      AppSizes.p30,
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: _weekDays
+                              .map(
+                                (day) => Expanded(
+                                  child: Text(
+                                    day,
+                                    textAlign: TextAlign.center,
+                                    style: AppTextStyles
+                                        .dashboardCalendarWeekday
+                                        .copyWith(
+                                          color: AppColors.textOnDark,
+                                          fontSize: 13,
+                                        ),
+                                  ),
                                 ),
+                              )
+                              .toList(),
+                        ),
+                        const SizedBox(height: AppSizes.p16),
+                        GridView.builder(
+                          itemCount: 35,
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 7,
+                                mainAxisSpacing: AppSizes.p12,
+                                crossAxisSpacing: AppSizes.p12,
+                                childAspectRatio: 1.3,
                               ),
-                            )
-                            .toList(),
-                      ),
-                      const SizedBox(height: AppSizes.p16),
-                      GridView.builder(
-                        itemCount: 35,
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 7,
-                              mainAxisSpacing: AppSizes.p12,
-                              crossAxisSpacing: AppSizes.p12,
-                              childAspectRatio: 1.3,
-                            ),
-                        itemBuilder: (context, index) {
-                          final day = index < 30 ? '${index + 1}' : '';
+                          itemBuilder: (context, index) {
+                            final day = index < 30 ? '${index + 1}' : '';
 
-                          return Text(
-                            day,
-                            textAlign: TextAlign.center,
-                            style: AppTextStyles.dashboardCalendarDay.copyWith(
-                              color: day == '14'
-                                  ? AppColors.textMuted
-                                  : AppColors.textOnDark,
-                              fontSize: 14,
-                            ),
-                          );
-                        },
-                      ),
-                    ],
+                            return Text(
+                              day,
+                              textAlign: TextAlign.center,
+                              style: AppTextStyles.dashboardCalendarDay
+                                  .copyWith(
+                                    color: day == '14'
+                                        ? AppColors.textMuted
+                                        : AppColors.textOnDark,
+                                    fontSize: 14,
+                                  ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -604,90 +717,3 @@ class _CenteredSectionTitle extends StatelessWidget {
   }
 }
 
-class _DashboardBottomNav extends StatelessWidget {
-  const _DashboardBottomNav();
-
-  static const List<_NavEntry> _entries = [
-    _NavEntry(label: 'Home', asset: 'assets/Icons/home.png', selected: true),
-    _NavEntry(label: 'Spese', asset: 'assets/Icons/spese.png'),
-    _NavEntry(label: 'Turni', asset: 'assets/Icons/turni.png'),
-    _NavEntry(label: 'Scadenze', asset: 'assets/Icons/reminder.png'),
-    _NavEntry(label: 'Problemi', asset: 'assets/Icons/problemi.png'),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 88,
-      decoration: const BoxDecoration(
-        color: AppColors.surfaceDark,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(7)),
-      ),
-      padding: const EdgeInsets.fromLTRB(
-        AppSizes.p8,
-        AppSizes.p10,
-        AppSizes.p8,
-        AppSizes.p8,
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: _entries
-            .map((entry) => Expanded(child: _BottomNavItem(entry: entry)))
-            .toList(),
-      ),
-    );
-  }
-}
-
-class _BottomNavItem extends StatelessWidget {
-  const _BottomNavItem({required this.entry});
-
-  final _NavEntry entry;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = entry.selected ? AppColors.statusInfo : AppColors.textOnDark;
-
-    return InkWell(
-      onTap: () {},
-      borderRadius: BorderRadius.circular(AppSizes.radius8),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Image.asset(
-            entry.asset,
-            width: AppSizes.p32,
-            height: AppSizes.p32,
-            fit: BoxFit.contain,
-          ),
-          const SizedBox(height: AppSizes.p2),
-          Text(
-            entry.label,
-            style: TextStyle(
-              color: color,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              decoration: entry.selected
-                  ? TextDecoration.underline
-                  : TextDecoration.none,
-              decorationColor: color,
-              decorationThickness: 1.5,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _NavEntry {
-  const _NavEntry({
-    required this.label,
-    required this.asset,
-    this.selected = false,
-  });
-
-  final String label;
-  final String asset;
-  final bool selected;
-}

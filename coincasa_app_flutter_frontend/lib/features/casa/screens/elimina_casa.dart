@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 
-Future<void> showEliminaCasaDialog(BuildContext context) {
-  return showDialog<void>(
+Future<bool?> showEliminaCasaDialog(BuildContext context, {String? nomeCasa}) {
+  return showDialog<bool>(
     context: context,
     barrierColor: const Color(0x99000000),
-    builder: (_) => const EliminaCasaDialog(),
+    builder: (_) => EliminaCasaDialog(nomeCasa: nomeCasa),
   );
 }
 
 class EliminaCasaDialog extends StatelessWidget {
-  const EliminaCasaDialog({super.key});
+  const EliminaCasaDialog({super.key, this.nomeCasa});
+
+  final String? nomeCasa;
 
   @override
   Widget build(BuildContext context) {
@@ -18,14 +20,16 @@ class EliminaCasaDialog extends StatelessWidget {
       backgroundColor: Colors.transparent,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 390),
-        child: const SingleChildScrollView(child: _DeleteCard()),
+        child: SingleChildScrollView(child: _DeleteCard(nomeCasa: nomeCasa)),
       ),
     );
   }
 }
 
 class _DeleteCard extends StatelessWidget {
-  const _DeleteCard();
+  const _DeleteCard({this.nomeCasa});
+
+  final String? nomeCasa;
 
   @override
   Widget build(BuildContext context) {
@@ -49,8 +53,8 @@ class _DeleteCard extends StatelessWidget {
         children: [
           const _TrashBadge(),
           const SizedBox(height: 18),
-          const Text(
-            'Eliminare Casa Verdi?',
+          Text(
+            'Eliminare ${nomeCasa?.trim().isNotEmpty == true ? nomeCasa : 'questa casa'}?',
             textAlign: TextAlign.center,
             maxLines: 2,
             style: TextStyle(
@@ -76,7 +80,7 @@ class _DeleteCard extends StatelessWidget {
           const SizedBox(height: 20),
           _DeleteButton(
             onPressed: () {
-              Navigator.of(context).pop();
+              Navigator.of(context).pop(true);
             },
           ),
           const SizedBox(height: 14),
@@ -107,7 +111,7 @@ class _TrashBadge extends StatelessWidget {
         ),
         child: Center(
           child: Image.asset(
-            'assets/Icons/62945wastebasket_109227 1.png',
+            'assets/Icons/problemi.png',
             width: 88,
             height: 88,
             fit: BoxFit.contain,

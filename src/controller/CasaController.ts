@@ -5,6 +5,8 @@ import {
   AggiungiInquilinoSchema,
   CreaCasaDto,
   CreaCasaSchema,
+  ModificaCasaDto,
+  ModificaCasaSchema,
   ModificaRuoloInquilinoDto,
   ModificaRuoloInquilinoSchema,
 } from "../dto/CasaDto";
@@ -55,6 +57,27 @@ export class CasaController {
     try {
       const casa = await this.casaService.getCasa(
         request.params.idCasa,
+        request.user.idUtente,
+      );
+      return reply.status(200).send(casa);
+    } catch (error) {
+      const mapped = mapErrorToHttp(error);
+      return reply.status(mapped.statusCode).send({ message: mapped.message });
+    }
+  };
+
+  /**
+   * PUT /case/:idCasa
+   */
+  modificaCasa = async (
+    request: FastifyRequest<{ Params: CasaParams; Body: ModificaCasaDto }>,
+    reply: FastifyReply,
+  ) => {
+    try {
+      const dto = ModificaCasaSchema.parse(request.body);
+      const casa = await this.casaService.modificaCasa(
+        request.params.idCasa,
+        dto,
         request.user.idUtente,
       );
       return reply.status(200).send(casa);

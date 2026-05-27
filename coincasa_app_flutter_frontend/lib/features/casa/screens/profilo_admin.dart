@@ -2,67 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:coincasa_app/features/casa/screens/hub_casa_admin.dart';
 import 'package:coincasa_app/features/casa/screens/promuovi_coinquilino.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 
 class ProfiloAdminScreen extends StatelessWidget {
   const ProfiloAdminScreen({super.key});
-
-  static const List<BottomNavigationBarItem> _navigationItems = [
-    BottomNavigationBarItem(
-      icon: SizedBox(
-        width: 28,
-        height: 28,
-        child: Image(
-          image: AssetImage('assets/Icons/home.png'),
-          fit: BoxFit.contain,
-        ),
-      ),
-      label: 'Home',
-    ),
-    BottomNavigationBarItem(
-      icon: SizedBox(
-        width: 28,
-        height: 28,
-        child: Image(
-          image: AssetImage('assets/Icons/spese.png'),
-          fit: BoxFit.contain,
-        ),
-      ),
-      label: 'Spese',
-    ),
-    BottomNavigationBarItem(
-      icon: SizedBox(
-        width: 28,
-        height: 28,
-        child: Image(
-          image: AssetImage('assets/Icons/turni.png'),
-          fit: BoxFit.contain,
-        ),
-      ),
-      label: 'Turni',
-    ),
-    BottomNavigationBarItem(
-      icon: SizedBox(
-        width: 28,
-        height: 28,
-        child: Image(
-          image: AssetImage('assets/Icons/reminder.png'),
-          fit: BoxFit.contain,
-        ),
-      ),
-      label: 'Scadenze',
-    ),
-    BottomNavigationBarItem(
-      icon: SizedBox(
-        width: 28,
-        height: 28,
-        child: Image(
-          image: AssetImage('assets/Icons/problemi.png'),
-          fit: BoxFit.contain,
-        ),
-      ),
-      label: 'Problemi',
-    ),
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -103,33 +46,10 @@ class ProfiloAdminScreen extends StatelessWidget {
                 ],
               ),
             ),
-            Positioned(
-              right: 22,
-              bottom: 24,
-              child: FloatingActionButton(
-                onPressed: () {},
-                backgroundColor: AppColors.brandPrimary,
-                foregroundColor: Colors.white,
-                elevation: 5,
-                child: const Icon(Icons.add, size: 28),
-              ),
-            ),
           ],
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 0,
-        onTap: (_) {},
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: const Color(0xFF17213B),
-        selectedItemColor: const Color(0xFF28A8FF),
-        unselectedItemColor: Colors.white,
-        selectedFontSize: 12,
-        unselectedFontSize: 12,
-        showUnselectedLabels: true,
-        elevation: 8,
-        items: _navigationItems,
-      ),
+      bottomNavigationBar: const HouseQuickNav(currentRoute: '/dashboard'),
     );
   }
 }
@@ -407,3 +327,4 @@ class _AdminActions extends StatelessWidget {
     );
   }
 }
+

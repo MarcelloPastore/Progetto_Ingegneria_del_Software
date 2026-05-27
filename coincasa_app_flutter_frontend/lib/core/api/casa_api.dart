@@ -22,8 +22,24 @@ class CasaApi {
     return Casa.fromJson(_asMap(data));
   }
 
+  Future<Casa> update(String casaId, Map<String, dynamic> payload) async {
+    final data = await _client.putJson('/case/$casaId', body: payload);
+    return Casa.fromJson(_asMap(data));
+  }
+
   Future<void> delete(String casaId) async {
     await _client.deleteJson('/case/$casaId');
+  }
+
+  Future<Inquilino> addSelfWithInvite(
+    String casaId, {
+    required String inviteCodeOrLink,
+  }) async {
+    final data = await _client.postJson(
+      '/case/$casaId/inquilini',
+      body: {'inviteCode': inviteCodeOrLink},
+    );
+    return Inquilino.fromJson(_asMap(data));
   }
 
   Future<List<Inquilino>> listInquilini(String casaId) async {

@@ -1,123 +1,94 @@
 import 'package:flutter/material.dart';
+
+import 'package:coincasa_app/core/api/api_provider.dart';
+import 'package:coincasa_app/core/models/casa.dart';
+import 'package:coincasa_app/core/models/inquilino.dart';
+import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/features/casa/screens/archivio_documenti_vuoto.dart';
 import 'package:coincasa_app/features/casa/screens/condividi_codice.dart';
 import 'package:coincasa_app/features/casa/screens/elimina_casa.dart';
 import 'package:coincasa_app/features/casa/screens/lista_case.dart';
 import 'package:coincasa_app/features/casa/screens/lista_coinquilini.dart';
-import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/features/casa/screens/modifica_casa.dart';
 
 class HubCasaAdminScreen extends StatefulWidget {
-  const HubCasaAdminScreen({super.key});
+  const HubCasaAdminScreen({super.key, this.casaId});
+
+  final String? casaId;
 
   @override
   State<HubCasaAdminScreen> createState() => _HubCasaAdminScreenState();
 }
 
 class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
-  int _selectedIndex = 0;
+  late Future<_HubCasaData> _future;
 
-  static const List<BottomNavigationBarItem> _navigationItems = [
-    BottomNavigationBarItem(
-      icon: SizedBox(
-        width: 28,
-        height: 28,
-        child: Image(
-          image: AssetImage('assets/Icons/home.png'),
-          fit: BoxFit.contain,
-        ),
-      ),
-      activeIcon: SizedBox(
-        width: 28,
-        height: 28,
-        child: Image(
-          image: AssetImage('assets/Icons/home.png'),
-          fit: BoxFit.contain,
-        ),
-      ),
-      label: 'Home',
-    ),
-    BottomNavigationBarItem(
-      icon: SizedBox(
-        width: 28,
-        height: 28,
-        child: Image(
-          image: AssetImage('assets/Icons/spese.png'),
-          fit: BoxFit.contain,
-        ),
-      ),
-      activeIcon: SizedBox(
-        width: 28,
-        height: 28,
-        child: Image(
-          image: AssetImage('assets/Icons/spese.png'),
-          fit: BoxFit.contain,
-        ),
-      ),
-      label: 'Spese',
-    ),
-    BottomNavigationBarItem(
-      icon: SizedBox(
-        width: 28,
-        height: 28,
-        child: Image(
-          image: AssetImage('assets/Icons/turni.png'),
-          fit: BoxFit.contain,
-        ),
-      ),
-      activeIcon: SizedBox(
-        width: 28,
-        height: 28,
-        child: Image(
-          image: AssetImage('assets/Icons/turni.png'),
-          fit: BoxFit.contain,
-        ),
-      ),
-      label: 'Turni',
-    ),
-    BottomNavigationBarItem(
-      icon: SizedBox(
-        width: 28,
-        height: 28,
-        child: Image(
-          image: AssetImage('assets/Icons/reminder.png'),
-          fit: BoxFit.contain,
-        ),
-      ),
-      activeIcon: SizedBox(
-        width: 28,
-        height: 28,
-        child: Image(
-          image: AssetImage('assets/Icons/reminder.png'),
-          fit: BoxFit.contain,
-        ),
-      ),
-      label: 'Scadenze',
-    ),
-    BottomNavigationBarItem(
-      icon: SizedBox(
-        width: 28,
-        height: 28,
-        child: Image(
-          image: AssetImage('assets/Icons/problemi.png'),
-          fit: BoxFit.contain,
-        ),
-      ),
-      activeIcon: SizedBox(
-        width: 28,
-        height: 28,
-        child: Image(
-          image: AssetImage('assets/Icons/problemi.png'),
-          fit: BoxFit.contain,
-        ),
-      ),
-      label: 'Problemi',
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _future = _load();
+  }
 
-  void _onNavigationTap(int index) {
+  Future<_HubCasaData> _load() async {
+    final caseUtente = await ApiProvider.casa.list();
+    if (caseUtente.isEmpty) {
+      throw StateError('Nessuna casa disponibile.');
+    }
+
+    final selected = widget.casaId == null
+        ? caseUtente.first
+        : caseUtente.firstWhere(
+            (casa) => casa.id == widget.casaId,
+            orElse: () => caseUtente.first,
+          );
+
+    final results = await Future.wait<dynamic>([
+      ApiProvider.casa.getById(selected.id),
+      ApiProvider.casa.listInquilini(selected.id),
+      ApiProvider.spese.list(selected.id),
+      ApiProvider.turni.list(selected.id),
+    ]);
+
+    return _HubCasaData(
+      casa: results[0] as Casa,
+      inquilini: results[1] as List<Inquilino>,
+      speseCount: (results[2] as List).length,
+      turniCount: (results[3] as List).length,
+    );
+  }
+
+  void _reload() {
     setState(() {
-      _selectedIndex = index;
+      _future = _load();
     });
+  }
+
+  Future<void> _deleteCasa(_HubCasaData data) async {
+    final confirmed = await showEliminaCasaDialog(
+      context,
+      nomeCasa: data.casa.nome,
+    );
+    if (confirmed != true) {
+      return;
+    }
+
+    try {
+      await ApiProvider.casa.delete(data.casa.id);
+      if (!mounted) {
+        return;
+      }
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute<void>(builder: (_) => const ListaCaseScreen()),
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Eliminazione casa non riuscita.')),
+      );
+    }
   }
 
   @override
@@ -128,8 +99,9 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
         elevation: 0,
         backgroundColor: const Color(0xFF5A3AE0),
         title: const Text('Hub Casa'),
-        actions: const [
-          Padding(
+        actions: [
+          IconButton(onPressed: _reload, icon: const Icon(Icons.refresh)),
+          const Padding(
             padding: EdgeInsets.only(right: 16),
             child: CircleAvatar(
               radius: 18,
@@ -145,50 +117,88 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
         ],
       ),
       body: SafeArea(
-        child: Stack(
-          children: [
-            SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 18, 16, 146),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  _HouseHeaderCard(),
-                  SizedBox(height: 20),
-                  _ManagementSection(),
-                  SizedBox(height: 20),
-                  _DeleteHouseButton(),
+        child: FutureBuilder<_HubCasaData>(
+          future: _future,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState != ConnectionState.done) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return _HubErrorState(onRetry: _reload);
+            }
+
+            final data = snapshot.data!;
+            return RefreshIndicator(
+              onRefresh: () async => _reload(),
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 18, 16, 32),
+                children: [
+                  _HouseHeaderCard(data: data),
+                  const SizedBox(height: 20),
+                  _ManagementSection(data: data, onCasaUpdated: _reload),
+                  const SizedBox(height: 20),
+                  _DeleteHouseButton(onPressed: () => _deleteCasa(data)),
                 ],
               ),
-            ),
-            Positioned(
-              right: 24,
-              bottom: 30,
-              child: FloatingActionButton(
-                onPressed: null,
-                backgroundColor: AppColors.brandPrimary,
-                child: const Icon(Icons.add, size: 28),
-              ),
-            ),
-          ],
+            );
+          },
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onNavigationTap,
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Color.fromARGB(255, 30, 27, 46),
-        selectedItemColor: AppColors.brandPrimary,
-        unselectedItemColor: const Color(0xFF8A8A9C),
-        showUnselectedLabels: true,
-        elevation: 8,
-        items: _navigationItems,
+      bottomNavigationBar: const HouseQuickNav(currentRoute: '/dashboard'),
+    );
+  }
+}
+
+class _HubCasaData {
+  const _HubCasaData({
+    required this.casa,
+    required this.inquilini,
+    required this.speseCount,
+    required this.turniCount,
+  });
+
+  final Casa casa;
+  final List<Inquilino> inquilini;
+  final int speseCount;
+  final int turniCount;
+}
+
+class _HubErrorState extends StatelessWidget {
+  const _HubErrorState({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.wifi_off, size: 44),
+            const SizedBox(height: 12),
+            const Text('Non e possibile caricare i dati della casa.'),
+            const SizedBox(height: 16),
+            FilledButton(onPressed: onRetry, child: const Text('Riprova')),
+          ],
+        ),
       ),
     );
   }
 }
 
 class _HouseHeaderCard extends StatelessWidget {
-  const _HouseHeaderCard();
+  const _HouseHeaderCard({required this.data});
+
+  final _HubCasaData data;
+
+  String get _address {
+    final parts = [data.casa.indirizzo, data.casa.citta]
+        .where((part) => part.trim().isNotEmpty)
+        .join(' - ');
+    return '${data.casa.tipoCasa.isEmpty ? 'Casa' : data.casa.tipoCasa} - $parts';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -228,26 +238,23 @@ class _HouseHeaderCard extends StatelessWidget {
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
+                  children: [
                     Text(
-                      'Casa Verdi',
-                      style: TextStyle(
+                      data.casa.nome,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 24,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    SizedBox(height: 6),
+                    const SizedBox(height: 6),
                     Text(
-                      'Appartamento · Via Di Casal Bruciato, 18 - Roma',
-                      style: TextStyle(
+                      _address,
+                      style: const TextStyle(
                         color: Color(0xFFB8B8D5),
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.visible,
-                      softWrap: true,
                     ),
                   ],
                 ),
@@ -262,7 +269,7 @@ class _HouseHeaderCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: const Text(
-                  'Admin',
+                  'Casa',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 12,
@@ -274,26 +281,34 @@ class _HouseHeaderCard extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
+            children: [
               Expanded(
-                child: _StatisticChip(value: '0', label: 'membri'),
+                child: _StatisticChip(
+                  value: '${data.inquilini.length}',
+                  label: 'membri',
+                ),
               ),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Expanded(
-                child: _StatisticChip(value: '0', label: 'Spese'),
+                child: _StatisticChip(
+                  value: '${data.speseCount}',
+                  label: 'Spese',
+                ),
               ),
-              SizedBox(width: 8),
-              Expanded(
+              const SizedBox(width: 8),
+              const Expanded(
                 child: _StatisticChip(value: '0', label: 'Scadenze'),
               ),
-              SizedBox(width: 8),
-              Expanded(
+              const SizedBox(width: 8),
+              const Expanded(
                 child: _StatisticChip(value: '0', label: 'Problemi'),
               ),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Expanded(
-                child: _StatisticChip(value: '0', label: 'Turni'),
+                child: _StatisticChip(
+                  value: '${data.turniCount}',
+                  label: 'Turni',
+                ),
               ),
             ],
           ),
@@ -304,17 +319,16 @@ class _HouseHeaderCard extends StatelessWidget {
 }
 
 class _StatisticChip extends StatelessWidget {
+  const _StatisticChip({required this.value, required this.label});
+
   final String value;
   final String label;
-
-  const _StatisticChip({required this.value, required this.label});
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Text(
             value,
@@ -341,7 +355,13 @@ class _StatisticChip extends StatelessWidget {
 }
 
 class _ManagementSection extends StatelessWidget {
-  const _ManagementSection();
+  const _ManagementSection({
+    required this.data,
+    required this.onCasaUpdated,
+  });
+
+  final _HubCasaData data;
+  final VoidCallback onCasaUpdated;
 
   @override
   Widget build(BuildContext context) {
@@ -358,12 +378,36 @@ class _ManagementSection extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         _ManagementAction(
+          icon: Icons.edit_outlined,
+          title: 'Modifica informazioni',
+          subtitle: 'Aggiorna nome, indirizzo e tipologia',
+          onTap: () async {
+            final updated = await Navigator.of(context).push<bool>(
+              MaterialPageRoute(
+                builder: (_) => ModificaCasaScreen(
+                  casaId: data.casa.id,
+                  name: data.casa.nome,
+                  city: data.casa.citta,
+                  address: data.casa.indirizzo,
+                  type: data.casa.tipoCasa,
+                ),
+              ),
+            );
+            if (updated == true) {
+              onCasaUpdated();
+            }
+          },
+        ),
+        const SizedBox(height: 12),
+        _ManagementAction(
           icon: Icons.group_outlined,
           title: 'Coinquilini e ruoli',
-          subtitle: 'Gestisci inviti e permessi',
+          subtitle: '${data.inquilini.length} membri nella casa',
           onTap: () {
             Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const ListaCoinquiliniScreen()),
+              MaterialPageRoute(
+                builder: (_) => ListaCoinquiliniScreen(casaId: data.casa.id),
+              ),
             );
           },
         ),
@@ -371,11 +415,11 @@ class _ManagementSection extends StatelessWidget {
         _ManagementAction(
           icon: Icons.link,
           title: 'Condividi link invito',
-          subtitle: 'Invia l’invito a un amico',
+          subtitle: 'Invia l invito a un amico',
           onTap: () {
             Navigator.of(context).push(
               MaterialPageRoute<void>(
-                builder: (_) => const CondividiCodiceScreen(),
+                builder: (_) => CondividiCodiceScreen(casaId: data.casa.id),
               ),
             );
           },
@@ -384,7 +428,7 @@ class _ManagementSection extends StatelessWidget {
         _ManagementAction(
           icon: Icons.folder_open,
           title: 'Documenti condivisi',
-          subtitle: 'Apri file e note',
+          subtitle: 'Archivio documenti',
           onTap: () {
             Navigator.of(context).push(
               MaterialPageRoute<void>(
@@ -410,17 +454,17 @@ class _ManagementSection extends StatelessWidget {
 }
 
 class _ManagementAction extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback? onTap;
-
   const _ManagementAction({
     required this.icon,
     required this.title,
     required this.subtitle,
     this.onTap,
   });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -472,16 +516,16 @@ class _ManagementAction extends StatelessWidget {
 }
 
 class _DeleteHouseButton extends StatelessWidget {
-  const _DeleteHouseButton();
+  const _DeleteHouseButton({required this.onPressed});
+
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
       child: FilledButton(
-        onPressed: () {
-          showEliminaCasaDialog(context);
-        },
+        onPressed: onPressed,
         style: FilledButton.styleFrom(
           backgroundColor: const Color(0xFFD12C3D),
           foregroundColor: Colors.white,

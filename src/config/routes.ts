@@ -33,6 +33,7 @@ import {
 import {
   AggiungiInquilinoDto,
   CreaCasaDto,
+  ModificaCasaDto,
   ModificaRuoloInquilinoDto,
 } from "../dto/CasaDto";
 
@@ -153,6 +154,10 @@ export function casaRoutes(app: FastifyInstance) {
     casaController.getInviteLink,
   );
   app.get<{ Params: CasaParams }>("/case/:idCasa", casaController.getCasa);
+  app.put<{ Params: CasaParams; Body: ModificaCasaDto }>(
+    "/case/:idCasa",
+    casaController.modificaCasa,
+  );
   app.delete<{ Params: CasaParams }>(
     "/case/:idCasa",
     //{ preHandler: requireRole(Ruolo.HomeAdmin) },

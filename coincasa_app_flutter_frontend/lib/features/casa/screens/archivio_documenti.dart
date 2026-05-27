@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'carica_documenti.dart'; // ← import corretto senza "s"
 
 class ArchivioDocumentiScreen extends StatefulWidget {
@@ -15,17 +16,17 @@ class _ArchivioDocumentiScreenState extends State<ArchivioDocumentiScreen> {
     _Documento(
       nome: 'Contratto affitto',
       tipo: 'PDF',
-      icona: 'assets/Icons/images 5.png',
+      icona: 'assets/Icons/reminder.png',
     ),
     _Documento(
       nome: 'Bolletta gas',
       tipo: 'PDF',
-      icona: 'assets/Icons/images 5.png',
+      icona: 'assets/Icons/reminder.png',
     ),
     _Documento(
       nome: 'Scontrino spesa',
       tipo: 'IMG',
-      icona: 'assets/Icons/images 6.png',
+      icona: 'assets/Icons/home_auth_icon.png',
     ),
   ];
 
@@ -161,24 +162,10 @@ class _ArchivioDocumentiScreenState extends State<ArchivioDocumentiScreen> {
               ),
             ),
 
-            Positioned(
-              right: 24,
-              bottom: 30,
-              child: FloatingActionButton(
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const CaricaDocumentoScreen(),
-                  ),
-                ),
-                backgroundColor: AppColors.brandAccent,
-                child: const Icon(Icons.add, size: 28, color: Colors.white),
-              ),
-            ),
           ],
         ),
       ),
-      bottomNavigationBar: const _DocumentsBottomNav(),
+      bottomNavigationBar: const HouseQuickNav(currentRoute: '/dashboard'),
     );
   }
 }
@@ -249,7 +236,7 @@ class _DocRow extends StatelessWidget {
           GestureDetector(
             onTap: onElimina,
             child: Image.asset(
-              'assets/Icons/62945wastebasket_109227 1.png',
+              'assets/Icons/problemi.png',
               width: 28,
               height: 28,
               fit: BoxFit.contain,
@@ -278,69 +265,4 @@ class _Documento {
   });
 }
 
-class _DocumentsBottomNav extends StatelessWidget {
-  const _DocumentsBottomNav();
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 76,
-      decoration: const BoxDecoration(
-        color: Color(0xFF17213B),
-        border: Border(top: BorderSide(color: Color(0xFF263552), width: 1)),
-      ),
-      padding: const EdgeInsets.fromLTRB(10, 8, 10, 6),
-      child: const Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          _NavItem(
-            iconPath: 'assets/Icons/home.png',
-            label: 'Home',
-            active: true,
-          ),
-          _NavItem(iconPath: 'assets/Icons/spese.png', label: 'Spese'),
-          _NavItem(iconPath: 'assets/Icons/turni.png', label: 'Turni'),
-          _NavItem(iconPath: 'assets/Icons/reminder.png', label: 'Scadenze'),
-          _NavItem(iconPath: 'assets/Icons/problemi.png', label: 'Problemi'),
-        ],
-      ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  final String iconPath;
-  final String label;
-  final bool active;
-
-  const _NavItem({
-    required this.iconPath,
-    required this.label,
-    this.active = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 60,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Image.asset(iconPath, width: 27, height: 27, fit: BoxFit.contain),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: active ? AppColors.brandAccent : Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

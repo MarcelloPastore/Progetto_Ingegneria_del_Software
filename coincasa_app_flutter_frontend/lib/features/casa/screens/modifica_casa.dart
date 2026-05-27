@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:coincasa_app/features/casa/screens/riepilogo_casa.dart';
+import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 
 class ModificaCasaScreen extends StatefulWidget {
+  final String casaId;
   final String name;
   final String city;
   final String address;
@@ -10,6 +12,7 @@ class ModificaCasaScreen extends StatefulWidget {
 
   const ModificaCasaScreen({
     super.key,
+    required this.casaId,
     required this.name,
     required this.city,
     required this.address,
@@ -27,6 +30,7 @@ class _ModificaCasaScreenState extends State<ModificaCasaScreen> {
   late final TextEditingController _addressController;
   late String? _selectedType;
   bool _showValidationError = false;
+  bool _isSaving = false;
 
   static const _backgroundColor = Color(0xFF0B0828);
   static const _cardColor = Color(0xFF151138);
@@ -55,25 +59,39 @@ class _ModificaCasaScreenState extends State<ModificaCasaScreen> {
         (_selectedType?.isNotEmpty ?? false);
   }
 
-  void _handleSave() {
+  Future<void> _handleSave() async {
     final isValid = _formKey.currentState?.validate() ?? false;
     setState(() {
       _showValidationError = !isValid;
     });
 
     if (isValid) {
-      // Torna al riepilogo con i dati aggiornati,
-      // rimuovendo questa schermata dallo stack
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute<void>(
-          builder: (_) => RiepilogoCasaScreen(
-            name: _nameController.text.trim(),
-            city: _cityController.text.trim(),
-            address: _addressController.text.trim(),
-            type: _selectedType ?? '',
-          ),
-        ),
-      );
+      setState(() {
+        _isSaving = true;
+      });
+
+      try {
+        await ApiProvider.casa.update(widget.casaId, {
+          'nome': _nameController.text.trim(),
+          'citta': _cityController.text.trim(),
+          'indirizzo': _addressController.text.trim(),
+          'tipoCasa': _selectedType ?? '',
+        });
+        if (!mounted) {
+          return;
+        }
+        Navigator.of(context).pop(true);
+      } catch (_) {
+        if (!mounted) {
+          return;
+        }
+        setState(() {
+          _isSaving = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Modifica casa non riuscita.')),
+        );
+      }
     }
   }
 
@@ -81,6 +99,7 @@ class _ModificaCasaScreenState extends State<ModificaCasaScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _backgroundColor,
+      bottomNavigationBar: const HouseQuickNav(currentRoute: '/dashboard'),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -124,7 +143,7 @@ class _ModificaCasaScreenState extends State<ModificaCasaScreen> {
                       ),
                     ),
                     Image.asset(
-                      'assets/Icons/appartamenti-moderni-lusso 1 20.30.42.png',
+                      'assets/Icons/appartamenti-moderni-lusso 1.png',
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) =>
                           const Center(
@@ -288,7 +307,7 @@ class _ModificaCasaScreenState extends State<ModificaCasaScreen> {
 
                     // Bottone Salva modifiche
                     FilledButton(
-                      onPressed: _handleSave,
+                      onPressed: _isSaving ? null : _handleSave,
                       style: FilledButton.styleFrom(
                         minimumSize: const Size.fromHeight(56),
                         backgroundColor: _isFormValid
@@ -299,9 +318,9 @@ class _ModificaCasaScreenState extends State<ModificaCasaScreen> {
                           borderRadius: BorderRadius.circular(18),
                         ),
                       ),
-                      child: const Text(
-                        'Salva modifiche',
-                        style: TextStyle(
+                      child: Text(
+                        _isSaving ? 'Salvataggio...' : 'Salva modifiche',
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                         ),

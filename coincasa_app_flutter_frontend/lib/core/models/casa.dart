@@ -7,6 +7,7 @@ class Casa {
     this.tipoCasa = '',
     this.inviteLink = '',
     this.inviteCode = '',
+    this.ruolo = '',
   });
 
   final String id;
@@ -16,6 +17,7 @@ class Casa {
   final String tipoCasa;
   final String inviteLink;
   final String inviteCode;
+  final String ruolo;
 
   factory Casa.fromJson(Map<String, dynamic> json) {
     final idValue = json['id'] ?? json['idCasa'];
@@ -25,6 +27,7 @@ class Casa {
     final tipoCasaValue = json['tipoCasa'] ?? json['type'];
     final inviteLinkValue = json['inviteLink'] ?? json['link'];
     final inviteCodeValue = json['inviteCode'] ?? json['codiceInvito'];
+    final ruoloValue = json['ruolo'] ?? json['role'];
     final inviteLinkText = inviteLinkValue?.toString() ?? '';
 
     return Casa(
@@ -36,6 +39,7 @@ class Casa {
       inviteLink: inviteLinkText,
       inviteCode:
           inviteCodeValue?.toString() ?? _extractInviteCode(inviteLinkText),
+      ruolo: ruoloValue?.toString() ?? '',
     );
   }
 
@@ -48,6 +52,7 @@ class Casa {
       'tipoCasa': tipoCasa,
       'inviteLink': inviteLink,
       'inviteCode': inviteCode,
+      'ruolo': ruolo,
     };
   }
 

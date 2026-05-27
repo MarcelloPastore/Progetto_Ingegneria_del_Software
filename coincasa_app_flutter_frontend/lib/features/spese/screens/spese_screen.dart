@@ -1,94 +1,53 @@
-// import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
-// import 'package:coincasa_app/core/api/api_provider.dart';
-// import 'package:coincasa_app/core/models/casa.dart';
-// import 'package:coincasa_app/core/models/spesa.dart';
+import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 
-// class SpeseScreen extends StatefulWidget {
-//   const SpeseScreen({super.key, this.casaId});
+class SpeseScreen extends StatelessWidget {
+  const SpeseScreen({super.key});
 
-//   final String? casaId;
+  @override
+  Widget build(BuildContext context) {
+    return const _TodoScreen(
+      title: 'Spese',
+      message: 'TODO: gestione spese da implementare.',
+      icon: Icons.receipt_long_outlined,
+    );
+  }
+}
 
-//   @override
-//   State<SpeseScreen> createState() => _SpeseScreenState();
-// }
+class _TodoScreen extends StatelessWidget {
+  const _TodoScreen({
+    required this.title,
+    required this.message,
+    required this.icon,
+  });
 
-// class _SpeseScreenState extends State<SpeseScreen> {
-//   late final Future<_SpeseData> _future;
+  final String title;
+  final String message;
+  final IconData icon;
 
-//   @override
-//   void initState() {
-//     super.initState();
-//     _future = _loadSpese();
-//   }
-
-//   Future<_SpeseData> _loadSpese() async {
-//     final caseList = await ApiProvider.casa.list();
-//     if (caseList.isEmpty) {
-//       return const _SpeseData.empty();
-//     }
-
-//     Casa casa;
-//     if (widget.casaId == null) {
-//       casa = caseList.first;
-//     } else {
-//       casa = await ApiProvider.casa.getById(widget.casaId!);
-//     }
-
-//     final spese = await ApiProvider.spese.list(casa.id);
-//     return _SpeseData(casa: casa, spese: spese);
-//   }
-
-//   String _formatAmount(double value) => value.toStringAsFixed(2);
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(title: const Text('Spese')),
-//       body: FutureBuilder<_SpeseData>(
-//         future: _future,
-//         builder: (context, snapshot) {
-//           if (snapshot.connectionState != ConnectionState.done) {
-//             return const Center(child: CircularProgressIndicator());
-//           }
-
-//           if (snapshot.hasError) {
-//             return Center(child: Text('Errore: ${snapshot.error}'));
-//           }
-
-//           final data = snapshot.data ?? const _SpeseData.empty();
-//           if (data.casa == null) {
-//             return const Center(child: Text('Nessuna casa trovata.'));
-//           }
-
-//           if (data.spese.isEmpty) {
-//             return Center(child: Text('Nessuna spesa per ${data.casa!.nome}.'));
-//           }
-
-//           return ListView.separated(
-//             padding: const EdgeInsets.all(16),
-//             itemBuilder: (context, index) {
-//               final spesa = data.spese[index];
-//               return ListTile(
-//                 title: Text(spesa.descrizione),
-//                 subtitle: Text(spesa.data.toIso8601String()),
-//                 trailing: Text('${_formatAmount(spesa.importo)} EUR'),
-//               );
-//             },
-//             separatorBuilder: (_, __) => const Divider(),
-//             itemCount: data.spese.length,
-//           );
-//         },
-//       ),
-//     );
-//   }
-// }
-
-// class _SpeseData {
-//   const _SpeseData({required this.casa, required this.spese});
-
-//   const _SpeseData.empty() : casa = null, spese = const [];
-
-//   final Casa? casa;
-//   final List<Spesa> spese;
-// }
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(title)),
+      bottomNavigationBar: const HouseQuickNav(currentRoute: '/spese'),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 56),
+              const SizedBox(height: 16),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

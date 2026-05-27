@@ -76,6 +76,19 @@ export class CasaRepository {
     });
   }
 
+  async updateCasa(idCasa: string, data: Partial<CreaCasaDto>) {
+    return prisma.casa.update({
+      where: { id: idCasa },
+      data: {
+        ...(data.nome !== undefined && { nome: data.nome }),
+        ...(data.indirizzo !== undefined && { indirizzo: data.indirizzo }),
+        ...(data.citta !== undefined && { citta: data.citta }),
+        ...(data.tipoCasa !== undefined && { tipoCasa: data.tipoCasa }),
+      },
+      select: this.casaSelect,
+    });
+  }
+
   async deleteCasa(idCasa: string) {
     const problemi = await prisma.problema.findMany({
       where: { idCasa },

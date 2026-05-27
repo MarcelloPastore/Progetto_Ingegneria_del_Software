@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 
 import 'inserisci_codice_screen.dart';
@@ -7,8 +8,16 @@ import 'login_screen.dart';
 import 'successo_nuova_password_screen.dart';
 
 class NuovaPasswordScreen extends StatefulWidget {
-  const NuovaPasswordScreen({super.key, this.onSave, this.onCancel});
+  const NuovaPasswordScreen({
+    super.key,
+    this.email = '',
+    this.code = '',
+    this.onSave,
+    this.onCancel,
+  });
 
+  final String email;
+  final String code;
   final VoidCallback? onSave;
   final VoidCallback? onCancel;
 
@@ -20,6 +29,7 @@ class _NuovaPasswordScreenState extends State<NuovaPasswordScreen> {
   late final TextEditingController _passwordController;
   late final TextEditingController _confirmPasswordController;
   bool _showPasswordError = false;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -111,33 +121,7 @@ class _NuovaPasswordScreenState extends State<NuovaPasswordScreen> {
           const SizedBox(height: AppSizes.p30),
           AuthPrimaryButton(
             text: 'Salva nuova password',
-            onPressed: () {
-              final password = _passwordController.text;
-              final confirmPassword = _confirmPasswordController.text;
-              if (password != confirmPassword) {
-                setState(() {
-                  _showPasswordError = true;
-                });
-                return;
-              }
-
-              if (_showPasswordError) {
-                setState(() {
-                  _showPasswordError = false;
-                });
-              }
-
-              if (widget.onSave != null) {
-                widget.onSave!();
-              }
-
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const SuccessoNuovaPasswordScreen(),
-                ),
-              );
-            },
+            onPressed: _isSaving ? null : _savePassword,
           ),
           const SizedBox(height: AppSizes.p17),
           AuthPrimaryButton(
@@ -173,5 +157,55 @@ class _NuovaPasswordScreenState extends State<NuovaPasswordScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _savePassword() async {
+    final password = _passwordController.text;
+    final confirmPassword = _confirmPasswordController.text;
+    if (password != confirmPassword || password.length < 10) {
+      setState(() {
+        _showPasswordError = true;
+      });
+      return;
+    }
+
+    setState(() {
+      _showPasswordError = false;
+      _isSaving = true;
+    });
+
+    try {
+      await ApiProvider.auth.resetPassword(
+        email: widget.email,
+        code: widget.code,
+        newPassword: password,
+      );
+      if (!mounted) {
+        return;
+      }
+
+      if (widget.onSave != null) {
+        widget.onSave!();
+      }
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const SuccessoNuovaPasswordScreen(),
+        ),
+      );
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _showPasswordError = true;
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
+    }
   }
 }

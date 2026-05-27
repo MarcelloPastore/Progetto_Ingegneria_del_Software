@@ -4,8 +4,8 @@ import 'core/theme/app_theme.dart';
 import 'features/auth/auth.dart';
 import 'features/casa/casa.dart';
 import 'features/dashboard/dashboard.dart';
-// import 'features/problemi/problemi.dart';
-// import 'features/scadenze/scadenze.dart';
+import 'features/problemi/problemi.dart';
+import 'features/scadenze/scadenze.dart';
 import 'features/spese/spese.dart';
 import 'features/turni/turni.dart';
 
@@ -21,11 +21,11 @@ class CoinCasaApp extends StatelessWidget {
       routes: {
         '/login': (_) => const LoginScreen(),
         '/dashboard': (_) => const DashboardScreen(),
-        // '/spese': (_) => const SpeseScreen(),
-        // '/turni': (_) => const TurniHomeScreen(),
-        // '/scadenze': (_) => const ScadenzeScreen(),
-        // '/problemi': (_) => const ProblemiScreen(),
-        '/casa': (_) => const HubCasaAdminScreen(),
+        '/spese': (_) => const SpeseScreen(),
+        '/turni': (_) => const TurniHomeScreen(),
+        '/scadenze': (_) => const ScadenzeScreen(),
+        '/problemi': (_) => const ProblemiScreen(),
+        '/casa': (_) => const ListaCaseScreen(),
       },
     );
   }

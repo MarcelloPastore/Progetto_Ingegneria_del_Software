@@ -13,8 +13,13 @@ class Quota {
 
   factory Quota.fromJson(Map<String, dynamic> json) {
     final idValue = json['id'] ?? json['idQuota'];
-    final importoValue = json['importo'] ?? json['amount'] ?? json['valore'];
-    final pagataValue = json['pagata'] ?? json['pagato'] ?? json['isPaid'];
+    final importoValue =
+        json['importo'] ?? json['amount'] ?? json['valore'] ?? json['quota'];
+    final pagataValue =
+        json['pagata'] ??
+        json['pagato'] ??
+        json['isPaid'] ??
+        (json['dataPagamento'] != null);
 
     return Quota(
       id: idValue?.toString() ?? '',

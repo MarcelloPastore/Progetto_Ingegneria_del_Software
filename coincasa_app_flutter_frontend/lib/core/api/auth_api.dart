@@ -45,6 +45,16 @@ class AuthApi {
     await _client.postJson('/auth/recupera-password', body: {'email': email});
   }
 
+  Future<void> verifyPasswordResetCode({
+    required String email,
+    required String code,
+  }) async {
+    await _client.postJson(
+      '/auth/verifica-codice-recupero',
+      body: {'email': email, 'codice': code},
+    );
+  }
+
   Future<String?> verifyEmail(String email) async {
     final data = await _client.postJson(
       '/auth/verifica-email',
@@ -79,12 +89,13 @@ class AuthApi {
   }
 
   Future<void> resetPassword({
+    required String email,
     required String code,
     required String newPassword,
   }) async {
     await _client.postJson(
       '/auth/reset-password',
-      body: {'code': code, 'password': newPassword},
+      body: {'email': email, 'codice': code, 'nuovaPassword': newPassword},
     );
   }
 

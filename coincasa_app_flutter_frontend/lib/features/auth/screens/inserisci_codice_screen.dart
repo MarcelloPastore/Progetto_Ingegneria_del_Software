@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 
 import 'attesa_invio_codice_screen.dart';
@@ -31,6 +32,7 @@ class _InserisciCodiceScreenState extends State<InserisciCodiceScreen> {
   late final TextEditingController _codeController;
   late final FocusNode _codeFocusNode;
   bool _showCodeError = false;
+  bool _isVerifying = false;
 
   @override
   void initState() {
@@ -169,33 +171,7 @@ class _InserisciCodiceScreenState extends State<InserisciCodiceScreen> {
           const SizedBox(height: AppSizes.p30),
           AuthPrimaryButton(
             text: 'Verifica codice',
-            onPressed: () {
-              final code = _codeController.text.trim();
-              if (code.length != 6) {
-                setState(() {
-                  _showCodeError = true;
-                });
-                return;
-              }
-
-              if (_showCodeError) {
-                setState(() {
-                  _showCodeError = false;
-                });
-              }
-
-              if (widget.onVerify != null) {
-                widget.onVerify!();
-                return;
-              }
-
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const NuovaPasswordScreen(),
-                ),
-              );
-            },
+            onPressed: _isVerifying ? null : () => _verify(normalizedEmail),
           ),
           const SizedBox(height: AppSizes.p17),
           AuthPrimaryButton(
@@ -231,5 +207,51 @@ class _InserisciCodiceScreenState extends State<InserisciCodiceScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _verify(String email) async {
+    final code = _codeController.text.trim();
+    if (code.length != 6) {
+      setState(() {
+        _showCodeError = true;
+      });
+      return;
+    }
+
+    setState(() {
+      _showCodeError = false;
+      _isVerifying = true;
+    });
+
+    try {
+      await ApiProvider.auth.verifyPasswordResetCode(email: email, code: code);
+      if (!mounted) {
+        return;
+      }
+
+      if (widget.onVerify != null) {
+        widget.onVerify!();
+        return;
+      }
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => NuovaPasswordScreen(email: email, code: code),
+        ),
+      );
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _showCodeError = true;
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isVerifying = false;
+        });
+      }
+    }
   }
 }

@@ -5,6 +5,7 @@ import {
   AggiungiInquilinoDto,
   CreaCasaDto,
   InquilinoCasaDto,
+  ModificaCasaDto,
   ModificaRuoloInquilinoDto,
 } from "../dto/CasaDto";
 import {
@@ -24,7 +25,15 @@ export class CasaService {
   }
 
   async getCase(idUtente: string) {
-    return this.casaRepository.getCaseByUtente(idUtente);
+    const caseUtente = await this.casaRepository.getCaseByUtente(idUtente);
+
+    return Promise.all(
+      caseUtente.map(async (casa) => ({
+        ...casa,
+        ruolo: (await this.casaRepository.getMembroCasa(casa.id, idUtente))
+          ?.ruolo,
+      })),
+    );
   }
 
   async getCasa(idCasa: string, idUtente: string) {
@@ -37,7 +46,18 @@ export class CasaService {
       throw new NotFoundError("Casa non trovata");
     }
 
-    return casa;
+    const membro = await this.casaRepository.getMembroCasa(idCasa, idUtente);
+
+    return { ...casa, ruolo: membro?.ruolo };
+  }
+
+  async modificaCasa(idCasa: string, dto: ModificaCasaDto, idUtente: string) {
+    await this.assertHomeAdmin(idCasa, idUtente);
+
+    const casa = await this.casaRepository.updateCasa(idCasa, dto);
+    const membro = await this.casaRepository.getMembroCasa(idCasa, idUtente);
+
+    return { ...casa, ruolo: membro?.ruolo };
   }
 
   async eliminaCasa(idCasa: string, idUtente: string): Promise<void> {

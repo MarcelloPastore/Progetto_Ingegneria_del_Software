@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 
 class RigeneraLinkScreen extends StatelessWidget {
   const RigeneraLinkScreen({super.key});
@@ -12,6 +13,7 @@ class RigeneraLinkScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF09031F),
+      bottomNavigationBar: const HouseQuickNav(currentRoute: '/dashboard'),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(8, 22, 8, 8),

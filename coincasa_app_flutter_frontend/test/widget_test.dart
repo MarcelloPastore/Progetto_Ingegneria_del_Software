@@ -1,9 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:coincasa_app/core/api/api_provider.dart';
+import 'package:coincasa_app/core/api/auth_api.dart';
 import 'package:coincasa_app/features/auth/auth.dart';
 
+class FakeAuthApi extends AuthApi {
+  FakeAuthApi() : super(ApiProvider.client);
+
+  @override
+  Future<void> register({
+    required String username,
+    required String nome,
+    required String cognome,
+    required String email,
+    required String password,
+  }) async {
+    // Mock successful registration
+    return;
+  }
+}
+
 void main() {
+  setUp(() {
+    ApiProvider.auth = FakeAuthApi();
+  });
+
   testWidgets('registration opens the check email screen with valid fields', (
     tester,
   ) async {
@@ -46,7 +68,7 @@ void main() {
     await tester.tap(submitButton);
     await tester.pump();
 
-    expect(find.textContaining('Alcuni campi'), findsOneWidget);
+    expect(find.textContaining('Le password non coincidono. Controlla e riprova.'), findsOneWidget);
     expect(find.text('Le password non coincidono *'), findsOneWidget);
     expect(find.text('Controlla la tua mail!'), findsNothing);
   });

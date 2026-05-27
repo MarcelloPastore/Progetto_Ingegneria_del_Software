@@ -10,6 +10,13 @@ export const CreaCasaSchema = z.object({
 
 export type CreaCasaDto = z.infer<typeof CreaCasaSchema>;
 
+export const ModificaCasaSchema = CreaCasaSchema.partial().refine(
+  (data) => Object.keys(data).length > 0,
+  "Almeno un campo da modificare richiesto",
+);
+
+export type ModificaCasaDto = z.infer<typeof ModificaCasaSchema>;
+
 export const AggiungiInquilinoSchema = z
   .object({
     idUtente: z.string().trim().min(1).optional(),

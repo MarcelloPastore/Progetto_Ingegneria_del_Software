@@ -1,68 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:coincasa_app/features/casa/screens/rigenera_link.dart';
+
+import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 
-class CondividiCodiceScreen extends StatelessWidget {
-  const CondividiCodiceScreen({super.key});
+class CondividiCodiceScreen extends StatefulWidget {
+  const CondividiCodiceScreen({super.key, required this.casaId});
 
-  static const List<BottomNavigationBarItem> _navigationItems = [
-    BottomNavigationBarItem(
-      icon: SizedBox(
-        width: 28,
-        height: 28,
-        child: Image(
-          image: AssetImage('assets/Icons/home.png'),
-          fit: BoxFit.contain,
-        ),
-      ),
-      label: 'Home',
-    ),
-    BottomNavigationBarItem(
-      icon: SizedBox(
-        width: 28,
-        height: 28,
-        child: Image(
-          image: AssetImage('assets/Icons/spese.png'),
-          fit: BoxFit.contain,
-        ),
-      ),
-      label: 'Spese',
-    ),
-    BottomNavigationBarItem(
-      icon: SizedBox(
-        width: 28,
-        height: 28,
-        child: Image(
-          image: AssetImage('assets/Icons/turni.png'),
-          fit: BoxFit.contain,
-        ),
-      ),
-      label: 'Turni',
-    ),
-    BottomNavigationBarItem(
-      icon: SizedBox(
-        width: 28,
-        height: 28,
-        child: Image(
-          image: AssetImage('assets/Icons/reminder.png'),
-          fit: BoxFit.contain,
-        ),
-      ),
-      label: 'Scadenze',
-    ),
-    BottomNavigationBarItem(
-      icon: SizedBox(
-        width: 28,
-        height: 28,
-        child: Image(
-          image: AssetImage('assets/Icons/problemi.png'),
-          fit: BoxFit.contain,
-        ),
-      ),
-      label: 'Problemi',
-    ),
-  ];
+  final String casaId;
+
+  @override
+  State<CondividiCodiceScreen> createState() => _CondividiCodiceScreenState();
+}
+
+class _CondividiCodiceScreenState extends State<CondividiCodiceScreen> {
+  late Future<String> _inviteLinkFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _inviteLinkFuture = ApiProvider.casa.getInviteLink(widget.casaId);
+  }
+
+  void _reload() {
+    setState(() {
+      _inviteLinkFuture = ApiProvider.casa.getInviteLink(widget.casaId);
+    });
+  }
+
+  Future<void> _copy(String value, String message) async {
+    await Clipboard.setData(ClipboardData(text: value));
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -81,31 +54,29 @@ class CondividiCodiceScreen extends StatelessWidget {
           'Invita coinquilino',
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
         ),
-        actions: const [
-          Padding(
-            padding: EdgeInsets.only(right: 16),
-            child: CircleAvatar(
-              radius: 18,
-              backgroundColor: Color(0xFF3F33B8),
-              child: Image(
-                image: AssetImage('assets/Icons/Profilo_utente_icona.png'),
-                width: 20,
-                height: 20,
-                fit: BoxFit.contain,
-              ),
-            ),
-          ),
+        actions: [
+          IconButton(onPressed: _reload, icon: const Icon(Icons.refresh)),
         ],
       ),
       body: SafeArea(
-        child: Stack(
-          children: [
-            SingleChildScrollView(
+        child: FutureBuilder<String>(
+          future: _inviteLinkFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState != ConnectionState.done) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return _InviteErrorState(onRetry: _reload);
+            }
+
+            final inviteLink = snapshot.data ?? '';
+            final inviteCode = _extractInviteCode(inviteLink);
+            return SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(24, 26, 24, 132),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: const [
-                  Padding(
+                children: [
+                  const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 10),
                     child: Text(
                       'Condividi il codice o link per aggiungere un nuovo coinquilino',
@@ -118,50 +89,78 @@ class CondividiCodiceScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  SizedBox(height: 34),
-                  _InviteCodeCard(),
-                  SizedBox(height: 20),
-                  _CopyButton(),
-                  SizedBox(height: 24),
-                  _RegenerateInfoCard(),
-                  SizedBox(height: 26),
-                  _RegenerateButton(),
+                  const SizedBox(height: 34),
+                  _InviteCodeCard(
+                    inviteCode: inviteCode,
+                    onCopy: () => _copy(inviteCode, 'Codice copiato'),
+                  ),
+                  const SizedBox(height: 20),
+                  _CopyButton(
+                    label: 'Copia codice',
+                    onPressed: () => _copy(inviteCode, 'Codice copiato'),
+                  ),
+                  const SizedBox(height: 12),
+                  _CopyButton(
+                    label: 'Copia link',
+                    onPressed: () => _copy(inviteLink, 'Link copiato'),
+                  ),
+                  const SizedBox(height: 24),
+                  const _RegenerateInfoCard(),
+                  const SizedBox(height: 26),
+                  _RegenerateButton(onPressed: _reload),
                 ],
               ),
-            ),
-            Positioned(
-              right: 24,
-              bottom: 30,
-              child: FloatingActionButton(
-                onPressed: () {},
-                backgroundColor: AppColors.brandAccent,
-                foregroundColor: Colors.white,
-                elevation: 5,
-                child: const Icon(Icons.add, size: 32),
-              ),
-            ),
-          ],
+            );
+          },
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 0,
-        onTap: (_) {},
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: const Color(0xFF17213B),
-        selectedItemColor: const Color(0xFF28A8FF),
-        unselectedItemColor: Colors.white,
-        selectedFontSize: 12,
-        unselectedFontSize: 12,
-        showUnselectedLabels: true,
-        elevation: 8,
-        items: _navigationItems,
+      bottomNavigationBar: const HouseQuickNav(currentRoute: '/dashboard'),
+    );
+  }
+
+  String _extractInviteCode(String inviteLink) {
+    final trimmed = inviteLink.trim();
+    if (trimmed.isEmpty) {
+      return '';
+    }
+    final separatorIndex = trimmed.lastIndexOf('/');
+    if (separatorIndex == -1 || separatorIndex == trimmed.length - 1) {
+      return trimmed;
+    }
+    return trimmed.substring(separatorIndex + 1);
+  }
+}
+
+class _InviteErrorState extends StatelessWidget {
+  const _InviteErrorState({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.wifi_off, color: Colors.white, size: 42),
+          const SizedBox(height: 12),
+          const Text(
+            'Non e possibile caricare il codice invito.',
+            style: TextStyle(color: Colors.white),
+          ),
+          const SizedBox(height: 16),
+          FilledButton(onPressed: onRetry, child: const Text('Riprova')),
+        ],
       ),
     );
   }
 }
 
 class _InviteCodeCard extends StatelessWidget {
-  const _InviteCodeCard();
+  const _InviteCodeCard({required this.inviteCode, required this.onCopy});
+
+  final String inviteCode;
+  final VoidCallback onCopy;
 
   @override
   Widget build(BuildContext context) {
@@ -177,8 +176,8 @@ class _InviteCodeCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Row(
-            children: const [
-              Expanded(
+            children: [
+              const Expanded(
                 child: Text(
                   'Codice invito',
                   style: TextStyle(
@@ -188,17 +187,32 @@ class _InviteCodeCard extends StatelessWidget {
                   ),
                 ),
               ),
-              _CopyIconButton(),
+              Tooltip(
+                message: 'Copia codice',
+                child: IconButton.filledTonal(
+                  onPressed: onCopy,
+                  style: IconButton.styleFrom(
+                    backgroundColor: const Color(0xFF2B2463),
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(
+                      color: AppColors.brandAccent,
+                      width: 1.5,
+                    ),
+                    minimumSize: const Size(42, 42),
+                  ),
+                  icon: const Icon(Icons.copy_rounded, size: 22),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 14),
-          const FittedBox(
+          FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
-              'CX-4821',
+              inviteCode,
               textAlign: TextAlign.center,
               maxLines: 1,
-              style: TextStyle(
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 34,
                 letterSpacing: 5,
@@ -208,7 +222,7 @@ class _InviteCodeCard extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           const Text(
-            'Valido per 72 ore · rigenerabile',
+            'Codice attivo della casa',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Color(0xFFE5E7F5),
@@ -217,63 +231,24 @@ class _InviteCodeCard extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 4),
-          const Text(
-            'da Coinquilini > Invita',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Color(0xFFBFC4E6),
-              fontSize: 13,
-              height: 1.2,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
         ],
       ),
     );
   }
 }
 
-class _CopyIconButton extends StatelessWidget {
-  const _CopyIconButton();
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: 'Copia codice',
-      child: IconButton.filledTonal(
-        onPressed: () {
-          Clipboard.setData(const ClipboardData(text: 'CX-4821'));
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('Codice copiato')));
-        },
-        style: IconButton.styleFrom(
-          backgroundColor: const Color(0xFF2B2463),
-          foregroundColor: Colors.white,
-          side: const BorderSide(color: AppColors.brandAccent, width: 1.5),
-          minimumSize: const Size(42, 42),
-        ),
-        icon: const Icon(Icons.copy_rounded, size: 22),
-      ),
-    );
-  }
-}
-
 class _CopyButton extends StatelessWidget {
-  const _CopyButton();
+  const _CopyButton({required this.label, required this.onPressed});
+
+  final String label;
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       height: 54,
       child: FilledButton(
-        onPressed: () {
-          Clipboard.setData(const ClipboardData(text: 'CX-4821'));
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('Codice copiato')));
-        },
+        onPressed: onPressed,
         style: FilledButton.styleFrom(
           backgroundColor: AppColors.brandPrimary,
           foregroundColor: Colors.white,
@@ -282,9 +257,9 @@ class _CopyButton extends StatelessWidget {
             side: const BorderSide(color: Color(0xFF9CA5DA), width: 2),
           ),
         ),
-        child: const Text(
-          'Copia Codice',
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+        child: Text(
+          label,
+          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
         ),
       ),
     );
@@ -304,46 +279,30 @@ class _RegenerateInfoCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFF9CA5DA), width: 2),
       ),
-      child: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Rigenera codice',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          SizedBox(height: 14),
-          Text(
-            'Genera un nuovo codice per invalidare quello precedente',
-            style: TextStyle(
-              color: Color(0xFFD2D4DF),
-              fontSize: 16,
-              height: 1.25,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
+      child: const Text(
+        'La rigenerazione del link non e ancora esposta dal backend. Puoi aggiornare per recuperare il link attuale.',
+        style: TextStyle(
+          color: Color(0xFFD2D4DF),
+          fontSize: 16,
+          height: 1.25,
+          fontWeight: FontWeight.w500,
+        ),
       ),
     );
   }
 }
 
 class _RegenerateButton extends StatelessWidget {
-  const _RegenerateButton();
+  const _RegenerateButton({required this.onPressed});
+
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       height: 56,
       child: OutlinedButton(
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute<void>(builder: (_) => const RigeneraLinkScreen()),
-          );
-        },
+        onPressed: onPressed,
         style: OutlinedButton.styleFrom(
           backgroundColor: const Color(0xFF09031F),
           foregroundColor: Colors.white,
@@ -353,7 +312,7 @@ class _RegenerateButton extends StatelessWidget {
           ),
         ),
         child: const Text(
-          'Rigenera link',
+          'Aggiorna link',
           style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
         ),
       ),
