@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'core/state/active_casa.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/auth.dart';
 import 'features/casa/casa.dart';
@@ -10,23 +11,28 @@ import 'features/spese/spese.dart';
 import 'features/turni/turni.dart';
 
 class CoinCasaApp extends StatelessWidget {
-  const CoinCasaApp({super.key});
+  CoinCasaApp({super.key});
+
+  final ActiveCasaController _activeCasaController = ActiveCasaController();
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      home: const LoginScreen(),
-      routes: {
-        '/login': (_) => const LoginScreen(),
-        '/dashboard': (_) => const DashboardScreen(),
-        '/spese': (_) => const SpeseScreen(),
-        '/turni': (_) => const TurniHomeScreen(),
-        '/scadenze': (_) => const ScadenzeScreen(),
-        '/problemi': (_) => const ProblemiScreen(),
-        '/casa': (_) => const ListaCaseScreen(),
-      },
+    return ActiveCasaScope(
+      controller: _activeCasaController,
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        home: const LoginScreen(),
+        routes: {
+          '/login': (_) => const LoginScreen(),
+          '/dashboard': (_) => const DashboardScreen(),
+          '/spese': (_) => const SpeseScreen(),
+          '/turni': (_) => const TurniHomeScreen(),
+          '/scadenze': (_) => const ScadenzeScreen(),
+          '/problemi': (_) => const ProblemiScreen(),
+          '/casa': (_) => const ListaCaseScreen(),
+        },
+      ),
     );
   }
 }

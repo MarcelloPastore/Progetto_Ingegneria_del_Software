@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
+import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/features/casa/screens/archivio_documenti_vuoto.dart';
@@ -23,11 +24,19 @@ class HubCasaAdminScreen extends StatefulWidget {
 
 class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
   late Future<_HubCasaData> _future;
+  late ActiveCasaController _activeCasaController;
+  bool _initialized = false;
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_initialized) {
+      return;
+    }
+
+    _activeCasaController = ActiveCasaScope.read(context);
     _future = _load();
+    _initialized = true;
   }
 
   Future<_HubCasaData> _load() async {
@@ -37,11 +46,14 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
     }
 
     final selected = widget.casaId == null
-        ? caseUtente.first
+        ? _activeCasaController.resolveCasa(caseUtente)
         : caseUtente.firstWhere(
             (casa) => casa.id == widget.casaId,
             orElse: () => caseUtente.first,
           );
+    if (widget.casaId != null) {
+      _activeCasaController.selectCasa(selected.id);
+    }
 
     final results = await Future.wait<dynamic>([
       ApiProvider.casa.getById(selected.id),

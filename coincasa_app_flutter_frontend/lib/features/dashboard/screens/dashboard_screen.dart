@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/casa.dart';
+import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 
@@ -14,21 +15,33 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  late final Future<_DashboardData> _dashboardDataFuture;
+  late Future<_DashboardData> _dashboardDataFuture;
+  late ActiveCasaController _activeCasaController;
+  bool _initialized = false;
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_initialized) {
+      return;
+    }
+
+    _activeCasaController = ActiveCasaScope.read(context);
     _dashboardDataFuture = _loadDashboardData();
+    _initialized = true;
   }
 
   Future<_DashboardData> _loadDashboardData() async {
     final caseUtente = await ApiProvider.casa.list();
     if (caseUtente.isEmpty) {
-      return const _DashboardData(nomeCasa: 'Nessuna casa');
+      return const _DashboardData(
+        nomeCasa: 'Nessuna casa',
+        caseUtente: [],
+        casaSelezionataId: null,
+      );
     }
 
-    final casa = caseUtente.first;
+    final casa = _activeCasaController.resolveCasa(caseUtente);
     final nomeCasa = _formatNomeCasa(casa);
     final displayName = nomeCasa.isEmpty ? 'Casa senza nome' : nomeCasa;
 
@@ -40,6 +53,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return _DashboardData(
       nomeCasa: displayName,
+      caseUtente: caseUtente,
+      casaSelezionataId: casa.id,
       saldo: amounts[0],
       credito: amounts[1],
       debito: amounts[2],
@@ -53,6 +68,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
 
     return nome.toLowerCase().startsWith('casa ') ? nome : 'Casa $nome';
+  }
+
+  void _selectCasa(String casaId) {
+    if (_activeCasaController.selectedCasaId == casaId) {
+      return;
+    }
+
+    setState(() {
+      _activeCasaController.selectCasa(casaId);
+      _dashboardDataFuture = _loadDashboardData();
+    });
   }
 
   @override
@@ -75,6 +101,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   _EmptyDashboardHeader(
                     dashboardDataFuture: _dashboardDataFuture,
+                    onCasaChanged: _selectCasa,
                   ),
                   const SizedBox(height: AppSizes.p12),
                   _EmptyBalanceCard(dashboardDataFuture: _dashboardDataFuture),
@@ -131,21 +158,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
 class _DashboardData {
   const _DashboardData({
     required this.nomeCasa,
+    required this.caseUtente,
+    required this.casaSelezionataId,
     this.saldo,
     this.credito,
     this.debito,
   });
 
   final String nomeCasa;
+  final List<Casa> caseUtente;
+  final String? casaSelezionataId;
   final double? saldo;
   final double? credito;
   final double? debito;
 }
 
 class _EmptyDashboardHeader extends StatelessWidget {
-  const _EmptyDashboardHeader({required this.dashboardDataFuture});
+  const _EmptyDashboardHeader({
+    required this.dashboardDataFuture,
+    required this.onCasaChanged,
+  });
 
   final Future<_DashboardData> dashboardDataFuture;
+  final ValueChanged<String> onCasaChanged;
+
+  String _formatNomeCasa(Casa casa) {
+    final nome = casa.nome.trim();
+    if (nome.isEmpty) {
+      return 'Casa senza nome';
+    }
+
+    return nome.toLowerCase().startsWith('casa ') ? nome : 'Casa $nome';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -182,6 +226,16 @@ class _EmptyDashboardHeader extends StatelessWidget {
                 _ when snapshot.hasError => 'Casa non disponibile',
                 _ => snapshot.data?.nomeCasa ?? 'Nessuna casa',
               };
+              final data = snapshot.data;
+
+              if (data != null && data.caseUtente.length > 1) {
+                return _HouseSelector(
+                  caseUtente: data.caseUtente,
+                  selectedCasaId: data.casaSelezionataId,
+                  formatNomeCasa: _formatNomeCasa,
+                  onCasaChanged: onCasaChanged,
+                );
+              }
 
               return Text(
                 nomeCasa,
@@ -209,6 +263,81 @@ class _EmptyDashboardHeader extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _HouseSelector extends StatelessWidget {
+  const _HouseSelector({
+    required this.caseUtente,
+    required this.selectedCasaId,
+    required this.formatNomeCasa,
+    required this.onCasaChanged,
+  });
+
+  final List<Casa> caseUtente;
+  final String? selectedCasaId;
+  final String Function(Casa casa) formatNomeCasa;
+  final ValueChanged<String> onCasaChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSizes.radius8),
+        border: Border.all(color: AppColors.inputBorder),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadowSoft,
+            blurRadius: AppSizes.p8,
+            offset: Offset(0, AppSizes.p2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSizes.p10),
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<String>(
+            value: selectedCasaId,
+            isExpanded: true,
+            borderRadius: BorderRadius.circular(AppSizes.radius8),
+            icon: const Icon(
+              Icons.keyboard_arrow_down,
+              color: AppColors.brandSecondary,
+            ),
+            dropdownColor: AppColors.surface,
+            style: AppTextStyles.dashboardHeaderTitle,
+            selectedItemBuilder: (context) {
+              return caseUtente.map((casa) {
+                return Center(
+                  child: Text(
+                    formatNomeCasa(casa),
+                    style: AppTextStyles.dashboardHeaderTitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                );
+              }).toList();
+            },
+            items: caseUtente.map((casa) {
+              return DropdownMenuItem<String>(
+                value: casa.id,
+                child: Text(
+                  formatNomeCasa(casa),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              );
+            }).toList(),
+            onChanged: (value) {
+              if (value != null) {
+                onCasaChanged(value);
+              }
+            },
+          ),
+        ),
+      ),
     );
   }
 }
