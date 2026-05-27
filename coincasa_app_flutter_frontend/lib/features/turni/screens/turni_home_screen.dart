@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+
 class TurniHomeScreen extends StatelessWidget {
   const TurniHomeScreen({super.key});
 
@@ -7,6 +9,7 @@ class TurniHomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Turni')),
+      bottomNavigationBar: const HouseQuickNav(currentRoute: '/turni'),
       body: const Center(child: Text('Schermata turni in lavorazione.')),
     );
   }
