@@ -134,16 +134,7 @@ class _RiepilogoCasaScreenState extends State<RiepilogoCasaScreen> {
 
               // ── Bottone Crea casa ────────────────────────────────────────
               FilledButton(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => CasaCreataSuccessoScreen(
-                        name: name,
-                        inviteCode: 'CX-4821',
-                      ),
-                    ),
-                  );
-                },
+                onPressed: () => _createCasa(),
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(AppSizes.p56),
                   backgroundColor: AppColors.brandPrimary,
@@ -223,6 +214,15 @@ class _RiepilogoCasaScreenState extends State<RiepilogoCasaScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Future<void> _createCasa() async {
+    await Navigator.of(context).pushReplacement(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            CasaCreataSuccessoScreen(name: name, inviteCode: 'CX-4821'),
       ),
     );
   }

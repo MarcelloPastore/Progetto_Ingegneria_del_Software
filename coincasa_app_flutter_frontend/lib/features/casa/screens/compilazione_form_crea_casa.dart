@@ -252,7 +252,7 @@ class _CompilazioneFormCreaCasaScreenState
                     DropdownButtonFormField<String>(
                       initialValue: _selectedType,
                       decoration: _inputDecoration(hintText: 'Seleziona tipo'),
-                      dropdownColor: AppColors.inputFillDark,
+                      dropdownColor: AppColors.textMutedLight,
                       borderRadius: BorderRadius.circular(AppSizes.radius16),
                       items: const [
                         DropdownMenuItem(

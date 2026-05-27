@@ -6,7 +6,7 @@ import 'package:coincasa_app/features/casa/screens/compilazione_form_crea_casa.d
 import 'package:coincasa_app/features/casa/screens/rigenera_link.dart';
 
 const _houseIllustration =
-    'assets/Icons/illustrazione-dell-icona-di-vettore-della-costruzione-di-casa-bianco-di-concetto-dell-icona-del-punto-di-riferimento-e-della-costruzione-isolato_138676-437 1.png';
+    'assets/Icons/casa_colorata.png'; 
 
 class CasaWelcomeScreen extends StatefulWidget {
   const CasaWelcomeScreen({super.key, required this.email});

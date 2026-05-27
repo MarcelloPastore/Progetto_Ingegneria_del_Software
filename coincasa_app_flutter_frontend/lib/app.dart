@@ -11,7 +11,7 @@ class CoinCasaApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const CasaWelcomeScreen(email: 'demo@coincasa.it'),
+      home: const CasaWelcomeScreen(email: 'marc@example.com'),
     );
   }
 }
