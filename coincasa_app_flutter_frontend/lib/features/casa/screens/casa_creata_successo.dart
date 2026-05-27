@@ -100,13 +100,17 @@ class CasaCreataSuccessoScreen extends StatelessWidget {
                           Align(
                             alignment: Alignment.centerRight,
                             child: InkWell(
-                              borderRadius: BorderRadius.circular(AppSizes.radius12),
+                              borderRadius: BorderRadius.circular(
+                                AppSizes.radius12,
+                              ),
                               onTap: () => _copyInviteCode(context),
                               child: Container(
                                 padding: const EdgeInsets.all(AppSizes.p12),
                                 decoration: BoxDecoration(
                                   color: AppColors.surfaceDarkElevated,
-                                  borderRadius: BorderRadius.circular(AppSizes.radius12),
+                                  borderRadius: BorderRadius.circular(
+                                    AppSizes.radius12,
+                                  ),
                                 ),
                                 child: const Icon(
                                   Icons.copy,

@@ -111,7 +111,8 @@ class _CasaWelcomeScreenState extends State<CasaWelcomeScreen> {
                         filled: true,
                         onTap: () => Navigator.of(context).push(
                           MaterialPageRoute<void>(
-                            builder: (_) => const CompilazioneFormCreaCasaScreen(),
+                            builder: (_) =>
+                                const CompilazioneFormCreaCasaScreen(),
                           ),
                         ),
                       ),
@@ -138,7 +139,6 @@ class _CasaWelcomeScreenState extends State<CasaWelcomeScreen> {
       ),
     );
   }
-
 }
 
 class _WelcomeInfoBox extends StatelessWidget {
