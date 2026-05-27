@@ -4,6 +4,7 @@ import 'package:coincasa_app/core/api/api_client.dart';
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/auth/auth_widgets.dart';
+import 'package:coincasa_app/features/casa/screens/casa_welcome_screen.dart';
 import 'package:coincasa_app/features/dashboard/screens/dashboard_screen.dart';
 
 import 'password_dimenticata.dart';
@@ -81,11 +82,29 @@ class _LoginScreenState extends State<LoginScreen> {
 
       ApiProvider.client.setAuthToken(token);
 
+      // Verifica se l'utente ha almeno una casa
+      List<dynamic> caseUtente = [];
+      try {
+        caseUtente = await ApiProvider.casa.list();
+      } catch (_) {
+        // In caso di errore, naviga alla Dashboard come fallback
+      }
+
       if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const DashboardScreen()),
-      );
+
+      if (caseUtente.isNotEmpty) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const DashboardScreen()),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CasaWelcomeScreen(email: email),
+          ),
+        );
+      }
     } on ApiException {
       if (!mounted) return;
       setState(() {
