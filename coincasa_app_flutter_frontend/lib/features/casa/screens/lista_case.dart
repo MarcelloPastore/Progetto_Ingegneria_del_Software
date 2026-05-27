@@ -64,7 +64,7 @@ class _ListaCaseScreenState extends State<ListaCaseScreen> {
                             onRefresh: () async => _reload(),
                             child: ListView.separated(
                               itemCount: caseUtente.length,
-                              separatorBuilder: (_, __) =>
+                              separatorBuilder: (_, _) =>
                                   const SizedBox(height: 20),
                               itemBuilder: (context, index) {
                                 final casa = caseUtente[index];

@@ -9,6 +9,7 @@ const isoDateTimeString = z
 
 export const CreaTurnoSchema = z.object({
   task: z.string().min(1, "Campo obbligatorio"),
+  dataTurno: isoDateTimeString,
   cadenzaGiorni: z
     .number()
     .int()

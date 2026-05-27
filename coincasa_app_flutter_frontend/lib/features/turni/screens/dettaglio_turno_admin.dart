@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:coincasa_app/core/api/api_provider.dart';
+import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/features/turni/screens/assegna_a_me.dart';
@@ -20,15 +22,84 @@ class _DettaglioTurnoAdminScreenState
   bool _assigneeMenuOpen = false;
   bool _assignFutureTurns = true;
   bool _confirmDelete = false;
+  bool _isSubmitting = false;
   String _selectedAssignee = 'Emma';
 
-  void _handleDelete() {
+  String? get _turnoId {
+    final args = ModalRoute.of(context)?.settings.arguments;
+    return args is String && args.isNotEmpty ? args : null;
+  }
+
+  Future<String?> _activeCasaId() async {
+    final activeCasaController = ActiveCasaScope.read(context);
+    final caseUtente = await ApiProvider.casa.list();
+    if (caseUtente.isEmpty) {
+      return null;
+    }
+    return activeCasaController.resolveCasa(caseUtente).id;
+  }
+
+  Future<void> _handleAssignMe() async {
+    final turnoId = _turnoId;
+    if (turnoId == null) {
+      Navigator.of(context).pushNamed(AssegnaAMeSuccessScreen.routeName);
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+    try {
+      final casaId = await _activeCasaId();
+      if (casaId != null && mounted) {
+        await ApiProvider.turni.autoAssegna(casaId, turnoId);
+      }
+      if (mounted) {
+        Navigator.of(context).pushNamed(AssegnaAMeSuccessScreen.routeName);
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Impossibile assegnare il turno.')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
+
+  Future<void> _handleDelete() async {
     if (!_confirmDelete) {
       setState(() => _confirmDelete = true);
       return;
     }
 
-    Navigator.of(context).pushReplacementNamed(TurnoRimossoScreen.routeName);
+    final turnoId = _turnoId;
+    if (turnoId == null) {
+      Navigator.of(context).pushReplacementNamed(TurnoRimossoScreen.routeName);
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+    try {
+      final casaId = await _activeCasaId();
+      if (casaId != null && mounted) {
+        await ApiProvider.turni.delete(casaId, turnoId);
+      }
+      if (mounted) {
+        Navigator.of(context).pushReplacementNamed(TurnoRimossoScreen.routeName);
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _confirmDelete = false;
+          _isSubmitting = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Impossibile eliminare il turno.')),
+        );
+      }
+    }
   }
 
   @override
@@ -68,9 +139,7 @@ class _DettaglioTurnoAdminScreenState
                     const SizedBox(height: AppSizes.p18),
                     _PrimaryActionButton(
                       label: 'Assegna a me',
-                      onPressed: () => Navigator.of(
-                        context,
-                      ).pushNamed(AssegnaAMeSuccessScreen.routeName),
+                      onPressed: _isSubmitting ? null : () => _handleAssignMe(),
                     ),
                     const SizedBox(height: AppSizes.p10),
                     _AssigneeSelector(
@@ -106,7 +175,7 @@ class _DettaglioTurnoAdminScreenState
                     const SizedBox(height: AppSizes.p40),
                     _DeleteTurnoButton(
                       confirmMode: _confirmDelete,
-                      onPressed: _handleDelete,
+                      onPressed: _isSubmitting ? null : () => _handleDelete(),
                     ),
                   ],
                 ),
@@ -278,7 +347,7 @@ class _PrimaryActionButton extends StatelessWidget {
   const _PrimaryActionButton({required this.label, required this.onPressed});
 
   final String label;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -479,7 +548,7 @@ class _DeleteTurnoButton extends StatelessWidget {
   });
 
   final bool confirmMode;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {

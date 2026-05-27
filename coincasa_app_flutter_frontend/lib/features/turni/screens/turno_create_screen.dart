@@ -5,25 +5,29 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
+import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/features/turni/screens/turno_salvato_con_successo.dart';
 
-final turniCreateCasaProvider = FutureProvider.autoDispose<Casa?>((ref) async {
+final turniCreateCasaProvider =
+    FutureProvider.autoDispose.family<Casa?, ActiveCasaController>((
+      ref,
+      activeCasaController,
+    ) async {
   final caseUtente = await ApiProvider.casa.list();
   if (caseUtente.isEmpty) {
     return null;
   }
-  return caseUtente.first;
+  return activeCasaController.resolveCasa(caseUtente);
 });
 
 final turniCreateInquiliniProvider =
-    FutureProvider.autoDispose<List<Inquilino>>((ref) async {
-      final casa = await ref.watch(turniCreateCasaProvider.future);
-      if (casa == null || casa.id.isEmpty) {
+    FutureProvider.autoDispose.family<List<Inquilino>, String?>((ref, casaId) {
+      if (casaId == null || casaId.isEmpty) {
         return const [];
       }
-      return ApiProvider.casa.listInquilini(casa.id);
+      return ApiProvider.casa.listInquilini(casaId);
     });
 
 final turnoCreateFormProvider =
@@ -58,8 +62,13 @@ class _TurnoCreateScreenState extends ConsumerState<TurnoCreateScreen> {
     FocusScope.of(context).unfocus();
     final controller = ref.read(turnoCreateFormProvider.notifier);
     final form = ref.read(turnoCreateFormProvider);
-    final casa = await ref.read(turniCreateCasaProvider.future);
-    final inquilini = await ref.read(turniCreateInquiliniProvider.future);
+    final activeCasaController = ActiveCasaScope.read(context);
+    final casa = await ref.read(
+      turniCreateCasaProvider(activeCasaController).future,
+    );
+    final inquilini = await ref.read(
+      turniCreateInquiliniProvider(casa?.id).future,
+    );
     final fallbackAssignee = inquilini.isNotEmpty ? inquilini.first.id : '';
     final assigneeId = form.selectedInquilinoId ?? fallbackAssignee;
     final turnoDate = form.turnoDate;
@@ -80,7 +89,7 @@ class _TurnoCreateScreenState extends ConsumerState<TurnoCreateScreen> {
     try {
       await ApiProvider.turni.create(casa.id, {
         'task': form.task.trim(),
-        'dataTurno': turnoDate.toIso8601String(),
+        'dataTurno': _payloadDate(turnoDate).toIso8601String(),
         'cadenzaGiorni':
             _TurnoCreateFormState.frequencyDays[form.frequency] ?? 7,
         'assegnatario': assigneeId,
@@ -98,11 +107,22 @@ class _TurnoCreateScreenState extends ConsumerState<TurnoCreateScreen> {
     }
   }
 
+  DateTime _payloadDate(DateTime date) {
+    return DateTime(date.year, date.month, date.day, 12);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final activeCasaController = ActiveCasaScope.read(context);
     final form = ref.watch(turnoCreateFormProvider);
     final controller = ref.read(turnoCreateFormProvider.notifier);
-    final inquiliniAsync = ref.watch(turniCreateInquiliniProvider);
+    final casaAsync = ref.watch(turniCreateCasaProvider(activeCasaController));
+    final inquiliniAsync = casaAsync.when(
+      data: (casa) => ref.watch(turniCreateInquiliniProvider(casa?.id)),
+      loading: () => const AsyncValue<List<Inquilino>>.loading(),
+      error: (error, stackTrace) =>
+          AsyncValue<List<Inquilino>>.error(error, stackTrace),
+    );
 
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
@@ -333,11 +353,10 @@ class _TurnoCreateFormState {
   bool get showMissingError =>
       showErrors &&
       submitError == null &&
-      (task.trim().isEmpty || selectedInquilinoId == null || !hasValidDate);
+      (task.trim().isEmpty || !hasValidDate);
   bool get canSubmit =>
       !isSubmitting &&
       task.trim().isNotEmpty &&
-      selectedInquilinoId != null &&
       hasValidDate &&
       frequency.isNotEmpty;
 

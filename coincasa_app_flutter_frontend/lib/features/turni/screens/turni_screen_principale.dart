@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
+import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/features/turni/screens/turno_salvato_con_successo.dart';
 import 'package:coincasa_app/features/turni/screens/turno_create_screen.dart';
@@ -25,22 +26,24 @@ Future<void> showTurniScreenPrincipaleDialog(BuildContext context) {
   );
 }
 
-final _turniCasaProvider = FutureProvider.autoDispose<Casa?>((ref) async {
+final _turniCasaProvider =
+    FutureProvider.autoDispose.family<Casa?, ActiveCasaController>((
+      ref,
+      activeCasaController,
+    ) async {
   final caseUtente = await ApiProvider.casa.list();
   if (caseUtente.isEmpty) {
     return null;
   }
-  return caseUtente.first;
+  return activeCasaController.resolveCasa(caseUtente);
 });
 
-final _turniInquiliniProvider = FutureProvider.autoDispose<List<Inquilino>>((
-  ref,
-) async {
-  final casa = await ref.watch(_turniCasaProvider.future);
-  if (casa == null || casa.id.isEmpty) {
+final _turniInquiliniProvider =
+    FutureProvider.autoDispose.family<List<Inquilino>, String?>((ref, casaId) {
+  if (casaId == null || casaId.isEmpty) {
     return const [];
   }
-  return ApiProvider.casa.listInquilini(casa.id);
+  return ApiProvider.casa.listInquilini(casaId);
 });
 
 class TurniScreenPrincipale extends StatelessWidget {
@@ -153,8 +156,11 @@ class _TurniPopupPanelState extends ConsumerState<_TurniPopupPanel> {
       return;
     }
 
-    final casa = await ref.read(_turniCasaProvider.future);
-    final inquilini = await ref.read(_turniInquiliniProvider.future);
+    final activeCasaController = ActiveCasaScope.read(context);
+    final casa = await ref.read(_turniCasaProvider(activeCasaController).future);
+    final inquilini = await ref.read(
+      _turniInquiliniProvider(casa?.id).future,
+    );
     final assegnatarioId =
         _selectedInquilinoId ??
         (inquilini.isNotEmpty ? inquilini.first.id : '');
@@ -181,7 +187,7 @@ class _TurniPopupPanelState extends ConsumerState<_TurniPopupPanel> {
     try {
       await ApiProvider.turni.create(casa.id, {
         'task': _taskController.text.trim(),
-        'dataTurno': turnoDate.toIso8601String(),
+        'dataTurno': _payloadDate(turnoDate).toIso8601String(),
         'cadenzaGiorni': _frequenze[_frequenza] ?? 7,
         'assegnatario': assegnatarioId,
         'rotazioneTurno': _rotazioneAutomatica,
@@ -204,10 +210,22 @@ class _TurniPopupPanelState extends ConsumerState<_TurniPopupPanel> {
     }
   }
 
+  DateTime _payloadDate(DateTime date) {
+    return DateTime(date.year, date.month, date.day, 12);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final form = ref.watch(turnoCreateFormProvider);
-    final inquiliniAsync = ref.watch(_turniInquiliniProvider);
+    final activeCasaController = ActiveCasaScope.read(context);
+    final casaAsync = ref.watch(_turniCasaProvider(activeCasaController));
+    final inquiliniAsync = casaAsync.when(
+      data: (casa) => ref.watch(_turniInquiliniProvider(casa?.id)),
+      loading: () => const AsyncValue<List<Inquilino>>.loading(),
+      error: (error, stackTrace) =>
+          AsyncValue<List<Inquilino>>.error(error, stackTrace),
+    );
+    final canSubmit =
+        _taskController.text.trim().isNotEmpty && _buildTurnoDate() != null;
 
     final panel = ConstrainedBox(
       constraints: BoxConstraints(
@@ -232,8 +250,9 @@ class _TurniPopupPanelState extends ConsumerState<_TurniPopupPanel> {
           inquiliniAsync: inquiliniAsync,
           errorMessage: _errorMessage,
           isSubmitting: _isSubmitting,
-          canSubmit: form.canSubmit,
+          canSubmit: canSubmit,
           onSubmit: _submit,
+          onTaskChanged: () => setState(() => _errorMessage = null),
           onDateTap: _pickTurnoDate,
           onDateChanged: () {
             setState(() {
@@ -295,6 +314,7 @@ class _TurnoFormPanel extends StatelessWidget {
     required this.isSubmitting,
     required this.canSubmit,
     required this.onSubmit,
+    required this.onTaskChanged,
     required this.onDateTap,
     required this.onDateChanged,
     required this.onFrequencyToggle,
@@ -320,6 +340,7 @@ class _TurnoFormPanel extends StatelessWidget {
   final bool isSubmitting;
   final bool canSubmit;
   final VoidCallback onSubmit;
+  final VoidCallback onTaskChanged;
   final VoidCallback onDateTap;
   final VoidCallback onDateChanged;
   final VoidCallback onFrequencyToggle;
@@ -350,7 +371,10 @@ class _TurnoFormPanel extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: AppSizes.p20),
-              _TaskField(controller: taskController),
+              _TaskField(
+                controller: taskController,
+                onChanged: onTaskChanged,
+              ),
               const SizedBox(height: AppSizes.p20),
               _DatePreviewRow(
                 dayController: dayController,
@@ -563,14 +587,16 @@ class _PopupDivider extends StatelessWidget {
 }
 
 class _TaskField extends StatelessWidget {
-  const _TaskField({required this.controller});
+  const _TaskField({required this.controller, required this.onChanged});
 
   final TextEditingController controller;
+  final VoidCallback onChanged;
 
   @override
   Widget build(BuildContext context) {
     return TextFormField(
       controller: controller,
+      onChanged: (_) => onChanged(),
       validator: (value) {
         if ((value ?? '').trim().isEmpty) {
           return 'Inserisci il nome del task';
@@ -964,7 +990,10 @@ class _AssigneeDropdown extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _AssignMeButton(onTap: () => onSelected(me.id)),
+                      _AssignMeButton(
+                        selected: selected.id == me.id,
+                        onTap: () => onSelected(me.id),
+                      ),
                       const SizedBox(height: AppSizes.p18),
                       _SelectedAssigneeButton(
                         label: 'Assegna a ${_displayName(selected)}',
@@ -1046,11 +1075,9 @@ class _AssigneeDropdown extends StatelessWidget {
     List<Inquilino> choices,
     Inquilino selected,
   ) {
-    final options = choices.skip(1).toList();
-    if (!options.any((inquilino) => inquilino.id == selected.id)) {
-      options.insert(0, selected);
-    }
-    return options;
+    return choices
+        .where((inquilino) => inquilino.id != selected.id)
+        .toList(growable: false);
   }
 
   static Inquilino _selectedInquilino(
@@ -1064,7 +1091,7 @@ class _AssigneeDropdown extends StatelessWidget {
         }
       }
     }
-    return inquilini.length > 1 ? inquilini[1] : inquilini.first;
+    return inquilini.first;
   }
 
   static String _displayName(Inquilino inquilino) {
@@ -1081,8 +1108,9 @@ class _AssigneeDropdown extends StatelessWidget {
 }
 
 class _AssignMeButton extends StatelessWidget {
-  const _AssignMeButton({required this.onTap});
+  const _AssignMeButton({required this.selected, required this.onTap});
 
+  final bool selected;
   final VoidCallback onTap;
 
   @override
@@ -1095,6 +1123,9 @@ class _AssignMeButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.turniAssignMeSurface,
           borderRadius: BorderRadius.circular(AppSizes.radius8),
+          border: selected
+              ? Border.all(color: AppColors.statusPositive, width: 2)
+              : null,
         ),
         padding: const EdgeInsets.symmetric(horizontal: AppSizes.p18),
         child: Row(

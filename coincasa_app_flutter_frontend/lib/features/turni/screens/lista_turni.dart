@@ -1,10 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:coincasa_app/core/api/api_provider.dart';
+import 'package:coincasa_app/core/models/casa.dart';
+import 'package:coincasa_app/core/models/turno.dart';
+import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/features/turni/screens/dettaglio_turno_admin.dart';
 import 'package:coincasa_app/features/turni/screens/turno_create_screen.dart';
+
+final _listaTurniCasaProvider =
+    FutureProvider.autoDispose.family<Casa?, ActiveCasaController>((
+      ref,
+      activeCasaController,
+    ) async {
+      final caseUtente = await ApiProvider.casa.list();
+      if (caseUtente.isEmpty) {
+        return null;
+      }
+      return activeCasaController.resolveCasa(caseUtente);
+    });
+
+final _listaTurniProvider =
+    FutureProvider.autoDispose.family<List<Turno>, String?>((ref, casaId) {
+      if (casaId == null || casaId.isEmpty) {
+        return const [];
+      }
+      return ApiProvider.turni.list(casaId);
+    });
 
 class ListaTurniScreen extends ConsumerWidget {
   const ListaTurniScreen({super.key, this.onInserisciTurno});
@@ -13,6 +37,19 @@ class ListaTurniScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final activeCasaController = ActiveCasaScope.read(context);
+    final casaAsync = ref.watch(_listaTurniCasaProvider(activeCasaController));
+    final turniAsync = casaAsync.when(
+      data: (casa) => ref.watch(_listaTurniProvider(casa?.id)),
+      loading: () => const AsyncValue<List<Turno>>.loading(),
+      error: (error, stackTrace) =>
+          AsyncValue<List<Turno>>.error(error, stackTrace),
+    );
+    final calendarTurni = turniAsync.maybeWhen(
+      data: (turni) => turni,
+      orElse: () => const <Turno>[],
+    );
+
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       bottomNavigationBar: const HouseQuickNav(currentRoute: '/turni'),
@@ -48,7 +85,7 @@ class ListaTurniScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: AppSizes.p8),
-                    const _TurniCalendarCard(),
+                    _TurniCalendarCard(turni: calendarTurni),
                     const SizedBox(height: AppSizes.p35),
                     Text(
                       'Turni assegnati',
@@ -58,10 +95,27 @@ class ListaTurniScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: AppSizes.p8),
-                    _AssignedTurniCard(
-                      onBagnoTap: () => Navigator.of(
-                        context,
-                      ).pushNamed(DettaglioTurnoAdminScreen.routeName),
+                    turniAsync.when(
+                      loading: () => const _TurniStatePanel(
+                        message: 'Caricamento turni...',
+                      ),
+                      error: (_, _) => const _TurniStatePanel(
+                        message: 'Impossibile caricare i turni.',
+                      ),
+                      data: (turni) => turni.isEmpty
+                          ? const _TurniStatePanel(
+                              message:
+                                  'Non ci sono turni per adesso...\nCreane subito uno nuovo!',
+                            )
+                          : _AssignedTurniCard(
+                              turni: turni,
+                              onTurnoTap: (turno) => Navigator.of(
+                                context,
+                              ).pushNamed(
+                                DettaglioTurnoAdminScreen.routeName,
+                                arguments: turno.id,
+                              ),
+                            ),
                     ),
                     const SizedBox(height: AppSizes.p40),
                   ],
@@ -91,7 +145,9 @@ class ListaTurniScreen extends ConsumerWidget {
 }
 
 class _TurniCalendarCard extends StatefulWidget {
-  const _TurniCalendarCard();
+  const _TurniCalendarCard({required this.turni});
+
+  final List<Turno> turni;
 
   @override
   State<_TurniCalendarCard> createState() => _TurniCalendarCardState();
@@ -138,6 +194,7 @@ class _TurniCalendarCardState extends State<_TurniCalendarCard> {
   Widget build(BuildContext context) {
     final gridDays = _buildGridDays(_focusedMonth);
     final visibleWeek = _currentWeek(gridDays);
+    final legend = _legendItems(widget.turni);
 
     return AnimatedSize(
       duration: const Duration(milliseconds: 220),
@@ -253,11 +310,12 @@ class _TurniCalendarCardState extends State<_TurniCalendarCard> {
             const SizedBox(height: AppSizes.p14),
             Row(
               children: [
-                const _CalendarLegendDot(color: Color(0xFF20F545), label: 'FP'),
-                const SizedBox(width: AppSizes.p18),
-                const _CalendarLegendDot(color: Color(0xFFFF941F), label: 'MR'),
-                const SizedBox(width: AppSizes.p18),
-                const _CalendarLegendDot(color: Color(0xFFD25BFF), label: 'AL'),
+                ...legend.expand(
+                  (item) => [
+                    _CalendarLegendDot(color: item.color, label: item.label),
+                    const SizedBox(width: AppSizes.p18),
+                  ],
+                ),
                 const Spacer(),
                 InkWell(
                   onTap: _toggleExpanded,
@@ -289,7 +347,7 @@ class _TurniCalendarCardState extends State<_TurniCalendarCard> {
         date: date,
         inFocusedMonth: date.month == month.month,
         isToday: _isSameDate(date, DateTime.now()),
-        marker: _markerForDate(date),
+        marker: _markerForDate(date, widget.turni),
       );
     });
   }
@@ -307,19 +365,63 @@ class _TurniCalendarCardState extends State<_TurniCalendarCard> {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
-  static Color? _markerForDate(DateTime date) {
-    if (date.weekday == DateTime.monday) {
-      return const Color(0xFF20F545);
+  static Color? _markerForDate(DateTime date, List<Turno> turni) {
+    for (final turno in turni) {
+      final turnoDate = turno.dataProssimaPulizia;
+      if (turnoDate != null && _isSameDate(turnoDate, date)) {
+        return _colorForAssignee(turno.assegnatarioNome);
+      }
     }
-    if (date.weekday == DateTime.tuesday) {
-      return const Color(0xFFFF941F);
-    }
-    if (date.weekday == DateTime.saturday) {
-      return const Color(0xFFD25BFF);
-    }
-
     return null;
   }
+
+  static List<_CalendarLegendItem> _legendItems(List<Turno> turni) {
+    final items = <String, Color>{};
+    for (final turno in turni) {
+      final label = _initials(turno.assegnatarioNome);
+      if (label != '?' && !items.containsKey(label)) {
+        items[label] = _colorForAssignee(turno.assegnatarioNome);
+      }
+      if (items.length == 3) {
+        break;
+      }
+    }
+    return items.entries
+        .map((entry) => _CalendarLegendItem(label: entry.key, color: entry.value))
+        .toList(growable: false);
+  }
+
+  static String _initials(String name) {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty || trimmed == 'Non assegnato') {
+      return '?';
+    }
+    final parts = trimmed.split(RegExp(r'\s+'));
+    if (parts.length >= 2) {
+      return '${parts.first[0]}${parts[1][0]}'.toUpperCase();
+    }
+    return trimmed.length >= 2
+        ? trimmed.substring(0, 2).toUpperCase()
+        : trimmed.toUpperCase();
+  }
+
+  static Color _colorForAssignee(String name) {
+    final colors = const [
+      Color(0xFF20F545),
+      Color(0xFFFF941F),
+      Color(0xFFD25BFF),
+      Color(0xFF4FC3F7),
+    ];
+    final hash = name.codeUnits.fold<int>(0, (sum, code) => sum + code);
+    return colors[hash % colors.length];
+  }
+}
+
+class _CalendarLegendItem {
+  const _CalendarLegendItem({required this.label, required this.color});
+
+  final String label;
+  final Color color;
 }
 
 class _CalendarGridDay {
@@ -477,12 +579,36 @@ class _CalendarLegendDot extends StatelessWidget {
 }
 
 class _AssignedTurniCard extends StatelessWidget {
-  const _AssignedTurniCard({required this.onBagnoTap});
+  const _AssignedTurniCard({required this.turni, required this.onTurnoTap});
 
-  final VoidCallback onBagnoTap;
+  final List<Turno> turni;
+  final ValueChanged<Turno> onTurnoTap;
+
+  static const _avatarColors = [
+    Color(0xFF2F8F46),
+    Color(0xFF78542A),
+    Color(0xFF60347D),
+    Color(0xFF347A88),
+  ];
+
+  static const _whenColors = [
+    Color(0xFF2E8641),
+    Color(0xFF835C2F),
+    Color(0xFF65347C),
+    Color(0xFF286D76),
+  ];
+
+  static const _textColors = [
+    Color(0xFF66FF7B),
+    Color(0xFFFFA83D),
+    Color(0xFFE889FF),
+    Colors.cyanAccent,
+  ];
 
   @override
   Widget build(BuildContext context) {
+    final visibleTurni = turni.take(4).toList(growable: false);
+
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF272746),
@@ -500,35 +626,101 @@ class _AssignedTurniCard extends StatelessWidget {
         vertical: AppSizes.p14,
       ),
       child: Column(
-        children: [
-          _AssignedTurnoRow(
-            initials: 'FP',
-            task: 'Bagno',
-            when: 'oggi',
-            avatarColor: const Color(0xFF2F8F46),
-            whenColor: const Color(0xFF2E8641),
-            textColor: const Color(0xFF66FF7B),
-            onTap: onBagnoTap,
-          ),
-          const SizedBox(height: AppSizes.p18),
-          const _AssignedTurnoRow(
-            initials: 'MR',
-            task: 'Ingresso',
-            when: 'domani',
-            avatarColor: Color(0xFF78542A),
-            whenColor: Color(0xFF835C2F),
-            textColor: Color(0xFFFFA83D),
-          ),
-          SizedBox(height: AppSizes.p18),
-          _AssignedTurnoRow(
-            initials: 'AL',
-            task: 'Soggiorno',
-            when: 'sabato',
-            avatarColor: Color(0xFF60347D),
-            whenColor: Color(0xFF65347C),
-            textColor: Color(0xFFE889FF),
+        children: List.generate(visibleTurni.length, (index) {
+          final turno = visibleTurni[index];
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: index == visibleTurni.length - 1 ? 0 : AppSizes.p18,
+            ),
+            child: _AssignedTurnoRow(
+              initials: _initials(turno.assegnatarioNome),
+              task: turno.titolo,
+              when: _whenLabel(turno.dataProssimaPulizia),
+              avatarColor: _avatarColors[index % _avatarColors.length],
+              whenColor: _whenColors[index % _whenColors.length],
+              textColor: _textColors[index % _textColors.length],
+              onTap: () => onTurnoTap(turno),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  static String _initials(String name) {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty || trimmed == 'Non assegnato') {
+      return '?';
+    }
+    final parts = trimmed.split(RegExp(r'\s+'));
+    if (parts.length >= 2) {
+      return '${parts.first[0]}${parts[1][0]}'.toUpperCase();
+    }
+    return trimmed.length >= 2
+        ? trimmed.substring(0, 2).toUpperCase()
+        : trimmed.toUpperCase();
+  }
+
+  static String _whenLabel(DateTime? date) {
+    if (date == null) {
+      return 'turno';
+    }
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final target = DateTime(date.year, date.month, date.day);
+    final delta = target.difference(today).inDays;
+    if (delta == 0) {
+      return 'oggi';
+    }
+    if (delta == 1) {
+      return 'domani';
+    }
+    if (delta > 1 && delta < 7) {
+      return const [
+        'lunedi',
+        'martedi',
+        'mercoledi',
+        'giovedi',
+        'venerdi',
+        'sabato',
+        'domenica',
+      ][target.weekday - 1];
+    }
+    return '${target.day}/${target.month}';
+  }
+}
+
+class _TurniStatePanel extends StatelessWidget {
+  const _TurniStatePanel({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 150),
+      alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.p24),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceDarkElevated,
+        borderRadius: BorderRadius.circular(AppSizes.radius12),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadowStrong,
+            blurRadius: AppSizes.p8,
+            offset: Offset(0, AppSizes.p5),
           ),
         ],
+      ),
+      child: Text(
+        message,
+        textAlign: TextAlign.center,
+        style: AppTextStyles.screenTitleStrong.copyWith(
+          color: AppColors.statusPositive,
+          fontSize: 22,
+          height: 1.16,
+          fontWeight: FontWeight.w800,
+        ),
       ),
     );
   }

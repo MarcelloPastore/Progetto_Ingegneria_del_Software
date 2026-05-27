@@ -3,9 +3,11 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/casa.dart';
+import 'package:coincasa_app/core/models/turno.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/features/turni/screens/turni_screen_principale.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -44,12 +46,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final casa = _activeCasaController.resolveCasa(caseUtente);
     final nomeCasa = _formatNomeCasa(casa);
     final displayName = nomeCasa.isEmpty ? 'Casa senza nome' : nomeCasa;
+    final turniFuture = ApiProvider.turni.list(casa.id);
+    final turniOggiFuture = ApiProvider.turni.listOggi(casa.id);
 
     final amounts = await Future.wait<double>([
       ApiProvider.spese.getSaldo(casa.id),
       ApiProvider.spese.getCreditoTot(casa.id),
       ApiProvider.spese.getDebitoTot(casa.id),
     ]);
+    final turni = await turniFuture;
+    final turniOggi = await turniOggiFuture;
 
     return _DashboardData(
       nomeCasa: displayName,
@@ -58,6 +64,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       saldo: amounts[0],
       credito: amounts[1],
       debito: amounts[2],
+      turni: turni,
+      turniOggi: turniOggi,
     );
   }
 
@@ -106,11 +114,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(height: AppSizes.p12),
                   _EmptyBalanceCard(dashboardDataFuture: _dashboardDataFuture),
                   const SizedBox(height: AppSizes.p28),
-                  const _EmptyMessageSection(
-                    title: 'SALUTE DELLA CASA',
-                    message: 'Nessun turno creato...',
-                    height: 126,
-                    routeName: '/turni',
+                  _HouseHealthSection(
+                    dashboardDataFuture: _dashboardDataFuture,
                   ),
                   const SizedBox(height: AppSizes.p28),
                   const _EmptyMessageSection(
@@ -122,9 +127,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(height: AppSizes.p28),
                   const _EmptyProblemsSection(),
                   const SizedBox(height: AppSizes.p28),
-                  const _EmptyTodayTurnSection(),
+                  _TodayTurnSection(
+                    dashboardDataFuture: _dashboardDataFuture,
+                  ),
                   const SizedBox(height: AppSizes.p28),
-                  const _EmptyCalendarSection(),
+                  _EmptyCalendarSection(
+                    dashboardDataFuture: _dashboardDataFuture,
+                  ),
                 ],
               ),
             ),
@@ -132,13 +141,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               right: AppSizes.p10,
               bottom: AppSizes.p24,
               child: FloatingActionButton(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Funzione non ancora implementata.'),
-                    ),
-                  );
-                },
+                onPressed: () => showTurniScreenPrincipaleDialog(context),
                 backgroundColor: AppColors.brandAccent,
                 elevation: AppSizes.p6,
                 child: const Icon(
@@ -163,6 +166,8 @@ class _DashboardData {
     this.saldo,
     this.credito,
     this.debito,
+    this.turni = const [],
+    this.turniOggi = const [],
   });
 
   final String nomeCasa;
@@ -171,6 +176,8 @@ class _DashboardData {
   final double? saldo;
   final double? credito;
   final double? debito;
+  final List<Turno> turni;
+  final List<Turno> turniOggi;
 }
 
 class _EmptyDashboardHeader extends StatelessWidget {
@@ -568,6 +575,52 @@ class _EmptyMessageSection extends StatelessWidget {
   }
 }
 
+class _HouseHealthSection extends StatelessWidget {
+  const _HouseHealthSection({required this.dashboardDataFuture});
+
+  final Future<_DashboardData> dashboardDataFuture;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<_DashboardData>(
+      future: dashboardDataFuture,
+      builder: (context, snapshot) {
+        final turni = snapshot.data?.turni ?? const <Turno>[];
+        final turniOggi = snapshot.data?.turniOggi ?? const <Turno>[];
+        final isLoading =
+            snapshot.connectionState == ConnectionState.waiting &&
+            snapshot.data == null;
+        final message = isLoading
+            ? 'Caricamento turni...'
+            : _healthMessage(turni: turni, turniOggi: turniOggi);
+
+        return _EmptyMessageSection(
+          title: 'SALUTE DELLA CASA',
+          message: message,
+          height: 126,
+          routeName: '/turni',
+        );
+      },
+    );
+  }
+
+  static String _healthMessage({
+    required List<Turno> turni,
+    required List<Turno> turniOggi,
+  }) {
+    if (turni.isEmpty) {
+      return 'Nessun turno creato...';
+    }
+    if (turniOggi.isEmpty) {
+      return 'Tutto in ordine';
+    }
+    if (turniOggi.length == 1) {
+      return '1 turno previsto oggi';
+    }
+    return '${turniOggi.length} turni previsti oggi';
+  }
+}
+
 class _EmptyProblemsSection extends StatelessWidget {
   const _EmptyProblemsSection();
 
@@ -624,8 +677,10 @@ class _EmptyProblemsSection extends StatelessWidget {
   }
 }
 
-class _EmptyTodayTurnSection extends StatelessWidget {
-  const _EmptyTodayTurnSection();
+class _TodayTurnSection extends StatelessWidget {
+  const _TodayTurnSection({required this.dashboardDataFuture});
+
+  final Future<_DashboardData> dashboardDataFuture;
 
   @override
   Widget build(BuildContext context) {
@@ -634,33 +689,48 @@ class _EmptyTodayTurnSection extends StatelessWidget {
       children: [
         const _CenteredSectionTitle('TURNO DI OGGI'),
         const SizedBox(height: AppSizes.p10),
-        InkWell(
-          onTap: () => Navigator.of(context).pushNamed('/turni'),
-          borderRadius: BorderRadius.circular(AppSizes.radius8),
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppColors.surfaceDarkElevated,
+        FutureBuilder<_DashboardData>(
+          future: dashboardDataFuture,
+          builder: (context, snapshot) {
+            final turniOggi = snapshot.data?.turniOggi ?? const <Turno>[];
+            final isLoading =
+                snapshot.connectionState == ConnectionState.waiting &&
+                snapshot.data == null;
+            final turno = turniOggi.isNotEmpty ? turniOggi.first : null;
+
+            return InkWell(
+              onTap: () => Navigator.of(context).pushNamed('/turni'),
               borderRadius: BorderRadius.circular(AppSizes.radius8),
-              boxShadow: const [
-                BoxShadow(
-                  color: AppColors.shadowStrong,
-                  blurRadius: AppSizes.p8,
-                  offset: Offset(0, AppSizes.p5),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceDarkElevated,
+                  borderRadius: BorderRadius.circular(AppSizes.radius8),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: AppColors.shadowStrong,
+                      blurRadius: AppSizes.p8,
+                      offset: Offset(0, AppSizes.p5),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            padding: const EdgeInsets.fromLTRB(
-              AppSizes.p14,
-              AppSizes.p16,
-              AppSizes.p20,
-              AppSizes.p16,
-            ),
-            child: const _StatusRow(
-              title: 'Nessuna pulizia da fare!',
-              status: 'oggi',
-              titleColor: AppColors.textOnDark,
-            ),
-          ),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSizes.p14,
+                  AppSizes.p16,
+                  AppSizes.p20,
+                  AppSizes.p16,
+                ),
+                child: _StatusRow(
+                  title: isLoading
+                      ? 'Caricamento turno...'
+                      : turno?.titolo ?? 'Nessuna pulizia da fare!',
+                  status: turniOggi.length > 1
+                      ? '+${turniOggi.length - 1}'
+                      : 'oggi',
+                  titleColor: AppColors.textOnDark,
+                ),
+              ),
+            );
+          },
         ),
       ],
     );
@@ -718,7 +788,9 @@ class _StatusRow extends StatelessWidget {
 }
 
 class _EmptyCalendarSection extends StatelessWidget {
-  const _EmptyCalendarSection();
+  const _EmptyCalendarSection({required this.dashboardDataFuture});
+
+  final Future<_DashboardData> dashboardDataFuture;
 
   static const List<String> _weekDays = [
     'Lu',
@@ -729,9 +801,26 @@ class _EmptyCalendarSection extends StatelessWidget {
     'Sab',
     'Dom',
   ];
+  static const List<String> _monthNames = [
+    'Gennaio',
+    'Febbraio',
+    'Marzo',
+    'Aprile',
+    'Maggio',
+    'Giugno',
+    'Luglio',
+    'Agosto',
+    'Settembre',
+    'Ottobre',
+    'Novembre',
+    'Dicembre',
+  ];
 
   @override
   Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final month = DateTime(now.year, now.month);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -750,8 +839,8 @@ class _EmptyCalendarSection extends StatelessWidget {
                     height: AppSizes.p48,
                     color: AppColors.brandSecondary,
                     alignment: Alignment.center,
-                    child: const Text(
-                      'Aprile',
+                    child: Text(
+                      _monthNames[month.month - 1],
                       style: TextStyle(
                         color: AppColors.textOnDark,
                         fontSize: 16,
@@ -787,30 +876,33 @@ class _EmptyCalendarSection extends StatelessWidget {
                               .toList(),
                         ),
                         const SizedBox(height: AppSizes.p16),
-                        GridView.builder(
-                          itemCount: 35,
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 7,
-                                mainAxisSpacing: AppSizes.p12,
-                                crossAxisSpacing: AppSizes.p12,
-                                childAspectRatio: 1.3,
-                              ),
-                          itemBuilder: (context, index) {
-                            final day = index < 30 ? '${index + 1}' : '';
+                        FutureBuilder<_DashboardData>(
+                          future: dashboardDataFuture,
+                          builder: (context, snapshot) {
+                            final turni = snapshot.data?.turni ?? const [];
+                            final days = _buildGridDays(month);
 
-                            return Text(
-                              day,
-                              textAlign: TextAlign.center,
-                              style: AppTextStyles.dashboardCalendarDay
-                                  .copyWith(
-                                    color: day == '14'
-                                        ? AppColors.textMuted
-                                        : AppColors.textOnDark,
-                                    fontSize: 14,
+                            return GridView.builder(
+                              itemCount: days.length,
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 7,
+                                    mainAxisSpacing: AppSizes.p12,
+                                    crossAxisSpacing: AppSizes.p12,
+                                    childAspectRatio: 1.3,
                                   ),
+                              itemBuilder: (context, index) {
+                                final date = days[index];
+                                final inMonth = date.month == month.month;
+                                final hasTurno = inMonth && _hasTurno(date, turni);
+
+                                return _DashboardCalendarDay(
+                                  day: inMonth ? '${date.day}' : '',
+                                  hasTurno: hasTurno,
+                                );
+                              },
                             );
                           },
                         ),
@@ -820,6 +912,61 @@ class _EmptyCalendarSection extends StatelessWidget {
                 ],
               ),
             ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  static List<DateTime> _buildGridDays(DateTime month) {
+    final firstOfMonth = DateTime(month.year, month.month, 1);
+    final start = firstOfMonth.subtract(
+      Duration(days: firstOfMonth.weekday - 1),
+    );
+    return List.generate(42, (index) => start.add(Duration(days: index)));
+  }
+
+  static bool _hasTurno(DateTime date, List<Turno> turni) {
+    return turni.any((turno) {
+      final turnoDate = turno.dataProssimaPulizia;
+      return turnoDate != null &&
+          turnoDate.year == date.year &&
+          turnoDate.month == date.month &&
+          turnoDate.day == date.day;
+    });
+  }
+}
+
+class _DashboardCalendarDay extends StatelessWidget {
+  const _DashboardCalendarDay({required this.day, required this.hasTurno});
+
+  final String day;
+  final bool hasTurno;
+
+  @override
+  Widget build(BuildContext context) {
+    if (day.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          day,
+          textAlign: TextAlign.center,
+          style: AppTextStyles.dashboardCalendarDay.copyWith(
+            color: AppColors.textOnDark,
+            fontSize: 14,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Container(
+          width: 7,
+          height: 7,
+          decoration: BoxDecoration(
+            color: hasTurno ? AppColors.brandAccent : AppColors.transparent,
+            shape: BoxShape.circle,
           ),
         ),
       ],

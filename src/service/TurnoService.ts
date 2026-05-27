@@ -26,6 +26,15 @@ function shuffleTurni(ids: string[]): string[] {
   return copy;
 }
 
+function riferimentoPerPrimaScadenza(
+  dataTurno: string,
+  cadenzaGiorni: number,
+): Date {
+  const riferimento = new Date(dataTurno);
+  riferimento.setDate(riferimento.getDate() - cadenzaGiorni);
+  return riferimento;
+}
+
 function isToday(isoString: string): boolean {
   const d = new Date(isoString);
   const oggi = new Date();
@@ -104,6 +113,10 @@ export class TurnoService {
       assegnatarioCorrente: dto.assegnatario,
       ordineRotazione: idsRotazione,
       indiceRotazioneCorrente: 0,
+      dataUltimaPulizia: riferimentoPerPrimaScadenza(
+        dto.dataTurno,
+        dto.cadenzaGiorni,
+      ),
       idCreatore,
     });
 
