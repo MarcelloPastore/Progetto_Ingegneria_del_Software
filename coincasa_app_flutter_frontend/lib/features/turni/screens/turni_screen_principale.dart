@@ -8,43 +8,111 @@ import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/features/turni/screens/turno_salvato_con_successo.dart';
-import 'package:coincasa_app/features/turni/screens/turno_create_screen.dart';
 
 Future<void> showTurniScreenPrincipaleDialog(BuildContext context) {
   return showDialog<void>(
     context: context,
     barrierDismissible: true,
     barrierColor: AppColors.darkBackground.withValues(alpha: 0.42),
-    builder: (_) => const Dialog(
-      backgroundColor: AppColors.transparent,
-      insetPadding: EdgeInsets.symmetric(
-        horizontal: AppSizes.p24,
-        vertical: AppSizes.p24,
+    builder: (_) => Align(
+      alignment: Alignment.topCenter,
+      child: Padding(
+        padding: const EdgeInsets.only(top: AppSizes.p12),
+        child: const Dialog(
+          backgroundColor: AppColors.transparent,
+          insetPadding: EdgeInsets.symmetric(
+            horizontal: AppSizes.p24,
+            vertical: AppSizes.p12,
+          ),
+          child: _TurniPopupPanel(useSafeArea: true),
+        ),
       ),
-      child: _TurniPopupPanel(useSafeArea: true),
     ),
   );
 }
 
-final _turniCasaProvider =
-    FutureProvider.autoDispose.family<Casa?, ActiveCasaController>((
-      ref,
-      activeCasaController,
-    ) async {
+final _turniCasaProvider = FutureProvider.autoDispose.family<Casa?, String?>((
+  ref,
+  selectedCasaId,
+) async {
   final caseUtente = await ApiProvider.casa.list();
   if (caseUtente.isEmpty) {
     return null;
   }
-  return activeCasaController.resolveCasa(caseUtente);
+  if (selectedCasaId != null && selectedCasaId.isNotEmpty) {
+    for (final casa in caseUtente) {
+      if (casa.id == selectedCasaId) {
+        return casa;
+      }
+    }
+  }
+  return caseUtente.first;
 });
 
-final _turniInquiliniProvider =
-    FutureProvider.autoDispose.family<List<Inquilino>, String?>((ref, casaId) {
-  if (casaId == null || casaId.isEmpty) {
-    return const [];
+final _turniInquiliniProvider = FutureProvider.autoDispose
+    .family<List<Inquilino>, String?>((ref, casaId) {
+      if (casaId == null || casaId.isEmpty) {
+        return const [];
+      }
+      return ApiProvider.casa.listInquilini(casaId);
+    });
+
+const _currentUserName = 'luigione';
+
+String _assigneeDisplayName(Inquilino inquilino) {
+  final nome = inquilino.nome.trim();
+  if (nome.isNotEmpty) {
+    return nome.split(RegExp(r'\s+')).first;
   }
-  return ApiProvider.casa.listInquilini(casaId);
-});
+  final email = inquilino.email.trim();
+  if (email.isNotEmpty) {
+    return email.split('@').first;
+  }
+  return 'coinquilino';
+}
+
+bool _isCurrentUser(Inquilino inquilino) {
+  final values = [
+    inquilino.nome,
+    inquilino.nomeCompleto,
+    inquilino.username,
+    _assigneeDisplayName(inquilino),
+  ];
+
+  return values.any((value) => value.trim().toLowerCase() == _currentUserName);
+}
+
+List<Inquilino> _validAssignees(List<Inquilino> inquilini) {
+  return inquilini
+      .where((inquilino) => inquilino.id.isNotEmpty)
+      .toList(growable: false);
+}
+
+Inquilino? _currentUser(List<Inquilino> assignees) {
+  for (final inquilino in assignees) {
+    if (_isCurrentUser(inquilino)) {
+      return inquilino;
+    }
+  }
+  return assignees.isEmpty ? null : assignees.first;
+}
+
+List<Inquilino> _otherHousemates(List<Inquilino> assignees) {
+  return assignees
+      .where((inquilino) => !_isCurrentUser(inquilino))
+      .toList(growable: false);
+}
+
+Inquilino? _selectedInquilino(List<Inquilino> inquilini, String? selectedId) {
+  if (selectedId != null) {
+    for (final inquilino in inquilini) {
+      if (inquilino.id == selectedId) {
+        return inquilino;
+      }
+    }
+  }
+  return inquilini.isEmpty ? null : inquilini.first;
+}
 
 class TurniScreenPrincipale extends StatelessWidget {
   const TurniScreenPrincipale({super.key});
@@ -156,14 +224,16 @@ class _TurniPopupPanelState extends ConsumerState<_TurniPopupPanel> {
       return;
     }
 
-    final activeCasaController = ActiveCasaScope.read(context);
-    final casa = await ref.read(_turniCasaProvider(activeCasaController).future);
-    final inquilini = await ref.read(
-      _turniInquiliniProvider(casa?.id).future,
+    final activeCasaController = ActiveCasaScope.of(context);
+    final casa = await ref.read(
+      _turniCasaProvider(activeCasaController.selectedCasaId).future,
     );
+    final inquilini = await ref.read(_turniInquiliniProvider(casa?.id).future);
+    final assignees = _validAssignees(inquilini);
+    final currentUser = _currentUser(assignees);
     final assegnatarioId =
         _selectedInquilinoId ??
-        (inquilini.isNotEmpty ? inquilini.first.id : '');
+        (currentUser?.id ?? (assignees.isNotEmpty ? assignees.first.id : ''));
     final turnoDate = _selectedTurnoDate ?? _buildTurnoDate();
 
     if (casa == null || casa.id.isEmpty) {
@@ -216,8 +286,10 @@ class _TurniPopupPanelState extends ConsumerState<_TurniPopupPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final activeCasaController = ActiveCasaScope.read(context);
-    final casaAsync = ref.watch(_turniCasaProvider(activeCasaController));
+    final activeCasaController = ActiveCasaScope.of(context);
+    final casaAsync = ref.watch(
+      _turniCasaProvider(activeCasaController.selectedCasaId),
+    );
     final inquiliniAsync = casaAsync.when(
       data: (casa) => ref.watch(_turniInquiliniProvider(casa?.id)),
       loading: () => const AsyncValue<List<Inquilino>>.loading(),
@@ -230,7 +302,7 @@ class _TurniPopupPanelState extends ConsumerState<_TurniPopupPanel> {
     final panel = ConstrainedBox(
       constraints: BoxConstraints(
         maxWidth: 382,
-        maxHeight: MediaQuery.sizeOf(context).height * 0.82,
+        maxHeight: MediaQuery.sizeOf(context).height * 0.9,
       ),
       child: Material(
         color: AppColors.surface,
@@ -371,10 +443,7 @@ class _TurnoFormPanel extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: AppSizes.p20),
-              _TaskField(
-                controller: taskController,
-                onChanged: onTaskChanged,
-              ),
+              _TaskField(controller: taskController, onChanged: onTaskChanged),
               const SizedBox(height: AppSizes.p20),
               _DatePreviewRow(
                 dayController: dayController,
@@ -914,7 +983,7 @@ class _DropdownOption extends StatelessWidget {
   }
 }
 
-class _AssigneeDropdown extends StatelessWidget {
+class _AssigneeDropdown extends StatefulWidget {
   const _AssigneeDropdown({
     required this.inquiliniAsync,
     required this.selectedId,
@@ -932,6 +1001,112 @@ class _AssigneeDropdown extends StatelessWidget {
   final VoidCallback onToggle;
   final ValueChanged<String> onSelected;
   final ValueChanged<bool> onRotazioneChanged;
+
+  @override
+  State<_AssigneeDropdown> createState() => _AssigneeDropdownState();
+}
+
+class _AssigneeDropdownState extends State<_AssigneeDropdown> {
+  final LayerLink _menuLink = LayerLink();
+  OverlayEntry? _overlayEntry;
+  bool _overlayInsertScheduled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.expanded) {
+      _scheduleShowOverlay();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _AssigneeDropdown oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.expanded && _overlayEntry == null) {
+      _scheduleShowOverlay();
+    } else if (!widget.expanded && _overlayEntry != null) {
+      _hideOverlay();
+    } else if (widget.expanded && _overlayEntry != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && widget.expanded) {
+          _overlayEntry?.markNeedsBuild();
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _hideOverlay();
+    super.dispose();
+  }
+
+  void _scheduleShowOverlay() {
+    if (_overlayEntry != null || _overlayInsertScheduled) {
+      return;
+    }
+
+    _overlayInsertScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _overlayInsertScheduled = false;
+      if (mounted && widget.expanded) {
+        _showOverlay();
+      }
+    });
+  }
+
+  void _showOverlay() {
+    if (_overlayEntry != null || !mounted) {
+      return;
+    }
+
+    _overlayEntry = OverlayEntry(
+      builder: (context) {
+        final assignees = _validAssignees(
+          widget.inquiliniAsync.value ?? const [],
+        );
+        final options = _otherHousemates(assignees);
+        final selected = _selectedInquilino(options, widget.selectedId);
+
+        if (selected == null || options.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        return Stack(
+          children: [
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: widget.onToggle,
+                child: Container(
+                  color: AppColors.darkBackground.withValues(alpha: 0.28),
+                ),
+              ),
+            ),
+            CompositedTransformFollower(
+              link: _menuLink,
+              showWhenUnlinked: false,
+              targetAnchor: Alignment.bottomRight,
+              followerAnchor: Alignment.topRight,
+              offset: const Offset(0, AppSizes.p8),
+              child: _AssigneeMenu(
+                options: options,
+                selectedId: selected.id,
+                onSelected: widget.onSelected,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    Overlay.of(context, rootOverlay: true).insert(_overlayEntry!);
+  }
+
+  void _hideOverlay() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -964,7 +1139,7 @@ class _AssigneeDropdown extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSizes.p10),
-          inquiliniAsync.when(
+          widget.inquiliniAsync.when(
             loading: () => const SizedBox(
               height: AppSizes.p68,
               child: Center(
@@ -979,39 +1154,34 @@ class _AssigneeDropdown extends StatelessWidget {
               style: AppTextStyles.error.copyWith(color: AppColors.errorStrong),
             ),
             data: (inquilini) {
-              final choices = _assigneeChoices(inquilini);
-              final me = choices.first;
-              final selected = _selectedInquilino(choices, selectedId);
-              final options = _menuOptions(choices, selected);
+              final assignees = _validAssignees(inquilini);
+              final me = _currentUser(assignees);
+              final otherHousemates = _otherHousemates(assignees);
+              final selected = _selectedInquilino(
+                otherHousemates,
+                widget.selectedId,
+              );
 
-              return Stack(
-                clipBehavior: Clip.none,
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _AssignMeButton(
-                        selected: selected.id == me.id,
-                        onTap: () => onSelected(me.id),
-                      ),
-                      const SizedBox(height: AppSizes.p18),
-                      _SelectedAssigneeButton(
-                        label: 'Assegna a ${_displayName(selected)}',
-                        expanded: expanded,
-                        onTap: onToggle,
-                      ),
-                    ],
+                  _AssignMeButton(
+                    selected:
+                        widget.selectedId == null ||
+                        (me != null && widget.selectedId == me.id),
+                    onTap: me == null ? null : () => widget.onSelected(me.id),
                   ),
-                  if (expanded)
-                    Positioned(
-                      right: AppSizes.p0,
-                      top: AppSizes.p100,
-                      child: _AssigneeMenu(
-                        options: options,
-                        selectedId: selected.id,
-                        onSelected: onSelected,
+                  if (selected != null && otherHousemates.isNotEmpty) ...[
+                    const SizedBox(height: AppSizes.p18),
+                    CompositedTransformTarget(
+                      link: _menuLink,
+                      child: _SelectedAssigneeButton(
+                        label: 'Assegna a ${_assigneeDisplayName(selected)}',
+                        expanded: widget.expanded,
+                        onTap: widget.onToggle,
                       ),
                     ),
+                  ],
                 ],
               );
             },
@@ -1026,9 +1196,6 @@ class _AssigneeDropdown extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: AppTextStyles.bodyStrong.copyWith(
-                    color: AppColors.textMutedLight,
-                    fontSize: 16,
-                    fontStyle: FontStyle.italic,
                     decoration: TextDecoration.underline,
                     decorationColor: AppColors.textMutedLight,
                   ),
@@ -1036,8 +1203,8 @@ class _AssigneeDropdown extends StatelessWidget {
               ),
               const SizedBox(width: AppSizes.p10),
               Switch(
-                value: rotazioneAutomatica,
-                onChanged: onRotazioneChanged,
+                value: widget.rotazioneAutomatica,
+                onChanged: widget.onRotazioneChanged,
                 activeThumbColor: AppColors.textOnDark,
                 activeTrackColor: AppColors.brandSecondary,
                 inactiveThumbColor: AppColors.textMutedLight,
@@ -1049,69 +1216,13 @@ class _AssigneeDropdown extends StatelessWidget {
       ),
     );
   }
-
-  static List<Inquilino> _assigneeChoices(List<Inquilino> inquilini) {
-    final valid = inquilini
-        .where((inquilino) => inquilino.id.isNotEmpty)
-        .toList(growable: false);
-    if (valid.length >= 2) {
-      return valid;
-    }
-
-    final me = valid.isNotEmpty
-        ? valid.first
-        : const Inquilino(id: 'preview-me', nome: 'Io', email: '');
-
-    return [
-      me,
-      const Inquilino(id: 'preview-emma', nome: 'Emma', email: ''),
-      const Inquilino(id: 'preview-emilia', nome: 'Emilia', email: ''),
-      const Inquilino(id: 'preview-marco', nome: 'Marco', email: ''),
-      const Inquilino(id: 'preview-luigi', nome: 'Luigi', email: ''),
-    ];
-  }
-
-  static List<Inquilino> _menuOptions(
-    List<Inquilino> choices,
-    Inquilino selected,
-  ) {
-    return choices
-        .where((inquilino) => inquilino.id != selected.id)
-        .toList(growable: false);
-  }
-
-  static Inquilino _selectedInquilino(
-    List<Inquilino> inquilini,
-    String? selectedId,
-  ) {
-    if (selectedId != null) {
-      for (final inquilino in inquilini) {
-        if (inquilino.id == selectedId) {
-          return inquilino;
-        }
-      }
-    }
-    return inquilini.first;
-  }
-
-  static String _displayName(Inquilino inquilino) {
-    final nome = inquilino.nome.trim();
-    if (nome.isNotEmpty) {
-      return nome.split(RegExp(r'\s+')).first;
-    }
-    final email = inquilino.email.trim();
-    if (email.isNotEmpty) {
-      return email.split('@').first;
-    }
-    return 'coinquilino';
-  }
 }
 
 class _AssignMeButton extends StatelessWidget {
   const _AssignMeButton({required this.selected, required this.onTap});
 
   final bool selected;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1246,7 +1357,7 @@ class _AssigneeMenu extends StatelessWidget {
           children: options
               .map(
                 (inquilino) => _AssigneeOption(
-                  label: _AssigneeDropdown._displayName(inquilino),
+                  label: _assigneeDisplayName(inquilino),
                   selected: inquilino.id == selectedId,
                   onTap: () => onSelected(inquilino.id),
                 ),
@@ -1280,16 +1391,14 @@ class _AssigneeOption extends StatelessWidget {
           color: selected
               ? AppColors.turniAssigneeSelectedSurface
               : AppColors.transparent,
-          border: const Border(
-            top: BorderSide(color: AppColors.turniAssigneeDivider, width: 1),
-          ),
+          borderRadius: BorderRadius.circular(AppSizes.radius8),
+          border: const Border(),
         ),
         child: Text(
           label,
           style: AppTextStyles.bodyStrong.copyWith(
             color: AppColors.warning,
             fontSize: 20,
-            fontStyle: FontStyle.italic,
           ),
         ),
       ),

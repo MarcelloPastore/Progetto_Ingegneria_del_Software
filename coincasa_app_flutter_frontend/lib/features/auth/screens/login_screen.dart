@@ -81,6 +81,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       ApiProvider.client.setAuthToken(token);
+      ApiProvider.client.setCurrentUserIdentity(email: email);
 
       // Verifica se l'utente ha almeno una casa
       List<dynamic> caseUtente = [];

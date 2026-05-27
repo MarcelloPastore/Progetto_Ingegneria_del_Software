@@ -2,10 +2,84 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
+import 'package:coincasa_app/core/models/inquilino.dart';
+import 'package:coincasa_app/core/models/turno.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/features/turni/screens/assegna_a_me.dart';
+
+String _assigneeDisplayName(Inquilino inquilino) {
+  final nome = inquilino.nomeCompleto.trim();
+  if (nome.isNotEmpty) {
+    return nome.split(RegExp(r'\s+')).first;
+  }
+  final email = inquilino.email.trim();
+  if (email.isNotEmpty) {
+    return email.split('@').first;
+  }
+  final username = inquilino.username.trim();
+  if (username.isNotEmpty) {
+    return username;
+  }
+  return 'coinquilino';
+}
+
+bool _matchesCurrentUser(Inquilino inquilino) {
+  final email = ApiProvider.client.currentUserEmail?.trim().toLowerCase();
+  final name = ApiProvider.client.currentUserName?.trim().toLowerCase();
+  final normalizedValues = <String>{
+    if (email != null && email.isNotEmpty) inquilino.email.trim().toLowerCase(),
+    if (name != null && name.isNotEmpty)
+      inquilino.nomeCompleto.trim().toLowerCase(),
+    if (name != null && name.isNotEmpty) inquilino.nome.trim().toLowerCase(),
+    if (name != null && name.isNotEmpty)
+      inquilino.username.trim().toLowerCase(),
+  };
+
+  return normalizedValues.contains(email) || normalizedValues.contains(name);
+}
+
+List<Inquilino> _validAssignees(List<Inquilino> inquilini) {
+  return inquilini.where((item) => item.id.isNotEmpty).toList(growable: false);
+}
+
+List<Inquilino> _otherAssignees(List<Inquilino> assignees) {
+  return assignees
+      .where((inquilino) => !_matchesCurrentUser(inquilino))
+      .toList(growable: false);
+}
+
+Inquilino? _findInquilinoById(List<Inquilino> inquilini, String? id) {
+  if (id == null || id.isEmpty) {
+    return null;
+  }
+  for (final inquilino in inquilini) {
+    if (inquilino.id == id) {
+      return inquilino;
+    }
+  }
+  return null;
+}
+
+String _formatDate(DateTime? date) {
+  if (date == null) {
+    return 'data non disponibile';
+  }
+  return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+}
+
+class _TurnoDetailData {
+  const _TurnoDetailData({
+    required this.casaId,
+    required this.turno,
+    required this.inquilini,
+  });
+
+  final String casaId;
+  final Turno turno;
+  final List<Inquilino> inquilini;
+}
 
 class DettaglioTurnoAdminScreen extends ConsumerStatefulWidget {
   const DettaglioTurnoAdminScreen({super.key});
@@ -19,39 +93,71 @@ class DettaglioTurnoAdminScreen extends ConsumerStatefulWidget {
 
 class _DettaglioTurnoAdminScreenState
     extends ConsumerState<DettaglioTurnoAdminScreen> {
-  bool _assigneeMenuOpen = false;
-  bool _assignFutureTurns = true;
+  bool _initialized = false;
+  late Future<_TurnoDetailData?> _detailFuture;
   bool _confirmDelete = false;
   bool _isSubmitting = false;
-  String _selectedAssignee = 'Emma';
+  bool _assignFutureTurns = true;
+  bool _assigneeMenuOpen = false;
+  String? _selectedAssigneeId;
 
   String? get _turnoId {
     final args = ModalRoute.of(context)?.settings.arguments;
     return args is String && args.isNotEmpty ? args : null;
   }
 
-  Future<String?> _activeCasaId() async {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_initialized) {
+      return;
+    }
+    _initialized = true;
+    _detailFuture = _loadDetailData();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  Future<_TurnoDetailData?> _loadDetailData() async {
+    final turnoId = _turnoId;
+    if (turnoId == null) {
+      return null;
+    }
+
     final activeCasaController = ActiveCasaScope.read(context);
     final caseUtente = await ApiProvider.casa.list();
     if (caseUtente.isEmpty) {
       return null;
     }
-    return activeCasaController.resolveCasa(caseUtente).id;
+
+    final casa = activeCasaController.resolveCasa(caseUtente);
+    final results = await Future.wait<dynamic>([
+      ApiProvider.turni.getById(casa.id, turnoId),
+      ApiProvider.casa.listInquilini(casa.id),
+    ]);
+
+    return _TurnoDetailData(
+      casaId: casa.id,
+      turno: results[0] as Turno,
+      inquilini: results[1] as List<Inquilino>,
+    );
   }
 
-  Future<void> _handleAssignMe() async {
-    final turnoId = _turnoId;
-    if (turnoId == null) {
-      Navigator.of(context).pushNamed(AssegnaAMeSuccessScreen.routeName);
-      return;
-    }
+  void _reloadDetail() {
+    setState(() {
+      _detailFuture = _loadDetailData();
+      _selectedAssigneeId = null;
+      _assigneeMenuOpen = false;
+    });
+  }
 
+  Future<void> _handleAssignMe(_TurnoDetailData data) async {
     setState(() => _isSubmitting = true);
     try {
-      final casaId = await _activeCasaId();
-      if (casaId != null && mounted) {
-        await ApiProvider.turni.autoAssegna(casaId, turnoId);
-      }
+      await ApiProvider.turni.autoAssegna(data.casaId, data.turno.id);
       if (mounted) {
         Navigator.of(context).pushNamed(AssegnaAMeSuccessScreen.routeName);
       }
@@ -68,26 +174,60 @@ class _DettaglioTurnoAdminScreenState
     }
   }
 
+  Future<void> _handleAssigneeSelected(
+    _TurnoDetailData data,
+    String assigneeId,
+  ) async {
+    setState(() {
+      _selectedAssigneeId = assigneeId;
+      _assigneeMenuOpen = false;
+      _isSubmitting = true;
+    });
+
+    try {
+      await ApiProvider.turni.assegna(data.casaId, data.turno.id, {
+        'idUtente': assigneeId,
+      });
+      if (mounted) {
+        _reloadDetail();
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Impossibile aggiornare l'assegnatario."),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
+
   Future<void> _handleDelete() async {
     if (!_confirmDelete) {
       setState(() => _confirmDelete = true);
       return;
     }
 
-    final turnoId = _turnoId;
-    if (turnoId == null) {
+    final data = await _detailFuture;
+    if (!mounted) {
+      return;
+    }
+    if (data == null) {
       Navigator.of(context).pushReplacementNamed(TurnoRimossoScreen.routeName);
       return;
     }
 
     setState(() => _isSubmitting = true);
     try {
-      final casaId = await _activeCasaId();
-      if (casaId != null && mounted) {
-        await ApiProvider.turni.delete(casaId, turnoId);
-      }
+      await ApiProvider.turni.delete(data.casaId, data.turno.id);
       if (mounted) {
-        Navigator.of(context).pushReplacementNamed(TurnoRimossoScreen.routeName);
+        Navigator.of(
+          context,
+        ).pushReplacementNamed(TurnoRimossoScreen.routeName);
       }
     } catch (_) {
       if (mounted) {
@@ -102,97 +242,143 @@ class _DettaglioTurnoAdminScreenState
     }
   }
 
+  String? _defaultAssigneeId(List<Inquilino> assignees) {
+    if (_selectedAssigneeId != null &&
+        assignees.any((item) => item.id == _selectedAssigneeId)) {
+      return _selectedAssigneeId;
+    }
+    return assignees.isEmpty ? null : assignees.first.id;
+  }
+
+  String _selectedAssigneeLabel(List<Inquilino> assignees) {
+    final selected = _findInquilinoById(
+      assignees,
+      _defaultAssigneeId(assignees),
+    );
+    return selected != null ? _assigneeDisplayName(selected) : 'coinquilino';
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.darkBackground,
-      bottomNavigationBar: const HouseQuickNav(currentRoute: '/turni'),
-      body: SafeArea(
-        child: Stack(
-          children: [
-            SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(
-                AppSizes.p14,
-                AppSizes.p8,
-                AppSizes.p14,
-                AppSizes.p20,
-              ),
-              child: Opacity(
-                opacity: _confirmDelete ? 0.42 : 1,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _DetailHeader(onBack: () => Navigator.of(context).pop()),
-                    const SizedBox(height: AppSizes.p24),
-                    const _TurnoSummaryCard(),
-                    const SizedBox(height: AppSizes.p24),
-                    const _ResponsibleCard(),
-                    const SizedBox(height: AppSizes.p48),
-                    Text(
-                      'Vuoi occupartene tu?',
-                      style: AppTextStyles.bodyStrong.copyWith(
-                        color: AppColors.textMutedLight,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                      ),
+    return FutureBuilder<_TurnoDetailData?>(
+      future: _detailFuture,
+      builder: (context, snapshot) {
+        final data = snapshot.data;
+        final isLoading = snapshot.connectionState == ConnectionState.waiting;
+        final assignees = data == null
+            ? const <Inquilino>[]
+            : _otherAssignees(_validAssignees(data.inquilini));
+        final selectedAssigneeId = _defaultAssigneeId(assignees);
+
+        return Scaffold(
+          backgroundColor: AppColors.darkBackground,
+          bottomNavigationBar: const HouseQuickNav(currentRoute: '/turni'),
+          body: SafeArea(
+            child: Stack(
+              children: [
+                SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSizes.p14,
+                    AppSizes.p8,
+                    AppSizes.p14,
+                    AppSizes.p20,
+                  ),
+                  child: Opacity(
+                    opacity: _confirmDelete ? 0.42 : 1,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _DetailHeader(
+                          onBack: () => Navigator.of(context).pop(),
+                        ),
+                        const SizedBox(height: AppSizes.p24),
+                        _TurnoSummaryCard(turno: data?.turno),
+                        const SizedBox(height: AppSizes.p24),
+                        _ResponsibleCard(
+                          turno: data?.turno,
+                          inquilini: data?.inquilini ?? const [],
+                        ),
+                        const SizedBox(height: AppSizes.p48),
+                        Text(
+                          'Vuoi occupartene tu?',
+                          style: AppTextStyles.bodyStrong.copyWith(
+                            color: AppColors.textMutedLight,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: AppSizes.p18),
+                        _PrimaryActionButton(
+                          label: isLoading ? 'Caricamento...' : 'Assegna a me',
+                          onPressed: _isSubmitting || data == null
+                              ? null
+                              : () => _handleAssignMe(data),
+                        ),
+                        if (assignees.isNotEmpty) ...[
+                          const SizedBox(height: AppSizes.p10),
+                          _AssigneeSelector(
+                            assignees: assignees,
+                            selectedAssigneeId: selectedAssigneeId,
+                            selectedAssigneeLabel: _selectedAssigneeLabel(
+                              assignees,
+                            ),
+                            expanded: _assigneeMenuOpen,
+                            isSubmitting: _isSubmitting,
+                            onToggle: () {
+                              setState(() {
+                                _assigneeMenuOpen = !_assigneeMenuOpen;
+                              });
+                            },
+                            onSelected: (value) {
+                              if (data != null) {
+                                _handleAssigneeSelected(data, value);
+                              }
+                            },
+                          ),
+                        ],
+                        const SizedBox(height: AppSizes.p8),
+                        Text(
+                          'I turni successivi non subiranno cambiamenti.\nSolo questo turno verra aggiornato.',
+                          textAlign: TextAlign.center,
+                          style: AppTextStyles.bodyStrong.copyWith(
+                            color: AppColors.textMutedLight.withValues(
+                              alpha: 0.82,
+                            ),
+                            fontSize: 14,
+                            height: 1.15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: AppSizes.p90),
+                        _FutureTurnsToggle(
+                          value: _assignFutureTurns,
+                          onChanged: (value) =>
+                              setState(() => _assignFutureTurns = value),
+                        ),
+                        const SizedBox(height: AppSizes.p40),
+                        _DeleteTurnoButton(
+                          confirmMode: _confirmDelete,
+                          onPressed: _isSubmitting ? null : _handleDelete,
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: AppSizes.p18),
-                    _PrimaryActionButton(
-                      label: 'Assegna a me',
-                      onPressed: _isSubmitting ? null : () => _handleAssignMe(),
-                    ),
-                    const SizedBox(height: AppSizes.p10),
-                    _AssigneeSelector(
-                      selectedAssignee: _selectedAssignee,
-                      expanded: _assigneeMenuOpen,
-                      onToggle: () => setState(
-                        () => _assigneeMenuOpen = !_assigneeMenuOpen,
-                      ),
-                      onSelected: (value) {
-                        setState(() {
-                          _selectedAssignee = value;
-                          _assigneeMenuOpen = false;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: AppSizes.p8),
-                    Text(
-                      'I turni successivi non subiranno cambiamenti.\nSolo questo turno verra aggiornato.',
-                      textAlign: TextAlign.center,
-                      style: AppTextStyles.bodyStrong.copyWith(
-                        color: AppColors.textMutedLight.withValues(alpha: 0.82),
-                        fontSize: 14,
-                        height: 1.15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: AppSizes.p90),
-                    _FutureTurnsToggle(
-                      value: _assignFutureTurns,
-                      onChanged: (value) =>
-                          setState(() => _assignFutureTurns = value),
-                    ),
-                    const SizedBox(height: AppSizes.p40),
-                    _DeleteTurnoButton(
-                      confirmMode: _confirmDelete,
-                      onPressed: _isSubmitting ? null : () => _handleDelete(),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+                if (_confirmDelete)
+                  Positioned(
+                    left: AppSizes.p20,
+                    right: AppSizes.p20,
+                    top: 300,
+                    child: _DeleteWarningCard(
+                      onTapOutside: () =>
+                          setState(() => _confirmDelete = false),
+                    ),
+                  ),
+              ],
             ),
-            if (_confirmDelete)
-              Positioned(
-                left: AppSizes.p20,
-                right: AppSizes.p20,
-                top: 300,
-                child: _DeleteWarningCard(
-                  onTapOutside: () => setState(() => _confirmDelete = false),
-                ),
-              ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -235,7 +421,9 @@ class _DetailHeader extends StatelessWidget {
 }
 
 class _TurnoSummaryCard extends StatelessWidget {
-  const _TurnoSummaryCard();
+  const _TurnoSummaryCard({required this.turno});
+
+  final Turno? turno;
 
   @override
   Widget build(BuildContext context) {
@@ -251,7 +439,7 @@ class _TurnoSummaryCard extends StatelessWidget {
         TextSpan(
           children: [
             TextSpan(
-              text: 'Pulizie bagno\n',
+              text: '${turno?.titolo ?? 'Turno'}\n',
               style: AppTextStyles.bodyStrong.copyWith(
                 color: AppColors.textOnDark,
                 fontSize: 20,
@@ -259,7 +447,8 @@ class _TurnoSummaryCard extends StatelessWidget {
               ),
             ),
             TextSpan(
-              text: 'Ogni 7 giorni\nprossimo: oggi!',
+              text:
+                  'Ogni ${turno?.cadenzaGiorni ?? 1} giorni\nprossimo: ${_formatDate(turno?.dataProssimaPulizia)}',
               style: AppTextStyles.bodyStrong.copyWith(
                 color: AppColors.textMutedLight,
                 fontSize: 20,
@@ -275,10 +464,31 @@ class _TurnoSummaryCard extends StatelessWidget {
 }
 
 class _ResponsibleCard extends StatelessWidget {
-  const _ResponsibleCard();
+  const _ResponsibleCard({required this.turno, required this.inquilini});
+
+  final Turno? turno;
+  final List<Inquilino> inquilini;
 
   @override
   Widget build(BuildContext context) {
+    final current = turno == null
+        ? null
+        : _findInquilinoById(inquilini, turno!.assegnatarioId);
+    final label = current != null
+        ? _assigneeDisplayName(current)
+        : (turno?.assegnatarioNome.isNotEmpty == true
+              ? turno!.assegnatarioNome
+              : 'Non assegnato');
+    final initials = label.trim().isEmpty
+        ? '?'
+        : label
+              .trim()
+              .split(RegExp(r'\s+'))
+              .take(2)
+              .map((part) => part[0])
+              .join()
+              .toUpperCase();
+
     return Container(
       decoration: _cardDecoration(),
       padding: const EdgeInsets.fromLTRB(
@@ -301,12 +511,12 @@ class _ResponsibleCard extends StatelessWidget {
           const SizedBox(height: AppSizes.p18),
           Row(
             children: [
-              const CircleAvatar(
+              CircleAvatar(
                 radius: 20,
-                backgroundColor: Color(0xFF2F8F46),
+                backgroundColor: const Color(0xFF2F8F46),
                 child: Text(
-                  'FP',
-                  style: TextStyle(
+                  initials,
+                  style: const TextStyle(
                     color: Color(0xFF66FF7B),
                     fontSize: 14,
                     fontWeight: FontWeight.w900,
@@ -318,7 +528,7 @@ class _ResponsibleCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Francesco',
+                    label,
                     style: AppTextStyles.bodyStrong.copyWith(
                       color: const Color(0xFF20F545),
                       fontSize: 17,
@@ -326,7 +536,9 @@ class _ResponsibleCard extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    'Assegnato da rotazione automatica',
+                    turno?.rotazioneAttiva == true
+                        ? 'Assegnato da rotazione automatica'
+                        : 'Assegnato manualmente',
                     style: AppTextStyles.bodyStrong.copyWith(
                       color: AppColors.textMutedDark,
                       fontSize: 14,
@@ -370,93 +582,193 @@ class _PrimaryActionButton extends StatelessWidget {
   }
 }
 
-class _AssigneeSelector extends StatelessWidget {
+class _AssigneeSelector extends StatefulWidget {
   const _AssigneeSelector({
-    required this.selectedAssignee,
+    required this.assignees,
+    required this.selectedAssigneeId,
+    required this.selectedAssigneeLabel,
     required this.expanded,
+    required this.isSubmitting,
     required this.onToggle,
     required this.onSelected,
   });
 
-  final String selectedAssignee;
+  final List<Inquilino> assignees;
+  final String? selectedAssigneeId;
+  final String selectedAssigneeLabel;
   final bool expanded;
+  final bool isSubmitting;
   final VoidCallback onToggle;
   final ValueChanged<String> onSelected;
 
-  static const _options = ['Emilia', 'Marco', 'Luigi'];
+  @override
+  State<_AssigneeSelector> createState() => _AssigneeSelectorState();
+}
+
+class _AssigneeSelectorState extends State<_AssigneeSelector> {
+  final LayerLink _menuLink = LayerLink();
+  OverlayEntry? _overlayEntry;
+  bool _insertScheduled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.expanded) {
+      _scheduleInsert();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _AssigneeSelector oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.expanded && _overlayEntry == null) {
+      _scheduleInsert();
+    } else if (!widget.expanded && _overlayEntry != null) {
+      _hideOverlay();
+    } else if (widget.expanded && _overlayEntry != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && widget.expanded) {
+          _overlayEntry?.markNeedsBuild();
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _hideOverlay();
+    super.dispose();
+  }
+
+  void _scheduleInsert() {
+    if (_insertScheduled || _overlayEntry != null) {
+      return;
+    }
+    _insertScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _insertScheduled = false;
+      if (mounted && widget.expanded) {
+        _showOverlay();
+      }
+    });
+  }
+
+  void _showOverlay() {
+    if (!mounted || _overlayEntry != null) {
+      return;
+    }
+
+    _overlayEntry = OverlayEntry(
+      builder: (context) {
+        return Stack(
+          children: [
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: widget.onToggle,
+                child: Container(
+                  color: AppColors.darkBackground.withValues(alpha: 0.28),
+                ),
+              ),
+            ),
+            CompositedTransformFollower(
+              link: _menuLink,
+              showWhenUnlinked: false,
+              targetAnchor: Alignment.bottomRight,
+              followerAnchor: Alignment.topRight,
+              offset: const Offset(0, 6),
+              child: _AssigneeMenu(
+                options: widget.assignees,
+                selectedId: widget.selectedAssigneeId ?? '',
+                onSelected: widget.onSelected,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    Overlay.of(context, rootOverlay: true).insert(_overlayEntry!);
+  }
+
+  void _hideOverlay() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (widget.assignees.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSizes.p27),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          InkWell(
-            onTap: onToggle,
-            borderRadius: BorderRadius.circular(AppSizes.radius8),
-            child: Container(
-              height: 44,
-              decoration: BoxDecoration(
-                color: const Color(0xFF5A3317),
-                borderRadius: BorderRadius.circular(AppSizes.radius8),
-                border: Border.all(color: AppColors.lockOrange, width: 1.2),
-              ),
-              padding: const EdgeInsets.fromLTRB(
-                AppSizes.p12,
-                AppSizes.p0,
-                AppSizes.p16,
-                AppSizes.p0,
-              ),
-              child: Row(
-                children: [
-                  const CircleAvatar(
-                    radius: 17,
-                    backgroundColor: Color(0xFFF3E8FF),
-                    child: Icon(
-                      Icons.front_hand_rounded,
-                      color: Color(0xFF7B4BD3),
-                      size: 21,
+      child: CompositedTransformTarget(
+        link: _menuLink,
+        child: InkWell(
+          onTap: widget.isSubmitting ? null : widget.onToggle,
+          borderRadius: BorderRadius.circular(AppSizes.radius8),
+          child: Container(
+            height: 44,
+            decoration: BoxDecoration(
+              color: const Color(0xFF5A3317),
+              borderRadius: BorderRadius.circular(AppSizes.radius8),
+              border: Border.all(color: AppColors.lockOrange, width: 1.2),
+            ),
+            padding: const EdgeInsets.fromLTRB(
+              AppSizes.p12,
+              AppSizes.p0,
+              AppSizes.p16,
+              AppSizes.p0,
+            ),
+            child: Row(
+              children: [
+                const CircleAvatar(
+                  radius: 17,
+                  backgroundColor: Color(0xFFF3E8FF),
+                  child: Icon(
+                    Icons.front_hand_rounded,
+                    color: Color(0xFF7B4BD3),
+                    size: 21,
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    'Assegna a ${widget.selectedAssigneeLabel}',
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.bodyStrong.copyWith(
+                      color: AppColors.warning,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
                     ),
                   ),
-                  Expanded(
-                    child: Text(
-                      'Assegna a $selectedAssignee',
-                      textAlign: TextAlign.center,
-                      style: AppTextStyles.bodyStrong.copyWith(
-                        color: AppColors.warning,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ),
-                  Icon(
-                    expanded
-                        ? Icons.keyboard_arrow_up_rounded
-                        : Icons.keyboard_arrow_down_rounded,
-                    color: AppColors.warning,
-                    size: 25,
-                  ),
-                ],
-              ),
+                ),
+                Icon(
+                  widget.expanded
+                      ? Icons.keyboard_arrow_up_rounded
+                      : Icons.keyboard_arrow_down_rounded,
+                  color: AppColors.warning,
+                  size: 25,
+                ),
+              ],
             ),
           ),
-          if (expanded)
-            Positioned(
-              right: AppSizes.p0,
-              top: 45,
-              child: _AssigneeMenu(options: _options, onSelected: onSelected),
-            ),
-        ],
+        ),
       ),
     );
   }
 }
 
 class _AssigneeMenu extends StatelessWidget {
-  const _AssigneeMenu({required this.options, required this.onSelected});
+  const _AssigneeMenu({
+    required this.options,
+    required this.selectedId,
+    required this.onSelected,
+  });
 
-  final List<String> options;
+  final List<Inquilino> options;
+  final String selectedId;
   final ValueChanged<String> onSelected;
 
   @override
@@ -464,7 +776,7 @@ class _AssigneeMenu extends StatelessWidget {
     return Material(
       color: AppColors.transparent,
       child: Container(
-        width: AppSizes.p100,
+        width: 170,
         decoration: BoxDecoration(
           color: const Color(0xFF65401E),
           borderRadius: BorderRadius.circular(AppSizes.radius5),
@@ -482,16 +794,23 @@ class _AssigneeMenu extends StatelessWidget {
           children: options
               .map(
                 (option) => InkWell(
-                  onTap: () => onSelected(option),
+                  onTap: () => onSelected(option.id),
                   child: Container(
                     height: 44,
                     alignment: Alignment.center,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSizes.p10,
+                    ),
+                    decoration: option.id == selectedId
+                        ? const BoxDecoration(color: Color(0x885A3317))
+                        : null,
                     child: Text(
-                      option,
+                      _assigneeDisplayName(option),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: AppTextStyles.bodyStrong.copyWith(
                         color: AppColors.warning,
                         fontSize: 16,
-                        fontStyle: FontStyle.italic,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -569,7 +888,7 @@ class _DeleteTurnoButton extends StatelessWidget {
         elevation: confirmMode ? 0 : AppSizes.p6,
       ),
       child: Text(
-        'Elimina turno',
+        confirmMode ? 'Conferma eliminazione' : 'Elimina turno',
         style: AppTextStyles.buttonCompact.copyWith(
           color: AppColors.errorStrong,
           fontSize: 19,

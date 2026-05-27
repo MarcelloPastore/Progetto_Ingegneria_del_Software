@@ -140,7 +140,7 @@ class CalendarSection extends StatelessWidget {
                   crossAxisCount: 7,
                   mainAxisSpacing: AppSizes.p6,
                   crossAxisSpacing: AppSizes.p6,
-                  childAspectRatio: 1.1,
+                  mainAxisExtent: 44,
                 ),
                 itemBuilder: (context, index) {
                   final day = _days[index];
@@ -150,34 +150,31 @@ class CalendarSection extends StatelessWidget {
                       color: AppColors.pageBackground,
                       borderRadius: BorderRadius.circular(AppSizes.radius14),
                     ),
-                    child: Stack(
-                      alignment: Alignment.center,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Positioned(
-                          top: AppSizes.p10,
-                          child: Text(
-                            day.toString(),
-                            style: AppTextStyles.dashboardCalendarDay,
+                        Text(
+                          day.toString(),
+                          style: AppTextStyles.dashboardCalendarDay.copyWith(
+                            height: 1,
                           ),
                         ),
-                        if (markerColor != null)
-                          Positioned(
-                            bottom: AppSizes.p2,
-                            child: Container(
-                              width: AppSizes.p8,
-                              height: AppSizes.p8,
-                              decoration: BoxDecoration(
-                                color: markerColor,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
+                        const SizedBox(height: AppSizes.p2),
+                        Container(
+                          width: AppSizes.p8,
+                          height: AppSizes.p8,
+                          decoration: BoxDecoration(
+                            color: markerColor ?? AppColors.transparent,
+                            shape: BoxShape.circle,
                           ),
+                        ),
                       ],
                     ),
                   );
                 },
               ),
-              const SizedBox(height: AppSizes.p18),
+              const SizedBox(height: AppSizes.p6),
               const Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [

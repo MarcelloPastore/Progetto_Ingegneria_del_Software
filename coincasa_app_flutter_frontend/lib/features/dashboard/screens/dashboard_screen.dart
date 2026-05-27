@@ -7,6 +7,7 @@ import 'package:coincasa_app/core/models/turno.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/core/widgets/dashboard/house_health_section.dart';
 import 'package:coincasa_app/features/turni/screens/turni_screen_principale.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -56,6 +57,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ]);
     final turni = await turniFuture;
     final turniOggi = await turniOggiFuture;
+    final houseHealthBadges = _buildHouseHealthBadges(turni);
 
     return _DashboardData(
       nomeCasa: displayName,
@@ -66,6 +68,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       debito: amounts[2],
       turni: turni,
       turniOggi: turniOggi,
+      houseHealthBadges: houseHealthBadges,
     );
   }
 
@@ -87,6 +90,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _activeCasaController.selectCasa(casaId);
       _dashboardDataFuture = _loadDashboardData();
     });
+  }
+
+  List<HouseHealthBadgeData> _buildHouseHealthBadges(List<Turno> turni) {
+    final badges = turni
+        .map(
+          (turno) => HouseHealthBadgeData(
+            caption: _formatHouseHealthCaption(turno.titolo),
+            lastCleaningDate: turno.dataUltimaPuliziaEffettiva,
+          ),
+        )
+        .where((badge) => badge.caption.trim().isNotEmpty)
+        .toList(growable: false);
+
+    badges.sort((a, b) {
+      final aDate = a.lastCleaningDate;
+      final bDate = b.lastCleaningDate;
+      if (aDate == null && bDate == null) return 0;
+      if (aDate == null) return 1;
+      if (bDate == null) return -1;
+      return bDate.compareTo(aDate);
+    });
+
+    return badges.take(4).toList(growable: false);
+  }
+
+  String _formatHouseHealthCaption(String title) {
+    final normalized = title.trim();
+    if (normalized.isEmpty) {
+      return 'Turno';
+    }
+    return normalized;
   }
 
   @override
@@ -127,9 +161,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(height: AppSizes.p28),
                   const _EmptyProblemsSection(),
                   const SizedBox(height: AppSizes.p28),
-                  _TodayTurnSection(
-                    dashboardDataFuture: _dashboardDataFuture,
-                  ),
+                  _TodayTurnSection(dashboardDataFuture: _dashboardDataFuture),
                   const SizedBox(height: AppSizes.p28),
                   _EmptyCalendarSection(
                     dashboardDataFuture: _dashboardDataFuture,
@@ -168,6 +200,7 @@ class _DashboardData {
     this.debito,
     this.turni = const [],
     this.turniOggi = const [],
+    this.houseHealthBadges = const [],
   });
 
   final String nomeCasa;
@@ -178,6 +211,7 @@ class _DashboardData {
   final double? debito;
   final List<Turno> turni;
   final List<Turno> turniOggi;
+  final List<HouseHealthBadgeData> houseHealthBadges;
 }
 
 class _EmptyDashboardHeader extends StatelessWidget {
@@ -430,8 +464,9 @@ class _EmptyBalanceCard extends StatelessWidget {
                         Expanded(
                           child: Text(
                             'Totale',
-                            style: AppTextStyles.dashboardBalanceTitle
-                                .copyWith(fontSize: 20),
+                            style: AppTextStyles.dashboardBalanceTitle.copyWith(
+                              fontSize: 20,
+                            ),
                             textAlign: TextAlign.center,
                           ),
                         ),
@@ -585,39 +620,10 @@ class _HouseHealthSection extends StatelessWidget {
     return FutureBuilder<_DashboardData>(
       future: dashboardDataFuture,
       builder: (context, snapshot) {
-        final turni = snapshot.data?.turni ?? const <Turno>[];
-        final turniOggi = snapshot.data?.turniOggi ?? const <Turno>[];
-        final isLoading =
-            snapshot.connectionState == ConnectionState.waiting &&
-            snapshot.data == null;
-        final message = isLoading
-            ? 'Caricamento turni...'
-            : _healthMessage(turni: turni, turniOggi: turniOggi);
-
-        return _EmptyMessageSection(
-          title: 'SALUTE DELLA CASA',
-          message: message,
-          height: 126,
-          routeName: '/turni',
-        );
+        final badges = snapshot.data?.houseHealthBadges ?? const [];
+        return HouseHealthSection(badges: badges);
       },
     );
-  }
-
-  static String _healthMessage({
-    required List<Turno> turni,
-    required List<Turno> turniOggi,
-  }) {
-    if (turni.isEmpty) {
-      return 'Nessun turno creato...';
-    }
-    if (turniOggi.isEmpty) {
-      return 'Tutto in ordine';
-    }
-    if (turniOggi.length == 1) {
-      return '1 turno previsto oggi';
-    }
-    return '${turniOggi.length} turni previsti oggi';
   }
 }
 
@@ -891,12 +897,13 @@ class _EmptyCalendarSection extends StatelessWidget {
                                     crossAxisCount: 7,
                                     mainAxisSpacing: AppSizes.p12,
                                     crossAxisSpacing: AppSizes.p12,
-                                    childAspectRatio: 1.3,
+                                    mainAxisExtent: 44,
                                   ),
                               itemBuilder: (context, index) {
                                 final date = days[index];
                                 final inMonth = date.month == month.month;
-                                final hasTurno = inMonth && _hasTurno(date, turni);
+                                final hasTurno =
+                                    inMonth && _hasTurno(date, turni);
 
                                 return _DashboardCalendarDay(
                                   day: inMonth ? '${date.day}' : '',
@@ -950,6 +957,7 @@ class _DashboardCalendarDay extends StatelessWidget {
     }
 
     return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
@@ -958,6 +966,7 @@ class _DashboardCalendarDay extends StatelessWidget {
           style: AppTextStyles.dashboardCalendarDay.copyWith(
             color: AppColors.textOnDark,
             fontSize: 14,
+            height: 1,
           ),
         ),
         const SizedBox(height: 2),
@@ -992,4 +1001,3 @@ class _CenteredSectionTitle extends StatelessWidget {
     );
   }
 }
-

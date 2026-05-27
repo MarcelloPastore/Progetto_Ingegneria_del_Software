@@ -9,13 +9,11 @@ class CasaPreSchermataHubCasaScreen extends StatelessWidget {
     required this.houseName,
     this.houseType = '',
     this.city = '',
-    this.roommatesCount = 3,
   });
 
   final String houseName;
   final String houseType;
   final String city;
-  final int roommatesCount;
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +57,6 @@ class CasaPreSchermataHubCasaScreen extends StatelessWidget {
                       _HousePreviewCard(
                         houseName: displayHouseName,
                         locationText: locationText,
-                        roommatesCount: roommatesCount,
                       ),
                       const SizedBox(height: AppSizes.p32),
                       _PrimaryEnterButton(houseName: displayHouseName),
@@ -111,12 +108,10 @@ class _HousePreviewCard extends StatelessWidget {
   const _HousePreviewCard({
     required this.houseName,
     required this.locationText,
-    required this.roommatesCount,
   });
 
   final String houseName;
   final String locationText;
-  final int roommatesCount;
 
   @override
   Widget build(BuildContext context) {
@@ -176,53 +171,7 @@ class _HousePreviewCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: AppSizes.p18),
-          Row(
-            children: [
-              const _RoommateAvatar(label: 'FP', color: Color(0xFF356F9F)),
-              const SizedBox(width: AppSizes.p14),
-              const _RoommateAvatar(label: 'AL', color: Color(0xFFFFB17D)),
-              const SizedBox(width: AppSizes.p14),
-              const _RoommateAvatar(label: 'GL', color: Color(0xFFF56C73)),
-              const Spacer(),
-              Text(
-                '$roommatesCount coinquilini gia\npresenti',
-                textAlign: TextAlign.right,
-                style: const TextStyle(
-                  color: AppColors.textMutedLight,
-                  fontSize: 13,
-                  height: 1.05,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
         ],
-      ),
-    );
-  }
-}
-
-class _RoommateAvatar extends StatelessWidget {
-  const _RoommateAvatar({required this.label, required this.color});
-
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: AppSizes.p40,
-      height: AppSizes.p40,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-      alignment: Alignment.center,
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: AppColors.inputFillDark,
-          fontSize: 16,
-          fontWeight: FontWeight.w700,
-        ),
       ),
     );
   }

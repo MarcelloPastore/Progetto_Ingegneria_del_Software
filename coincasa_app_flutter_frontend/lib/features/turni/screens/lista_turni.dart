@@ -10,20 +10,24 @@ import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/features/turni/screens/dettaglio_turno_admin.dart';
 import 'package:coincasa_app/features/turni/screens/turno_create_screen.dart';
 
-final _listaTurniCasaProvider =
-    FutureProvider.autoDispose.family<Casa?, ActiveCasaController>((
-      ref,
-      activeCasaController,
-    ) async {
+final _listaTurniCasaProvider = FutureProvider.autoDispose
+    .family<Casa?, String?>((ref, selectedCasaId) async {
       final caseUtente = await ApiProvider.casa.list();
       if (caseUtente.isEmpty) {
         return null;
       }
-      return activeCasaController.resolveCasa(caseUtente);
+      if (selectedCasaId != null && selectedCasaId.isNotEmpty) {
+        for (final casa in caseUtente) {
+          if (casa.id == selectedCasaId) {
+            return casa;
+          }
+        }
+      }
+      return caseUtente.first;
     });
 
-final _listaTurniProvider =
-    FutureProvider.autoDispose.family<List<Turno>, String?>((ref, casaId) {
+final _listaTurniProvider = FutureProvider.autoDispose
+    .family<List<Turno>, String?>((ref, casaId) {
       if (casaId == null || casaId.isEmpty) {
         return const [];
       }
@@ -37,8 +41,10 @@ class ListaTurniScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final activeCasaController = ActiveCasaScope.read(context);
-    final casaAsync = ref.watch(_listaTurniCasaProvider(activeCasaController));
+    final activeCasaController = ActiveCasaScope.of(context);
+    final casaAsync = ref.watch(
+      _listaTurniCasaProvider(activeCasaController.selectedCasaId),
+    );
     final turniAsync = casaAsync.when(
       data: (casa) => ref.watch(_listaTurniProvider(casa?.id)),
       loading: () => const AsyncValue<List<Turno>>.loading(),
@@ -109,12 +115,11 @@ class ListaTurniScreen extends ConsumerWidget {
                             )
                           : _AssignedTurniCard(
                               turni: turni,
-                              onTurnoTap: (turno) => Navigator.of(
-                                context,
-                              ).pushNamed(
-                                DettaglioTurnoAdminScreen.routeName,
-                                arguments: turno.id,
-                              ),
+                              onTurnoTap: (turno) =>
+                                  Navigator.of(context).pushNamed(
+                                    DettaglioTurnoAdminScreen.routeName,
+                                    arguments: turno.id,
+                                  ),
                             ),
                     ),
                     const SizedBox(height: AppSizes.p40),
@@ -387,7 +392,9 @@ class _TurniCalendarCardState extends State<_TurniCalendarCard> {
       }
     }
     return items.entries
-        .map((entry) => _CalendarLegendItem(label: entry.key, color: entry.value))
+        .map(
+          (entry) => _CalendarLegendItem(label: entry.key, color: entry.value),
+        )
         .toList(growable: false);
   }
 
@@ -607,8 +614,6 @@ class _AssignedTurniCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final visibleTurni = turni.take(4).toList(growable: false);
-
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF272746),
@@ -626,11 +631,11 @@ class _AssignedTurniCard extends StatelessWidget {
         vertical: AppSizes.p14,
       ),
       child: Column(
-        children: List.generate(visibleTurni.length, (index) {
-          final turno = visibleTurni[index];
+        children: List.generate(turni.length, (index) {
+          final turno = turni[index];
           return Padding(
             padding: EdgeInsets.only(
-              bottom: index == visibleTurni.length - 1 ? 0 : AppSizes.p18,
+              bottom: index == turni.length - 1 ? 0 : AppSizes.p18,
             ),
             child: _AssignedTurnoRow(
               initials: _initials(turno.assegnatarioNome),
@@ -816,7 +821,10 @@ class _InsertTurnoButton extends StatelessWidget {
         disabledBackgroundColor: AppColors.statusInfo,
         foregroundColor: AppColors.textOnDark,
         disabledForegroundColor: AppColors.textOnDark,
-        padding: const EdgeInsets.symmetric(vertical: AppSizes.p12),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSizes.p24,
+          vertical: AppSizes.p12,
+        ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppSizes.p18),
           side: const BorderSide(color: AppColors.textMutedLight, width: 2),

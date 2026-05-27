@@ -22,10 +22,26 @@ class ApiClient {
   final String baseUrl;
   final http.Client _httpClient;
   String? _authToken;
+  String? _currentUserEmail;
+  String? _currentUserName;
 
   void setAuthToken(String? token) {
     _authToken = token;
   }
+
+  void setCurrentUserIdentity({String? email, String? name}) {
+    if (email != null) {
+      final normalized = email.trim().toLowerCase();
+      _currentUserEmail = normalized.isEmpty ? null : normalized;
+    }
+    if (name != null) {
+      final normalized = name.trim();
+      _currentUserName = normalized.isEmpty ? null : normalized;
+    }
+  }
+
+  String? get currentUserEmail => _currentUserEmail;
+  String? get currentUserName => _currentUserName;
 
   Uri buildUri(String path, [Map<String, String>? queryParameters]) {
     final merged = _mergePath(baseUrl, path);

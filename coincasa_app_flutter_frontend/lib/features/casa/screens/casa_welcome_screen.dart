@@ -49,6 +49,10 @@ class _CasaWelcomeScreenState extends State<CasaWelcomeScreen> {
       _userName = name?.trim() ?? '';
       _isLoading = false;
     });
+
+    if (_userName.isNotEmpty) {
+      ApiProvider.client.setCurrentUserIdentity(name: _userName);
+    }
   }
 
   @override

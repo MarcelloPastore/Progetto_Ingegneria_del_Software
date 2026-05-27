@@ -19,24 +19,56 @@ class Turno {
   }
 
   DateTime? get data {
-    final value =
-        raw['data'] ??
-        raw['dataProssimaPulizia'] ??
-        raw['dataScadenza'] ??
-        raw['scadenza'] ??
-        raw['giorno'];
-    if (value is String) {
-      return DateTime.tryParse(value);
-    }
-    return null;
+    return _parseDate(
+      raw['data'] ??
+          raw['dataTurno'] ??
+          raw['dataProssimaPulizia'] ??
+          raw['dataScadenza'] ??
+          raw['scadenza'] ??
+          raw['giorno'],
+    );
   }
 
   DateTime? get dataProssimaPulizia {
-    final value = raw['dataProssimaPulizia'];
-    if (value is String) {
-      return DateTime.tryParse(value);
+    return _parseDate(raw['dataProssimaPulizia']) ?? data;
+  }
+
+  DateTime? get dataUltimaPulizia {
+    return _parseDate(
+      raw['dataUltimaPulizia'] ??
+          raw['ultimaPulizia'] ??
+          raw['dataUltimaPuliziaTurno'] ??
+          raw['lastCleaningDate'] ??
+          raw['lastCleaning'],
+    );
+  }
+
+  DateTime? get dataCreazione {
+    return _parseDate(
+      raw['dataCreazione'] ??
+          raw['createdAt'] ??
+          raw['created_at'] ??
+          raw['creazione'] ??
+          raw['dataInserimento'],
+    );
+  }
+
+  DateTime? get dataUltimaPuliziaEffettiva {
+    final explicit = dataUltimaPulizia;
+    if (explicit != null) {
+      return _dateOnly(explicit);
     }
-    return data;
+
+    if (completato && data != null) {
+      return _dateOnly(data!);
+    }
+
+    final creazione = dataCreazione;
+    if (creazione != null) {
+      return _dateOnly(creazione);
+    }
+
+    return data == null ? null : _dateOnly(data!);
   }
 
   String get assegnatarioId {
@@ -82,5 +114,22 @@ class Turno {
       return value;
     }
     return false;
+  }
+
+  static DateTime? _parseDate(dynamic value) {
+    if (value is String) {
+      return DateTime.tryParse(value);
+    }
+    if (value is int) {
+      return DateTime.fromMillisecondsSinceEpoch(value);
+    }
+    if (value is double) {
+      return DateTime.fromMillisecondsSinceEpoch(value.toInt());
+    }
+    return null;
+  }
+
+  static DateTime _dateOnly(DateTime date) {
+    return DateTime(date.year, date.month, date.day);
   }
 }

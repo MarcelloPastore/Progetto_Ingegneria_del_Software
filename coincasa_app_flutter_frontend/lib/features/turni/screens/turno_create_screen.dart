@@ -10,20 +10,24 @@ import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/features/turni/screens/turno_salvato_con_successo.dart';
 
-final turniCreateCasaProvider =
-    FutureProvider.autoDispose.family<Casa?, ActiveCasaController>((
-      ref,
-      activeCasaController,
-    ) async {
-  final caseUtente = await ApiProvider.casa.list();
-  if (caseUtente.isEmpty) {
-    return null;
-  }
-  return activeCasaController.resolveCasa(caseUtente);
-});
+final turniCreateCasaProvider = FutureProvider.autoDispose
+    .family<Casa?, String?>((ref, selectedCasaId) async {
+      final caseUtente = await ApiProvider.casa.list();
+      if (caseUtente.isEmpty) {
+        return null;
+      }
+      if (selectedCasaId != null && selectedCasaId.isNotEmpty) {
+        for (final casa in caseUtente) {
+          if (casa.id == selectedCasaId) {
+            return casa;
+          }
+        }
+      }
+      return caseUtente.first;
+    });
 
-final turniCreateInquiliniProvider =
-    FutureProvider.autoDispose.family<List<Inquilino>, String?>((ref, casaId) {
+final turniCreateInquiliniProvider = FutureProvider.autoDispose
+    .family<List<Inquilino>, String?>((ref, casaId) {
       if (casaId == null || casaId.isEmpty) {
         return const [];
       }
@@ -62,9 +66,9 @@ class _TurnoCreateScreenState extends ConsumerState<TurnoCreateScreen> {
     FocusScope.of(context).unfocus();
     final controller = ref.read(turnoCreateFormProvider.notifier);
     final form = ref.read(turnoCreateFormProvider);
-    final activeCasaController = ActiveCasaScope.read(context);
+    final activeCasaController = ActiveCasaScope.of(context);
     final casa = await ref.read(
-      turniCreateCasaProvider(activeCasaController).future,
+      turniCreateCasaProvider(activeCasaController.selectedCasaId).future,
     );
     final inquilini = await ref.read(
       turniCreateInquiliniProvider(casa?.id).future,
@@ -113,10 +117,12 @@ class _TurnoCreateScreenState extends ConsumerState<TurnoCreateScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final activeCasaController = ActiveCasaScope.read(context);
+    final activeCasaController = ActiveCasaScope.of(context);
     final form = ref.watch(turnoCreateFormProvider);
     final controller = ref.read(turnoCreateFormProvider.notifier);
-    final casaAsync = ref.watch(turniCreateCasaProvider(activeCasaController));
+    final casaAsync = ref.watch(
+      turniCreateCasaProvider(activeCasaController.selectedCasaId),
+    );
     final inquiliniAsync = casaAsync.when(
       data: (casa) => ref.watch(turniCreateInquiliniProvider(casa?.id)),
       loading: () => const AsyncValue<List<Inquilino>>.loading(),
@@ -1003,13 +1009,12 @@ class _AutoRotationRow extends StatelessWidget {
       children: [
         Expanded(
           child: Text(
-            'Rotazione automatica dell\'assegnatario',
+            'Rotazione automatica assegnatario',
             maxLines: 1,
             overflow: TextOverflow.clip,
             style: AppTextStyles.bodyStrong.copyWith(
               color: AppColors.textMutedLight,
               fontSize: 16,
-              fontStyle: FontStyle.italic,
             ),
           ),
         ),
