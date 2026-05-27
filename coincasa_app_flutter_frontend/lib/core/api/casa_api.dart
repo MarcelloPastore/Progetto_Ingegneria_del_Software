@@ -42,6 +42,14 @@ class CasaApi {
     return Inquilino.fromJson(_asMap(data));
   }
 
+  Future<Casa> joinWithInviteCode(String inviteCodeOrLink) async {
+    final data = await _client.postJson(
+      '/case/join',
+      body: {'inviteCode': inviteCodeOrLink},
+    );
+    return Casa.fromJson(_asMap(data));
+  }
+
   Future<List<Inquilino>> listInquilini(String casaId) async {
     final data = await _client.getJson('/case/$casaId/inquilini');
     return _parseList(data, Inquilino.fromJson, key: 'inquilini');

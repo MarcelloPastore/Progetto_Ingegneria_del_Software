@@ -9,6 +9,7 @@ export 'screens/condividi_codice.dart';
 export 'screens/condividi_codice1.dart';
 export 'screens/elimina_casa.dart';
 export 'screens/elimina_coinquilino.dart';
+export 'screens/entra_con_codice_invito_screen.dart';
 export 'screens/hub_casa_admin.dart';
 export 'screens/lista_case.dart';
 export 'screens/lista_coinquilini.dart';

@@ -76,6 +76,18 @@ export class CasaRepository {
     });
   }
 
+  async getCasaByInviteCodeOrLink(inviteCodeOrLink: string) {
+    return prisma.casa.findFirst({
+      where: {
+        OR: [
+          { inviteLink: inviteCodeOrLink },
+          { inviteLink: { endsWith: `/${inviteCodeOrLink}` } },
+        ],
+      },
+      select: this.casaSelect,
+    });
+  }
+
   async updateCasa(idCasa: string, data: Partial<CreaCasaDto>) {
     return prisma.casa.update({
       where: { id: idCasa },

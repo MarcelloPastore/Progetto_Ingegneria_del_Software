@@ -120,6 +120,33 @@ export class CasaService {
     return this.toInquilinoDto(nuovoMembro);
   }
 
+  async entraConCodiceInvito(dto: AggiungiInquilinoDto, idUtente: string) {
+    const provided = dto.inviteLink ?? dto.inviteCode ?? dto.codiceInvito;
+    if (!provided) {
+      throw new ForbiddenError("Codice di invito non valido");
+    }
+
+    const casa = await this.casaRepository.getCasaByInviteCodeOrLink(provided);
+    if (!casa || !this.inviteMatches(dto, casa.inviteLink)) {
+      throw new ForbiddenError("Codice di invito non valido");
+    }
+
+    const membroEsistente = await this.casaRepository.getMembroCasa(
+      casa.id,
+      idUtente,
+    );
+    if (membroEsistente) {
+      return { ...casa, ruolo: membroEsistente.ruolo };
+    }
+
+    const nuovoMembro = await this.casaRepository.addMembroCasa(
+      casa.id,
+      idUtente,
+    );
+
+    return { ...casa, ruolo: nuovoMembro.ruolo };
+  }
+
   async rimuoviInquilino(
     idCasa: string,
     idInquilino: string,

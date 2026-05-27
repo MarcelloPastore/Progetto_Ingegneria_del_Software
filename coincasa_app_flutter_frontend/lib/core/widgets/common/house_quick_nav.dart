@@ -81,30 +81,43 @@ class _HouseBottomNavItem extends StatelessWidget {
           ? null
           : () => Navigator.of(context).pushReplacementNamed(entry.route),
       borderRadius: BorderRadius.circular(AppSizes.radius8),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Image.asset(
-            entry.asset,
-            width: AppSizes.p32,
-            height: AppSizes.p32,
-            fit: BoxFit.contain,
-          ),
-          const SizedBox(height: AppSizes.p2),
-          Text(
-            entry.label,
-            style: TextStyle(
-              color: color,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              decoration: selected
-                  ? TextDecoration.underline
-                  : TextDecoration.none,
-              decorationColor: color,
-              decorationThickness: 1.5,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSizes.p4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset(
+              entry.asset,
+              width: AppSizes.p32,
+              height: AppSizes.p32,
+              fit: BoxFit.contain,
             ),
-          ),
-        ],
+            const SizedBox(height: AppSizes.p2),
+            SizedBox(
+              width: double.infinity,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  entry.label,
+                  maxLines: 1,
+                  softWrap: false,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 15,
+                    height: 1,
+                    fontWeight: FontWeight.w500,
+                    decoration: selected
+                        ? TextDecoration.underline
+                        : TextDecoration.none,
+                    decorationColor: color,
+                    decorationThickness: 1.5,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

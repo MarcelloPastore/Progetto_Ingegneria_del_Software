@@ -141,6 +141,7 @@ export function debugRoutes(app: FastifyInstance) {
 // PUT    /case/:idCasa/inquilini/:idUtente/ruolo        → Promuove/degrada il ruolo di un inquilino (UC: Modifica Ruolo)
 //
 // GET    /case/:idCasa/invite-link                      → Recupera o rigenera il link/codice di invito
+// POST   /case/join                                     → Entra in una casa tramite codice/link invito
 
 export function casaRoutes(app: FastifyInstance) {
   const casaController = new CasaController();
@@ -149,6 +150,10 @@ export function casaRoutes(app: FastifyInstance) {
   // CRUD casa
   app.post<{ Body: CreaCasaDto }>("/case", casaController.creaCasa);
   app.get("/case", casaController.getCase);
+  app.post<{ Body: AggiungiInquilinoDto }>(
+    "/case/join",
+    casaController.entraConCodiceInvito,
+  );
   app.get<{ Params: CasaParams }>(
     "/case/:idCasa/invite-link",
     casaController.getInviteLink,

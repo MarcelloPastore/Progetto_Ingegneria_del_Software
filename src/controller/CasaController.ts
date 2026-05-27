@@ -170,6 +170,26 @@ export class CasaController {
   };
 
   /**
+   * POST /case/join
+   */
+  entraConCodiceInvito = async (
+    request: FastifyRequest<{ Body: AggiungiInquilinoDto }>,
+    reply: FastifyReply,
+  ) => {
+    try {
+      const dto = AggiungiInquilinoSchema.parse(request.body);
+      const casa = await this.casaService.entraConCodiceInvito(
+        dto,
+        request.user.idUtente,
+      );
+      return reply.status(201).send(casa);
+    } catch (error) {
+      const mapped = mapErrorToHttp(error);
+      return reply.status(mapped.statusCode).send({ message: mapped.message });
+    }
+  };
+
+  /**
    * DELETE /case/:idCasa/inquilini/:idInquilino
    */
   rimuoviInquilino = async (

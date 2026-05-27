@@ -3,10 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/features/casa/screens/compilazione_form_crea_casa.dart';
-import 'package:coincasa_app/features/casa/screens/rigenera_link.dart';
+import 'package:coincasa_app/features/casa/screens/entra_con_codice_invito_screen.dart';
 
-const _houseIllustration =
-    'assets/Icons/casa_colorata.png'; 
+const _houseIllustration = 'assets/Icons/casa_colorata.png';
 
 class CasaWelcomeScreen extends StatefulWidget {
   const CasaWelcomeScreen({super.key, required this.email});
@@ -125,7 +124,7 @@ class _CasaWelcomeScreenState extends State<CasaWelcomeScreen> {
                         filled: false,
                         onTap: () => Navigator.of(context).push(
                           MaterialPageRoute<void>(
-                            builder: (_) => const RigeneraLinkScreen(),
+                            builder: (_) => const EntraConCodiceInvitoScreen(),
                           ),
                         ),
                       ),
