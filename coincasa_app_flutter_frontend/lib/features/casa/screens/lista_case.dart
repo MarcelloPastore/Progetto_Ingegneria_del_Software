@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/casa.dart';
+import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/features/casa/screens/compilazione_form_crea_casa.dart';
 import 'package:coincasa_app/features/casa/screens/hub_casa_admin.dart';
@@ -70,6 +71,9 @@ class _ListaCaseScreenState extends State<ListaCaseScreen> {
                                 return _HouseCard(
                                   casa: casa,
                                   onTap: () {
+                                    ActiveCasaScope.read(
+                                      context,
+                                    ).selectCasa(casa.id);
                                     Navigator.of(context).push(
                                       MaterialPageRoute<void>(
                                         builder: (_) =>
