@@ -16,8 +16,8 @@ void (async () => {
       jwtSecret: env.JWT_SECRET,
       jwtAccessTtl: env.JWT_ACCESS_TTL,
     });
-    registerApiRoutes(app);
-    await app.listen({ port: env.PORT });
+    await registerApiRoutes(app);
+    await app.listen({ host: "0.0.0.0", port: env.PORT });
   } catch (err) {
     console.error("Errore durante l'avvio:", err);
     process.exit(1);

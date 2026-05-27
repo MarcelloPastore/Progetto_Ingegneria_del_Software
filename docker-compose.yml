@@ -1,0 +1,14 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        PORT: ${PORT:-2310}
+    image: coincasa:latest
+    env_file:
+      - .env
+    ports:
+      - "${PORT:-2310}:${PORT:-2310}"
+    restart: unless-stopped
+

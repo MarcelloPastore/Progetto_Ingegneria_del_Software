@@ -6,7 +6,7 @@ import {
   authRoutes,
   casaRoutes,
   health,
-  debugRoutes,
+  //debugRoutes,
   speseRoutes,
   turniRoutes,
   problemiRoutes,
@@ -46,15 +46,15 @@ export async function registerInfrastructure(
   });
 }
 
-export function registerApiRoutes(
+export async function registerApiRoutes(
   app: FastifyInstance,
   prefix = "/api/v1",
-): void {
-  void app.register(health, { prefix });
-  void app.register(authRoutes, { prefix });
-  void app.register(casaRoutes, { prefix });
-  void app.register(debugRoutes, { prefix });
-  void app.register(turniRoutes, { prefix });
-  void app.register(speseRoutes, { prefix });
-  void app.register(problemiRoutes, { prefix });
+): Promise<void> {
+  await app.register(health, { prefix });
+  await app.register(authRoutes, { prefix });
+  await app.register(casaRoutes, { prefix });
+  //await app.register(debugRoutes, { prefix });
+  await app.register(turniRoutes, { prefix });
+  await app.register(speseRoutes, { prefix });
+  await app.register(problemiRoutes, { prefix });
 }

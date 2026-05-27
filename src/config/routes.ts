@@ -1,4 +1,4 @@
-import { FastifyInstance, FastifyRequest } from "fastify";
+import { FastifyInstance } from "fastify";
 import { Ruolo } from "@prisma/client";
 
 import { requireRole } from "../middleware/RoleMiddleware";
@@ -113,7 +113,7 @@ export function authRoutes(app: FastifyInstance) {
   );
 }
 
-// ─── Debug/Protected (con authMiddleware) ─────────────────────────────────────
+/* ─── Debug/Protected (con authMiddleware) ─────────────────────────────────────
 export function debugRoutes(app: FastifyInstance) {
   app.get(
     "/protected",
@@ -129,6 +129,7 @@ export function debugRoutes(app: FastifyInstance) {
     },
   );
 }
+*/
 
 // ─── Hub Casa ─────────────────────────────────────────────────────────────────
 //
