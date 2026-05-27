@@ -12,7 +12,7 @@ import { CasaParams, TurnoParams } from "../types/params";
 import { mapErrorToHttp } from "../errors/errorMapper";
 
 export class TurnoController {
-  constructor(private turniService: TurnoService) {}
+  constructor(private readonly turniService: TurnoService) {}
 
   /**
    * GET /case/:idCasa/turni

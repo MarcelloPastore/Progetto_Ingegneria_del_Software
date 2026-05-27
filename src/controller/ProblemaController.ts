@@ -14,7 +14,7 @@ import {
 import { mapErrorToHttp } from "../errors/errorMapper";
 
 export class ProblemaController {
-  constructor(private problemiService: ProblemaService) {}
+  constructor(private readonly problemiService: ProblemaService) {}
 
   /**
    * GET /case/:idCasa/problemi

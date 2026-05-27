@@ -1,4 +1,4 @@
-import { randomUUID } from "crypto";
+import { randomUUID } from "node:crypto";
 import { Ruolo } from "@prisma/client";
 import {
   AggiungiInquilinoDto,

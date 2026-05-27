@@ -12,7 +12,7 @@ import { CasaParams, InquilinoParams } from "../types/params";
 import { mapErrorToHttp } from "../errors/errorMapper";
 
 export class CasaController {
-  constructor(private casaService: CasaService) {}
+  constructor(private readonly casaService: CasaService) {}
 
   private handleFailure(reply: FastifyReply, error: unknown) {
     const mapped = mapErrorToHttp(error);

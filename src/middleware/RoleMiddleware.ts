@@ -22,7 +22,7 @@ async function resolveRuoloCasa(
   req: FastifyRequest,
 ): Promise<Ruolo | undefined> {
   if (req.user?.ruoloCasa) {
-    return req.user.ruoloCasa as Ruolo;
+    return req.user.ruoloCasa;
   }
 
   const params = req.params as { idCasa?: string } | undefined;
