@@ -52,7 +52,7 @@ void main() {
   });
 
   testWidgets('account activated screen is visible', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: AccountActivatedScreen()));
+    await tester.pumpWidget(const MaterialApp(home: AccountActivatedScreen(email: 'marco@gmail.com')));
 
     expect(find.text('Account attivato!'), findsOneWidget);
     expect(find.text('Continua'), findsOneWidget);

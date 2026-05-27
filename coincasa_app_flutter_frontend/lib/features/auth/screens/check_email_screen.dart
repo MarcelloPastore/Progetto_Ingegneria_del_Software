@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/features/auth/screens/account_activated_screen.dart';
 
 class CheckEmailScreen extends StatelessWidget {
   final String email;
@@ -27,6 +28,29 @@ class CheckEmailScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => AccountActivatedScreen(
+                                    email: normalizedEmail,
+                                  ),
+                                ),
+                              );
+                            },
+                            style: TextButton.styleFrom(
+                              foregroundColor: AppColors.brandAccent,
+                              padding: EdgeInsets.zero,
+                            ),
+                            child: const Text(
+                              'email controllata',
+                              style: AppTextStyles.link,
+                            ),
+                          ),
+                        ),
                         const SizedBox(height: AppSizes.p60),
 
                         SvgPicture.asset(

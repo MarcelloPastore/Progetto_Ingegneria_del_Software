@@ -79,7 +79,7 @@ class _DeadlineRow extends StatelessWidget {
             width: AppSizes.p42,
             height: AppSizes.p42,
             decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.14),
+              color: statusColor.withValues(alpha: 0.14),
               borderRadius: BorderRadius.circular(AppSizes.radius14),
             ),
             child: Icon(icon, color: statusColor, size: AppSizes.p22),

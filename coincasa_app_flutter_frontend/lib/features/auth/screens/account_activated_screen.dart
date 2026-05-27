@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/features/casa/casa.dart';
 
 class AccountActivatedScreen extends StatelessWidget {
-  const AccountActivatedScreen({super.key});
+  const AccountActivatedScreen({super.key, required this.email});
+
+  final String email;
 
   @override
   Widget build(BuildContext context) {
@@ -48,9 +51,13 @@ class AccountActivatedScreen extends StatelessWidget {
                         height: AppSizes.p60,
                         child: ElevatedButton(
                           onPressed: () {
-                            Navigator.popUntil(
+                            Navigator.pushAndRemoveUntil(
                               context,
-                              (route) => route.isFirst,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    CasaWelcomeScreen(email: email),
+                              ),
+                              (route) => false,
                             );
                           },
                           style: ElevatedButton.styleFrom(

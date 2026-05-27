@@ -1002,6 +1002,8 @@ class AuthRegisterFields extends StatelessWidget {
   const AuthRegisterFields({
     super.key,
     required this.hasError,
+    required this.passwordHasError,
+    required this.confirmPasswordHasError,
     required this.obscurePassword,
     required this.obscureConfirmPassword,
     required this.usernameController,
@@ -1012,9 +1014,12 @@ class AuthRegisterFields extends StatelessWidget {
     required this.confirmPasswordController,
     required this.onTogglePassword,
     required this.onToggleConfirmPassword,
+    this.confirmPasswordErrorText,
   });
 
   final bool hasError;
+  final bool passwordHasError;
+  final bool confirmPasswordHasError;
   final bool obscurePassword;
   final bool obscureConfirmPassword;
   final TextEditingController usernameController;
@@ -1025,6 +1030,7 @@ class AuthRegisterFields extends StatelessWidget {
   final TextEditingController confirmPasswordController;
   final VoidCallback onTogglePassword;
   final VoidCallback onToggleConfirmPassword;
+  final String? confirmPasswordErrorText;
 
   @override
   Widget build(BuildContext context) {
@@ -1039,6 +1045,7 @@ class AuthRegisterFields extends StatelessWidget {
           '••••••••',
           passwordController,
           obscureText: obscurePassword,
+          fieldHasError: passwordHasError,
           suffixIcon: AuthPasswordToggle(
             compact: true,
             obscured: obscurePassword,
@@ -1050,7 +1057,8 @@ class AuthRegisterFields extends StatelessWidget {
           '••••••••',
           confirmPasswordController,
           obscureText: obscureConfirmPassword,
-          errorText: hasError ? 'Le password non coincidono *' : null,
+          fieldHasError: confirmPasswordHasError,
+          errorText: confirmPasswordErrorText,
           suffixIcon: AuthPasswordToggle(
             compact: true,
             obscured: obscureConfirmPassword,
@@ -1068,7 +1076,10 @@ class AuthRegisterFields extends StatelessWidget {
     bool obscureText = false,
     Widget? suffixIcon,
     String? errorText,
+    bool? fieldHasError,
   }) {
+    final effectiveError = fieldHasError ?? hasError;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSizes.p12),
       child: AuthField(
@@ -1077,8 +1088,9 @@ class AuthRegisterFields extends StatelessWidget {
         controller: controller,
         obscureText: obscureText,
         suffixIcon: suffixIcon,
-        hasError: hasError,
-        errorText: errorText ?? (hasError ? 'Campo obbligatorio *' : null),
+        hasError: effectiveError,
+        errorText:
+            errorText ?? (effectiveError ? 'Campo obbligatorio *' : null),
         recoveryStyle: false,
         labelBottomSpacing: AppSizes.p8,
       ),

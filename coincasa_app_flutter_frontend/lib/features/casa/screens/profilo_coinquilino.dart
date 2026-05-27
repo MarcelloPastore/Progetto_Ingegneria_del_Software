@@ -1,0 +1,418 @@
+import 'package:flutter/material.dart';
+import 'package:coincasa_app/features/casa/screens/promuovi_coinquilino.dart';
+import 'package:coincasa_app/core/theme/app_theme.dart';
+
+class ProfiloCoinquilinoScreen extends StatelessWidget {
+  const ProfiloCoinquilinoScreen({super.key});
+
+  static const List<BottomNavigationBarItem> _navigationItems = [
+    BottomNavigationBarItem(
+      icon: SizedBox(
+        width: 28,
+        height: 28,
+        child: Image(
+          image: AssetImage('assets/Icons/home.png'),
+          fit: BoxFit.contain,
+        ),
+      ),
+      label: 'Home',
+    ),
+    BottomNavigationBarItem(
+      icon: SizedBox(
+        width: 28,
+        height: 28,
+        child: Image(
+          image: AssetImage('assets/Icons/spese.png'),
+          fit: BoxFit.contain,
+        ),
+      ),
+      label: 'Spese',
+    ),
+    BottomNavigationBarItem(
+      icon: SizedBox(
+        width: 28,
+        height: 28,
+        child: Image(
+          image: AssetImage('assets/Icons/turni.png'),
+          fit: BoxFit.contain,
+        ),
+      ),
+      label: 'Turni',
+    ),
+    BottomNavigationBarItem(
+      icon: SizedBox(
+        width: 28,
+        height: 28,
+        child: Image(
+          image: AssetImage('assets/Icons/reminder.png'),
+          fit: BoxFit.contain,
+        ),
+      ),
+      label: 'Scadenze',
+    ),
+    BottomNavigationBarItem(
+      icon: SizedBox(
+        width: 28,
+        height: 28,
+        child: Image(
+          image: AssetImage('assets/Icons/problemi.png'),
+          fit: BoxFit.contain,
+        ),
+      ),
+      label: 'Problemi',
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF6F5FB),
+      appBar: AppBar(
+        elevation: 0,
+        centerTitle: true,
+        backgroundColor: AppColors.brandPrimary,
+        foregroundColor: Colors.white,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, size: 22),
+          onPressed: Navigator.of(context).pop,
+        ),
+        title: const Text(
+          'Dettaglio coinquilino',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        ),
+        actions: const [
+          Padding(padding: EdgeInsets.only(right: 10), child: _UserAvatar()),
+        ],
+      ),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 112),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  _ProfileCard(),
+                  SizedBox(height: 16),
+                  _SectionTitle('INFORMAZIONI'),
+                  SizedBox(height: 8),
+                  _InfoCard(),
+                  SizedBox(height: 10),
+                  _SectionTitle('AZIONI (Admin)'),
+                  SizedBox(height: 8),
+                  _AdminActions(),
+                ],
+              ),
+            ),
+            Positioned(
+              right: 22,
+              bottom: 24,
+              child: FloatingActionButton(
+                onPressed: () {},
+                backgroundColor: AppColors.brandPrimary,
+                foregroundColor: Colors.white,
+                elevation: 5,
+                child: const Icon(Icons.add, size: 28),
+              ),
+            ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: 0,
+        onTap: (_) {},
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: const Color(0xFF17213B),
+        selectedItemColor: const Color(0xFF28A8FF),
+        unselectedItemColor: Colors.white,
+        selectedFontSize: 12,
+        unselectedFontSize: 12,
+        showUnselectedLabels: true,
+        elevation: 8,
+        items: _navigationItems,
+      ),
+    );
+  }
+}
+
+class _UserAvatar extends StatelessWidget {
+  const _UserAvatar();
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        const CircleAvatar(
+          radius: 18,
+          backgroundColor: Color(0xFF3F33B8),
+          child: Image(
+            image: AssetImage('assets/Icons/Profilo_utente_icona.png'),
+            width: 20,
+            height: 20,
+            fit: BoxFit.contain,
+          ),
+        ),
+        Positioned(
+          top: 2,
+          right: 2,
+          child: Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFF7B6D),
+              borderRadius: BorderRadius.circular(99),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ProfileCard extends StatelessWidget {
+  const _ProfileCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
+      decoration: BoxDecoration(
+        color: const Color(0xFF17213B),
+        borderRadius: BorderRadius.circular(5),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x33000000),
+            blurRadius: 5,
+            offset: Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          const CircleAvatar(
+            radius: 39,
+            backgroundColor: Color(0xFF355A82),
+            child: Text(
+              'F',
+              style: TextStyle(
+                color: Color(0xFF63C6FF),
+                fontSize: 26,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Francesco Verdi',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'f.verdi@gmail.com',
+            style: TextStyle(
+              color: Color(0xFFD2D4DF),
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: const Color(0xFFA9C7FF),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: const Text(
+              'Membro',
+              style: TextStyle(
+                color: Color(0xFF1C4A87),
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  final String text;
+
+  const _SectionTitle(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: Color(0xFF44434B),
+          fontSize: 16,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
+class _InfoCard extends StatelessWidget {
+  const _InfoCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF17213B),
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x33000000),
+            blurRadius: 5,
+            offset: Offset(0, 3),
+          ),
+        ],
+      ),
+      child: const Column(
+        children: [
+          _InfoRow(label: 'Membro dal', value: '12 Gen 2026'),
+          _DividerLine(),
+          _InfoRow(label: 'Spese pagate', value: '€24'),
+          _DividerLine(),
+          _InfoRow(
+            label: 'Saldo',
+            value: '+€24,00',
+            valueColor: Color(0xFF25F28A),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color valueColor;
+
+  const _InfoRow({
+    required this.label,
+    required this.value,
+    this.valueColor = Colors.white,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: Color(0xFFD2D4DF),
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Text(
+            value,
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              color: valueColor,
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DividerLine extends StatelessWidget {
+  const _DividerLine();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(height: 1, color: const Color(0xFF687087));
+  }
+}
+
+class _AdminActions extends StatelessWidget {
+  const _AdminActions();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        children: [
+          SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: FilledButton(
+              onPressed: () {
+                showPromuoviCoinquilinoDialog(context);
+              },
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFF5A2FC5),
+                foregroundColor: Colors.white,
+                elevation: 3,
+                shadowColor: const Color(0x665A2FC5),
+                padding: const EdgeInsets.symmetric(horizontal: 18),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  side: const BorderSide(color: Color(0xFFB7A5FF)),
+                ),
+              ),
+              child: const Text(
+                'Promuovi ad Amministratore',
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: OutlinedButton(
+              onPressed: () {},
+              style: OutlinedButton.styleFrom(
+                backgroundColor: const Color(0xFFFFF1F3),
+                foregroundColor: const Color(0xFFD7193F),
+                side: const BorderSide(color: Color(0xFFD7193F), width: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 18),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: const Text(
+                'Rimuovi dalla casa',
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

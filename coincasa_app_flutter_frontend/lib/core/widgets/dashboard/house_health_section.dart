@@ -101,9 +101,9 @@ class _HealthBadge extends StatelessWidget {
             width: _badgeSize,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: color.withOpacity(0.14),
+              color: color.withValues(alpha: 0.14),
               border: Border.all(
-                color: color.withOpacity(0.4),
+                color: color.withValues(alpha: 0.4),
                 width: AppSizes.p4,
               ),
             ),

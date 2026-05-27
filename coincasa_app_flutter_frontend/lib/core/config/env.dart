@@ -1,3 +1,3 @@
 class Env {
-  static const String baseUrl = 'http://localhost:3000'; // oppure IP del server
+  static const String baseUrl = 'http://localhost:23109/api/v1';
 }

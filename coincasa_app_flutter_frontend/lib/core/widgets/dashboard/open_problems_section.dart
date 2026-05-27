@@ -86,7 +86,7 @@ class _ProblemRow extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: AppSizes.p23,
-            backgroundColor: color.withOpacity(0.18),
+            backgroundColor: color.withValues(alpha: 0.18),
             child: Text(
               initials,
               style: AppTextStyles.dashboardProblemInitials.copyWith(

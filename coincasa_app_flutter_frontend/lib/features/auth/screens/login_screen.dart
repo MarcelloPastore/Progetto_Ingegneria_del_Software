@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
+import 'package:coincasa_app/core/api/api_client.dart';
+import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/auth/auth_widgets.dart';
+import 'package:coincasa_app/features/dashboard/screens/dashboard_screen.dart';
 
 import 'password_dimenticata.dart';
 import 'register_screen.dart';
@@ -15,13 +18,87 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
-  final bool _hasLoginError = false;
+  bool _hasLoginError = false;
+  bool _isLoggingIn = false;
   final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _emailController.addListener(_clearError);
+    _passwordController.addListener(_clearError);
+  }
+
+  void _clearError() {
+    if (_hasLoginError) {
+      setState(() {
+        _hasLoginError = false;
+      });
+    }
+  }
 
   @override
   void dispose() {
+    _emailController.removeListener(_clearError);
+    _passwordController.removeListener(_clearError);
     _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _login() async {
+    if (_isLoggingIn) {
+      return;
+    }
+
+    final email = _emailController.text.trim().toLowerCase();
+    final password = _passwordController.text;
+
+    // Simple email validation using RegExp
+    final bool emailValid = RegExp(
+      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+    ).hasMatch(email);
+    final bool passwordValid = password.isNotEmpty;
+
+    if (!emailValid || !passwordValid) {
+      setState(() {
+        _hasLoginError = true;
+      });
+      return;
+    }
+
+    setState(() {
+      _hasLoginError = false;
+      _isLoggingIn = true;
+    });
+
+    try {
+      final token = await ApiProvider.auth.login(
+        email: email,
+        password: password,
+      );
+
+      ApiProvider.client.setAuthToken(token);
+
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const DashboardScreen()),
+      );
+    } on ApiException {
+      if (!mounted) return;
+      setState(() {
+        _hasLoginError = true;
+        _isLoggingIn = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _hasLoginError = true;
+        _isLoggingIn = false;
+      });
+    }
   }
 
   @override
@@ -72,6 +149,7 @@ class _LoginScreenState extends State<LoginScreen> {
           AuthField(
             label: 'Password',
             hint: '••••••••',
+            controller: _passwordController,
             obscureText: _obscurePassword,
             hasError: hasError,
             height: AppSizes.p58,
@@ -94,7 +172,11 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
           const SizedBox(height: AppSizes.p29),
-          const AuthPrimaryButton(text: 'Accedi', compact: true),
+          AuthPrimaryButton(
+            text: _isLoggingIn ? 'Accesso...' : 'Accedi',
+            compact: true,
+            onPressed: _isLoggingIn ? null : _login,
+          ),
           const SizedBox(height: AppSizes.p25),
           const AuthDivider(),
           const SizedBox(height: AppSizes.p20),

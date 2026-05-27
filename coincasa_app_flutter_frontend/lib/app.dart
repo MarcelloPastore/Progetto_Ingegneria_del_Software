@@ -1,9 +1,7 @@
-import 'package:coincasa_app/features/auth/screens/successo_nuova_password_screen.dart';
 import 'package:flutter/material.dart';
 
 import 'core/theme/app_theme.dart';
-import 'features/auth/auth.dart';
-import 'features/dashboard/dashboard.dart';
+import 'features/casa/casa.dart';
 
 class CoinCasaApp extends StatelessWidget {
   const CoinCasaApp({super.key});
@@ -13,19 +11,14 @@ class CoinCasaApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const InserisciCodiceScreen(),
+      home: const CasaWelcomeScreen(email: 'demo@coincasa.it'),
     );
   }
 }
-//LoginScreen()
-//CheckEmailScreen(email: 'marco@gmail.com')
-//RegisterScreen()
-//AccountActivatedScreen()
-//DashboardScreen()
-//AttesaInvioCodiceScreen()
-//ErroreCodiceNonCorrettoScreen()
-//ErroreEmailNonRiconosciutaScreen() RIPRENDI DA QUI
-//ErrorePasswordNonValideScreen()
-//InserisciCodiceScreen()
-//NuovaPasswordScreen()
-//PasswordDimenticataScreen()
+
+//schermate modulo casa da testare:
+//ArchivioDocumentiVuotoScreen
+//CaricaDocumentiScreen
+//ProfiloCoinquilinoScreen
+//ArchivioDocumentiScreen
+//CasaCreataSuccessoScreen

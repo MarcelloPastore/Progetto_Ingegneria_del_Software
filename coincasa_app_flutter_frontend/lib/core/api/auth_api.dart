@@ -23,13 +23,21 @@ class AuthApi {
   }
 
   Future<void> register({
+    required String username,
     required String nome,
+    required String cognome,
     required String email,
     required String password,
   }) async {
     await _client.postJson(
       '/auth/register',
-      body: {'nome': nome, 'email': email, 'password': password},
+      body: {
+        'email': email,
+        'username': username,
+        'password': password,
+        'nome': nome,
+        'cognome': cognome,
+      },
     );
   }
 
@@ -37,11 +45,23 @@ class AuthApi {
     await _client.postJson('/auth/recupera-password', body: {'email': email});
   }
 
-  Future<void> verifyEmail(String token) async {
-    await _client.getJson(
+  Future<String?> verifyEmail(String email) async {
+    final data = await _client.postJson(
       '/auth/verifica-email',
-      queryParameters: {'token': token},
+      body: {'email': email},
     );
+
+    if (data is Map<String, dynamic>) {
+      final user = data['user'];
+      if (user is Map<String, dynamic>) {
+        final nome = user['nome'] ?? user['name'];
+        if (nome is String) {
+          return nome;
+        }
+      }
+    }
+
+    return null;
   }
 
   Future<String> refreshToken(String refreshToken) async {

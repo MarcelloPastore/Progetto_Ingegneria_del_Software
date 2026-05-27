@@ -132,7 +132,9 @@ export class AuthService {
     };
   }
 
-  async verificaEmail(data: unknown): Promise<{ ok: boolean; date: string }> {
+  async verificaEmail(
+    data: unknown,
+  ): Promise<{ ok: boolean; date: string; user: { id: string; nome: string; username: string } }> {
     const validation = EmailSchema.safeParse(data);
     if (!validation.success) {
       throw validation.error;
@@ -159,6 +161,11 @@ export class AuthService {
     return {
       ok: true,
       date: now.toISOString(),
+      user: {
+        id: user.id,
+        nome: user.nome,
+        username: user.username,
+      },
     };
   }
 
