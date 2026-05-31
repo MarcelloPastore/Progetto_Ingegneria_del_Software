@@ -265,6 +265,8 @@ export function casaRoutes(app: FastifyInstance) {
    *
    * @summary Modifica le informazioni di una casa. Solo per HomeAdmin.
    *
+   * @see {@link ModificaCasaDto}
+   *
    * @version 1.0.0
    * @author Mauro Cavasinni
    */
