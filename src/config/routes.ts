@@ -32,6 +32,7 @@ import {
 import {
   AggiungiInquilinoDto,
   CreaCasaDto,
+  ModificaCasaDto,
   CasaResponseDto,
   ModificaRuoloDto,
 } from "../dto/CasaDto";
@@ -245,6 +246,34 @@ export function casaRoutes(app: FastifyInstance) {
    */
   app.get<{ Params: CasaParams }>("/case/:idCasa", casaController.getCasa);
   /**
+   * @api  GetLinkInvito
+   * @route PUT /case/:idCasa
+   *
+   * @summary Restituisce il link di invito alla casa, se non presente, lo rigenera. Solo per HomeAdmin.
+   *
+   * @version 1.0.0
+   * @author Mauro Cavasinni
+   */
+  app.get<{ Params: CasaParams }>(
+      "/case/:idCasa/invite-link",
+      { preHandler: requireRole(Ruolo.HomeAdmin) },
+      casaController.getInviteLink,
+  );
+  /**
+   * @api  ModificaCasa
+   * @route PUT /case/:idCasa
+   *
+   * @summary Modifica le informazioni di una casa. Solo per HomeAdmin.
+   *
+   * @version 1.0.0
+   * @author Mauro Cavasinni
+   */
+  app.put<{ Params: CasaParams; Body: ModificaCasaDto }>(
+    "/case/:idCasa",
+    { preHandler: requireRole(Ruolo.HomeAdmin) },
+    casaController.modificaCasa,
+  );
+  /**
    * @api  EliminaCasa
    * @route DELETE /case/:idCasa
    *
@@ -319,7 +348,7 @@ export function casaRoutes(app: FastifyInstance) {
     casaController.rimuoviInquilino,
   );
   /**
-   * @api  ModificaRuolo
+   * @api  ModificaRuoloInquilino
    * @route PUT /case/:idCasa/inquilini/:idInquilino/ruolo
    *
    * @summary Modifica il ruolo di un inquilino. Solo per HomeAdmin.
@@ -333,7 +362,7 @@ export function casaRoutes(app: FastifyInstance) {
   app.put<{ Params: InquilinoParams; Body: ModificaRuoloDto }>(
     "/case/:idCasa/inquilini/:idInquilino/ruolo",
     { preHandler: requireRole(Ruolo.HomeAdmin) },
-    casaController.modificaRuolo,
+    casaController.modificaRuoloInquilino,
   );
   /**
    * @api  GeneraLink

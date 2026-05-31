@@ -135,7 +135,7 @@ export class CasaController {
     }
   };
 
-  modificaRuolo = async (
+  modificaRuoloInquilino = async (
     request: FastifyRequest<{
       Params: InquilinoParams;
       Body: ModificaRuoloDto;
