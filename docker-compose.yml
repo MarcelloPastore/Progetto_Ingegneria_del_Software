@@ -4,11 +4,11 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        PORT: ${PORT:-2310}
+        PORT: ${PORT:-23109}
     image: coincasa:latest
     env_file:
       - .env
     ports:
-      - "${PORT:-2310}:${PORT:-2310}"
+      - "${PORT:-23109}:${PORT:-23109}"
     restart: unless-stopped
 

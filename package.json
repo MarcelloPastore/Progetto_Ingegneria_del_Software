@@ -25,9 +25,9 @@
     "prettier": "^3.8.3",
     "prisma": "6.19.0",
     "typescript": "^5.5.3",
-   "typescript-eslint": "^8.59.2",
-    "vitest": "^4.1.7",
-    "vi": "^1.0.0"
+    "typescript-eslint": "^8.59.2",
+    "vi": "^1.0.0",
+    "vitest": "^4.1.7"
   },
   "private": true,
   "dependencies": {
@@ -38,6 +38,7 @@
     "argon2": "^0.44.0",
     "fastify": "^5.8.5",
     "jsonwebtoken": "^9.0.3",
+    "tsx": "^4.22.3",
     "zod": "^4.4.3"
   }
 }
