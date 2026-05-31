@@ -19,7 +19,7 @@ RUN npm run build
 
 FROM node:20-bookworm-slim
 WORKDIR /app
-ARG PORT=2310
+ARG PORT=23109
 ENV NODE_ENV=production
 ENV PORT=${PORT}
 
