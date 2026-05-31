@@ -36,7 +36,7 @@ vi.mock("../src/repository/CasaRepository", () => ({
 }));
 
 import { Ruolo } from "@prisma/client";
-import { CasaService } from "../src/service/CasaService";
+import { CasaService } from "../../src/service/CasaService";
 
 const baseCasa = {
   id: "c1",
