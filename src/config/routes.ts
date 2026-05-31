@@ -499,7 +499,7 @@ export function speseRoutes(app: FastifyInstance) {
    * @api  PareggiaConti
    * @route POST /case/:idCasa/spese/pareggia
    *
-   * @summary Effettua il pareggio totale dei conti della casa.
+   * @summary Effettua il pareggio totale dei debiti del richiedente verso uno o più inquilini (molteplici pagaQuota in una chiamata sola).
    *
    * @see {@link PareggiaContiDto}
    *
