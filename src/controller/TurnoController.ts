@@ -6,6 +6,7 @@ import {
   CreaTurnoSchema,
   ModificaTurnoSchema,
   AssegnaTurnoSchema,
+  SaluteCasaDto,
 } from "../dto/TurnoDto";
 import { TurnoService } from "../service/TurnoService";
 import { CasaParams, TurnoParams } from "../types/params";
@@ -46,6 +47,24 @@ export class TurnoController {
         request.params.idCasa,
       );
       return reply.status(200).send(turni);
+    } catch (error) {
+      return this.handleFailure(reply, error);
+    }
+  };
+
+  /**
+   * GET /case/:idCasa/turni/salute-casa
+   */
+  getGiorniDallUltimaPulizia = async (
+    request: FastifyRequest<{ Params: CasaParams }>,
+    reply: FastifyReply,
+  ) => {
+    try {
+      const result: SaluteCasaDto[] =
+        await this.turniService.getGiorniDallUltimaPulizia(
+          request.params.idCasa,
+        );
+      return reply.status(200).send(result);
     } catch (error) {
       return this.handleFailure(reply, error);
     }

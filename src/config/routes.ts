@@ -15,6 +15,7 @@ import { SpesaService } from "../service/SpesaService";
 import { ProblemaService } from "../service/ProblemaService";
 import { TurnoService } from "../service/TurnoService";
 
+/* eslint-disable @typescript-eslint/no-unused-vars -- usati nella documentazione */
 import {
   CasaParams,
   InquilinoParams,
@@ -27,6 +28,7 @@ import {
   AssegnaTurnoDto,
   CreaTurnoDto,
   ModificaTurnoDto,
+  SaluteCasaDto,
   TurnoResponseDto,
 } from "../dto/TurnoDto";
 import {
@@ -51,6 +53,7 @@ import {
 } from "../dto/ProblemaDto";
 import { RegisterData, PublicUser } from "../dto/auth.dto";
 import { AssegnatarioInfoDto } from "../dto/AssegnatarioDto";
+/* eslint-enable @typescript-eslint/no-unused-vars */
 
 // ─── Health ───────────────────────────────────────────────────────────────────
 export function health(app: FastifyInstance) {
@@ -737,6 +740,21 @@ export function turniRoutes(app: FastifyInstance) {
   app.post<{ Params: TurnoParams }>(
     "/case/:idCasa/turni/:idTurno/completa",
     turnoController.completaTurno,
+  );
+  /**
+   * @api  GiorniDallUltimaPulizia
+   * @route GET /case/:idCasa/turni/salute-casa
+   *
+   * @summary Restituisce per ogni turno il numero di giorni trascorsi dalla dataUltimaPulizia. Se dataUltimaPulizia è null, per quel turno viene restituito null.
+   *
+   * @see {@link SaluteCasaDto}
+   *
+   * @version 1.0.0
+   * @author Mauro Cavasinni
+   */
+  app.get<{ Params: CasaParams }>(
+    "/case/:idCasa/turni/salute-casa",
+    turnoController.getGiorniDallUltimaPulizia,
   );
 }
 

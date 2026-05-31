@@ -4,6 +4,7 @@ import {
   AssegnaTurnoDto,
   TurnoListItemDto,
   TurnoResponseDto,
+  SaluteCasaDto,
 } from "../dto/TurnoDto";
 import { TurnoConverter } from "../dto/converter/TurnoConverter";
 import {
@@ -125,6 +126,22 @@ export class TurnoService {
     return turni
       .map((t: TurnoConAssegnatario) => turnoConverter.toDto(t))
       .filter((dto: TurnoResponseDto) => isToday(dto.dataProssimaPulizia));
+  }
+
+  async getGiorniDallUltimaPulizia(idCasa: string): Promise<SaluteCasaDto[]> {
+    const turni = await turnoRepository.findTurniByCasa(idCasa);
+    const oggi = new Date();
+
+    return turni
+      .filter((t: TurnoConAssegnatario) => t.dataUltimaPulizia != null)
+      .map((t: TurnoConAssegnatario) => ({
+        id: t.id,
+        task: t.task,
+        giorniPassati: Math.floor(
+          (oggi.getTime() - t.dataUltimaPulizia!.getTime()) /
+            (1000 * 60 * 60 * 24),
+        ),
+      }));
   }
 
   async getTurno(idCasa: string, idTurno: string): Promise<TurnoResponseDto> {
