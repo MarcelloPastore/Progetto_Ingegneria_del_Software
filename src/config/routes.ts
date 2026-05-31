@@ -246,20 +246,6 @@ export function casaRoutes(app: FastifyInstance) {
    */
   app.get<{ Params: CasaParams }>("/case/:idCasa", casaController.getCasa);
   /**
-   * @api  GetLinkInvito
-   * @route PUT /case/:idCasa
-   *
-   * @summary Restituisce il link di invito alla casa, se non presente, lo rigenera. Solo per HomeAdmin.
-   *
-   * @version 1.0.0
-   * @author Mauro Cavasinni
-   */
-  app.get<{ Params: CasaParams }>(
-      "/case/:idCasa/invite-link",
-      { preHandler: requireRole(Ruolo.HomeAdmin) },
-      casaController.getInviteLink,
-  );
-  /**
    * @api  ModificaCasa
    * @route PUT /case/:idCasa
    *
