@@ -14,6 +14,11 @@ import { mapErrorToHttp } from "../errors/errorMapper";
 export class TurnoController {
   constructor(private readonly turniService: TurnoService) {}
 
+  private handleFailure(reply: FastifyReply, error: unknown) {
+    const mapped = mapErrorToHttp(error);
+    return reply.status(mapped.statusCode).send({ message: mapped.message });
+  }
+
   /**
    * GET /case/:idCasa/turni
    */
@@ -25,8 +30,7 @@ export class TurnoController {
       const turni = await this.turniService.getAllTurni(request.params.idCasa);
       return reply.status(200).send(turni);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
@@ -43,8 +47,7 @@ export class TurnoController {
       );
       return reply.status(200).send(turni);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
@@ -64,8 +67,7 @@ export class TurnoController {
       );
       return reply.status(201).send(result);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
@@ -83,8 +85,7 @@ export class TurnoController {
       );
       return reply.status(200).send(result);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
@@ -105,8 +106,7 @@ export class TurnoController {
       );
       return reply.status(200).send(result);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
@@ -125,8 +125,7 @@ export class TurnoController {
       );
       return reply.status(204).send();
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
@@ -145,8 +144,7 @@ export class TurnoController {
       );
       return reply.status(200).send(result);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
@@ -166,8 +164,7 @@ export class TurnoController {
       );
       return reply.status(200).send(result);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
@@ -185,8 +182,7 @@ export class TurnoController {
       );
       return reply.status(200).send(result);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
@@ -205,8 +201,7 @@ export class TurnoController {
       );
       return reply.status(200).send(result);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 }
