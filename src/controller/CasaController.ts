@@ -3,7 +3,9 @@ import {
   AggiungiInquilinoDto,
   AggiungiInquilinoSchema,
   CreaCasaDto,
-  CreaCasaSchema, ModificaCasaDto, ModificaCasaSchema,
+  CreaCasaSchema,
+  ModificaCasaDto,
+  ModificaCasaSchema,
   ModificaRuoloDto,
   ModificaRuoloSchema,
 } from "../dto/CasaDto";
@@ -57,9 +59,9 @@ export class CasaController {
   };
 
   modificaCasa = async (
-    request: FastifyRequest<{ Params: CasaParams, Body: ModificaCasaDto }>,
+    request: FastifyRequest<{ Params: CasaParams; Body: ModificaCasaDto }>,
     reply: FastifyReply,
-  )=> {
+  ) => {
     try {
       const dto = ModificaCasaSchema.parse(request.body);
       await this.casaService.modificaCasa(

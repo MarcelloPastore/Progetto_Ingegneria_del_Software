@@ -6,7 +6,8 @@ import {
   CasaSummaryDto,
   CreaCasaDto,
   InquilinoDto,
-  InviteLinkDto, ModificaCasaDto,
+  InviteLinkDto,
+  ModificaCasaDto,
   ModificaRuoloDto,
 } from "../dto/CasaDto";
 import { CasaConverter } from "../dto/converter/CasaConverter";
