@@ -109,6 +109,7 @@ export class CasaRepository {
     });
   }
 
+
   async deleteCasa(idCasa: string): Promise<void> {
     await prisma.$transaction(async (tx) => {
       await tx.quotaSpesa.deleteMany({ where: { idCasa } });

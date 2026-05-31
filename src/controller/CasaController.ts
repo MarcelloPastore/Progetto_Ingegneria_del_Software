@@ -3,7 +3,7 @@ import {
   AggiungiInquilinoDto,
   AggiungiInquilinoSchema,
   CreaCasaDto,
-  CreaCasaSchema,
+  CreaCasaSchema, ModificaCasaDto, ModificaCasaSchema,
   ModificaRuoloDto,
   ModificaRuoloSchema,
 } from "../dto/CasaDto";
@@ -51,6 +51,23 @@ export class CasaController {
         request.user.idUtente,
       );
       return reply.status(200).send(casa);
+    } catch (error) {
+      return this.handleFailure(reply, error);
+    }
+  };
+
+  modificaCasa = async (
+    request: FastifyRequest<{ Params: CasaParams, Body: ModificaCasaDto }>,
+    reply: FastifyReply,
+  )=> {
+    try {
+      const dto = ModificaCasaSchema.parse(request.body);
+      await this.casaService.modificaCasa(
+        request.params.idCasa,
+        request.user.idUtente,
+        dto,
+      );
+      return reply.status(204).send();
     } catch (error) {
       return this.handleFailure(reply, error);
     }

@@ -6,7 +6,7 @@ import {
   CasaSummaryDto,
   CreaCasaDto,
   InquilinoDto,
-  InviteLinkDto,
+  InviteLinkDto, ModificaCasaDto,
   ModificaRuoloDto,
 } from "../dto/CasaDto";
 import { CasaConverter } from "../dto/converter/CasaConverter";
@@ -64,6 +64,17 @@ export class CasaService {
     await this.assertMembroCasa(idCasa, idUtente);
 
     const casa = await casaRepository.findCasaByIdOrThrow(idCasa);
+    return casaConverter.toCasaDto(casa, idUtente);
+  }
+
+  async modificaCasa(
+    idCasa: string,
+    idUtente: string,
+    dto: ModificaCasaDto,
+  ): Promise<CasaResponseDto> {
+    await this.assertHomeAdmin(idCasa, idUtente);
+    const casa = await casaRepository.updateCasa(idCasa, dto);
+
     return casaConverter.toCasaDto(casa, idUtente);
   }
 
