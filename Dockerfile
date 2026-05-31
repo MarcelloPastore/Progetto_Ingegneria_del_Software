@@ -45,7 +45,7 @@ USER appuser
 
 EXPOSE ${PORT}
 HEALTHCHECK --interval=10s --timeout=3s --start-period=30s --retries=3 \
-  CMD node -e "const http=require('node:http'); const port=process.env.PORT||2310; const req=http.get('http://127.0.0.1:'+port+'/api/v1/health',(res)=>process.exit(res.statusCode===200?0:1)); req.on('error',()=>process.exit(1)); req.setTimeout(2000,()=>{ req.destroy(); process.exit(1); });"
+  CMD node -e "const http=require('node:http'); const port=process.env.PORT||23109; const req=http.get('http://127.0.0.1:'+port+'/api/v1/health',(res)=>process.exit(res.statusCode===200?0:1)); req.on('error',()=>process.exit(1)); req.setTimeout(2000,()=>{ req.destroy(); process.exit(1); });"
 
 ENTRYPOINT ["node", "dist/index.js"]
 

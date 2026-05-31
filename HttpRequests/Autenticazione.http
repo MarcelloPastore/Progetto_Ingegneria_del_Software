@@ -15,7 +15,7 @@ Content-Type: application/json
 
 
 ### 3. REGISTER - Secondo utente
-POST http://localhost:2310/api/v1/auth/register
+POST http://localhost:23109/api/v1/auth/register
 Content-Type: application/json
 
 {
@@ -165,10 +165,10 @@ Content-Type: application/json
 ### NOTE SUI TEST:
 ###
 ### • Per test manuali con curl:
-###   1. Register: curl -X POST http://localhost:2310/api/v1/auth/register -H "Content-Type: application/json" -d '{"email":"user@test.com","password":"SecurePass123!","nome":"Nome","cognome":"Cognome"}'
-###   2. Login: curl -X POST http://localhost:2310/api/v1/auth/login -H "Content-Type: application/json" -d '{"email":"user@test.com","password":"SecurePass123!"}' | jq
-###   3. Estrai token: TOKEN=$(curl -s -X POST http://localhost:2310/api/v1/auth/login -H "Content-Type: application/json" -d '{"email":"user@test.com","password":"SecurePass123!"}' | jq -r '.token')
-###   4. Usa token: curl -H "Authorization: Bearer ${TOKEN}" http://localhost:2310/api/v1/protected
+###   1. Register: curl -X POST http://localhost:23109/api/v1/auth/register -H "Content-Type: application/json" -d '{"email":"user@test.com","password":"SecurePass123!","nome":"Nome","cognome":"Cognome"}'
+###   2. Login: curl -X POST http://localhost:23109/api/v1/auth/login -H "Content-Type: application/json" -d '{"email":"user@test.com","password":"SecurePass123!"}' | jq
+###   3. Estrai token: TOKEN=$(curl -s -X POST http://localhost:23109/api/v1/auth/login -H "Content-Type: application/json" -d '{"email":"user@test.com","password":"SecurePass123!"}' | jq -r '.token')
+###   4. Usa token: curl -H "Authorization: Bearer ${TOKEN}" http://localhost:23109/api/v1/protected
 ###
 ### • VARIABILI SALVATE AUTOMATICAMENTE:
 ###   - auth_token: token JWT di Alice (disponibile per i test successivi)
