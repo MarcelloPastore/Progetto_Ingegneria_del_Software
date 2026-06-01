@@ -9,7 +9,7 @@ import 'features/problemi/problemi.dart';
 import 'features/scadenze/scadenze.dart';
 import 'features/spese/spese.dart';
 import 'features/turni/turni.dart';
-import 'core/utils/route_observer.dart';
+
 
 class CoinCasaApp extends StatelessWidget {
   CoinCasaApp({super.key});
@@ -23,12 +23,25 @@ class CoinCasaApp extends StatelessWidget {
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
-        navigatorObservers: [appRouteObserver],
         home: const LoginScreen(),
         routes: {
           '/login': (_) => const LoginScreen(),
           '/dashboard': (_) => const DashboardScreen(),
-          '/spese': (_) => const SpeseScreen(),
+          '/spese': (_) => const ListaSpeseAdminScreen(),
+          ListaSpeseAdminScreen.routeName: (_) => const ListaSpeseAdminScreen(),
+          DettaglioSpesaAdminScreen.routeName: (_) =>
+              const DettaglioSpesaAdminScreen(),
+          PareggiaContiScreen.routeName: (_) => const PareggiaContiScreen(),
+          ModificheSpeseNegataScreen.routeName: (_) =>
+              const ModificheSpeseNegataScreen(),
+          ModificheSpeseSuccessoScreen.routeName: (_) =>
+              const ModificheSpeseSuccessoScreen(),
+          EliminaSpesaScreen.routeName: (_) => const EliminaSpesaScreen(),
+          NessunaSpeseRegistrataScreen.routeName: (_) =>
+              const NessunaSpeseRegistrataScreen(),
+          InserisciSpesaScreen.routeName: (_) => const InserisciSpesaScreen(),
+          InserisciSpesaSuccessoScreen.routeName: (_) =>
+              const InserisciSpesaSuccessoScreen(),
           '/turni': (_) => const ListaTurniScreen(),
           DettaglioTurnoAdminScreen.routeName: (_) =>
               const DettaglioTurnoAdminScreen(),

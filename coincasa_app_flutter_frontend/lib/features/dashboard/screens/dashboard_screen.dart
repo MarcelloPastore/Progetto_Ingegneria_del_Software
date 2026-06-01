@@ -8,7 +8,7 @@ import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/dashboard/house_health_section.dart';
-import 'package:coincasa_app/features/turni/screens/turni_screen_principale.dart';
+import 'package:coincasa_app/features/icone_fab.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -21,6 +21,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   late Future<_DashboardData> _dashboardDataFuture;
   late ActiveCasaController _activeCasaController;
   bool _initialized = false;
+  bool _fabActionsVisible = false;
 
   @override
   void didChangeDependencies() {
@@ -169,11 +170,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ],
               ),
             ),
+            if (_fabActionsVisible)
+              Positioned(
+                left: AppSizes.p10,
+                right: AppSizes.p10,
+                bottom: AppSizes.p90,
+                child: DashboardFabActionsPanel(
+                  onActionSelected: (routeName) {
+                    setState(() {
+                      _fabActionsVisible = false;
+                    });
+                    Navigator.of(context).pushNamed(routeName);
+                  },
+                ),
+              ),
             Positioned(
               right: AppSizes.p10,
               bottom: AppSizes.p24,
               child: FloatingActionButton(
-                onPressed: () => showTurniScreenPrincipaleDialog(context),
+                onPressed: () async {
+                        setState(() {
+                          _fabActionsVisible = !_fabActionsVisible;
+                        });
+                },
                 backgroundColor: AppColors.brandAccent,
                 elevation: AppSizes.p6,
                 child: const Icon(

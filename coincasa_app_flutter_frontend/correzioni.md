@@ -8,7 +8,7 @@
 - [ ] **Color-Coding:** Associare un colore univoco a ogni inquilino al fine di mappare cromaticamente i turni all'interno del calendario.
 - [ ] **Gestione Permessi:** Per ciascuna schermata, implementare le divergenze funzionali tra HomeAdmin e Inquilino (ove previste).
 - [ ] **Inibizione Azioni:** Renderizzare come grigi e non cliccabili i pulsanti legati ad azioni esclusive dell'HomeAdmin (es. la rotazione del turno).
-- [ ] **FIX SISTEMA:** Correggere la Home del turno; l'interfaccia non si aggiorna dinamicamente con l'inserimento di una nuova casa o di nuovi turni in fase di ricaricamento.
+- [/] **FIX SISTEMA:** Correggere la Home del turno; l'interfaccia non si aggiorna dinamicamente con l'inserimento di una nuova casa o di nuovi turni in fase di ricaricamento.
 - [ ] **FIX NAVIGAZIONE:** Rimappare i flussi del pulsante "torna indietro", definendo la destinazione ad-hoc per ogni singola schermata.
 - [ ] **Flusso Crea Casa:** Il percorso Crea Casa -> Copia link di invito -> Click su X deve essere isolato; l'azione di chiusura post-creazione non deve reindirizzare l'utente ad altre schermate estranee.
 - [ ] **GESTIONE CASA:** Configurare un valore di preselezione automatica nel campo "Tipo di abitazione" (es. "Appartamento Condiviso").
