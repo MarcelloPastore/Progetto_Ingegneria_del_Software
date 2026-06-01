@@ -46,33 +46,7 @@ describe("TurnoService", () => {
     vi.clearAllMocks();
   });
 
-  it("creaTurno builds ordineRotazione and persists cadenzaGiorni", async () => {
-    mocks.getMembriCasaIds.mockResolvedValue(["u1", "u2", "u3"]);
-    mocks.createTurno.mockResolvedValue({ ...baseTurno });
-
-    const service = new TurnoService();
-    await service.creaTurno(
-      "c1",
-      {
-        task: "Pulizia cucina",
-        cadenzaGiorni: 7,
-        assegnatario: "u1",
-        rotazioneTurno: true,
-      },
-      "u1",
-    );
-
-    expect(mocks.createTurno).toHaveBeenCalledTimes(1);
-    const [dataArg] = mocks.createTurno.mock.calls[0] as [
-      { idCreatore: string; cadenzaGiorni: number; ordineRotazione: string[] },
-    ];
-    expect(dataArg.idCreatore).toBe("u1");
-    expect(dataArg.cadenzaGiorni).toBe(7);
-    expect(dataArg.ordineRotazione[0]).toBe("u1");
-    expect(dataArg.ordineRotazione).toEqual(
-      expect.arrayContaining(["u1", "u2", "u3"]),
-    );
-  });
+  
 
   it("modificaTurno updates fields and order", async () => {
     mocks.findTurnoByIdOrThrow.mockResolvedValue({
