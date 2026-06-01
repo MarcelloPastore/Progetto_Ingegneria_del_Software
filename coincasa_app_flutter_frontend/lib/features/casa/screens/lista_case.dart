@@ -4,6 +4,7 @@ import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/utils/user_initials.dart';
 import 'package:coincasa_app/features/casa/screens/compilazione_form_crea_casa.dart';
 import 'package:coincasa_app/features/casa/screens/hub_casa_admin.dart';
 
@@ -203,14 +204,19 @@ class _Header extends StatelessWidget {
             ],
           ),
         ),
-        const CircleAvatar(
+        CircleAvatar(
           radius: 26,
           backgroundColor: Color(0xFF3F33B8),
-          child: Image(
-            image: AssetImage('assets/Icons/Profilo_utente_icona.png'),
-            width: 28,
-            height: 28,
-            fit: BoxFit.contain,
+          child: Text(
+            resolveUserInitials(
+              displayName: ApiProvider.client.currentUserName,
+              email: ApiProvider.client.currentUserEmail,
+              fallback: '??',
+            ),
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
       ],
@@ -225,9 +231,10 @@ class _HouseCard extends StatelessWidget {
   final VoidCallback? onTap;
 
   String get _address {
-    final parts = [casa.indirizzo, casa.citta]
-        .where((part) => part.trim().isNotEmpty)
-        .join(' - ');
+    final parts = [
+      casa.indirizzo,
+      casa.citta,
+    ].where((part) => part.trim().isNotEmpty).join(' - ');
     return parts.isEmpty ? 'Indirizzo non disponibile' : parts;
   }
 

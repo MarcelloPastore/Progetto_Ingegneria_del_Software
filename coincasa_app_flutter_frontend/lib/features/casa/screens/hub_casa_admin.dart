@@ -5,6 +5,7 @@ import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/utils/user_initials.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/features/casa/screens/archivio_documenti_vuoto.dart';
 import 'package:coincasa_app/features/casa/screens/condividi_codice.dart';
@@ -25,6 +26,7 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
   late Future<_HubCasaData> _future;
   late ActiveCasaController _activeCasaController;
   bool _initialized = false;
+  String _currentUserInitials = '??';
 
   @override
   void didChangeDependencies() {
@@ -61,11 +63,42 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
       ApiProvider.turni.list(selected.id),
     ]);
 
+    final inquilini = results[1] as List<Inquilino>;
+    _currentUserInitials = _resolveCurrentUserInitials(inquilini);
+
     return _HubCasaData(
       casa: results[0] as Casa,
-      inquilini: results[1] as List<Inquilino>,
+      inquilini: inquilini,
       speseCount: (results[2] as List).length,
       turniCount: (results[3] as List).length,
+    );
+  }
+
+  String _resolveCurrentUserInitials(List<Inquilino> inquilini) {
+    final email = ApiProvider.client.currentUserEmail?.trim().toLowerCase();
+    Inquilino? current;
+
+    if (email != null && email.isNotEmpty) {
+      for (final inquilino in inquilini) {
+        if (inquilino.email.trim().toLowerCase() == email) {
+          current = inquilino;
+          break;
+        }
+      }
+    }
+
+    if (current == null) {
+      return resolveUserInitials(
+        displayName: ApiProvider.client.currentUserName,
+        email: ApiProvider.client.currentUserEmail,
+        fallback: '??',
+      );
+    }
+
+    return resolveUserInitials(
+      displayName: current.nomeCompleto,
+      email: current.email,
+      fallback: '??',
     );
   }
 
@@ -112,18 +145,18 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
         centerTitle: true,
         title: const Text(
           'Hub Casa',
-          style: TextStyle(fontWeight: FontWeight.w700),
+          style: TextStyle(fontWeight: FontWeight.w700, color: Colors.white),
         ),
         actions: [
           IconButton(onPressed: _reload, icon: const Icon(Icons.refresh)),
-          const Padding(
-            padding: EdgeInsets.only(right: 16),
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
             child: CircleAvatar(
               radius: 18,
-              backgroundColor: Color(0xFF38B7B0),
+              backgroundColor: const Color(0xFF38B7B0),
               child: Text(
-                'F',
-                style: TextStyle(
+                _currentUserInitials,
+                style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w700,
                 ),
@@ -314,7 +347,7 @@ class _HouseHeaderCard extends StatelessWidget {
               Expanded(
                 child: _StatisticChip(
                   value: '${data.inquilini.length}',
-                  label: 'membri',
+                  label: 'Membri',
                   valueColor: const Color(0xFF9B5BFF),
                 ),
               ),

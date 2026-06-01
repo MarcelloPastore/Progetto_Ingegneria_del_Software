@@ -9,7 +9,7 @@ import 'features/problemi/problemi.dart';
 import 'features/scadenze/scadenze.dart';
 import 'features/spese/spese.dart';
 import 'features/turni/turni.dart';
-import 'features/turni/screens/lista_turni_vuota.dart';
+import 'core/utils/route_observer.dart';
 
 class CoinCasaApp extends StatelessWidget {
   CoinCasaApp({super.key});
@@ -23,13 +23,13 @@ class CoinCasaApp extends StatelessWidget {
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
+        navigatorObservers: [appRouteObserver],
         home: const LoginScreen(),
         routes: {
           '/login': (_) => const LoginScreen(),
           '/dashboard': (_) => const DashboardScreen(),
           '/spese': (_) => const SpeseScreen(),
           '/turni': (_) => const ListaTurniScreen(),
-          '/turni/vuota': (_) => const ListaTurniVuotaScreen(),
           DettaglioTurnoAdminScreen.routeName: (_) =>
               const DettaglioTurnoAdminScreen(),
           AssegnaAMeSuccessScreen.routeName: (_) =>

@@ -6,6 +6,7 @@ import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/turno.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/utils/route_observer.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/features/turni/screens/dettaglio_turno_admin.dart';
 import 'package:coincasa_app/features/turni/screens/turno_create_screen.dart';
@@ -34,13 +35,54 @@ final _listaTurniProvider = FutureProvider.autoDispose
       return ApiProvider.turni.list(casaId);
     });
 
-class ListaTurniScreen extends ConsumerWidget {
+class ListaTurniScreen extends ConsumerStatefulWidget {
   const ListaTurniScreen({super.key, this.onInserisciTurno});
 
   final VoidCallback? onInserisciTurno;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ListaTurniScreen> createState() => _ListaTurniScreenState();
+}
+
+class _ListaTurniScreenState extends ConsumerState<ListaTurniScreen>
+    with RouteAware {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route is PageRoute) {
+      appRouteObserver.subscribe(this, route);
+    }
+  }
+
+  @override
+  void dispose() {
+    appRouteObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  @override
+  void didPush() {
+    _refreshTurni();
+  }
+
+  @override
+  void didPopNext() {
+    _refreshTurni();
+  }
+
+  void _refreshTurni() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      ref.invalidate(_listaTurniCasaProvider);
+      ref.invalidate(_listaTurniProvider);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final activeCasaController = ActiveCasaScope.of(context);
     final casaAsync = ref.watch(
       _listaTurniCasaProvider(activeCasaController.selectedCasaId),
@@ -136,7 +178,7 @@ class ListaTurniScreen extends ConsumerWidget {
               ),
               child: _InsertTurnoButton(
                 onPressed:
-                    onInserisciTurno ??
+                    widget.onInserisciTurno ??
                     () => Navigator.of(
                       context,
                     ).pushNamed(TurnoCreateScreen.routeName),

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:coincasa_app/core/api/api_provider.dart';
+import 'package:coincasa_app/core/utils/user_initials.dart';
 import 'package:coincasa_app/features/casa/screens/promuovi_coinquilino.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
@@ -63,14 +65,19 @@ class _UserAvatar extends StatelessWidget {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        const CircleAvatar(
+        CircleAvatar(
           radius: 18,
           backgroundColor: Color(0xFF3F33B8),
-          child: Image(
-            image: AssetImage('assets/Icons/Profilo_utente_icona.png'),
-            width: 20,
-            height: 20,
-            fit: BoxFit.contain,
+          child: Text(
+            resolveUserInitials(
+              displayName: ApiProvider.client.currentUserName,
+              email: ApiProvider.client.currentUserEmail,
+              fallback: '??',
+            ),
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
         Positioned(
@@ -336,4 +343,3 @@ class _AdminActions extends StatelessWidget {
     );
   }
 }
-

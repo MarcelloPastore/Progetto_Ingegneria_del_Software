@@ -1241,10 +1241,11 @@ class _AssignMeButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: AppSizes.p18),
         child: Row(
           children: [
-            const Icon(
-              Icons.front_hand_outlined,
-              color: AppColors.textOnDark,
-              size: 23,
+            const Image(
+              image: AssetImage('assets/Icons/assegna_a_me_mano.png'),
+              width: 22,
+              height: 22,
+              fit: BoxFit.contain,
             ),
             Expanded(
               child: Text(
@@ -1291,10 +1292,11 @@ class _SelectedAssigneeButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: AppSizes.p18),
         child: Row(
           children: [
-            const Icon(
-              Icons.back_hand_outlined,
-              color: AppColors.textOnDark,
-              size: 23,
+            const Image(
+              image: AssetImage('assets/Icons/assegna_a_qualcuno_help.png'),
+              width: 22,
+              height: 22,
+              fit: BoxFit.contain,
             ),
             Expanded(
               child: Text(

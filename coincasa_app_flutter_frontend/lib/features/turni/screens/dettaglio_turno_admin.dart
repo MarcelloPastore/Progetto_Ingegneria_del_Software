@@ -727,10 +727,13 @@ class _AssigneeSelectorState extends State<_AssigneeSelector> {
                 const CircleAvatar(
                   radius: 17,
                   backgroundColor: Color(0xFFF3E8FF),
-                  child: Icon(
-                    Icons.front_hand_rounded,
-                    color: Color(0xFF7B4BD3),
-                    size: 21,
+                  child: Image(
+                    image: AssetImage(
+                      'assets/Icons/assegna_a_qualcuno_help.png',
+                    ),
+                    width: 14,
+                    height: 14,
+                    fit: BoxFit.contain,
                   ),
                 ),
                 Expanded(
