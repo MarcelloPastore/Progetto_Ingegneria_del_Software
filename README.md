@@ -8,7 +8,7 @@ Progetto per il corso di Ingegneria del Software. Il repository contiene:
 
 Nota: per mantenere la lista leggibile sono esclusi file generati e cache (build/, .dart_tool/, .gradle/, Pods/, .idea/, .DS_Store, *.iml).
 
-```
+`
 .
 |-- .env.example
 |-- .gitignore
