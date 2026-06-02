@@ -43,14 +43,14 @@ export class AuthController {
 
       const jwt = getJwt(request.server);
       const token = jwt.sign({
-        id: user.id,
+        idUtente: user.id,
         type: "access",
       });
 
       return reply.send({
         token,
         user: {
-          id: user.id,
+          idUtente: user.id,
           username: user.username,
           nome: user.nome,
         },
