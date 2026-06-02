@@ -32,6 +32,7 @@ const getUserFromPayload = (payload: unknown) => {
   const idValue = p.id ?? p.idUtente;
   const tokenType = p.type;
   const ruoloCasa = p.ruoloCasa;
+  const idCasa = p.idCasa ?? p.casa ?? null;
   const idUtente =
     typeof idValue === "string" && idValue.length > 0 ? idValue : undefined;
   const tokenTypeStr = typeof tokenType === "string" ? tokenType : undefined;
@@ -39,12 +40,13 @@ const getUserFromPayload = (payload: unknown) => {
   const ruoloCasaValue = ruoloCasaStr
     ? (Ruolo[ruoloCasaStr as keyof typeof Ruolo] ?? undefined)
     : undefined;
+  const idCasaStr = typeof idCasa === "string" && idCasa.length > 0 ? idCasa : null;
 
   if (!idUtente || (tokenTypeStr !== undefined && tokenTypeStr !== "access")) {
     throw new InvalidTokenPayloadError();
   }
 
-  return { idUtente, ruoloCasa: ruoloCasaValue };
+  return { idUtente, ruoloCasa: ruoloCasaValue, idCasa: idCasaStr };
 };
 
 export async function authMiddleware(

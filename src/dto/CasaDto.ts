@@ -2,7 +2,7 @@ import { Ruolo } from "@prisma/client";
 import { z } from "zod";
 import { AssegnatarioInfoSchema } from "./AssegnatarioDto";
 
-const ruoloSchema = z.enum([Ruolo.HomeAdmin, Ruolo.Inquilino]);
+const ruoloSchema = z.enum([Ruolo.SysAdmin, Ruolo.HomeAdmin, Ruolo.Inquilino]);
 
 export const CreaCasaSchema = z.object({
   nome: z.string().min(1, "Campo obbligatorio"),

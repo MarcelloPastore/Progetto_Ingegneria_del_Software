@@ -1,7 +1,6 @@
 import { Ruolo } from "@prisma/client";
 import { FastifyRequest } from "fastify";
-import { prisma } from "../config/db";
-import { ForbiddenError, NotFoundError } from "../errors/httpErrors";
+import { ForbiddenError } from "../errors/httpErrors";
 
 function checkRole(ruolo: Ruolo | undefined, role: Ruolo) {
   const roleHierarchy: Record<Ruolo, number> = {
@@ -18,45 +17,31 @@ function checkRole(ruolo: Ruolo | undefined, role: Ruolo) {
   }
 }
 
-async function resolveRuoloCasa(
+async function verifyCasa(
   req: FastifyRequest,
 ): Promise<Ruolo | undefined> {
-  if (req.user?.ruoloCasa) {
+  const tokenCasa = req.user?.idCasa ?? null;
+  const pathParams = req.params as Record<string, unknown> | undefined;
+  const pathCasa = pathParams && typeof pathParams.idCasa === "string" ? pathParams.idCasa : undefined;
+
+  if (pathCasa === undefined) {
     return req.user.ruoloCasa;
   }
 
-  const params = req.params as { idCasa?: string } | undefined;
-  const idCasa = params?.idCasa;
-
-  if (!req.user?.idUtente || !idCasa) {
-    return undefined;
+  if (!tokenCasa) {
+    throw new ForbiddenError("L'utente non ha una casa selezionata nel token.");
   }
 
-  const membro = await prisma.membroCasa.findFirst({
-    where: { idCasa, idUtente: req.user.idUtente },
-    select: { ruolo: true },
-  });
-
-  if (!membro) {
-    const casa = await prisma.casa.findUnique({
-      where: { id: idCasa },
-      select: { id: true },
-    });
-
-    if (!casa) {
-      throw new NotFoundError("Casa non trovata");
-    }
-
-    return undefined;
+  if (tokenCasa !== pathCasa) {
+    throw new ForbiddenError("Accesso alla casa non autorizzato.");
   }
 
-  req.user.ruoloCasa = membro.ruolo;
-  return membro.ruolo;
+  return req.user.ruoloCasa;
 }
 
 export function requireRole(role: Ruolo) {
   return async (req: FastifyRequest) => {
-    const ruoloCasa = await resolveRuoloCasa(req);
+    const ruoloCasa = await verifyCasa(req);
     checkRole(ruoloCasa, role);
   };
 }
