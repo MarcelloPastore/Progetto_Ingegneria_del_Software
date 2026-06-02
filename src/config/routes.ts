@@ -223,7 +223,11 @@ export function casaRoutes(app: FastifyInstance) {
    * @version 1.0.0
    * @author Lorenzo Tedino
    */
-  app.post<{ Body: CreaCasaDto }>("/case", casaController.creaCasa);
+  app.post<{ Body: CreaCasaDto }>(
+    "/case",
+    { preHandler: requireRole(Ruolo.Inquilino) },
+    casaController.creaCasa
+  );
   /**
    * @api  GetCase
    * @route GET /case
@@ -235,7 +239,11 @@ export function casaRoutes(app: FastifyInstance) {
    * @version 1.0.0
    * @author Lorenzo Tedino
    */
-  app.get("/case", casaController.getCase);
+  app.get(
+    "/case",
+    { preHandler: requireRole(Ruolo.Inquilino) },
+    casaController.getCase
+  );
   /**
    * @api  GetCasa
    * @route GET /case/:idCasa
@@ -247,7 +255,11 @@ export function casaRoutes(app: FastifyInstance) {
    * @version 1.0.0
    * @author Lorenzo Tedino
    */
-  app.get<{ Params: CasaParams }>("/case/:idCasa", casaController.getCasa);
+  app.get<{ Params: CasaParams }>(
+    "/case/:idCasa",
+    { preHandler: requireRole(Ruolo.Inquilino) },
+    casaController.getCasa
+  );
   /**
    * @api  ModificaCasa
    * @route PUT /case/:idCasa
@@ -291,6 +303,7 @@ export function casaRoutes(app: FastifyInstance) {
    */
   app.get<{ Params: CasaParams }>(
     "/case/:idCasa/inquilini",
+    { preHandler: requireRole(Ruolo.Inquilino) },
     casaController.getAllInquilini,
   );
   /**
@@ -371,6 +384,22 @@ export function casaRoutes(app: FastifyInstance) {
     "/case/:idCasa/invite-link",
     { preHandler: requireRole(Ruolo.HomeAdmin) },
     casaController.generaLink,
+  );
+  /**
+   * @api SelectCasa
+   * @route POST /case/:idCasa/select
+   *
+   * @summary Cambia la casa attiva dell'utente e aggiorna il token con idCasa e ruolo.
+   *
+   * @version 1.0.0
+   * @author Mauro Cavasinni
+   */
+  app.post<{ Params: CasaParams }>(
+    "/case/:idCasa/select",
+    {
+      config: { rateLimit: { max: 1, timeWindow: "1 minute" } },
+    },
+    casaController.selectCasa,
   );
 }
 
