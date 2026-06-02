@@ -23,6 +23,8 @@ import {
   SpesaParams,
   TurnoParams,
   ProblemaParams,
+  ScadenzaParams,
+  UserParams,
 } from "../types/params";
 import {
   AssegnaTurnoDto,
@@ -53,6 +55,19 @@ import {
 } from "../dto/ProblemaDto";
 import { RegisterData, PublicUser } from "../dto/auth.dto";
 import { AssegnatarioInfoDto } from "../dto/AssegnatarioDto";
+import {
+  AggiornaRicorrenzaDto,
+  CreaScadenzaDto,
+  ModificaScadenzaDto,
+  ScadenzaResponseDto,
+} from "../dto/ScadenzaDto";
+import {
+  ModificaUsernameDto,
+  ModificaEmailDto,
+  ModificaPasswordDto,
+  UserProfileDto,
+} from "../dto/AccountDto";
+
 /* eslint-enable @typescript-eslint/no-unused-vars */
 
 // ─── Health ───────────────────────────────────────────────────────────────────
@@ -318,6 +333,7 @@ export function casaRoutes(app: FastifyInstance) {
    */
   app.get<{ Params: InquilinoParams }>(
     "/case/:idCasa/inquilini/:idInquilino",
+    { preHandler: requireRole(Ruolo.Inquilino) },
     casaController.getInquilino,
   );
   /**
@@ -936,3 +952,204 @@ export function problemiRoutes(app: FastifyInstance) {
     problemaController.aggiornaPriorita,
   );
 }
+
+// ─── Scadenze ─────────────────────────────────────────────────────────────────
+//
+// Controller: ScadenzaController
+// Boundary: ScadenzeScreens, DashboardScreen
+
+export function scadenzeRoutes(app: FastifyInstance) {
+  const scadenzaService = new ScadenzaService();
+  const scadenzaController = new ScadenzaController(scadenzaService);
+  app.addHook("onRequest", authMiddleware);
+
+  /**
+   * @api  GetScadenze
+   * @route GET /case/:idCasa/scadenze
+   *
+   * @summary Ottiene la lista delle scadenze della casa.
+   *
+   * @see {@link ScadenzaResponseDto}
+   *
+   * @version 1.0.0
+   * @author Mauro Cavasinni
+   */
+  app.get<{ Params: CasaParams }>(
+      "/case/:idCasa/scadenze",
+      scadenzaController.getScadenze,
+  );
+
+  /**
+   * @api  GetScadenza
+   * @route GET /case/:idCasa/scadenze/:idScadenza
+   *
+   * @summary Ottiene i dettagli di una singola scadenza.
+   *
+   * @see {@link ScadenzaResponseDto}
+   *
+   * @version 1.0.0
+   * @author Mauro Cavasinni
+   */
+  app.get<{ Params: ScadenzaParams }>(
+      "/case/:idCasa/scadenze/:idScadenza",
+      scadenzaController.getScadenza,
+  );
+
+  /**
+   * @api  CreaScadenza
+   * @route POST /case/:idCasa/scadenze
+   *
+   * @summary Crea una nuova scadenza nella casa.
+   *
+   * @see {@link CreaScadenzaDto}
+   * @see {@link ScadenzaResponseDto}
+   *
+   * @version 1.0.0
+   * @author Mauro Cavasinni
+   */
+  app.post<{ Params: CasaParams; Body: CreaScadenzaDto }>(
+      "/case/:idCasa/scadenze",
+      scadenzaController.creaScadenza,
+  );
+
+  /**
+   * @api  ModificaScadenza
+   * @route PUT /case/:idCasa/scadenze/:idScadenza
+   *
+   * @summary Modifica una scadenza esistente.
+   *
+   * @see {@link ModificaScadenzaDto}
+   * @see {@link ScadenzaResponseDto}
+   *
+   * @version 1.0.0
+   * @author Mauro Cavasinni
+   */
+  app.put<{ Params: ScadenzaParams; Body: ModificaScadenzaDto }>(
+      "/case/:idCasa/scadenze/:idScadenza",
+      scadenzaController.modificaScadenza,
+  );
+
+  /**
+   * @api  EliminaScadenza
+   * @route DELETE /case/:idCasa/scadenze/:idScadenza
+   *
+   * @summary Elimina una scadenza. Solo per HomeAdmin.
+   *
+   * @version 1.0.0
+   * @author Mauro Cavasinni
+   */
+  app.delete<{ Params: ScadenzaParams }>(
+      "/case/:idCasa/scadenze/:idScadenza",
+      { preHandler: requireRole(Ruolo.HomeAdmin) },
+      scadenzaController.eliminaScadenza,
+  );
+
+  /**
+   * @api  AggiornaRicorrenza
+   * @route PATCH /case/:idCasa/scadenze/:idScadenza/ricorrenza
+   *
+   * @summary Attiva o disattiva la ricorrenza di una scadenza. Solo per HomeAdmin.
+   *
+   * @see {@link AggiornaRicorrenzaDto}
+   * @see {@link ScadenzaResponseDto}
+   *
+   * @version 1.0.0
+   * @author Mauro Cavasinni
+   */
+  app.patch<{ Params: ScadenzaParams; Body: AggiornaRicorrenzaDto }>(
+      "/case/:idCasa/scadenze/:idScadenza/ricorrenza",
+      { preHandler: requireRole(Ruolo.HomeAdmin) },
+      scadenzaController.aggiornaRicorrenza,
+  );
+}
+
+
+// ─── Account ──────────────────────────────────────────────────────────────────
+//
+// Controller: AccountController
+// Boundary: AccountScreens
+
+/*
+export function accountRoutes(app: FastifyInstance) {
+  const accountService = new AccountService();
+  const accountController = new AccountController(accountService);
+  app.addHook("onRequest", authMiddleware);
+
+  /!**
+   * @api  GetProfilo
+   * @route GET /account
+   *
+   * @summary Ottiene il profilo dell'utente autenticato.
+   *
+   * @see {@link UserProfileDto}
+   *
+   * @version 1.0.0
+   * @author Mauro Cavasinni
+   *!/
+  app.get(
+      "/account",
+      accountController.getProfilo,
+  );
+
+  /!**
+   * @api  ModificaUsername
+   * @route PATCH /account/username
+   *
+   * @summary Modifica lo username dell'utente autenticato.
+   *
+   * @see {@link ModificaUsernameDto}
+   *
+   * @version 1.0.0
+   * @author Mauro Cavasinni
+   *!/
+  app.patch<{ Body: ModificaUsernameDto }>(
+      "/account/username",
+      accountController.modificaUsername,
+  );
+
+  /!**
+   * @api  ModificaEmail
+   * @route PATCH /account/email
+   *
+   * @summary Modifica l'email dell'utente autenticato. Richiede verifica del nuovo indirizzo.
+   *
+   * @see {@link ModificaEmailDto}
+   *
+   * @version 1.0.0
+   * @author Mauro Cavasinni
+   *!/
+  app.patch<{ Body: ModificaEmailDto }>(
+      "/account/email",
+      accountController.modificaEmail,
+  );
+
+  /!**
+   * @api  ModificaPassword
+   * @route PATCH /account/password
+   *
+   * @summary Modifica la password dell'utente autenticato. Invalida le altre sessioni.
+   *
+   * @see {@link ModificaPasswordDto}
+   *
+   * @version 1.0.0
+   * @author Mauro Cavasinni
+   *!/
+  app.patch<{ Body: ModificaPasswordDto }>(
+      "/account/password",
+      accountController.modificaPassword,
+  );
+
+  /!**
+   * @api  EliminaAccount
+   * @route DELETE /account
+   *
+   * @summary Elimina l'account dell'utente autenticato e anonimizza i dati personali.
+   *
+   * @version 1.0.0
+   * @author Mauro Cavasinni
+   *!/
+  app.delete(
+      "/account",
+      accountController.eliminaAccount,
+  );
+}*/
