@@ -9,11 +9,13 @@ import { CasaController } from "../controller/CasaController";
 import { SpesaController } from "../controller/SpesaController";
 import { ProblemaController } from "../controller/ProblemaController";
 import { TurnoController } from "../controller/TurnoController";
+import { ScadenzaController } from "../controller/ScadenzaController";
 
 import { CasaService } from "../service/CasaService";
 import { SpesaService } from "../service/SpesaService";
 import { ProblemaService } from "../service/ProblemaService";
 import { TurnoService } from "../service/TurnoService";
+import { ScadenzaService } from "../service/ScadenzaService";
 
 /* eslint-disable @typescript-eslint/no-unused-vars -- usati nella documentazione */
 import {
@@ -240,7 +242,10 @@ export function casaRoutes(app: FastifyInstance) {
    */
   app.post<{ Body: CreaCasaDto }>(
     "/case",
-    casaController.creaCasa
+    {
+      config: { rateLimit: { max: 1, timeWindow: "1 minute" } },
+    },
+    casaController.creaCasa,
   );
   /**
    * @api  GetCase
@@ -256,7 +261,7 @@ export function casaRoutes(app: FastifyInstance) {
   app.get(
     "/case",
     { preHandler: requireRole(Ruolo.Inquilino) },
-    casaController.getCase
+    casaController.getCase,
   );
   /**
    * @api  GetCasa
@@ -272,7 +277,7 @@ export function casaRoutes(app: FastifyInstance) {
   app.get<{ Params: CasaParams }>(
     "/case/:idCasa",
     { preHandler: requireRole(Ruolo.Inquilino) },
-    casaController.getCasa
+    casaController.getCasa,
   );
   /**
    * @api  ModificaCasa
@@ -340,7 +345,7 @@ export function casaRoutes(app: FastifyInstance) {
    * @api  AggiungiInquilino
    * @route POST /case/:idCasa/inquilini
    *
-   * @summary Aggiunge un inquilino tramite link di invito.
+   * @summary Aggiunge il chiamante a una casa tramite link di invito.
    *
    * @see {@link AggiungiInquilinoDto}
    * @see {@link AssegnatarioInfoDto}
@@ -350,6 +355,9 @@ export function casaRoutes(app: FastifyInstance) {
    */
   app.post<{ Params: CasaParams; Body: AggiungiInquilinoDto }>(
     "/case/:idCasa/inquilini",
+    {
+      config: { rateLimit: { max: 1, timeWindow: "1 minute" } },
+    },
     casaController.aggiungiInquilino,
   );
   /**
@@ -441,6 +449,7 @@ export function speseRoutes(app: FastifyInstance) {
    */
   app.get<{ Params: CasaParams }>(
     "/case/:idCasa/spese",
+    { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.getAllSpese,
   );
   /**
@@ -456,6 +465,7 @@ export function speseRoutes(app: FastifyInstance) {
    */
   app.get<{ Params: SpesaParams }>(
     "/case/:idCasa/spese/:idSpesa",
+    { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.getSpesa,
   );
   /**
@@ -472,6 +482,7 @@ export function speseRoutes(app: FastifyInstance) {
    */
   app.post<{ Params: CasaParams; Body: CreaSpesaDto }>(
     "/case/:idCasa/spese",
+    { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.addSpesa,
   );
   /**
@@ -488,6 +499,7 @@ export function speseRoutes(app: FastifyInstance) {
    */
   app.put<{ Params: SpesaParams; Body: ModificaSpesaDto }>(
     "/case/:idCasa/spese/:idSpesa",
+    { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.updateSpesa,
   );
   /**
@@ -501,6 +513,7 @@ export function speseRoutes(app: FastifyInstance) {
    */
   app.delete<{ Params: SpesaParams }>(
     "/case/:idCasa/spese/:idSpesa",
+    { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.deleteSpesa,
   );
   /**
@@ -514,6 +527,7 @@ export function speseRoutes(app: FastifyInstance) {
    */
   app.get<{ Params: SpesaParams }>(
     "/case/:idCasa/spese/:idSpesa/quote",
+    { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.getDivisioneSpese,
   );
   /**
@@ -527,6 +541,7 @@ export function speseRoutes(app: FastifyInstance) {
    */
   app.get<{ Params: QuotaParams }>(
     "/case/:idCasa/spese/:idSpesa/quote/:idQuota",
+    { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.getQuota,
   );
   /**
@@ -540,6 +555,7 @@ export function speseRoutes(app: FastifyInstance) {
    */
   app.post<{ Params: QuotaParams }>(
     "/case/:idCasa/spese/:idSpesa/quote/:idQuota/paga",
+    { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.pagaQuota,
   );
   /**
@@ -555,6 +571,7 @@ export function speseRoutes(app: FastifyInstance) {
    */
   app.post<{ Params: CasaParams; Body: PareggiaContiDto }>(
     "/case/:idCasa/spese/pareggia",
+    { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.pareggiaConti,
   );
   /**
@@ -568,6 +585,7 @@ export function speseRoutes(app: FastifyInstance) {
    */
   app.get<{ Params: CasaParams }>(
     "/case/:idCasa/saldo",
+    { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.getSaldo,
   );
   /**
@@ -581,6 +599,7 @@ export function speseRoutes(app: FastifyInstance) {
    */
   app.get<{ Params: CasaParams }>(
     "/case/:idCasa/credito",
+    { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.getCreditoTot,
   );
   /**
@@ -594,6 +613,7 @@ export function speseRoutes(app: FastifyInstance) {
    */
   app.get<{ Params: CasaParams }>(
     "/case/:idCasa/debito",
+    { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.getDebitoTot,
   );
   /**
@@ -607,6 +627,7 @@ export function speseRoutes(app: FastifyInstance) {
    */
   app.get<{ Params: InquilinoParams }>(
     "/case/:idCasa/credito/:idInquilino",
+    { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.getCreditoVersoUtente,
   );
   /**
@@ -620,6 +641,7 @@ export function speseRoutes(app: FastifyInstance) {
    */
   app.get<{ Params: InquilinoParams }>(
     "/case/:idCasa/debito/:idInquilino",
+    { preHandler: requireRole(Ruolo.Inquilino) },
     speseController.getDebitoVersoUtente,
   );
 }
@@ -647,6 +669,7 @@ export function turniRoutes(app: FastifyInstance) {
    */
   app.get<{ Params: CasaParams }>(
     "/case/:idCasa/turni",
+    { preHandler: requireRole(Ruolo.Inquilino) },
     turnoController.getAllTurni,
   );
   /**
@@ -662,6 +685,7 @@ export function turniRoutes(app: FastifyInstance) {
    */
   app.get<{ Params: CasaParams }>(
     "/case/:idCasa/turni/oggi",
+    { preHandler: requireRole(Ruolo.Inquilino) },
     turnoController.getTurniOdierni,
   );
   /**
@@ -678,6 +702,7 @@ export function turniRoutes(app: FastifyInstance) {
    */
   app.post<{ Params: CasaParams; Body: CreaTurnoDto }>(
     "/case/:idCasa/turni",
+    { preHandler: requireRole(Ruolo.Inquilino) },
     turnoController.creaTurno,
   );
   /**
@@ -693,6 +718,7 @@ export function turniRoutes(app: FastifyInstance) {
    */
   app.get<{ Params: TurnoParams }>(
     "/case/:idCasa/turni/:idTurno",
+    { preHandler: requireRole(Ruolo.Inquilino) },
     turnoController.getTurno,
   );
   /**
@@ -709,6 +735,7 @@ export function turniRoutes(app: FastifyInstance) {
    */
   app.put<{ Params: TurnoParams; Body: ModificaTurnoDto }>(
     "/case/:idCasa/turni/:idTurno",
+    { preHandler: requireRole(Ruolo.Inquilino) },
     turnoController.modificaTurno,
   );
   /**
@@ -722,6 +749,7 @@ export function turniRoutes(app: FastifyInstance) {
    */
   app.delete<{ Params: TurnoParams }>(
     "/case/:idCasa/turni/:idTurno",
+    { preHandler: requireRole(Ruolo.Inquilino) },
     turnoController.eliminaTurno,
   );
   /**
@@ -737,6 +765,7 @@ export function turniRoutes(app: FastifyInstance) {
    */
   app.put<{ Params: TurnoParams }>(
     "/case/:idCasa/turni/:idTurno/autoassegna",
+    { preHandler: requireRole(Ruolo.Inquilino) },
     turnoController.autoassegnaTurno,
   );
   /**
@@ -783,6 +812,7 @@ export function turniRoutes(app: FastifyInstance) {
    */
   app.post<{ Params: TurnoParams }>(
     "/case/:idCasa/turni/:idTurno/completa",
+    { preHandler: requireRole(Ruolo.Inquilino) },
     turnoController.completaTurno,
   );
   /**
@@ -798,6 +828,7 @@ export function turniRoutes(app: FastifyInstance) {
    */
   app.get<{ Params: CasaParams }>(
     "/case/:idCasa/turni/salute-casa",
+    { preHandler: requireRole(Ruolo.Inquilino) },
     turnoController.getGiorniDallUltimaPulizia,
   );
 }
@@ -825,6 +856,7 @@ export function problemiRoutes(app: FastifyInstance) {
    */
   app.get<{ Params: CasaParams }>(
     "/case/:idCasa/problemi",
+    { preHandler: requireRole(Ruolo.Inquilino) },
     problemaController.getAllProblemi,
   );
   /**
@@ -840,6 +872,7 @@ export function problemiRoutes(app: FastifyInstance) {
    */
   app.get<{ Params: CasaParams }>(
     "/case/:idCasa/problemi/non-risolti",
+    { preHandler: requireRole(Ruolo.Inquilino) },
     problemaController.getProblemiNonRisolti,
   );
   /**
@@ -855,6 +888,7 @@ export function problemiRoutes(app: FastifyInstance) {
    */
   app.get<{ Params: ProblemaParams }>(
     "/case/:idCasa/problemi/:idProblema",
+    { preHandler: requireRole(Ruolo.Inquilino) },
     problemaController.getProblema,
   );
   /**
@@ -871,6 +905,7 @@ export function problemiRoutes(app: FastifyInstance) {
    */
   app.post<{ Params: CasaParams; Body: CreaProblemaDto }>(
     "/case/:idCasa/problemi",
+    { preHandler: requireRole(Ruolo.Inquilino) },
     problemaController.segnalaProblema,
   );
   /**
@@ -900,6 +935,7 @@ export function problemiRoutes(app: FastifyInstance) {
    */
   app.put<{ Params: ProblemaParams }>(
     "/case/:idCasa/problemi/:idProblema/autoassegna",
+    { preHandler: requireRole(Ruolo.Inquilino) },
     problemaController.autoassegnaProblema,
   );
   /**
@@ -933,6 +969,7 @@ export function problemiRoutes(app: FastifyInstance) {
    */
   app.patch<{ Params: ProblemaParams; Body: AggiornaStatoDto }>(
     "/case/:idCasa/problemi/:idProblema/stato",
+    { preHandler: requireRole(Ruolo.Inquilino) },
     problemaController.aggiornaStato,
   );
   /**
@@ -949,6 +986,7 @@ export function problemiRoutes(app: FastifyInstance) {
    */
   app.patch<{ Params: ProblemaParams; Body: AggiornaPrioritaDto }>(
     "/case/:idCasa/problemi/:idProblema/priorita",
+    { preHandler: requireRole(Ruolo.Inquilino) },
     problemaController.aggiornaPriorita,
   );
 }
@@ -975,10 +1013,10 @@ export function scadenzeRoutes(app: FastifyInstance) {
    * @author Mauro Cavasinni
    */
   app.get<{ Params: CasaParams }>(
-      "/case/:idCasa/scadenze",
-      scadenzaController.getScadenze,
+    "/case/:idCasa/scadenze",
+    { preHandler: requireRole(Ruolo.Inquilino) },
+    scadenzaController.getScadenze,
   );
-
   /**
    * @api  GetScadenza
    * @route GET /case/:idCasa/scadenze/:idScadenza
@@ -991,10 +1029,10 @@ export function scadenzeRoutes(app: FastifyInstance) {
    * @author Mauro Cavasinni
    */
   app.get<{ Params: ScadenzaParams }>(
-      "/case/:idCasa/scadenze/:idScadenza",
-      scadenzaController.getScadenza,
+    "/case/:idCasa/scadenze/:idScadenza",
+    { preHandler: requireRole(Ruolo.Inquilino) },
+    scadenzaController.getScadenza,
   );
-
   /**
    * @api  CreaScadenza
    * @route POST /case/:idCasa/scadenze
@@ -1008,10 +1046,10 @@ export function scadenzeRoutes(app: FastifyInstance) {
    * @author Mauro Cavasinni
    */
   app.post<{ Params: CasaParams; Body: CreaScadenzaDto }>(
-      "/case/:idCasa/scadenze",
-      scadenzaController.creaScadenza,
+    "/case/:idCasa/scadenze",
+    { preHandler: requireRole(Ruolo.Inquilino) },
+    scadenzaController.creaScadenza,
   );
-
   /**
    * @api  ModificaScadenza
    * @route PUT /case/:idCasa/scadenze/:idScadenza
@@ -1025,10 +1063,10 @@ export function scadenzeRoutes(app: FastifyInstance) {
    * @author Mauro Cavasinni
    */
   app.put<{ Params: ScadenzaParams; Body: ModificaScadenzaDto }>(
-      "/case/:idCasa/scadenze/:idScadenza",
-      scadenzaController.modificaScadenza,
+    "/case/:idCasa/scadenze/:idScadenza",
+    { preHandler: requireRole(Ruolo.Inquilino) },
+    scadenzaController.modificaScadenza,
   );
-
   /**
    * @api  EliminaScadenza
    * @route DELETE /case/:idCasa/scadenze/:idScadenza
@@ -1039,9 +1077,9 @@ export function scadenzeRoutes(app: FastifyInstance) {
    * @author Mauro Cavasinni
    */
   app.delete<{ Params: ScadenzaParams }>(
-      "/case/:idCasa/scadenze/:idScadenza",
-      { preHandler: requireRole(Ruolo.HomeAdmin) },
-      scadenzaController.eliminaScadenza,
+    "/case/:idCasa/scadenze/:idScadenza",
+    { preHandler: requireRole(Ruolo.HomeAdmin) },
+    scadenzaController.eliminaScadenza,
   );
 
   /**
@@ -1057,12 +1095,11 @@ export function scadenzeRoutes(app: FastifyInstance) {
    * @author Mauro Cavasinni
    */
   app.patch<{ Params: ScadenzaParams; Body: AggiornaRicorrenzaDto }>(
-      "/case/:idCasa/scadenze/:idScadenza/ricorrenza",
-      { preHandler: requireRole(Ruolo.HomeAdmin) },
-      scadenzaController.aggiornaRicorrenza,
+    "/case/:idCasa/scadenze/:idScadenza/ricorrenza",
+    { preHandler: requireRole(Ruolo.HomeAdmin) },
+    scadenzaController.aggiornaRicorrenza,
   );
 }
-
 
 // ─── Account ──────────────────────────────────────────────────────────────────
 //
@@ -1084,7 +1121,7 @@ export function accountRoutes(app: FastifyInstance) {
    * @see {@link UserProfileDto}
    *
    * @version 1.0.0
-   * @author Mauro Cavasinni
+   * @author Lorenzo Tedino
    *!/
   app.get(
       "/account",
@@ -1100,7 +1137,7 @@ export function accountRoutes(app: FastifyInstance) {
    * @see {@link ModificaUsernameDto}
    *
    * @version 1.0.0
-   * @author Mauro Cavasinni
+   * @author Lorenzo Tedino
    *!/
   app.patch<{ Body: ModificaUsernameDto }>(
       "/account/username",
@@ -1116,7 +1153,7 @@ export function accountRoutes(app: FastifyInstance) {
    * @see {@link ModificaEmailDto}
    *
    * @version 1.0.0
-   * @author Mauro Cavasinni
+   * @author Lorenzo Tedino
    *!/
   app.patch<{ Body: ModificaEmailDto }>(
       "/account/email",
@@ -1132,7 +1169,7 @@ export function accountRoutes(app: FastifyInstance) {
    * @see {@link ModificaPasswordDto}
    *
    * @version 1.0.0
-   * @author Mauro Cavasinni
+   * @author Lorenzo Tedino
    *!/
   app.patch<{ Body: ModificaPasswordDto }>(
       "/account/password",
@@ -1146,7 +1183,7 @@ export function accountRoutes(app: FastifyInstance) {
    * @summary Elimina l'account dell'utente autenticato e anonimizza i dati personali.
    *
    * @version 1.0.0
-   * @author Mauro Cavasinni
+   * @author Lorenzo Tedino
    *!/
   app.delete(
       "/account",

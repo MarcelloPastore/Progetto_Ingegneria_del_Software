@@ -6,10 +6,10 @@ export const CreaScadenzaDto = z.object({
   dataScadenza: z.coerce.date(),
   isRicorrente: z.boolean().optional().default(false),
   cadenzaGiorni: z
-      .number()
-      .int()
-      .min(1, "La cadenza deve essere almeno di 1 giorno.")
-      .optional(),
+    .number()
+    .int()
+    .min(1, "La cadenza deve essere almeno di 1 giorno.")
+    .optional(),
 });
 export type CreaScadenzaDto = z.infer<typeof CreaScadenzaDto>;
 
@@ -23,10 +23,10 @@ export type ModificaScadenzaDto = z.infer<typeof ModificaScadenzaDto>;
 export const AggiornaRicorrenzaDto = z.object({
   isRicorrente: z.boolean(),
   cadenzaGiorni: z
-      .number()
-      .int()
-      .min(1, "La cadenza deve essere almeno di 1 giorno.")
-      .optional(),
+    .number()
+    .int()
+    .min(1, "La cadenza deve essere almeno di 1 giorno.")
+    .optional(),
 });
 export type AggiornaRicorrenzaDto = z.infer<typeof AggiornaRicorrenzaDto>;
 
