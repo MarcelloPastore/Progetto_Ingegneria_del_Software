@@ -26,7 +26,6 @@ import {
   TurnoParams,
   ProblemaParams,
   ScadenzaParams,
-  UserParams,
 } from "../types/params";
 import {
   AssegnaTurnoDto,
