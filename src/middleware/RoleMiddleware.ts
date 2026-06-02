@@ -1,6 +1,7 @@
 import { Ruolo } from "@prisma/client";
-import { FastifyRequest } from "fastify";
+import { FastifyRequest, FastifyReply } from "fastify";
 import { ForbiddenError } from "../errors/httpErrors";
+import { sendErrorReply } from "../utils/errorReply";
 
 function checkRole(ruolo: Ruolo | undefined, role: Ruolo) {
   const roleHierarchy: Record<Ruolo, number> = {
@@ -41,8 +42,12 @@ function verifyCasa(req: FastifyRequest): Ruolo | undefined {
 }
 
 export function requireRole(role: Ruolo) {
-  return (req: FastifyRequest) => {
-    const ruoloCasa = verifyCasa(req);
-    checkRole(ruoloCasa, role);
+  return async (req: FastifyRequest, rep: FastifyReply) => {
+    try {
+      const ruoloCasa = verifyCasa(req);
+      checkRole(ruoloCasa, role);
+    } catch (err) {
+      await sendErrorReply(rep, err);
+    }
   };
 }
