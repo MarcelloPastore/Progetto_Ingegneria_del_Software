@@ -2,19 +2,13 @@ import { Ruolo } from "@prisma/client";
 import { z } from "zod";
 import { AssegnatarioInfoSchema } from "./AssegnatarioDto";
 
-const isoDateTimeString = z
-  .string()
-  .refine((value) => !Number.isNaN(Date.parse(value)), {
-    message: "Data/ora non valida",
-  });
-
-const ruoloSchema = z.enum([Ruolo.SysAdmin, Ruolo.HomeAdmin, Ruolo.Inquilino]);
+const ruoloSchema = z.enum([Ruolo.HomeAdmin, Ruolo.Inquilino]);
 
 export const CreaCasaSchema = z.object({
   nome: z.string().min(1, "Campo obbligatorio"),
-  indirizzo: z.string().min(1, "Campo obbligatorio"),
-  citta: z.string().min(1, "Campo obbligatorio"),
-  tipoCasa: z.string().min(1, "Campo obbligatorio"),
+  indirizzo: z.string().optional(),
+  citta: z.string().optional(),
+  tipoCasa: z.string().optional(),
 });
 export type CreaCasaDto = z.infer<typeof CreaCasaSchema>;
 
@@ -35,18 +29,18 @@ export const InquilinoSchema = z.object({
   id: z.string(),
   utente: AssegnatarioInfoSchema,
   ruolo: ruoloSchema,
-  dataIngresso: isoDateTimeString,
+  dataIngresso: z.coerce.date(),
 });
 export type InquilinoDto = z.infer<typeof InquilinoSchema>;
 
 export const CasaSummarySchema = z.object({
   id: z.string(),
   nome: z.string(),
-  indirizzo: z.string(),
-  citta: z.string(),
-  tipoCasa: z.string(),
-  inviteLink: z.string(),
-  dataCreazione: isoDateTimeString,
+  indirizzo: z.string().nullable(),
+  citta: z.string().nullable(),
+  tipoCasa: z.string().nullable(),
+  inviteLink: z.string().nullable(),
+  dataCreazione: z.coerce.date(),
   creator: AssegnatarioInfoSchema,
   ruoloUtente: ruoloSchema,
   membriTotali: z.number().int().nonnegative(),
