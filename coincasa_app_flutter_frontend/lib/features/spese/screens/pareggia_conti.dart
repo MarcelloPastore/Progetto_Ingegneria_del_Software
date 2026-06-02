@@ -134,6 +134,7 @@ class _PareggiaContiScreenState extends ConsumerState<PareggiaContiScreen> {
                 );
               },
             ),
+            const _PareggiaBottomButton(),
           ],
         ),
       ),
@@ -159,7 +160,7 @@ class _PareggiaContent extends StatelessWidget {
         AppSizes.p16,
         AppSizes.p24,
         AppSizes.p16,
-        AppSizes.p32,
+        112,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -218,61 +219,47 @@ class _PareggiaContent extends StatelessWidget {
             submittingKey: submittingKey,
             onMarkTransfer: onMarkTransfer,
           ),
-          const SizedBox(height: AppSizes.p18),
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: DecoratedBox(
-              decoration: ShapeDecoration(
-                gradient: LinearGradient(
-                  begin: const Alignment(0.50, 0.00),
-                  end: const Alignment(0.50, 1.00),
-                  colors: [
-                    Colors.white.withValues(alpha: 0.20),
-                    Colors.white.withValues(alpha: 0),
-                  ],
-                ),
-                shape: RoundedRectangleBorder(
-                  side: const BorderSide(
-                    width: 2,
-                    strokeAlign: BorderSide.strokeAlignOutside,
-                    color: Color(0xFF4695EA),
-                  ),
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                shadows: const [
-                  BoxShadow(
-                    color: Color(0x3F000000),
-                    blurRadius: 4,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: OutlinedButton(
-                onPressed: () => Navigator.of(
-                  context,
-                ).pushReplacementNamed(ListaSpeseAdminScreen.routeName),
-                style: OutlinedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  side: BorderSide.none,
-                  padding: EdgeInsets.zero,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppSizes.radius15),
-                  ),
-                ),
-                child: const Text(
-                  'Torna alle spese',
-                  style: TextStyle(
-                    color: Color(0xFF4695EA),
-                    fontSize: 20,
-                    fontFamily: 'Inter',
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PareggiaBottomButton extends StatelessWidget {
+  const _PareggiaBottomButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      left: AppSizes.p16,
+      right: AppSizes.p16,
+      bottom: AppSizes.p18,
+      child: SizedBox(
+        height: 52,
+        child: ElevatedButton(
+          onPressed: () => Navigator.of(
+            context,
+          ).pushReplacementNamed(ListaSpeseAdminScreen.routeName),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF1458D4),
+            foregroundColor: Colors.white,
+            elevation: 4,
+            shadowColor: Colors.black.withValues(alpha: 0.35),
+            shape: RoundedRectangleBorder(
+              side: const BorderSide(width: 2, color: Color(0xFF77A7F5)),
+              borderRadius: BorderRadius.circular(AppSizes.radius15),
             ),
           ),
-        ],
+          child: const Text(
+            'Torna alle spese',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontFamily: 'Inter',
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
       ),
     );
   }

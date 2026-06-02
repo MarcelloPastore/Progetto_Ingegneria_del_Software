@@ -874,26 +874,25 @@ class _DeleteTurnoButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const deleteColor = Color(0xFFF14A4A);
+
     return FilledButton(
       onPressed: onPressed,
       style: FilledButton.styleFrom(
-        backgroundColor: confirmMode
-            ? AppColors.errorStrong.withValues(alpha: 0.24)
-            : const Color(0xFF99000D),
-        foregroundColor: AppColors.errorStrong,
+        backgroundColor: const Color(0xFF151127),
+        foregroundColor: deleteColor,
         padding: const EdgeInsets.symmetric(vertical: AppSizes.p14),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(21),
-          side: confirmMode
-              ? const BorderSide(color: AppColors.errorStrong, width: 2.2)
-              : BorderSide.none,
+          side: const BorderSide(color: deleteColor, width: 2.6),
         ),
-        elevation: confirmMode ? 0 : AppSizes.p6,
+        elevation: AppSizes.p6,
+        shadowColor: deleteColor.withValues(alpha: 0.38),
       ),
       child: Text(
         confirmMode ? 'Conferma eliminazione' : 'Elimina turno',
         style: AppTextStyles.buttonCompact.copyWith(
-          color: AppColors.errorStrong,
+          color: deleteColor,
           fontSize: 19,
           fontWeight: FontWeight.w900,
         ),

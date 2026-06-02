@@ -24,7 +24,7 @@ Future<void> showTurniScreenPrincipaleDialog(BuildContext context) {
             horizontal: AppSizes.p24,
             vertical: AppSizes.p12,
           ),
-          child: _TurniPopupPanel(useSafeArea: true),
+          child: TurniPopupPanel(useSafeArea: true),
         ),
       ),
     ),
@@ -121,21 +121,28 @@ class TurniScreenPrincipale extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Scaffold(
       backgroundColor: AppColors.transparent,
-      body: Center(child: _TurniPopupPanel(useSafeArea: true)),
+      body: Center(child: TurniPopupPanel(useSafeArea: true)),
     );
   }
 }
 
-class _TurniPopupPanel extends ConsumerStatefulWidget {
-  const _TurniPopupPanel({required this.useSafeArea});
+class TurniPopupPanel extends ConsumerStatefulWidget {
+  const TurniPopupPanel({
+    super.key,
+    required this.useSafeArea,
+    this.showTabs = true,
+    this.showFrame = true,
+  });
 
   final bool useSafeArea;
+  final bool showTabs;
+  final bool showFrame;
 
   @override
-  ConsumerState<_TurniPopupPanel> createState() => _TurniPopupPanelState();
+  ConsumerState<TurniPopupPanel> createState() => _TurniPopupPanelState();
 }
 
-class _TurniPopupPanelState extends ConsumerState<_TurniPopupPanel> {
+class _TurniPopupPanelState extends ConsumerState<TurniPopupPanel> {
   static const Map<String, int> _frequenze = {
     'Ogni giorno': 1,
     'Ogni 3 giorni': 3,
@@ -361,6 +368,8 @@ class _TurniPopupPanelState extends ConsumerState<_TurniPopupPanel> {
             setState(() => _rotazioneAutomatica = value);
           },
           onCancel: () => Navigator.of(context).pop(),
+          showTabs: widget.showTabs,
+          showFrame: widget.showFrame,
         ),
       ),
     );
@@ -395,6 +404,8 @@ class _TurnoFormPanel extends StatelessWidget {
     required this.onAssigneeSelected,
     required this.onRotazioneChanged,
     required this.onCancel,
+    required this.showTabs,
+    required this.showFrame,
   });
 
   final GlobalKey<FormState> formKey;
@@ -421,131 +432,138 @@ class _TurnoFormPanel extends StatelessWidget {
   final ValueChanged<String> onAssigneeSelected;
   final ValueChanged<bool> onRotazioneChanged;
   final VoidCallback onCancel;
+  final bool showTabs;
+  final bool showFrame;
 
   @override
   Widget build(BuildContext context) {
-    return _TurniPanelFrame(
-      backgroundColor: AppColors.surface,
-      child: Form(
-        key: formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+    final form = Form(
+      key: formKey,
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (showTabs) ...[
               const _TurniPopupTabs(),
               const SizedBox(height: AppSizes.p12),
+            ],
+            Text(
+              'Nuovo Turno',
+              style: AppTextStyles.screenTitleStrong.copyWith(
+                color: AppColors.brandPrimary,
+                fontSize: 21,
+              ),
+            ),
+            const SizedBox(height: AppSizes.p20),
+            _TaskField(controller: taskController, onChanged: onTaskChanged),
+            const SizedBox(height: AppSizes.p20),
+            _DatePreviewRow(
+              dayController: dayController,
+              monthController: monthController,
+              onDateTap: onDateTap,
+              onDateChanged: onDateChanged,
+            ),
+            const SizedBox(height: AppSizes.p20),
+            Text(
+              'Frequenza',
+              style: AppTextStyles.screenTitleStrong.copyWith(
+                color: AppColors.brandPrimary,
+                fontSize: 21,
+              ),
+            ),
+            const SizedBox(height: AppSizes.p8),
+            _FrequencyDropdown(
+              value: frequenza,
+              values: frequenze,
+              expanded: frequencyExpanded,
+              onToggle: onFrequencyToggle,
+              onChanged: onFrequencyChanged,
+            ),
+            const SizedBox(height: AppSizes.p24),
+            _AssigneeDropdown(
+              inquiliniAsync: inquiliniAsync,
+              selectedId: selectedInquilinoId,
+              expanded: assigneeExpanded,
+              rotazioneAutomatica: rotazioneAutomatica,
+              onToggle: onAssigneeToggle,
+              onSelected: onAssigneeSelected,
+              onRotazioneChanged: onRotazioneChanged,
+            ),
+            if (errorMessage != null) ...[
+              const SizedBox(height: AppSizes.p10),
               Text(
-                'Nuovo Turno',
-                style: AppTextStyles.screenTitleStrong.copyWith(
-                  color: AppColors.brandPrimary,
-                  fontSize: 21,
+                errorMessage!,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.error.copyWith(
+                  color: AppColors.errorStrong,
                 ),
               ),
-              const SizedBox(height: AppSizes.p20),
-              _TaskField(controller: taskController, onChanged: onTaskChanged),
-              const SizedBox(height: AppSizes.p20),
-              _DatePreviewRow(
-                dayController: dayController,
-                monthController: monthController,
-                onDateTap: onDateTap,
-                onDateChanged: onDateChanged,
-              ),
-              const SizedBox(height: AppSizes.p20),
-              Text(
-                'Frequenza',
-                style: AppTextStyles.screenTitleStrong.copyWith(
-                  color: AppColors.brandPrimary,
-                  fontSize: 21,
+            ],
+            const SizedBox(height: AppSizes.p22),
+            FilledButton(
+              onPressed: isSubmitting || !canSubmit ? null : onSubmit,
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.brandSecondary,
+                disabledBackgroundColor: AppColors.textMutedDark,
+                foregroundColor: AppColors.textOnDark,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
                 ),
               ),
-              const SizedBox(height: AppSizes.p8),
-              _FrequencyDropdown(
-                value: frequenza,
-                values: frequenze,
-                expanded: frequencyExpanded,
-                onToggle: onFrequencyToggle,
-                onChanged: onFrequencyChanged,
-              ),
-              const SizedBox(height: AppSizes.p24),
-              _AssigneeDropdown(
-                inquiliniAsync: inquiliniAsync,
-                selectedId: selectedInquilinoId,
-                expanded: assigneeExpanded,
-                rotazioneAutomatica: rotazioneAutomatica,
-                onToggle: onAssigneeToggle,
-                onSelected: onAssigneeSelected,
-                onRotazioneChanged: onRotazioneChanged,
-              ),
-              if (errorMessage != null) ...[
-                const SizedBox(height: AppSizes.p10),
-                Text(
-                  errorMessage!,
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.error.copyWith(
+              child: isSubmitting
+                  ? const SizedBox(
+                      width: AppSizes.p24,
+                      height: AppSizes.p24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.4,
+                        color: AppColors.textOnDark,
+                      ),
+                    )
+                  : Text(
+                      'Salva Turno',
+                      style: AppTextStyles.buttonCompact.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+            ),
+            const SizedBox(height: AppSizes.p8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSizes.p28),
+              child: OutlinedButton(
+                onPressed: isSubmitting ? null : onCancel,
+                style: OutlinedButton.styleFrom(
+                  backgroundColor: AppColors.errorContainerStrong,
+                  foregroundColor: AppColors.errorStrong,
+                  side: const BorderSide(
                     color: AppColors.errorStrong,
+                    width: 2,
                   ),
-                ),
-              ],
-              const SizedBox(height: AppSizes.p22),
-              FilledButton(
-                onPressed: isSubmitting || !canSubmit ? null : onSubmit,
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.brandSecondary,
-                  disabledBackgroundColor: AppColors.textMutedDark,
-                  foregroundColor: AppColors.textOnDark,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: const EdgeInsets.symmetric(vertical: 13),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(18),
                   ),
                 ),
-                child: isSubmitting
-                    ? const SizedBox(
-                        width: AppSizes.p24,
-                        height: AppSizes.p24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.4,
-                          color: AppColors.textOnDark,
-                        ),
-                      )
-                    : Text(
-                        'Salva Turno',
-                        style: AppTextStyles.buttonCompact.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-              ),
-              const SizedBox(height: AppSizes.p8),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSizes.p28),
-                child: OutlinedButton(
-                  onPressed: isSubmitting ? null : onCancel,
-                  style: OutlinedButton.styleFrom(
-                    backgroundColor: AppColors.errorContainerStrong,
-                    foregroundColor: AppColors.errorStrong,
-                    side: const BorderSide(
-                      color: AppColors.errorStrong,
-                      width: 2,
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 13),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                  ),
-                  child: Text(
-                    'Annulla',
-                    style: AppTextStyles.buttonCompact.copyWith(
-                      color: AppColors.errorStrong,
-                      fontWeight: FontWeight.w800,
-                    ),
+                child: Text(
+                  'Annulla',
+                  style: AppTextStyles.buttonCompact.copyWith(
+                    color: AppColors.errorStrong,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
+
+    if (!showFrame) {
+      return form;
+    }
+
+    return _TurniPanelFrame(backgroundColor: AppColors.surface, child: form);
   }
 }
 

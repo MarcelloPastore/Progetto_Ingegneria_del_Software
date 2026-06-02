@@ -193,10 +193,10 @@ class _CaricaDocumentoScreenState extends State<CaricaDocumentoScreen> {
                           : null,
                       style: FilledButton.styleFrom(
                         minimumSize: const Size.fromHeight(45),
-                        backgroundColor: AppColors.brandAccent,
-                        disabledBackgroundColor: AppColors.brandAccent
-                            .withValues(alpha: 0.3),
-                        foregroundColor: Colors.white,
+                        backgroundColor: const Color(0xFFBDA7FF),
+                        disabledBackgroundColor: const Color(0xFF5A4B7E),
+                        foregroundColor: const Color(0xFF160A31),
+                        disabledForegroundColor: const Color(0xFFE9E1FF),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(9),
                         ),
@@ -239,7 +239,6 @@ class _CaricaDocumentoScreenState extends State<CaricaDocumentoScreen> {
                 ],
               ),
             ),
-
           ],
         ),
       ),
@@ -247,5 +246,3 @@ class _CaricaDocumentoScreenState extends State<CaricaDocumentoScreen> {
     );
   }
 }
-
-

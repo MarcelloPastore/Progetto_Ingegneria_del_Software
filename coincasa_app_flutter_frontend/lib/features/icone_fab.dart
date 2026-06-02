@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/features/spese/screens/inserisci_spesa_admin.dart';
-import 'package:coincasa_app/features/turni/screens/turno_create_screen.dart';
+import 'package:coincasa_app/features/turni/screens/turni_screen_principale.dart';
 
 enum DashboardCreateTab { spesa, problema, turno, scadenza }
 
@@ -156,12 +156,10 @@ class _PopupBody extends StatelessWidget {
         buttonLabel: 'Vai ai problemi',
         routeName: '/problemi',
       ),
-      DashboardCreateTab.turno => const _ShortcutPanel(
-        title: 'Nuovo Turno',
-        icon: Icons.cleaning_services,
-        description: 'Crea un nuovo turno usando la schermata dedicata.',
-        buttonLabel: 'Crea turno',
-        routeName: TurnoCreateScreen.routeName,
+      DashboardCreateTab.turno => const TurniPopupPanel(
+        useSafeArea: false,
+        showTabs: false,
+        showFrame: false,
       ),
       DashboardCreateTab.scadenza => const _ShortcutPanel(
         title: 'Nuova Scadenza',

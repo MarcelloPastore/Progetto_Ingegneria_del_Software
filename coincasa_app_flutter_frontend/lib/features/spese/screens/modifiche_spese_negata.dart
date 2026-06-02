@@ -298,13 +298,19 @@ class _EditFormContent extends StatelessWidget {
           Text(
             'Frequenza',
             style: AppTextStyles.screenTitleStrong.copyWith(
-              color: AppColors.brandAccent,
+              color: recurring
+                  ? AppColors.brandAccent
+                  : const Color(0xFF6A5A86),
               fontSize: 23,
               fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 6),
-          _FrequencyBox(value: frequency, onChanged: onFrequencyChanged),
+          _FrequencyBox(
+            value: frequency,
+            enabled: recurring,
+            onChanged: onFrequencyChanged,
+          ),
           const SizedBox(height: 14),
           const Divider(color: Color(0xFF807D7D)),
           const SizedBox(height: 14),
@@ -704,9 +710,14 @@ class _SwitchRow extends StatelessWidget {
 }
 
 class _FrequencyBox extends StatelessWidget {
-  const _FrequencyBox({required this.value, required this.onChanged});
+  const _FrequencyBox({
+    required this.value,
+    required this.enabled,
+    required this.onChanged,
+  });
 
   final String value;
+  final bool enabled;
   final ValueChanged<String> onChanged;
 
   @override
@@ -722,12 +733,22 @@ class _FrequencyBox extends StatelessWidget {
       width: 240,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14),
-        decoration: _fieldDecoration(),
+        decoration: _fieldDecoration(
+          borderColor: enabled
+              ? const Color(0xFF8C8990)
+              : const Color(0xFF5F596B),
+          fillColor: enabled
+              ? const Color(0xFF2C2846)
+              : const Color(0xFF1D1A2E),
+        ),
         child: DropdownButtonHideUnderline(
           child: DropdownButton<String>(
             value: options.contains(value) ? value : options.first,
             dropdownColor: const Color(0xFF3A3459),
-            iconEnabledColor: AppColors.brandAccent,
+            iconEnabledColor: enabled
+                ? AppColors.brandAccent
+                : const Color(0xFF6A5A86),
+            iconDisabledColor: const Color(0xFF6A5A86),
             isExpanded: true,
             items: options
                 .map(
@@ -735,19 +756,23 @@ class _FrequencyBox extends StatelessWidget {
                     value: option,
                     child: Text(
                       option,
-                      style: const TextStyle(
-                        color: Color(0xFFC1BFC8),
+                      style: TextStyle(
+                        color: enabled
+                            ? const Color(0xFFC1BFC8)
+                            : const Color(0xFF77717F),
                         fontSize: 16,
                       ),
                     ),
                   ),
                 )
                 .toList(),
-            onChanged: (next) {
-              if (next != null) {
-                onChanged(next);
-              }
-            },
+            onChanged: enabled
+                ? (next) {
+                    if (next != null) {
+                      onChanged(next);
+                    }
+                  }
+                : null,
           ),
         ),
       ),
@@ -927,10 +952,13 @@ class _EditData {
   final List<Quota> quote;
 }
 
-BoxDecoration _fieldDecoration() {
+BoxDecoration _fieldDecoration({
+  Color fillColor = const Color(0xFF2C2846),
+  Color borderColor = const Color(0xFF8C8990),
+}) {
   return BoxDecoration(
-    color: const Color(0xFF2C2846),
-    border: Border.all(color: const Color(0xFF8C8990), width: 2),
+    color: fillColor,
+    border: Border.all(color: borderColor, width: 2),
     borderRadius: BorderRadius.circular(10),
   );
 }

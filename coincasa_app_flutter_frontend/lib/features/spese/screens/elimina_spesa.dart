@@ -141,120 +141,135 @@ class _DeleteContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _BackTitle(title: 'Dettaglio spesa', onBack: onCancel),
-          const SizedBox(height: 50),
-          Text(
-            _formatCurrency(data.spesa.importo),
-            textAlign: TextAlign.center,
-            style: AppTextStyles.screenTitleStrong.copyWith(fontSize: 40),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '${data.spesa.descrizione} - ${_formatLongDate(data.spesa.data)}',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Color(0xFFC1BFC8),
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 28),
-          _Summary(data: data),
-          Transform.translate(
-            offset: const Offset(0, -2),
-            child: switch (state) {
-              _DeleteState.confirm => _ConfirmDeleteCard(
-                data: data,
-                deleting: deleting,
-                onDelete: onDelete,
-                onCancel: onCancel,
-              ),
-              _DeleteState.success => _DeleteSuccessCard(data: data),
-              _DeleteState.denied => _DeleteDeniedCard(onClose: onCancel),
-            },
-          ),
-          const SizedBox(height: 24),
-          Row(
+    return Stack(
+      children: [
+        SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: state == _DeleteState.success
-                      ? null
-                      : () => Navigator.of(context).pushReplacementNamed(
-                          ModificheSpeseNegataScreen.routeName,
-                          arguments: data.spesa.id,
-                        ),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(
-                      color: AppColors.brandAccent,
-                      width: 2,
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 17),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppSizes.radius16),
-                    ),
-                  ),
-                  child: const Text(
-                    'Modifica spesa',
-                    style: TextStyle(
-                      color: AppColors.brandAccent,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
+              _BackTitle(title: 'Dettaglio spesa', onBack: onCancel),
+              const SizedBox(height: 50),
+              Text(
+                _formatCurrency(data.spesa.importo),
+                textAlign: TextAlign.center,
+                style: AppTextStyles.screenTitleStrong.copyWith(fontSize: 40),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${data.spesa.descrizione} - ${_formatLongDate(data.spesa.data)}',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Color(0xFFC1BFC8),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(width: 18),
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: state == _DeleteState.confirm ? onDelete : null,
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Color(0xFFFF7A7E), width: 2),
-                    padding: const EdgeInsets.symmetric(vertical: 17),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppSizes.radius16),
+              const SizedBox(height: 28),
+              _Summary(data: data),
+              const SizedBox(height: 32),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: state == _DeleteState.success
+                          ? null
+                          : () => Navigator.of(context).pushReplacementNamed(
+                              ModificheSpeseNegataScreen.routeName,
+                              arguments: data.spesa.id,
+                            ),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(
+                          color: AppColors.brandAccent,
+                          width: 2,
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 17),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            AppSizes.radius16,
+                          ),
+                        ),
+                      ),
+                      child: const Text(
+                        'Modifica spesa',
+                        style: TextStyle(
+                          color: AppColors.brandAccent,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
                     ),
                   ),
-                  child: const Text(
-                    'Elimina spesa',
-                    style: TextStyle(
-                      color: Color(0xFFFF7A7E),
-                      fontSize: 17,
-                      fontWeight: FontWeight.w800,
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: state == _DeleteState.confirm
+                          ? onDelete
+                          : null,
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(
+                          color: Color(0xFFFF7A7E),
+                          width: 2,
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 17),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            AppSizes.radius16,
+                          ),
+                        ),
+                      ),
+                      child: const Text(
+                        'Elimina spesa',
+                        style: TextStyle(
+                          color: Color(0xFFFF7A7E),
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
                     ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              ElevatedButton(
+                onPressed: () => Navigator.of(
+                  context,
+                ).pushReplacementNamed(ListaSpeseAdminScreen.routeName),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF668FD4),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppSizes.radius16),
+                  ),
+                ),
+                child: const Text(
+                  'Torna alle spese',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 23,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 18),
-          ElevatedButton(
-            onPressed: () => Navigator.of(
-              context,
-            ).pushReplacementNamed(ListaSpeseAdminScreen.routeName),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF668FD4),
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppSizes.radius16),
-              ),
+        ),
+        Positioned(
+          left: 20,
+          right: 20,
+          top: 82,
+          child: switch (state) {
+            _DeleteState.confirm => _ConfirmDeleteCard(
+              data: data,
+              deleting: deleting,
+              onDelete: onDelete,
+              onCancel: onCancel,
             ),
-            child: const Text(
-              'Torna alle spese',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 23,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-        ],
-      ),
+            _DeleteState.success => _DeleteSuccessCard(data: data),
+            _DeleteState.denied => _DeleteDeniedCard(onClose: onCancel),
+          },
+        ),
+      ],
     );
   }
 }
@@ -275,8 +290,8 @@ class _ConfirmDeleteCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(26, 16, 26, 30),
-      decoration: _cardDecoration(const Color(0xFF807D7D)),
+      padding: const EdgeInsets.fromLTRB(38, 18, 38, 30),
+      decoration: _cardDecoration(const Color(0xFF2D293B)),
       child: Column(
         children: [
           const CircleAvatar(
@@ -575,12 +590,15 @@ class _DangerButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
           ),
         ),
-        child: Text(
-          label,
-          style: const TextStyle(
-            color: Color(0xFFFF3B44),
-            fontSize: 21,
-            fontWeight: FontWeight.w800,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xFFFF3B44),
+              fontSize: 21,
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ),
       ),

@@ -9,6 +9,44 @@ import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/features/spese/screens/inserisci_spesa_successo.dart';
 
+Future<void> showInserisciSpesaMembroDialog(BuildContext context) {
+  final screenSize = MediaQuery.sizeOf(context);
+  final popupWidth = screenSize.width < 399 ? screenSize.width - 32 : 367.0;
+  final popupHeight = screenSize.height < 690 ? screenSize.height - 64 : 638.0;
+
+  return showDialog<void>(
+    context: context,
+    barrierDismissible: true,
+    barrierColor: Colors.black.withValues(alpha: 0.56),
+    builder: (_) => Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      backgroundColor: Colors.transparent,
+      child: Container(
+        width: popupWidth,
+        height: popupHeight,
+        decoration: ShapeDecoration(
+          color: Colors.white,
+          shape: RoundedRectangleBorder(
+            side: const BorderSide(width: 2, color: Color(0xFF996CFA)),
+            borderRadius: BorderRadius.circular(15),
+          ),
+          shadows: const [
+            BoxShadow(
+              color: Color(0x3F000000),
+              blurRadius: 4,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(13),
+          child: const InserisciSpesaMembroPopupContent(),
+        ),
+      ),
+    ),
+  );
+}
+
 class InserisciSpesaMembroScreen extends StatefulWidget {
   const InserisciSpesaMembroScreen({super.key});
 
@@ -19,8 +57,42 @@ class InserisciSpesaMembroScreen extends StatefulWidget {
       _InserisciSpesaMembroScreenState();
 }
 
-class _InserisciSpesaMembroScreenState
-    extends State<InserisciSpesaMembroScreen> {
+class InserisciSpesaMembroPopupContent extends StatefulWidget {
+  const InserisciSpesaMembroPopupContent({super.key});
+
+  @override
+  State<InserisciSpesaMembroPopupContent> createState() =>
+      _InserisciSpesaMembroPopupContentState();
+}
+
+class _InserisciSpesaMembroScreenState extends State<InserisciSpesaMembroScreen>
+    with _InserisciSpesaMembroFormMixin<InserisciSpesaMembroScreen> {
+  @override
+  bool get _isPopup => false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF151127),
+      bottomNavigationBar: const HouseQuickNav(currentRoute: '/spese'),
+      body: SafeArea(child: _buildContent()),
+    );
+  }
+}
+
+class _InserisciSpesaMembroPopupContentState
+    extends State<InserisciSpesaMembroPopupContent>
+    with _InserisciSpesaMembroFormMixin<InserisciSpesaMembroPopupContent> {
+  @override
+  bool get _isPopup => true;
+
+  @override
+  Widget build(BuildContext context) {
+    return _buildContent();
+  }
+}
+
+mixin _InserisciSpesaMembroFormMixin<T extends StatefulWidget> on State<T> {
   final _importoController = TextEditingController();
   final _descrizioneController = TextEditingController();
   late Future<_MemberExpenseData?> _future;
@@ -30,6 +102,8 @@ class _InserisciSpesaMembroScreenState
   bool _showErrors = false;
   DateTime _date = DateTime(2026, 5, 15);
   final Set<String> _selectedIds = <String>{};
+
+  bool get _isPopup;
 
   @override
   void didChangeDependencies() {
@@ -153,136 +227,144 @@ class _InserisciSpesaMembroScreenState
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF151127),
-      bottomNavigationBar: const HouseQuickNav(currentRoute: '/spese'),
-      body: SafeArea(
-        child: FutureBuilder<_MemberExpenseData?>(
-          future: _future,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState != ConnectionState.done) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            final data = snapshot.data;
-            if (data == null) {
-              return const Center(
-                child: Text(
-                  'Dati non disponibili.',
-                  style: TextStyle(color: Colors.white),
-                ),
-              );
-            }
-
-            return SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(13, 18, 13, 40),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight:
-                      MediaQuery.sizeOf(context).height -
-                      MediaQuery.paddingOf(context).vertical -
-                      103,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _BackTitle(onBack: () => Navigator.of(context).pop()),
-                    const SizedBox(height: 22),
-                    if (_hasAmountError) ...[
-                      const _ErrorText(
-                        message: 'Inserisci un importo valido per continuare',
-                        leftPadding: 0,
-                      ),
-                      const SizedBox(height: 7),
-                    ],
-                    _AmountField(
-                      controller: _importoController,
-                      hasError: _hasAmountError,
-                      onChanged: (_) => setState(() {}),
-                    ),
-                    const SizedBox(height: 7),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _DateButton(date: _date, onTap: _pickDate),
-                        ),
-                        const SizedBox(width: 7),
-                        Expanded(
-                          flex: 12,
-                          child: _DescriptionField(
-                            controller: _descrizioneController,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 18),
-                    const Padding(
-                      padding: EdgeInsets.only(left: 24),
-                      child: Text(
-                        'DIVIDI TRA',
-                        style: TextStyle(
-                          color: Color(0xFFC1BFC8),
-                          fontSize: 20,
-                          fontFamily: 'Inter',
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    _ParticipantsCard(
-                      inquilini: data.inquilini,
-                      selectedIds: _selectedIds,
-                      currentUserId: data.currentUserId,
-                      amount: _parsedAmount,
-                      hasError: _hasParticipantsError,
-                      onToggle: (id) {
-                        setState(() {
-                          if (_selectedIds.contains(id)) {
-                            _selectedIds.remove(id);
-                          } else {
-                            _selectedIds.add(id);
-                          }
-                        });
-                      },
-                    ),
-                    if (_hasParticipantsError) ...[
-                      const SizedBox(height: 7),
-                      const _ErrorText(
-                        message: 'Seleziona almeno un coinquilino',
-                        leftPadding: 38,
-                      ),
-                    ],
-                    const SizedBox(height: 18),
-                    _MemberSwitchRow(
-                      title: 'Ho anticipato per tutti',
-                      subtitle: 'Gli altri vedranno il debito verso di te',
-                      value: _paidForAll,
-                      onChanged: (value) => setState(() => _paidForAll = value),
-                    ),
-                    const SizedBox(height: 12),
-                    const _RecurringDisabledRow(),
-                    const Spacer(),
-                    const SizedBox(height: 34),
-                    _SubmitButton(
-                      isSubmitting: _isSubmitting,
-                      onPressed: () => _submit(data),
-                    ),
-                  ],
+  Widget _buildContent() {
+    return Container(
+      color: _isPopup ? Colors.white : Colors.transparent,
+      child: FutureBuilder<_MemberExpenseData?>(
+        future: _future,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Center(
+              child: CircularProgressIndicator(color: Color(0xFF996CFA)),
+            );
+          }
+          final data = snapshot.data;
+          if (data == null) {
+            return Center(
+              child: Text(
+                'Dati non disponibili.',
+                style: TextStyle(
+                  color: _isPopup ? Color(0xFF2F2741) : Colors.white,
                 ),
               ),
             );
-          },
-        ),
+          }
+
+          return SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(13, _isPopup ? 16 : 18, 13, 24),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: (_isPopup
+                    ? 0
+                    : MediaQuery.sizeOf(context).height -
+                          MediaQuery.paddingOf(context).vertical -
+                          103),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _BackTitle(
+                    popup: _isPopup,
+                    onBack: () => Navigator.of(context).pop(),
+                  ),
+                  SizedBox(height: _isPopup ? 16 : 22),
+                  if (_hasAmountError) ...[
+                    const _ErrorText(
+                      message: 'Inserisci un importo valido per continuare',
+                      leftPadding: 0,
+                    ),
+                    const SizedBox(height: 7),
+                  ],
+                  _AmountField(
+                    controller: _importoController,
+                    hasError: _hasAmountError,
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: 7),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _DateButton(date: _date, onTap: _pickDate),
+                      ),
+                      const SizedBox(width: 7),
+                      Expanded(
+                        flex: 12,
+                        child: _DescriptionField(
+                          controller: _descrizioneController,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 24),
+                    child: Text(
+                      'DIVIDI TRA',
+                      style: TextStyle(
+                        color: _isPopup
+                            ? const Color(0xFF5228AD)
+                            : const Color(0xFFC1BFC8),
+                        fontSize: 20,
+                        fontFamily: 'Inter',
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _ParticipantsCard(
+                    inquilini: data.inquilini,
+                    selectedIds: _selectedIds,
+                    currentUserId: data.currentUserId,
+                    amount: _parsedAmount,
+                    hasError: _hasParticipantsError,
+                    onToggle: (id) {
+                      setState(() {
+                        if (_selectedIds.contains(id)) {
+                          _selectedIds.remove(id);
+                        } else {
+                          _selectedIds.add(id);
+                        }
+                      });
+                    },
+                  ),
+                  if (_hasParticipantsError) ...[
+                    const SizedBox(height: 7),
+                    const _ErrorText(
+                      message: 'Seleziona almeno un coinquilino',
+                      leftPadding: 38,
+                    ),
+                  ],
+                  const SizedBox(height: 18),
+                  _MemberSwitchRow(
+                    title: 'Ho anticipato per tutti',
+                    subtitle: 'Gli altri vedranno il debito verso di te',
+                    value: _paidForAll,
+                    popup: _isPopup,
+                    onChanged: (value) => setState(() => _paidForAll = value),
+                  ),
+                  const SizedBox(height: 12),
+                  _RecurringDisabledRow(popup: _isPopup),
+                  if (!_isPopup) const Spacer(),
+                  SizedBox(height: _isPopup ? 22 : 34),
+                  _SubmitButton(
+                    isSubmitting: _isSubmitting,
+                    onPressed: () => _submit(data),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
 }
 
 class _BackTitle extends StatelessWidget {
-  const _BackTitle({required this.onBack});
+  const _BackTitle({required this.onBack, required this.popup});
 
   final VoidCallback onBack;
+  final bool popup;
 
   @override
   Widget build(BuildContext context) {
@@ -298,8 +380,8 @@ class _BackTitle extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 2),
-        const Text(
-          'Spese',
+        Text(
+          popup ? 'Nuova Spesa' : 'Spese',
           style: TextStyle(
             color: Color(0xFF996CFA),
             fontSize: 22,
@@ -611,12 +693,14 @@ class _MemberSwitchRow extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.value,
+    required this.popup,
     required this.onChanged,
   });
 
   final String title;
   final String subtitle;
   final bool value;
+  final bool popup;
   final ValueChanged<bool> onChanged;
 
   @override
@@ -629,8 +713,10 @@ class _MemberSwitchRow extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(
-                  color: Color(0xFFC1BFC8),
+                style: TextStyle(
+                  color: popup
+                      ? const Color(0xFF3B3150)
+                      : const Color(0xFFC1BFC8),
                   fontSize: 17,
                   fontFamily: 'Inter',
                   fontWeight: FontWeight.w500,
@@ -638,8 +724,10 @@ class _MemberSwitchRow extends StatelessWidget {
               ),
               Text(
                 subtitle,
-                style: const TextStyle(
-                  color: Color(0xFF8E8898),
+                style: TextStyle(
+                  color: popup
+                      ? const Color(0xFF645A76)
+                      : const Color(0xFF8E8898),
                   fontSize: 12,
                   fontFamily: 'Inter',
                   fontWeight: FontWeight.w500,
@@ -662,20 +750,24 @@ class _MemberSwitchRow extends StatelessWidget {
 }
 
 class _RecurringDisabledRow extends StatelessWidget {
-  const _RecurringDisabledRow();
+  const _RecurringDisabledRow({required this.popup});
+
+  final bool popup;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const Expanded(
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 'Spesa ricorrente',
                 style: TextStyle(
-                  color: Color(0xFF6F687C),
+                  color: popup
+                      ? const Color(0xFF645A76)
+                      : const Color(0xFF8F879F),
                   fontSize: 17,
                   fontFamily: 'Inter',
                   fontWeight: FontWeight.w500,
@@ -684,7 +776,9 @@ class _RecurringDisabledRow extends StatelessWidget {
               Text(
                 'Ripete seguendo la data precedente',
                 style: TextStyle(
-                  color: Color(0xFF6F687C),
+                  color: popup
+                      ? const Color(0xFF645A76)
+                      : const Color(0xFF8F879F),
                   fontSize: 12,
                   fontFamily: 'Inter',
                   fontWeight: FontWeight.w500,

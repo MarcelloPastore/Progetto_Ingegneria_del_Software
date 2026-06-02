@@ -187,7 +187,7 @@ class _InserisciSpesaScreenState extends ConsumerState<InserisciSpesaScreen> {
                     style: AppTextStyles.screenTitleStrong.copyWith(
                       color: form.spesaRicorrente
                           ? AppColors.brandPrimary
-                          : AppColors.brandPrimary.withValues(alpha: 0.45),
+                          : const Color(0xFF6A5A86),
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
                     ),
@@ -373,7 +373,7 @@ class _InserisciSpesaPopupContentState
             style: AppTextStyles.screenTitleStrong.copyWith(
               color: form.spesaRicorrente
                   ? AppColors.brandPrimary
-                  : AppColors.brandPrimary.withValues(alpha: 0.45),
+                  : const Color(0xFF6A5A86),
               fontSize: 16,
               fontWeight: FontWeight.w800,
             ),
@@ -582,10 +582,21 @@ class _ImportoField extends StatelessWidget {
       controller: controller,
       onChanged: onChanged,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      style: AppTextStyles.screenTitleStrong.copyWith(fontSize: 16),
+      style: AppTextStyles.screenTitleStrong.copyWith(
+        color: AppColors.textOnDark,
+        fontSize: 16,
+      ),
       decoration: InputDecoration(
         hintText: 'Importo...',
+        hintStyle: AppTextStyles.screenTitleStrong.copyWith(
+          color: AppColors.textOnDark.withValues(alpha: 0.72),
+          fontSize: 16,
+        ),
         prefixText: '€ ',
+        prefixStyle: AppTextStyles.screenTitleStrong.copyWith(
+          color: AppColors.textOnDark,
+          fontSize: 16,
+        ),
         filled: true,
         fillColor: AppColors.surfaceDarkElevated,
         border: OutlineInputBorder(
@@ -624,9 +635,16 @@ class _DescrizioneField extends StatelessWidget {
     return TextField(
       controller: controller,
       onChanged: onChanged,
-      style: AppTextStyles.screenTitleStrong.copyWith(fontSize: 16),
+      style: AppTextStyles.screenTitleStrong.copyWith(
+        color: AppColors.textOnDark,
+        fontSize: 16,
+      ),
       decoration: InputDecoration(
         hintText: 'Descrizione spesa...',
+        hintStyle: AppTextStyles.screenTitleStrong.copyWith(
+          color: AppColors.textOnDark.withValues(alpha: 0.72),
+          fontSize: 16,
+        ),
         filled: true,
         fillColor: AppColors.surfaceDarkElevated,
         border: OutlineInputBorder(
@@ -685,7 +703,7 @@ class _DivisioneSection extends StatelessWidget {
           child: Text(
             'DIVIDI TRA',
             style: AppTextStyles.screenTitleStrong.copyWith(
-              color: AppColors.textMutedLight,
+              color: const Color(0xFF5228AD),
               fontSize: 14,
               fontWeight: FontWeight.w800,
             ),
@@ -770,6 +788,7 @@ class _InquilinoCheckbox extends StatelessWidget {
                   child: Text(
                     inquilino.nome,
                     style: AppTextStyles.screenTitleStrong.copyWith(
+                      color: AppColors.textOnDark,
                       fontSize: 14,
                     ),
                   ),
@@ -804,7 +823,7 @@ class _PaidForAllRow extends StatelessWidget {
             child: Text(
               'Ho anticipato per tutti',
               style: AppTextStyles.screenTitleStrong.copyWith(
-                color: AppColors.textMutedLight,
+                color: const Color(0xFF3B3150),
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
               ),
@@ -968,7 +987,7 @@ class _RecurringRow extends StatelessWidget {
                 Text(
                   'Spesa ricorrente',
                   style: AppTextStyles.screenTitleStrong.copyWith(
-                    color: AppColors.textMutedLight,
+                    color: const Color(0xFF3B3150),
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
                   ),
@@ -977,7 +996,7 @@ class _RecurringRow extends StatelessWidget {
                 Text(
                   'Ripete seguendo la data precedente',
                   style: AppTextStyles.screenTitleStrong.copyWith(
-                    color: AppColors.textMutedLight,
+                    color: const Color(0xFF645A76),
                     fontSize: 12,
                   ),
                 ),
@@ -1018,7 +1037,9 @@ class _FrequencyDropdown extends StatelessWidget {
     ];
     final selectedValue = options.contains(value) ? value : options.first;
     final textStyle = AppTextStyles.screenTitleStrong.copyWith(
-      color: AppColors.textMutedLight.withValues(alpha: enabled ? 1 : 0.55),
+      color: enabled
+          ? AppColors.textOnDark
+          : AppColors.textOnDark.withValues(alpha: 0.58),
       fontSize: 14,
     );
 
@@ -1046,6 +1067,7 @@ class _FrequencyDropdown extends StatelessWidget {
                       child: Text(
                         opt,
                         style: AppTextStyles.screenTitleStrong.copyWith(
+                          color: AppColors.textOnDark,
                           fontSize: 14,
                         ),
                       ),

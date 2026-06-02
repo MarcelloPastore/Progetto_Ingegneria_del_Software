@@ -5,7 +5,6 @@ import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/spesa.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
-import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/features/spese/screens/dettaglio_spesa_debitore.dart';
 import 'package:coincasa_app/features/spese/screens/inserisci_spesa_membro.dart';
@@ -20,9 +19,9 @@ final _memberSpeseDataProvider = FutureProvider.autoDispose
       final casa = _resolveCasa(caseUtente, selectedCasaId);
       final spese = await ApiProvider.spese.list(casa.id);
       final amounts = await Future.wait<double>([
-        ApiProvider.spese.getSaldo(casa.id).catchError((_) => 0),
-        ApiProvider.spese.getCreditoTot(casa.id).catchError((_) => 0),
-        ApiProvider.spese.getDebitoTot(casa.id).catchError((_) => 0),
+        ApiProvider.spese.getSaldo(casa.id).catchError((_) => 0.0),
+        ApiProvider.spese.getCreditoTot(casa.id).catchError((_) => 0.0),
+        ApiProvider.spese.getDebitoTot(casa.id).catchError((_) => 0.0),
       ]);
       return _MemberSpeseData(
         casa: casa,
@@ -120,18 +119,18 @@ class _MemberSpeseContent extends StatelessWidget {
           bottom: 18,
           child: Column(
             children: [
-              _BlueOutlineButton(
-                label: 'Pareggia i conti',
-                onPressed: () => Navigator.of(
-                  context,
-                ).pushNamed(PareggiaContiScreen.routeName),
-              ),
-              const SizedBox(height: 12),
+              if (data.spese.isNotEmpty) ...[
+                _BlueOutlineButton(
+                  label: 'Pareggia i conti',
+                  onPressed: () => Navigator.of(
+                    context,
+                  ).pushNamed(PareggiaContiScreen.routeName),
+                ),
+                const SizedBox(height: 12),
+              ],
               _PrimaryBlueButton(
                 label: 'Inserisci una nuova spesa',
-                onPressed: () => Navigator.of(
-                  context,
-                ).pushNamed(InserisciSpesaMembroScreen.routeName),
+                onPressed: () => showInserisciSpesaMembroDialog(context),
               ),
             ],
           ),
@@ -522,9 +521,12 @@ String _initials(String name) {
       .split(RegExp(r'\s+'))
       .where((p) => p.isNotEmpty)
       .toList();
-  if (parts.isEmpty) return 'C';
-  if (parts.length == 1)
+  if (parts.isEmpty) {
+    return 'C';
+  }
+  if (parts.length == 1) {
     return parts.first.characters.take(2).toString().toUpperCase();
+  }
   return '${parts.first.characters.first}${parts.last.characters.first}'
       .toUpperCase();
 }

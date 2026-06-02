@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
+import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/spesa.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/features/icone_fab.dart';
 import 'package:coincasa_app/features/spese/screens/dettaglio_spesa_admin.dart';
 import 'package:coincasa_app/features/spese/screens/pareggia_conti.dart';
 
@@ -50,6 +52,10 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen> {
 
     final speseAsync = ref.watch(_speseProvider(selectedCasaId));
     final saldiAsync = ref.watch(_saldiProvider(selectedCasaId));
+    final hasSpese = speseAsync.maybeWhen(
+      data: (spese) => spese.isNotEmpty,
+      orElse: () => false,
+    );
 
     return Scaffold(
       backgroundColor: const Color(0xFF151127),
@@ -144,106 +150,105 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen> {
               error: (err, stack) => Center(child: Text('Errore: $err')),
             ),
 
-            // Bottom section with buttons
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                color: const Color(0xFF151127),
-                padding: const EdgeInsets.fromLTRB(
-                  AppSizes.p21,
-                  AppSizes.p20,
-                  AppSizes.p21,
-                  AppSizes.p18,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: DecoratedBox(
-                        decoration: ShapeDecoration(
-                          gradient: LinearGradient(
-                            begin: const Alignment(0.50, 0.00),
-                            end: const Alignment(0.50, 1.00),
-                            colors: [
-                              Colors.white.withValues(alpha: 0.20),
-                              Colors.white.withValues(alpha: 0),
-                            ],
-                          ),
-                          shape: RoundedRectangleBorder(
-                            side: const BorderSide(
-                              width: 2,
-                              strokeAlign: BorderSide.strokeAlignOutside,
-                              color: Color(0xFF4695EA),
-                            ),
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                          shadows: const [
-                            BoxShadow(
-                              color: Color(0x3F000000),
-                              blurRadius: 4,
-                              offset: Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.of(
-                            context,
-                          ).pushNamed(PareggiaContiScreen.routeName),
-                          style: OutlinedButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            side: BorderSide.none,
-                            padding: EdgeInsets.zero,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                AppSizes.radius15,
-                              ),
-                            ),
-                          ),
-                          child: const Text(
-                            'Pareggia i conti',
-                            style: TextStyle(
-                              color: Color(0xFF4695EA),
-                              fontSize: 20,
-                              fontFamily: 'Inter',
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
+            if (hasSpese) _buildBottomActions(context),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomActions(BuildContext context) {
+    return Positioned(
+      bottom: 0,
+      left: 0,
+      right: 0,
+      child: Container(
+        color: const Color(0xFF151127),
+        padding: const EdgeInsets.fromLTRB(
+          AppSizes.p21,
+          AppSizes.p20,
+          AppSizes.p21,
+          AppSizes.p18,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: DecoratedBox(
+                decoration: ShapeDecoration(
+                  gradient: LinearGradient(
+                    begin: const Alignment(0.50, 0.00),
+                    end: const Alignment(0.50, 1.00),
+                    colors: [
+                      Colors.white.withValues(alpha: 0.20),
+                      Colors.white.withValues(alpha: 0),
+                    ],
+                  ),
+                  shape: RoundedRectangleBorder(
+                    side: const BorderSide(
+                      width: 2,
+                      strokeAlign: BorderSide.strokeAlignOutside,
+                      color: Color(0xFF4695EA),
                     ),
-                    const SizedBox(height: AppSizes.p18),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () =>
-                            Navigator.of(context).pushNamed('/spese/nuovo'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF0B45BA),
-                          padding: const EdgeInsets.symmetric(
-                            vertical: AppSizes.p16,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              AppSizes.radius15,
-                            ),
-                          ),
-                        ),
-                        child: const Text(
-                          'Inserisci una nuova spesa',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontFamily: 'Inter',
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  shadows: const [
+                    BoxShadow(
+                      color: Color(0x3F000000),
+                      blurRadius: 4,
+                      offset: Offset(0, 4),
                     ),
                   ],
+                ),
+                child: OutlinedButton(
+                  onPressed: () => Navigator.of(
+                    context,
+                  ).pushNamed(PareggiaContiScreen.routeName),
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    side: BorderSide.none,
+                    padding: EdgeInsets.zero,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppSizes.radius15),
+                    ),
+                  ),
+                  child: const Text(
+                    'Pareggia i conti',
+                    style: TextStyle(
+                      color: Color(0xFF4695EA),
+                      fontSize: 20,
+                      fontFamily: 'Inter',
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSizes.p18),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => showDialog<void>(
+                  context: context,
+                  builder: (_) => const DashboardCreatePopup(),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0B45BA),
+                  padding: const EdgeInsets.symmetric(vertical: AppSizes.p16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppSizes.radius15),
+                  ),
+                ),
+                child: const Text(
+                  'Inserisci una nuova spesa',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
@@ -559,72 +564,125 @@ class _BalanceMetric extends StatelessWidget {
 class _EmptyExpensesContent extends StatelessWidget {
   const _EmptyExpensesContent();
 
+  Future<Casa?> _loadActiveCasa(BuildContext context) async {
+    final activeCasaController = ActiveCasaScope.read(context);
+    final caseUtente = await ApiProvider.casa.list();
+    if (caseUtente.isEmpty) {
+      return null;
+    }
+    return activeCasaController.resolveCasa(caseUtente);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSizes.p25),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Padding(
-              padding: EdgeInsets.only(top: AppSizes.p42),
-              child: Text(
+    return FutureBuilder<Casa?>(
+      future: _loadActiveCasa(context),
+      builder: (context, snapshot) {
+        final casaNome = snapshot.data?.nome.trim().isNotEmpty == true
+            ? snapshot.data!.nome.trim()
+            : 'Casa';
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(
+            AppSizes.p25,
+            AppSizes.p32,
+            AppSizes.p25,
+            AppSizes.p32,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
                 'Spese',
+                textAlign: TextAlign.left,
+                style: TextStyle(
+                  color: Color(0xFFF6F6F6),
+                  fontSize: 28,
+                  fontFamily: 'Inter',
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: AppSizes.p20),
+              Text(
+                casaNome,
+                textAlign: TextAlign.left,
+                style: const TextStyle(
+                  color: Color(0xFF996CFA),
+                  fontSize: 23,
+                  fontFamily: 'Inter',
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: AppSizes.p4),
+              Center(
+                child: Container(
+                  width: 145,
+                  height: 145,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0xFF2D9E6E).withValues(alpha: 0.1),
+                  ),
+                  alignment: Alignment.center,
+                  child: Image.asset(
+                    'assets/Icons/carrello_spesa.png',
+                    width: 100,
+                    height: 100,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSizes.p24),
+              const Text(
+                'Nessuna spesa registrata',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
+                  color: Color(0xFFF6F6F6),
+                  fontSize: 23,
                   fontFamily: 'Inter',
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-            ),
-            const SizedBox(height: 140),
-            Center(
-              child: Container(
-                width: 135,
-                height: 135,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xFF2D9E6E).withValues(alpha: 0.1),
-                ),
-                alignment: Alignment.center,
-                child: Image.asset(
-                  'assets/Icons/carrello_spesa.png',
-                  width: 82,
-                  height: 82,
-                  fit: BoxFit.contain,
+              const SizedBox(height: AppSizes.p20),
+              const Text(
+                'Aggiungi la prima spesa della casa per\niniziare a dividere i costi con i\ncoinquilini',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Color(0xFFB1B1B1),
+                  fontSize: 21,
+                  fontFamily: 'Inter',
+                  fontWeight: FontWeight.w500,
+                  height: 1.18,
                 ),
               ),
-            ),
-            const SizedBox(height: AppSizes.p32),
-            const Text(
-              'Nessuna spesa registrata',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Color(0xFFF6F6F6),
-                fontSize: 20,
-                fontFamily: 'Inter',
-                fontWeight: FontWeight.w600,
+              const SizedBox(height: AppSizes.p32),
+              ElevatedButton(
+                onPressed: () => showDialog<void>(
+                  context: context,
+                  builder: (_) => const DashboardCreatePopup(),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF5B2BC1),
+                  elevation: 4,
+                  shadowColor: Colors.black.withValues(alpha: 0.38),
+                  padding: const EdgeInsets.symmetric(vertical: AppSizes.p16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppSizes.radius15),
+                  ),
+                ),
+                child: const Text(
+                  'Inserisci spesa',
+                  style: TextStyle(
+                    color: Color(0xFFF6F6F6),
+                    fontSize: 23,
+                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(height: AppSizes.p16),
-            const Text(
-              'Aggiungi la prima spesa della casa per\niniziare a dividere i costi con i coinquilini',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Color(0xFFB1B1B1),
-                fontSize: 18,
-                fontFamily: 'Inter',
-                fontWeight: FontWeight.w500,
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 220),
-          ],
-        ),
-      ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

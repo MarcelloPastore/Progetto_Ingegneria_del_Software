@@ -189,7 +189,7 @@ class _DetailContent extends StatelessWidget {
               Expanded(
                 child: _OutlinedActionButton(
                   label: 'Modifica spesa',
-                  color: AppColors.brandPrimary,
+                  color: AppColors.brandAccent,
                   onPressed: () => Navigator.of(context).pushNamed(
                     ModificheSpeseNegataScreen.routeName,
                     arguments: data.spesa.id,
@@ -200,7 +200,7 @@ class _DetailContent extends StatelessWidget {
               Expanded(
                 child: _OutlinedActionButton(
                   label: 'Elimina spesa',
-                  color: AppColors.errorStrong,
+                  color: const Color(0xFFF14A4A),
                   onPressed: () => Navigator.of(context).pushNamed(
                     EliminaSpesaScreen.routeName,
                     arguments: data.spesa.id,
@@ -487,6 +487,7 @@ class _OutlinedActionButton extends StatelessWidget {
     return OutlinedButton(
       onPressed: onPressed,
       style: OutlinedButton.styleFrom(
+        backgroundColor: const Color(0xFF151127),
         side: BorderSide(color: color, width: 2),
         padding: const EdgeInsets.symmetric(vertical: AppSizes.p17),
         shape: RoundedRectangleBorder(
