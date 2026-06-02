@@ -257,11 +257,7 @@ export function casaRoutes(app: FastifyInstance) {
    * @version 1.0.0
    * @author Lorenzo Tedino
    */
-  app.get(
-    "/case",
-    { preHandler: requireRole(Ruolo.Inquilino) },
-    casaController.getCase,
-  );
+  app.get("/case", casaController.getCase);
   /**
    * @api  GetCasa
    * @route GET /case/:idCasa
@@ -1014,7 +1010,7 @@ export function scadenzeRoutes(app: FastifyInstance) {
   app.get<{ Params: CasaParams }>(
     "/case/:idCasa/scadenze",
     { preHandler: requireRole(Ruolo.Inquilino) },
-    scadenzaController.getScadenze,
+    scadenzaController.getAllScadenze,
   );
   /**
    * @api  GetScadenza
