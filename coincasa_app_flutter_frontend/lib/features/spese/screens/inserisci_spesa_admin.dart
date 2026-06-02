@@ -185,7 +185,9 @@ class _InserisciSpesaScreenState extends ConsumerState<InserisciSpesaScreen> {
                   child: Text(
                     'Frequenza',
                     style: AppTextStyles.screenTitleStrong.copyWith(
-                      color: AppColors.brandPrimary,
+                      color: form.spesaRicorrente
+                          ? AppColors.brandPrimary
+                          : AppColors.brandPrimary.withValues(alpha: 0.45),
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
                     ),
@@ -196,6 +198,7 @@ class _InserisciSpesaScreenState extends ConsumerState<InserisciSpesaScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: _FrequencyDropdown(
                     value: form.frequenza,
+                    enabled: form.spesaRicorrente,
                     onChanged: controller.setFrequenza,
                   ),
                 ),
@@ -227,6 +230,175 @@ class _InserisciSpesaScreenState extends ConsumerState<InserisciSpesaScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class InserisciSpesaPopupContent extends ConsumerStatefulWidget {
+  const InserisciSpesaPopupContent({super.key});
+
+  @override
+  ConsumerState<InserisciSpesaPopupContent> createState() =>
+      _InserisciSpesaPopupContentState();
+}
+
+class _InserisciSpesaPopupContentState
+    extends ConsumerState<InserisciSpesaPopupContent> {
+  final _importoController = TextEditingController();
+  final _descrizioneController = TextEditingController();
+
+  @override
+  void dispose() {
+    _importoController.dispose();
+    _descrizioneController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    FocusScope.of(context).unfocus();
+    final controller = ref.read(speseCreateFormProvider.notifier);
+    final form = ref.read(speseCreateFormProvider);
+    final navigator = Navigator.of(context);
+    final activeCasaController = ActiveCasaScope.of(context);
+    final casa = await ref.read(
+      speseCreateCasaProvider(activeCasaController.selectedCasaId).future,
+    );
+
+    if (!controller.validateBeforeSubmit()) {
+      return;
+    }
+    if (casa == null || casa.id.isEmpty) {
+      controller.setSubmitError('Nessuna casa disponibile.');
+      return;
+    }
+
+    controller.setSubmitting(true);
+    try {
+      final normalizedImporto = form.importo.replaceAll(',', '.');
+      final nuovaSpesa = await ApiProvider.spese.create(casa.id, {
+        'descrizione': form.descrizione.trim(),
+        'importo': double.parse(normalizedImporto),
+        'data': DateTime.now().toIso8601String(),
+        'partecipanti': form.selectedInquiliniIds.toList(),
+        'hoAnticipatoPerTutti': form.hoAnticipatoPerTutti,
+        'isRicorrente': form.spesaRicorrente,
+        if (form.spesaRicorrente) 'frequenza': form.frequenza,
+      });
+
+      if (!mounted) {
+        return;
+      }
+      navigator.pop();
+      navigator.pushNamed(
+        DettaglioSpesaAdminScreen.routeName,
+        arguments: nuovaSpesa.id,
+      );
+    } catch (_) {
+      controller.setSubmitError('Impossibile salvare la spesa. Riprova.');
+    } finally {
+      if (mounted) {
+        controller.setSubmitting(false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final activeCasaController = ActiveCasaScope.of(context);
+    final form = ref.watch(speseCreateFormProvider);
+    final controller = ref.read(speseCreateFormProvider.notifier);
+    final casaAsync = ref.watch(
+      speseCreateCasaProvider(activeCasaController.selectedCasaId),
+    );
+    final inquiliniAsync = casaAsync.when(
+      data: (casa) => ref.watch(speseCreateInquiliniProvider(casa?.id)),
+      loading: () => const AsyncValue<List<Inquilino>>.loading(),
+      error: (error, stackTrace) =>
+          AsyncValue<List<Inquilino>>.error(error, stackTrace),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Nuova Spesa',
+          style: AppTextStyles.screenTitleStrong.copyWith(
+            color: AppColors.brandPrimary,
+            fontSize: 23,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 10),
+        _ImportoField(
+          controller: _importoController,
+          hasError: form.showErrors && form.importo.isEmpty,
+          onChanged: controller.setImporto,
+        ),
+        const SizedBox(height: 8),
+        _DescrizioneField(
+          controller: _descrizioneController,
+          onChanged: controller.setDescrizione,
+        ),
+        const SizedBox(height: 20),
+        inquiliniAsync.when(
+          loading: () => const _DivisioneLoading(),
+          error: (_, _) => _DivisioneSection(
+            inquilini: const [],
+            selectedIds: form.selectedInquiliniIds,
+            showError: form.showErrors && form.selectedInquiliniIds.isEmpty,
+            onSelected: controller.toggleInquilino,
+          ),
+          data: (inquilini) => _DivisioneSection(
+            inquilini: inquilini,
+            selectedIds: form.selectedInquiliniIds,
+            showError: form.showErrors && form.selectedInquiliniIds.isEmpty,
+            onSelected: controller.toggleInquilino,
+          ),
+        ),
+        const SizedBox(height: 12),
+        _PaidForAllRow(
+          value: form.hoAnticipatoPerTutti,
+          onChanged: controller.setHoAnticipatoPerTutti,
+        ),
+        const SizedBox(height: 12),
+        _RecurringRow(
+          value: form.spesaRicorrente,
+          onChanged: controller.setSpesaRicorrente,
+        ),
+        const SizedBox(height: 12),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Text(
+            'Frequenza',
+            style: AppTextStyles.screenTitleStrong.copyWith(
+              color: form.spesaRicorrente
+                  ? AppColors.brandPrimary
+                  : AppColors.brandPrimary.withValues(alpha: 0.45),
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: _FrequencyDropdown(
+            value: form.frequenza,
+            enabled: form.spesaRicorrente,
+            onChanged: controller.setFrequenza,
+          ),
+        ),
+        if (form.showMissingError) ...[
+          const SizedBox(height: 14),
+          const _ErrorLine(message: 'Dati mancanti: compila i campi necessari'),
+        ],
+        const SizedBox(height: 16),
+        _PopupSaveButton(
+          enabled: form.canSubmit,
+          submitting: form.isSubmitting,
+          onPressed: _submit,
+        ),
+      ],
     );
   }
 }
@@ -711,6 +883,43 @@ class _SaveButton extends StatelessWidget {
   }
 }
 
+class _PopupSaveButton extends StatelessWidget {
+  const _PopupSaveButton({
+    required this.enabled,
+    required this.submitting,
+    required this.onPressed,
+  });
+
+  final bool enabled;
+  final bool submitting;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton(
+      onPressed: enabled && !submitting ? onPressed : null,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: submitting
+            ? AppColors.textMuted
+            : const Color(0xFFA48DDA),
+        disabledBackgroundColor: AppColors.textMuted,
+        elevation: 4,
+        shadowColor: Colors.black.withValues(alpha: 0.25),
+        padding: const EdgeInsets.symmetric(vertical: 13),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      ),
+      child: Text(
+        submitting ? 'Salvataggio...' : 'Aggiungi spesa',
+        style: AppTextStyles.screenTitleStrong.copyWith(
+          color: AppColors.textOnDark,
+          fontSize: 22,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
 class _CancelButton extends StatelessWidget {
   const _CancelButton({required this.enabled, required this.onPressed});
 
@@ -788,9 +997,14 @@ class _RecurringRow extends StatelessWidget {
 }
 
 class _FrequencyDropdown extends StatelessWidget {
-  const _FrequencyDropdown({required this.value, required this.onChanged});
+  const _FrequencyDropdown({
+    required this.value,
+    required this.enabled,
+    required this.onChanged,
+  });
 
   final String value;
+  final bool enabled;
   final ValueChanged<String> onChanged;
 
   @override
@@ -802,38 +1016,60 @@ class _FrequencyDropdown extends StatelessWidget {
       'Annuale',
       'Personalizzata',
     ];
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDarkElevated,
-        borderRadius: BorderRadius.circular(AppSizes.radius8),
-        border: Border.all(color: Colors.transparent),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: options.contains(value) ? value : options.first,
-          isExpanded: true,
-          items: options
-              .map(
-                (opt) => DropdownMenuItem(
-                  value: opt,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 12.0),
-                    child: Text(
-                      opt,
-                      style: AppTextStyles.screenTitleStrong.copyWith(
-                        fontSize: 14,
+    final selectedValue = options.contains(value) ? value : options.first;
+    final textStyle = AppTextStyles.screenTitleStrong.copyWith(
+      color: AppColors.textMutedLight.withValues(alpha: enabled ? 1 : 0.55),
+      fontSize: 14,
+    );
+
+    return Opacity(
+      opacity: enabled ? 1 : 0.72,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: enabled
+              ? AppColors.surfaceDarkElevated
+              : AppColors.surfaceDarkElevated.withValues(alpha: 0.62),
+          borderRadius: BorderRadius.circular(AppSizes.radius8),
+          border: Border.all(color: Colors.transparent),
+        ),
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<String>(
+            value: selectedValue,
+            isExpanded: true,
+            items: options
+                .map(
+                  (opt) => DropdownMenuItem(
+                    value: opt,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12.0),
+                      child: Text(
+                        opt,
+                        style: AppTextStyles.screenTitleStrong.copyWith(
+                          fontSize: 14,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              )
-              .toList(),
-          onChanged: (v) {
-            if (v != null) onChanged(v);
-          },
-          dropdownColor: AppColors.surfaceDarkElevated,
-          iconEnabledColor: AppColors.brandPrimary,
+                )
+                .toList(),
+            onChanged: enabled
+                ? (v) {
+                    if (v != null) onChanged(v);
+                  }
+                : null,
+            selectedItemBuilder: (context) => options
+                .map(
+                  (opt) => Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(opt, style: textStyle),
+                  ),
+                )
+                .toList(),
+            dropdownColor: AppColors.surfaceDarkElevated,
+            iconEnabledColor: AppColors.brandPrimary,
+            iconDisabledColor: AppColors.brandPrimary.withValues(alpha: 0.35),
+          ),
         ),
       ),
     );

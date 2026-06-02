@@ -10,7 +10,6 @@ import 'features/scadenze/scadenze.dart';
 import 'features/spese/spese.dart';
 import 'features/turni/turni.dart';
 
-
 class CoinCasaApp extends StatelessWidget {
   CoinCasaApp({super.key});
 
@@ -29,8 +28,12 @@ class CoinCasaApp extends StatelessWidget {
           '/dashboard': (_) => const DashboardScreen(),
           '/spese': (_) => const ListaSpeseAdminScreen(),
           ListaSpeseAdminScreen.routeName: (_) => const ListaSpeseAdminScreen(),
+          ListaSpeseMembroScreen.routeName: (_) =>
+              const ListaSpeseMembroScreen(),
           DettaglioSpesaAdminScreen.routeName: (_) =>
               const DettaglioSpesaAdminScreen(),
+          DettaglioSpesaDebitoreScreen.routeName: (_) =>
+              const DettaglioSpesaDebitoreScreen(),
           PareggiaContiScreen.routeName: (_) => const PareggiaContiScreen(),
           ModificheSpeseNegataScreen.routeName: (_) =>
               const ModificheSpeseNegataScreen(),
@@ -40,6 +43,8 @@ class CoinCasaApp extends StatelessWidget {
           NessunaSpeseRegistrataScreen.routeName: (_) =>
               const NessunaSpeseRegistrataScreen(),
           InserisciSpesaScreen.routeName: (_) => const InserisciSpesaScreen(),
+          InserisciSpesaMembroScreen.routeName: (_) =>
+              const InserisciSpesaMembroScreen(),
           InserisciSpesaSuccessoScreen.routeName: (_) =>
               const InserisciSpesaSuccessoScreen(),
           '/turni': (_) => const ListaTurniScreen(),

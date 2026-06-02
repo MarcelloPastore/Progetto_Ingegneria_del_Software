@@ -7,6 +7,9 @@ class Spesa {
     this.dataScadenza,
     this.isRicorrente = false,
     this.partecipanti = const [],
+    this.creatoreId = '',
+    this.creatoreNome = '',
+    this.raw = const {},
   });
 
   final String id;
@@ -16,6 +19,9 @@ class Spesa {
   final DateTime? dataScadenza;
   final bool isRicorrente;
   final List<Map<String, dynamic>> partecipanti;
+  final String creatoreId;
+  final String creatoreNome;
+  final Map<String, dynamic> raw;
 
   factory Spesa.fromJson(Map<String, dynamic> json) {
     final idValue = json['id'] ?? json['idSpesa'];
@@ -37,6 +43,9 @@ class Spesa {
       dataScadenza: _parseOptionalDate(dataScadenzaValue),
       isRicorrente: _parseBool(json['isRicorrente']),
       partecipanti: _parseMapList(json['partecipanti']),
+      creatoreId: _parseCreatorId(json),
+      creatoreNome: _parseCreatorName(json),
+      raw: json,
     );
   }
 
@@ -49,7 +58,16 @@ class Spesa {
       'dataScadenza': dataScadenza?.toIso8601String(),
       'isRicorrente': isRicorrente,
       'partecipanti': partecipanti,
+      'creatoreId': creatoreId,
+      'creatoreNome': creatoreNome,
     };
+  }
+
+  bool isCreatedBy(String? userId) {
+    if (userId == null || userId.trim().isEmpty || creatoreId.isEmpty) {
+      return false;
+    }
+    return creatoreId == userId;
   }
 
   static double _parseAmount(dynamic value) {
@@ -101,5 +119,45 @@ class Spesa {
           .toList();
     }
     return const [];
+  }
+
+  static String _parseCreatorId(Map<String, dynamic> json) {
+    final direct =
+        json['creatoreId'] ??
+        json['createdById'] ??
+        json['utenteId'] ??
+        json['idUtente'] ??
+        json['pagatoreId'] ??
+        json['idPagatore'];
+    if (direct != null) {
+      return direct.toString();
+    }
+    final creator = json['creatore'] ?? json['createdBy'] ?? json['pagatore'];
+    if (creator is Map<String, dynamic>) {
+      final id = creator['id'] ?? creator['idUtente'] ?? creator['userId'];
+      return id?.toString() ?? '';
+    }
+    return '';
+  }
+
+  static String _parseCreatorName(Map<String, dynamic> json) {
+    final direct =
+        json['creatoreNome'] ??
+        json['createdByName'] ??
+        json['pagatoreNome'] ??
+        json['pagatoDa'];
+    if (direct != null) {
+      return direct.toString();
+    }
+    final creator = json['creatore'] ?? json['createdBy'] ?? json['pagatore'];
+    if (creator is Map<String, dynamic>) {
+      final name =
+          creator['nome'] ??
+          creator['name'] ??
+          creator['username'] ??
+          creator['email'];
+      return name?.toString() ?? '';
+    }
+    return '';
   }
 }

@@ -6,7 +6,6 @@ import 'package:coincasa_app/core/models/spesa.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
-import 'package:coincasa_app/features/icone_fab.dart';
 import 'package:coincasa_app/features/spese/screens/dettaglio_spesa_admin.dart';
 import 'package:coincasa_app/features/spese/screens/pareggia_conti.dart';
 
@@ -37,8 +36,6 @@ class ListaSpeseAdminScreen extends ConsumerStatefulWidget {
 }
 
 class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen> {
-  bool _fabActionsVisible = false;
-
   @override
   Widget build(BuildContext context) {
     final activeCasaController = ActiveCasaScope.read(context);
@@ -57,21 +54,6 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF151127),
       bottomNavigationBar: const HouseQuickNav(currentRoute: '/spese'),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          setState(() {
-            _fabActionsVisible = !_fabActionsVisible;
-          });
-        },
-        backgroundColor: AppColors.brandAccent,
-        elevation: AppSizes.p6,
-        child: const Icon(
-          Icons.add,
-          size: AppSizes.p38,
-          color: AppColors.textOnDark,
-        ),
-      ),
       body: SafeArea(
         child: Stack(
           children: [
@@ -180,32 +162,55 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen> {
                   children: [
                     SizedBox(
                       width: double.infinity,
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.of(
-                          context,
-                        ).pushNamed(PareggiaContiScreen.routeName),
-                        style: OutlinedButton.styleFrom(
-                          backgroundColor: const Color(0xFF151127),
-                          side: const BorderSide(
-                            width: 2,
-                            color: Color(0xFF4695EA),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            vertical: AppSizes.p16,
+                      height: 52,
+                      child: DecoratedBox(
+                        decoration: ShapeDecoration(
+                          gradient: LinearGradient(
+                            begin: const Alignment(0.50, 0.00),
+                            end: const Alignment(0.50, 1.00),
+                            colors: [
+                              Colors.white.withValues(alpha: 0.20),
+                              Colors.white.withValues(alpha: 0),
+                            ],
                           ),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              AppSizes.radius15,
+                            side: const BorderSide(
+                              width: 2,
+                              strokeAlign: BorderSide.strokeAlignOutside,
+                              color: Color(0xFF4695EA),
+                            ),
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          shadows: const [
+                            BoxShadow(
+                              color: Color(0x3F000000),
+                              blurRadius: 4,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.of(
+                            context,
+                          ).pushNamed(PareggiaContiScreen.routeName),
+                          style: OutlinedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            side: BorderSide.none,
+                            padding: EdgeInsets.zero,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                AppSizes.radius15,
+                              ),
                             ),
                           ),
-                        ),
-                        child: const Text(
-                          'Pareggia i conti',
-                          style: TextStyle(
-                            color: Color(0xFF4695EA),
-                            fontSize: 20,
-                            fontFamily: 'Inter',
-                            fontWeight: FontWeight.w600,
+                          child: const Text(
+                            'Pareggia i conti',
+                            style: TextStyle(
+                              color: Color(0xFF4695EA),
+                              fontSize: 20,
+                              fontFamily: 'Inter',
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ),
@@ -242,20 +247,6 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen> {
                 ),
               ),
             ),
-            if (_fabActionsVisible)
-              Positioned(
-                left: AppSizes.p10,
-                right: AppSizes.p10,
-                bottom: AppSizes.p90,
-                child: DashboardFabActionsPanel(
-                  onActionSelected: (routeName) {
-                    setState(() {
-                      _fabActionsVisible = false;
-                    });
-                    Navigator.of(context).pushNamed(routeName);
-                  },
-                ),
-              ),
           ],
         ),
       ),

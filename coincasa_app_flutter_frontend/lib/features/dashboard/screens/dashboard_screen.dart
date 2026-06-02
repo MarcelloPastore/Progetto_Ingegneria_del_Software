@@ -21,7 +21,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   late Future<_DashboardData> _dashboardDataFuture;
   late ActiveCasaController _activeCasaController;
   bool _initialized = false;
-  bool _fabActionsVisible = false;
 
   @override
   void didChangeDependencies() {
@@ -170,28 +169,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ],
               ),
             ),
-            if (_fabActionsVisible)
-              Positioned(
-                left: AppSizes.p10,
-                right: AppSizes.p10,
-                bottom: AppSizes.p90,
-                child: DashboardFabActionsPanel(
-                  onActionSelected: (routeName) {
-                    setState(() {
-                      _fabActionsVisible = false;
-                    });
-                    Navigator.of(context).pushNamed(routeName);
-                  },
-                ),
-              ),
             Positioned(
               right: AppSizes.p10,
               bottom: AppSizes.p24,
               child: FloatingActionButton(
-                onPressed: () async {
-                        setState(() {
-                          _fabActionsVisible = !_fabActionsVisible;
-                        });
+                onPressed: () {
+                  showDialog<void>(
+                    context: context,
+                    builder: (_) => const DashboardCreatePopup(),
+                  );
                 },
                 backgroundColor: AppColors.brandAccent,
                 elevation: AppSizes.p6,

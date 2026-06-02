@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:coincasa_app/features/spese/screens/lista_spese_admin.dart';
+import 'package:coincasa_app/features/spese/screens/lista_spese_membro.dart';
+
+class InserisciSpesaSuccessoArgs {
+  const InserisciSpesaSuccessoArgs({this.memberFlow = false});
+
+  final bool memberFlow;
+}
 
 class InserisciSpesaSuccessoScreen extends StatelessWidget {
   const InserisciSpesaSuccessoScreen({super.key});
@@ -8,6 +15,9 @@ class InserisciSpesaSuccessoScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final args = ModalRoute.of(context)?.settings.arguments;
+    final memberFlow = args is InserisciSpesaSuccessoArgs && args.memberFlow;
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Stack(
@@ -95,7 +105,9 @@ class InserisciSpesaSuccessoScreen extends StatelessWidget {
                         child: ElevatedButton(
                           onPressed: () =>
                               Navigator.of(context).pushReplacementNamed(
-                                ListaSpeseAdminScreen.routeName,
+                                memberFlow
+                                    ? ListaSpeseMembroScreen.routeName
+                                    : ListaSpeseAdminScreen.routeName,
                               ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF4695EA),
