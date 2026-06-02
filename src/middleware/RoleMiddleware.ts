@@ -17,12 +17,13 @@ function checkRole(ruolo: Ruolo | undefined, role: Ruolo) {
   }
 }
 
-async function verifyCasa(
-  req: FastifyRequest,
-): Promise<Ruolo | undefined> {
+function verifyCasa(req: FastifyRequest): Ruolo | undefined {
   const tokenCasa = req.user?.idCasa ?? null;
   const pathParams = req.params as Record<string, unknown> | undefined;
-  const pathCasa = pathParams && typeof pathParams.idCasa === "string" ? pathParams.idCasa : undefined;
+  const pathCasa =
+    pathParams && typeof pathParams.idCasa === "string"
+      ? pathParams.idCasa
+      : undefined;
 
   if (pathCasa === undefined) {
     return req.user.ruoloCasa;
@@ -40,8 +41,8 @@ async function verifyCasa(
 }
 
 export function requireRole(role: Ruolo) {
-  return async (req: FastifyRequest) => {
-    const ruoloCasa = await verifyCasa(req);
+  return (req: FastifyRequest) => {
+    const ruoloCasa = verifyCasa(req);
     checkRole(ruoloCasa, role);
   };
 }

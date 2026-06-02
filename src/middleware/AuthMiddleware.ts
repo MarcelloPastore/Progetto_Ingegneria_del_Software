@@ -40,7 +40,8 @@ const getUserFromPayload = (payload: unknown) => {
   const ruoloCasaValue = ruoloCasaStr
     ? (Ruolo[ruoloCasaStr as keyof typeof Ruolo] ?? undefined)
     : undefined;
-  const idCasaStr = typeof idCasa === "string" && idCasa.length > 0 ? idCasa : null;
+  const idCasaStr =
+    typeof idCasa === "string" && idCasa.length > 0 ? idCasa : null;
 
   if (!idUtente || (tokenTypeStr !== undefined && tokenTypeStr !== "access")) {
     throw new InvalidTokenPayloadError();
