@@ -46,8 +46,14 @@ export class CasaService {
     dto: CreaCasaDto,
     idCreatore: string,
   ): Promise<CasaResponseDto> {
+    const indirizzo: string = dto.indirizzo ?? "";
+    const citta: string = dto.citta ?? "";
+    const tipoCasa: string = dto.tipoCasa ?? "";
     const casa = await casaRepository.createCasa({
-      ...dto,
+      nome: dto.nome,
+      indirizzo,
+      citta,
+      tipoCasa,
       creator: idCreatore,
       inviteLink: randomUUID(),
     });
@@ -178,8 +184,8 @@ export class CasaService {
   }
 
   async selectCasa(
-      idCasa: string,
-      idUtente: string,
+    idCasa: string,
+    idUtente: string,
   ): Promise<{ idCasa: string; ruoloCasa: Ruolo }> {
     const membro = await this.assertMembroCasa(idCasa, idUtente);
     return { idCasa, ruoloCasa: membro.ruolo };

@@ -10,14 +10,13 @@ import {
 } from "../dto/TurnoDto";
 import { TurnoService } from "../service/TurnoService";
 import { CasaParams, TurnoParams } from "../types/params";
-import { mapErrorToHttp } from "../errors/errorMapper";
+import { sendErrorReply } from "../utils/errorReply";
 
 export class TurnoController {
   constructor(private readonly turniService: TurnoService) {}
 
   private handleFailure(reply: FastifyReply, error: unknown) {
-    const mapped = mapErrorToHttp(error);
-    return reply.status(mapped.statusCode).send({ message: mapped.message });
+    return sendErrorReply(reply, error);
   }
 
   /**

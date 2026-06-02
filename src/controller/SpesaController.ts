@@ -14,14 +14,13 @@ import {
   PareggiaContiDto,
   PareggiaContiSchema,
 } from "../dto/SpesaDto";
-import { mapErrorToHttp } from "../errors/errorMapper";
+import { sendErrorReply } from "../utils/errorReply";
 
 export class SpesaController {
   constructor(private readonly speseService: SpesaService) {}
 
   private handleFailure(reply: FastifyReply, error: unknown) {
-    const mapped = mapErrorToHttp(error);
-    return reply.status(mapped.statusCode).send({ message: mapped.message });
+    return sendErrorReply(reply, error);
   }
 
   /**

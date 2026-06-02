@@ -24,3 +24,13 @@ export interface QuotaParams extends SpesaParams {
 export interface ProblemaParams extends CasaParams {
   idProblema: string;
 }
+
+// - ScadenzaController -
+export interface ScadenzaParams extends CasaParams {
+  idScadenza: string;
+}
+
+// - UtenteController -
+export interface UserParams {
+  idUtente: string;
+}

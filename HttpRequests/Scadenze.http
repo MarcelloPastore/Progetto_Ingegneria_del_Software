@@ -1,0 +1,53 @@
+@baseUrl = http://localhost:23109/api/v1
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZFV0ZW50ZSI6IjZhMWVhNGVhM2VjNjNlYWQ4NGIwNmUwMiIsImlkQ2FzYSI6IjZhMWVlYjQyYTA2ZDc0MmVkOThiYTVmZSIsInJ1b2xvQ2FzYSI6IkhvbWVBZG1pbiIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3ODA0MTEyMDYsImV4cCI6MTc4MTYyMDgwNn0.4V4f7TQ0RXMAC5TtlyVbHsFdZ2vbUOeIgFV2oZYjuhE
+@idCasa = 6a1eeb42a06d742ed98ba5fe
+@idScadenza = 6a1eebc3a06d742ed98ba600
+
+### Health
+GET {{baseUrl}}/health
+
+### Lista scadenze
+GET {{baseUrl}}/case/{{idCasa}}/scadenze
+Authorization: Bearer {{token}}
+
+### Dettaglio scadenza
+GET {{baseUrl}}/case/{{idCasa}}/scadenze/{{idScadenza}}
+Authorization: Bearer {{token}}
+
+### Crea scadenza
+POST {{baseUrl}}/case/{{idCasa}}/scadenze
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nome": "Bolletta luce",
+  "descrizione": "Pagamento utenze",
+  "dataScadenza": "2026-06-10",
+  "isRicorrente": true,
+  "cadenzaGiorni": 30
+}
+
+### Modifica scadenza
+PUT {{baseUrl}}/case/{{idCasa}}/scadenze/{{idScadenza}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nome": "Bolletta luce aggiornata",
+  "descrizione": "Pagamento utenze (aggiornata)",
+  "dataScadenza": "2026-06-15"
+}
+
+### Aggiorna ricorrenza
+PATCH {{baseUrl}}/case/{{idCasa}}/scadenze/{{idScadenza}}/ricorrenza
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "isRicorrente": false
+}
+
+### Elimina scadenza
+DELETE {{baseUrl}}/case/{{idCasa}}/scadenze/{{idScadenza}}
+Authorization: Bearer {{token}}
+

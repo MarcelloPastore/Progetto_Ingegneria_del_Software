@@ -4,6 +4,7 @@ declare module "fastify" {
   interface FastifyRequest {
     user: {
       idUtente: string;
+      idCasa?: string | null;
       ruoloCasa?: Ruolo;
     };
   }

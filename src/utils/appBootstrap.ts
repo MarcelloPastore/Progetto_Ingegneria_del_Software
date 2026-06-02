@@ -9,6 +9,7 @@ import {
   //debugRoutes,
   speseRoutes,
   turniRoutes,
+  scadenzeRoutes,
   problemiRoutes,
 } from "../config/routes";
 
@@ -55,6 +56,7 @@ export async function registerApiRoutes(
   await app.register(casaRoutes, { prefix });
   //await app.register(debugRoutes, { prefix });
   await app.register(turniRoutes, { prefix });
+  await app.register(scadenzeRoutes, { prefix });
   await app.register(speseRoutes, { prefix });
   await app.register(problemiRoutes, { prefix });
 }
