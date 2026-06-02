@@ -11,14 +11,13 @@ import {
   CreaProblemaDto,
   CreaProblemaSchema,
 } from "../dto/ProblemaDto";
-import { mapErrorToHttp } from "../errors/errorMapper";
+import { sendErrorReply } from "../utils/errorReply";
 
 export class ProblemaController {
   constructor(private readonly problemiService: ProblemaService) {}
 
   private handleFailure(reply: FastifyReply, error: unknown) {
-    const mapped = mapErrorToHttp(error);
-    return reply.status(mapped.statusCode).send({ message: mapped.message });
+    return sendErrorReply(reply, error);
   }
 
   /**

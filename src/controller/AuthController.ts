@@ -2,22 +2,13 @@ import { FastifyRequest, FastifyReply } from "fastify";
 import { AuthService } from "../service/AuthService";
 import { RegisterData } from "../dto/auth.dto";
 import { getJwt } from "../utils/jwt";
-import { mapErrorToHttp } from "../errors/errorMapper";
+import { sendErrorReply } from "../utils/errorReply";
 
 const authService = new AuthService();
 
 export class AuthController {
   private handleAuthFailure(reply: FastifyReply, error: unknown) {
-    const mapped = mapErrorToHttp(error);
-    const payload: { error: string; details?: Record<string, string[]> } = {
-      error: mapped.message,
-    };
-
-    if (mapped.details) {
-      payload.details = mapped.details;
-    }
-
-    return reply.code(mapped.statusCode).send(payload);
+    return sendErrorReply(reply, error);
   }
 
   register = async (

@@ -11,15 +11,14 @@ import {
 } from "../dto/CasaDto";
 import { CasaService } from "../service/CasaService";
 import { CasaParams, InquilinoParams } from "../types/params";
-import { mapErrorToHttp } from "../errors/errorMapper";
 import { getJwt } from "../utils/jwt";
+import { sendErrorReply } from "../utils/errorReply";
 
 export class CasaController {
   constructor(private readonly casaService: CasaService) {}
 
   private handleFailure(reply: FastifyReply, error: unknown) {
-    const mapped = mapErrorToHttp(error);
-    return reply.status(mapped.statusCode).send({ message: mapped.message });
+    return sendErrorReply(reply, error);
   }
 
   creaCasa = async (

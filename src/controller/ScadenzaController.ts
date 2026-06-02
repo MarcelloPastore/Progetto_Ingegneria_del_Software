@@ -6,20 +6,19 @@ import {
   AggiornaRicorrenzaDto,
 } from "../dto/ScadenzaDto";
 import { ScadenzaService } from "../service/ScadenzaService";
-import { mapErrorToHttp } from "../errors/errorMapper";
+import { sendErrorReply } from "../utils/errorReply";
 
 export class ScadenzaController {
   constructor(private readonly scadenzeService: ScadenzaService) {}
 
   private handleFailure(reply: FastifyReply, error: unknown) {
-    const mapped = mapErrorToHttp(error);
-    return reply.status(mapped.statusCode).send({ message: mapped.message });
+    return sendErrorReply(reply, error);
   }
 
   /**
    * GET /case/:idCasa/scadenze
    */
-  getScadenze = async (
+  getAllScadenze = async (
     request: FastifyRequest<{ Params: CasaParams }>,
     reply: FastifyReply,
   ) => {
