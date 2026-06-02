@@ -225,7 +225,6 @@ export function casaRoutes(app: FastifyInstance) {
    */
   app.post<{ Body: CreaCasaDto }>(
     "/case",
-    { preHandler: requireRole(Ruolo.Inquilino) },
     casaController.creaCasa
   );
   /**
