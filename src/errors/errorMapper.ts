@@ -18,6 +18,7 @@ export type HttpErrorPayload = {
   message: string;
   code: string;
   details?: Record<string, string[]>;
+  stack?: string;
 };
 
 const toValidationDetails = (issues: ZodError["issues"]) => {
@@ -35,11 +36,17 @@ const toValidationDetails = (issues: ZodError["issues"]) => {
 
 export function mapErrorToHttp(error: unknown): HttpErrorPayload {
   if (error instanceof HttpError) {
-    return {
+    const payload: HttpErrorPayload = {
       statusCode: error.statusCode,
       message: error.message,
       code: error.code,
     };
+
+    if (error.statusCode === 500 && error instanceof Error && error.stack) {
+      payload.stack = error.stack;
+    }
+
+    return payload;
   }
 
   if (error instanceof ZodError) {
@@ -139,6 +146,15 @@ export function mapErrorToHttp(error: unknown): HttpErrorPayload {
         code: "NOT_FOUND",
       };
     }
+  }
+
+  if (error instanceof Error && error.stack) {
+    return {
+      statusCode: 500,
+      message: "Errore interno del server",
+      code: "INTERNAL_SERVER_ERROR",
+      stack: error.stack,
+    };
   }
 
   return {
