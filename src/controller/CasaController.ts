@@ -12,6 +12,7 @@ import {
 import { CasaService } from "../service/CasaService";
 import { CasaParams, InquilinoParams } from "../types/params";
 import { mapErrorToHttp } from "../errors/errorMapper";
+import { getJwt } from "../utils/jwt";
 
 export class CasaController {
   constructor(private readonly casaService: CasaService) {}
@@ -193,6 +194,28 @@ export class CasaController {
         rigenera,
       );
       return reply.status(200).send(link);
+    } catch (error) {
+      return this.handleFailure(reply, error);
+    }
+  };
+
+  selectCasa = async (
+    request: FastifyRequest<{ Params: CasaParams }>,
+    reply: FastifyReply,
+  ) => {
+    try {
+      const { idCasa, ruoloCasa } = await this.casaService.selectCasa(
+        request.params.idCasa,
+        request.user.idUtente,
+      );
+      const jwt = getJwt(request.server);
+      const token = jwt.sign({
+        idUtente: request.user.idUtente,
+        idCasa,
+        ruoloCasa,
+        type: "access",
+      });
+      return reply.status(200).send({ token });
     } catch (error) {
       return this.handleFailure(reply, error);
     }

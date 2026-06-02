@@ -176,4 +176,12 @@ export class CasaService {
 
     return { inviteLink: aggiornata.inviteLink };
   }
+
+  async selectCasa(
+      idCasa: string,
+      idUtente: string,
+  ): Promise<{ idCasa: string; ruoloCasa: Ruolo }> {
+    const membro = await this.assertMembroCasa(idCasa, idUtente);
+    return { idCasa, ruoloCasa: membro.ruolo };
+  }
 }
