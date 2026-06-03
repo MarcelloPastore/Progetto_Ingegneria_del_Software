@@ -13,10 +13,4 @@ yarn-error.log*
 .idea/
 .env
 
-.vscode/*
-
-# Flutter generated plugin files
-**/flutter/generated_plugin_registrant.cc
-**/flutter/generated_plugin_registrant.h
-**/flutter/generated_plugins.cmake
-**/Flutter/GeneratedPluginRegistrant.swift
+.vscode/*
