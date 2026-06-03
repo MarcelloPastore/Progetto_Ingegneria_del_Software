@@ -87,9 +87,9 @@ class Turno {
       return value['username']?.toString() ??
           value['nome']?.toString() ??
           value['name']?.toString() ??
-          'Non assegnato';
+          '';
     }
-    return raw['responsabileNome']?.toString() ?? 'Non assegnato';
+    return raw['responsabileNome']?.toString() ?? '';
   }
 
   int get cadenzaGiorni {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
@@ -8,9 +9,20 @@ import 'package:coincasa_app/features/casa/screens/entra_con_codice_invito_scree
 const _houseIllustration = 'assets/Icons/casa_colorata.png';
 
 class CasaWelcomeScreen extends StatefulWidget {
-  const CasaWelcomeScreen({super.key, required this.email});
+  const CasaWelcomeScreen({
+    super.key,
+    required this.email,
+    this.userId,
+    this.firstName,
+    this.lastName,
+    this.displayName,
+  });
 
   final String email;
+  final String? userId;
+  final String? firstName;
+  final String? lastName;
+  final String? displayName;
 
   @override
   State<CasaWelcomeScreen> createState() => _CasaWelcomeScreenState();
@@ -27,6 +39,30 @@ class _CasaWelcomeScreenState extends State<CasaWelcomeScreen> {
   }
 
   Future<void> _loadUserName() async {
+    final normalizedName = widget.firstName?.trim() ?? '';
+    final normalizedSurname = widget.lastName?.trim() ?? '';
+    final normalizedDisplayName = widget.displayName?.trim() ?? '';
+
+    if (normalizedName.isNotEmpty || normalizedSurname.isNotEmpty) {
+      if (!mounted) return;
+      setState(() {
+        _userName = [
+          normalizedName,
+          normalizedSurname,
+        ].where((part) => part.isNotEmpty).join(' ');
+        _isLoading = false;
+      });
+      ApiProvider.client.setCurrentUserIdentity(
+        id: widget.userId,
+        name: normalizedName,
+        surname: normalizedSurname,
+        displayName: normalizedDisplayName.isNotEmpty
+            ? normalizedDisplayName
+            : null,
+      );
+      return;
+    }
+
     final normalizedEmail = widget.email.trim().toLowerCase();
     if (normalizedEmail.isEmpty) {
       if (!mounted) return;
@@ -51,7 +87,7 @@ class _CasaWelcomeScreenState extends State<CasaWelcomeScreen> {
     });
 
     if (_userName.isNotEmpty) {
-      ApiProvider.client.setCurrentUserIdentity(name: _userName);
+      ApiProvider.client.setCurrentUserIdentity(displayName: _userName);
     }
   }
 
@@ -61,83 +97,87 @@ class _CasaWelcomeScreenState extends State<CasaWelcomeScreen> {
         ? _userName
         : (_isLoading ? '...' : 'utente');
 
-    return Scaffold(
-      backgroundColor: AppColors.darkBackground,
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.p25,
-                    vertical: AppSizes.p24,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      SizedBox(height: constraints.maxHeight * 0.03),
-                      Image.asset(
-                        _houseIllustration,
-                        width: 235,
-                        height: 196,
-                        fit: BoxFit.contain,
-                      ),
-                      const SizedBox(height: AppSizes.p13),
-                      const Text(
-                        'Benvenuto in CoinCasa!',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: AppColors.textOnDark,
-                          fontSize: 21,
-                          fontWeight: FontWeight.w800,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: AppColors.darkBackground,
+        body: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSizes.p25,
+                      vertical: AppSizes.p24,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        SizedBox(height: constraints.maxHeight * 0.03),
+                        Image.asset(
+                          _houseIllustration,
+                          width: 235,
+                          height: 196,
+                          fit: BoxFit.contain,
                         ),
-                      ),
-                      const SizedBox(height: AppSizes.p28),
-                      _WelcomeInfoBox(userName: displayName),
-                      const SizedBox(height: AppSizes.p16),
-                      const Text(
-                        'Crea la tua casa o entra in quella di un\ncoinquilino',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: AppColors.textOnDark,
-                          fontSize: 16,
-                          height: 1.18,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: AppSizes.p21),
-                      _CasaActionButton(
-                        icon: Icons.home_outlined,
-                        text: 'Crea nuova casa',
-                        filled: true,
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) =>
-                                const CompilazioneFormCreaCasaScreen(),
+                        const SizedBox(height: AppSizes.p13),
+                        const Text(
+                          'Benvenuto in CoinCasa!',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: AppColors.textOnDark,
+                            fontSize: 21,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
-                      ),
-                      const SizedBox(height: AppSizes.p13),
-                      const _OrDivider(),
-                      const SizedBox(height: AppSizes.p13),
-                      _CasaActionButton(
-                        icon: Icons.vpn_key,
-                        text: 'Entra con link invito',
-                        filled: false,
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => const EntraConCodiceInvitoScreen(),
+                        const SizedBox(height: AppSizes.p28),
+                        _WelcomeInfoBox(userName: displayName),
+                        const SizedBox(height: AppSizes.p16),
+                        const Text(
+                          'Crea la tua casa o entra in quella di un\ncoinquilino',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: AppColors.textOnDark,
+                            fontSize: 16,
+                            height: 1.18,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: AppSizes.p21),
+                        _CasaActionButton(
+                          icon: Icons.home_outlined,
+                          text: 'Crea nuova casa',
+                          filled: true,
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) =>
+                                  const CompilazioneFormCreaCasaScreen(),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: AppSizes.p13),
+                        const _OrDivider(),
+                        const SizedBox(height: AppSizes.p13),
+                        _CasaActionButton(
+                          icon: Icons.vpn_key,
+                          text: 'Entra con link invito',
+                          filled: false,
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) =>
+                                  const EntraConCodiceInvitoScreen(),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );

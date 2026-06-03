@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
@@ -6,9 +7,13 @@ import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/turno.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/dashboard/house_health_section.dart';
 import 'package:coincasa_app/features/icone_fab.dart';
+
+// Riferimento globale per il file all'utente corrente per facilitare l'accesso alle variabili di sessione
+final _me = ApiProvider.client;
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -125,70 +130,77 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.pageBackground,
-      bottomNavigationBar: const HouseQuickNav(currentRoute: '/dashboard'),
-      body: SafeArea(
-        child: Stack(
-          children: [
-            SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(
-                AppSizes.p10,
-                AppSizes.p16,
-                AppSizes.p10,
-                AppSizes.p110,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _EmptyDashboardHeader(
-                    dashboardDataFuture: _dashboardDataFuture,
-                    onCasaChanged: _selectCasa,
-                  ),
-                  const SizedBox(height: AppSizes.p12),
-                  _EmptyBalanceCard(dashboardDataFuture: _dashboardDataFuture),
-                  const SizedBox(height: AppSizes.p28),
-                  _HouseHealthSection(
-                    dashboardDataFuture: _dashboardDataFuture,
-                  ),
-                  const SizedBox(height: AppSizes.p28),
-                  const _EmptyMessageSection(
-                    title: 'PROSSIME SCADENZE',
-                    message: 'Nessuna scadenza presente...',
-                    height: 150,
-                    routeName: '/scadenze',
-                  ),
-                  const SizedBox(height: AppSizes.p28),
-                  const _EmptyProblemsSection(),
-                  const SizedBox(height: AppSizes.p28),
-                  _TodayTurnSection(dashboardDataFuture: _dashboardDataFuture),
-                  const SizedBox(height: AppSizes.p28),
-                  _EmptyCalendarSection(
-                    dashboardDataFuture: _dashboardDataFuture,
-                  ),
-                ],
-              ),
-            ),
-            Positioned(
-              right: AppSizes.p10,
-              bottom: AppSizes.p24,
-              child: FloatingActionButton(
-                onPressed: () {
-                  showDialog<void>(
-                    context: context,
-                    builder: (_) => const DashboardCreatePopup(),
-                  );
-                },
-                backgroundColor: AppColors.brandAccent,
-                elevation: AppSizes.p6,
-                child: const Icon(
-                  Icons.add,
-                  size: AppSizes.p38,
-                  color: AppColors.textOnDark,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark,
+      child: Scaffold(
+        backgroundColor: AppColors.pageBackground,
+        bottomNavigationBar: const HouseQuickNav(currentRoute: '/dashboard'),
+        body: SafeArea(
+          child: Stack(
+            children: [
+              SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSizes.p10,
+                  AppSizes.p16,
+                  AppSizes.p10,
+                  AppSizes.p110,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _EmptyDashboardHeader(
+                      dashboardDataFuture: _dashboardDataFuture,
+                      onCasaChanged: _selectCasa,
+                    ),
+                    const SizedBox(height: AppSizes.p12),
+                    _EmptyBalanceCard(
+                      dashboardDataFuture: _dashboardDataFuture,
+                    ),
+                    const SizedBox(height: AppSizes.p28),
+                    _HouseHealthSection(
+                      dashboardDataFuture: _dashboardDataFuture,
+                    ),
+                    const SizedBox(height: AppSizes.p28),
+                    const _EmptyMessageSection(
+                      title: 'PROSSIME SCADENZE',
+                      message: 'Nessuna scadenza presente...',
+                      height: 150,
+                      routeName: '/scadenze',
+                    ),
+                    const SizedBox(height: AppSizes.p28),
+                    const _EmptyProblemsSection(),
+                    const SizedBox(height: AppSizes.p28),
+                    _TodayTurnSection(
+                      dashboardDataFuture: _dashboardDataFuture,
+                    ),
+                    const SizedBox(height: AppSizes.p28),
+                    _EmptyCalendarSection(
+                      dashboardDataFuture: _dashboardDataFuture,
+                    ),
+                  ],
                 ),
               ),
-            ),
-          ],
+              Positioned(
+                right: AppSizes.p10,
+                bottom: AppSizes.p24,
+                child: FloatingActionButton(
+                  onPressed: () {
+                    showDialog<void>(
+                      context: context,
+                      builder: (_) => const DashboardCreatePopup(),
+                    );
+                  },
+                  backgroundColor: AppColors.brandAccent,
+                  elevation: AppSizes.p6,
+                  child: const Icon(
+                    Icons.add,
+                    size: AppSizes.p38,
+                    color: AppColors.textOnDark,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -217,6 +229,29 @@ class _DashboardData {
   final List<Turno> turni;
   final List<Turno> turniOggi;
   final List<HouseHealthBadgeData> houseHealthBadges;
+}
+
+class _CurrentUserAvatar extends StatelessWidget {
+  const _CurrentUserAvatar({required this.future, this.radius = AppSizes.p23});
+
+  final Future<_DashboardData> future;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<_DashboardData>(
+      future: future,
+      builder: (context, snapshot) {
+        return UserAvatar(
+          radius: radius,
+          userId: _me.currentUserAvatarSeed,
+          firstName: _me.currentUserFirstName,
+          lastName: _me.currentUserLastName,
+          fullName: _me.currentUserDisplayName,
+        );
+      },
+    );
+  }
 }
 
 class _EmptyDashboardHeader extends StatelessWidget {
@@ -249,16 +284,9 @@ class _EmptyDashboardHeader extends StatelessWidget {
               ),
             );
           },
-          customBorder: const CircleBorder(),
-          child: const CircleAvatar(
+          child: _CurrentUserAvatar(
+            future: dashboardDataFuture,
             radius: AppSizes.p23,
-            backgroundColor: AppColors.surfaceTint,
-            child: Image(
-              image: AssetImage('assets/Icons/Profilo_utente_icona.png'),
-              width: AppSizes.p27,
-              height: AppSizes.p27,
-              fit: BoxFit.contain,
-            ),
           ),
         ),
         const SizedBox(width: AppSizes.p14),
@@ -668,7 +696,7 @@ class _EmptyProblemsSection extends StatelessWidget {
               children: [
                 const _StatusRow(
                   title: 'Nessun problema',
-                  status: 'urgente',
+                  status: 'la casa sta bene!',
                   titleColor: AppColors.statusPositive,
                 ),
                 const Spacer(),
@@ -734,9 +762,7 @@ class _TodayTurnSection extends StatelessWidget {
                   title: isLoading
                       ? 'Caricamento turno...'
                       : turno?.titolo ?? 'Nessuna pulizia da fare!',
-                  status: turniOggi.length > 1
-                      ? '+${turniOggi.length - 1}'
-                      : 'oggi',
+                  status: '',
                   titleColor: AppColors.textOnDark,
                 ),
               ),

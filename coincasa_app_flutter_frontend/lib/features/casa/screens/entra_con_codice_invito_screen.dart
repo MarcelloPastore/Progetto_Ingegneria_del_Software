@@ -169,88 +169,91 @@ class _EntraConCodiceInvitoScreenState
 
     final state = ref.watch(inviteCodeEntryControllerProvider);
 
-    return Scaffold(
-      backgroundColor: AppColors.darkBackground,
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSizes.p20,
-                    AppSizes.p18,
-                    AppSizes.p20,
-                    AppSizes.p24,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const _InviteCodeHeader(),
-                      SizedBox(height: constraints.maxHeight * 0.07),
-                      const _KeyBadge(),
-                      const SizedBox(height: AppSizes.p25),
-                      const Text(
-                        'Codice Invito',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: AppColors.textOnDark,
-                          fontSize: 21,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: AppSizes.p18),
-                      _CodeFieldLabel(hasError: state.hasError),
-                      const SizedBox(height: AppSizes.p17),
-                      _InviteCodeTextField(
-                        controller: _codeController,
-                        focusNode: _codeFocusNode,
-                        hasError: state.hasError,
-                        onChanged: ref
-                            .read(inviteCodeEntryControllerProvider.notifier)
-                            .codeChanged,
-                        onSubmitted: state.canSubmit ? _verifyCode : null,
-                      ),
-                      if (state.showInvalidInviteCode) ...[
-                        const SizedBox(height: AppSizes.p14),
-                        const _InlineInviteError(
-                          message: 'Codice non trovato o scaduto',
-                        ),
-                      ] else if (state.errorText != null) ...[
-                        const SizedBox(height: AppSizes.p10),
-                        Text(
-                          state.errorText!,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: AppColors.darkBackground,
+        body: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSizes.p20,
+                      AppSizes.p18,
+                      AppSizes.p20,
+                      AppSizes.p24,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const _InviteCodeHeader(),
+                        SizedBox(height: constraints.maxHeight * 0.07),
+                        const _KeyBadge(),
+                        const SizedBox(height: AppSizes.p25),
+                        const Text(
+                          'Codice Invito',
                           textAlign: TextAlign.center,
-                          style: AppTextStyles.error.copyWith(fontSize: 13),
+                          style: TextStyle(
+                            color: AppColors.textOnDark,
+                            fontSize: 21,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: AppSizes.p18),
+                        _CodeFieldLabel(hasError: state.hasError),
+                        const SizedBox(height: AppSizes.p17),
+                        _InviteCodeTextField(
+                          controller: _codeController,
+                          focusNode: _codeFocusNode,
+                          hasError: state.hasError,
+                          onChanged: ref
+                              .read(inviteCodeEntryControllerProvider.notifier)
+                              .codeChanged,
+                          onSubmitted: state.canSubmit ? _verifyCode : null,
+                        ),
+                        if (state.showInvalidInviteCode) ...[
+                          const SizedBox(height: AppSizes.p14),
+                          const _InlineInviteError(
+                            message: 'Codice non trovato o scaduto',
+                          ),
+                        ] else if (state.errorText != null) ...[
+                          const SizedBox(height: AppSizes.p10),
+                          Text(
+                            state.errorText!,
+                            textAlign: TextAlign.center,
+                            style: AppTextStyles.error.copyWith(fontSize: 13),
+                          ),
+                        ],
+                        if (state.showInvalidInviteCode) ...[
+                          const SizedBox(height: AppSizes.p22),
+                          const _InvalidInviteCodePanel(),
+                        ],
+                        const SizedBox(height: AppSizes.p27),
+                        _InviteCodeButton(
+                          label: state.showInvalidInviteCode
+                              ? 'Riprova'
+                              : 'Verifica codice',
+                          filled: true,
+                          isLoading: state.isSubmitting,
+                          onPressed: state.canSubmit ? _verifyCode : null,
+                        ),
+                        const SizedBox(height: AppSizes.p16),
+                        _InviteCodeButton(
+                          label: 'Annulla',
+                          filled: false,
+                          onPressed: Navigator.of(context).pop,
                         ),
                       ],
-                      if (state.showInvalidInviteCode) ...[
-                        const SizedBox(height: AppSizes.p22),
-                        const _InvalidInviteCodePanel(),
-                      ],
-                      const SizedBox(height: AppSizes.p27),
-                      _InviteCodeButton(
-                        label: state.showInvalidInviteCode
-                            ? 'Riprova'
-                            : 'Verifica codice',
-                        filled: true,
-                        isLoading: state.isSubmitting,
-                        onPressed: state.canSubmit ? _verifyCode : null,
-                      ),
-                      const SizedBox(height: AppSizes.p16),
-                      _InviteCodeButton(
-                        label: 'Annulla',
-                        filled: false,
-                        onPressed: Navigator.of(context).pop,
-                      ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );
@@ -542,48 +545,46 @@ class _InviteCodeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borderColor = filled
-        ? AppColors.primaryBorder
-        : AppColors.inputBorderDark;
-    final foregroundColor = onPressed == null
-        ? AppColors.textMutedDark
-        : AppColors.textOnDark;
+    if (filled) {
+      return SizedBox(
+        width: double.infinity,
+        height: AppSizes.p58,
+        child: ElevatedButton(
+          onPressed: isLoading ? null : onPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.brandPrimary,
+            foregroundColor: AppColors.textOnDark,
+            disabledBackgroundColor: AppColors.brandPrimary.withValues(
+              alpha: 0.55,
+            ),
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSizes.radius15),
+              side: const BorderSide(color: AppColors.primaryBorder, width: 2),
+            ),
+          ),
+          child: _ButtonContent(label: label, isLoading: isLoading),
+        ),
+      );
+    }
 
     return SizedBox(
       height: AppSizes.p58,
-      child: filled
-          ? FilledButton(
-              onPressed: isLoading ? null : onPressed,
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.brandSecondary,
-                disabledBackgroundColor: AppColors.brandSecondary.withValues(
-                  alpha: 0.55,
-                ),
-                foregroundColor: foregroundColor,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppSizes.radius15),
-                  side: BorderSide(color: borderColor, width: 2),
-                ),
-              ),
-              child: _ButtonContent(label: label, isLoading: isLoading),
-            )
-          : OutlinedButton(
-              onPressed: onPressed,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: foregroundColor,
-                side: BorderSide(color: borderColor, width: 2),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppSizes.radius15),
-                ),
-              ),
-              child: Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 21,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
+      width: double.infinity,
+      child: OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.textOnDark,
+          side: const BorderSide(color: AppColors.primaryBorder, width: 2),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSizes.radius15),
+          ),
+        ),
+        child: Text(
+          label,
+          style: AppTextStyles.button,
+        ),
+      ),
     );
   }
 }
@@ -599,7 +600,8 @@ class _ButtonContent extends StatelessWidget {
     if (!isLoading) {
       return Text(
         label,
-        style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800),
+        textAlign: TextAlign.center,
+        style: AppTextStyles.button,
       );
     }
 
@@ -607,17 +609,18 @@ class _ButtonContent extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         const SizedBox(
-          width: AppSizes.p18,
-          height: AppSizes.p18,
+          width: AppSizes.p20,
+          height: AppSizes.p20,
           child: CircularProgressIndicator(
-            strokeWidth: 2,
+            strokeWidth: 2.5,
             valueColor: AlwaysStoppedAnimation<Color>(AppColors.textOnDark),
           ),
         ),
-        const SizedBox(width: AppSizes.p10),
+        const SizedBox(width: AppSizes.p12),
         Text(
           label,
-          style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800),
+          textAlign: TextAlign.center,
+          style: AppTextStyles.button,
         ),
       ],
     );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../constants/app_sizes.dart';
@@ -370,6 +371,7 @@ abstract final class AppTheme {
       backgroundColor: AppColors.pageBackground,
       foregroundColor: AppColors.textPrimary,
       elevation: 0,
+      systemOverlayStyle: SystemUiOverlayStyle.dark,
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: false,
@@ -418,13 +420,16 @@ class AuthRecoveryScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
-      child: Scaffold(
-        backgroundColor: AppColors.darkBackground,
-        body: SafeArea(
-          child: SingleChildScrollView(
-            child: Padding(padding: padding, child: child),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Scaffold(
+          backgroundColor: AppColors.darkBackground,
+          body: SafeArea(
+            child: SingleChildScrollView(
+              child: Padding(padding: padding, child: child),
+            ),
           ),
         ),
       ),

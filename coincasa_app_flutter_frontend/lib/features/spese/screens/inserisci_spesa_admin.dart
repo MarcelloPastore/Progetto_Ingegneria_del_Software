@@ -6,6 +6,7 @@ import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/utils/user_initials.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/features/spese/screens/dettaglio_spesa_admin.dart';
 
@@ -774,9 +775,11 @@ class _InquilinoCheckbox extends StatelessWidget {
                   backgroundColor: _getAvatarColor(inquilino.id),
                   radius: 18,
                   child: Text(
-                    inquilino.nome.isNotEmpty
-                        ? inquilino.nome[0].toUpperCase()
-                        : '?',
+                    resolveUserInitials(
+                      displayName: inquilino.nomeCompleto,
+                      email: inquilino.email,
+                      fallback: '?',
+                    ),
                     style: const TextStyle(
                       color: AppColors.textOnDark,
                       fontWeight: FontWeight.bold,

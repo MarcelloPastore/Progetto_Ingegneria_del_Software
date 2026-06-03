@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:coincasa_app/core/theme/app_theme.dart';
-import 'package:coincasa_app/features/casa/screens/hub_casa_admin.dart';
+import 'package:coincasa_app/features/dashboard/screens/dashboard_screen.dart';
 
 class CasaPreSchermataHubCasaScreen extends StatelessWidget {
   const CasaPreSchermataHubCasaScreen({
@@ -20,54 +21,57 @@ class CasaPreSchermataHubCasaScreen extends StatelessWidget {
     final displayHouseName = _formatHouseName(houseName);
     final locationText = _formatLocationText(houseType: houseType, city: city);
 
-    return Scaffold(
-      backgroundColor: AppColors.darkBackground,
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.p30,
-                    vertical: AppSizes.p24,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      SizedBox(height: constraints.maxHeight * 0.05),
-                      Image.asset(
-                        'assets/Icons/green_check_mark.png',
-                        width: AppSizes.p100,
-                        height: AppSizes.p100,
-                        fit: BoxFit.contain,
-                      ),
-                      const SizedBox(height: AppSizes.p22),
-                      const Text(
-                        'Codice valido!',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: AppColors.textOnDark,
-                          fontSize: 25,
-                          fontWeight: FontWeight.w800,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: AppColors.darkBackground,
+        body: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSizes.p30,
+                      vertical: AppSizes.p24,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        SizedBox(height: constraints.maxHeight * 0.05),
+                        Image.asset(
+                          'assets/Icons/green_check_mark.png',
+                          width: AppSizes.p100,
+                          height: AppSizes.p100,
+                          fit: BoxFit.contain,
                         ),
-                      ),
-                      const SizedBox(height: AppSizes.p30),
-                      _HousePreviewCard(
-                        houseName: displayHouseName,
-                        locationText: locationText,
-                      ),
-                      const SizedBox(height: AppSizes.p32),
-                      _PrimaryEnterButton(houseName: displayHouseName),
-                      const SizedBox(height: AppSizes.p18),
-                      const _CancelButton(),
-                    ],
+                        const SizedBox(height: AppSizes.p22),
+                        const Text(
+                          'Codice valido!',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: AppColors.textOnDark,
+                            fontSize: 25,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: AppSizes.p30),
+                        _HousePreviewCard(
+                          houseName: displayHouseName,
+                          locationText: locationText,
+                        ),
+                        const SizedBox(height: AppSizes.p32),
+                        _PrimaryEnterButton(houseName: displayHouseName),
+                        const SizedBox(height: AppSizes.p18),
+                        const _CancelButton(),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );
@@ -189,7 +193,7 @@ class _PrimaryEnterButton extends StatelessWidget {
       child: FilledButton(
         onPressed: () {
           Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute<void>(builder: (_) => const HubCasaAdminScreen()),
+            MaterialPageRoute<void>(builder: (_) => const DashboardScreen()),
             (route) => false,
           );
         },

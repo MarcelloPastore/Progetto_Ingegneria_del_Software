@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
-import 'package:coincasa_app/core/utils/user_initials.dart';
+import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 import 'package:coincasa_app/features/casa/screens/compilazione_form_crea_casa.dart';
 import 'package:coincasa_app/features/casa/screens/hub_casa_admin.dart';
+
+// Riferimento globale per il file all'utente corrente per facilitare l'accesso alle variabili di sessione
+final _me = ApiProvider.client;
 
 class ListaCaseScreen extends StatefulWidget {
   const ListaCaseScreen({super.key});
@@ -32,95 +36,99 @@ class _ListaCaseScreenState extends State<ListaCaseScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF09031F),
-      body: SafeArea(
-        child: FutureBuilder<List<Casa>>(
-          future: _future,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState != ConnectionState.done) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (snapshot.hasError) {
-              return _ErrorState(onRetry: _reload);
-            }
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: const Color(0xFF09031F),
+        body: SafeArea(
+          child: FutureBuilder<List<Casa>>(
+            future: _future,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState != ConnectionState.done) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (snapshot.hasError) {
+                return _ErrorState(onRetry: _reload);
+              }
 
-            final caseUtente = snapshot.data ?? const [];
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(24, 18, 24, 28),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _Header(caseCount: caseUtente.length),
-                  const SizedBox(height: 20),
-                  Expanded(
-                    child: caseUtente.isEmpty
-                        ? const Center(
-                            child: Text(
-                              'Nessuna casa attiva.',
-                              style: TextStyle(color: Colors.white),
+              final caseUtente = snapshot.data ?? const [];
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(24, 18, 24, 28),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _Header(caseCount: caseUtente.length, future: _future),
+                    const SizedBox(height: 20),
+                    Expanded(
+                      child: caseUtente.isEmpty
+                          ? const Center(
+                              child: Text(
+                                'Nessuna casa attiva.',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            )
+                          : RefreshIndicator(
+                              onRefresh: () async => _reload(),
+                              child: ListView.separated(
+                                itemCount: caseUtente.length,
+                                separatorBuilder: (_, _) =>
+                                    const SizedBox(height: 20),
+                                itemBuilder: (context, index) {
+                                  final casa = caseUtente[index];
+                                  return _HouseCard(
+                                    casa: casa,
+                                    onTap: () {
+                                      ActiveCasaScope.read(
+                                        context,
+                                      ).selectCasa(casa.id);
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute<void>(
+                                          builder: (_) => HubCasaAdminScreen(
+                                            casaId: casa.id,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
                             ),
-                          )
-                        : RefreshIndicator(
-                            onRefresh: () async => _reload(),
-                            child: ListView.separated(
-                              itemCount: caseUtente.length,
-                              separatorBuilder: (_, _) =>
-                                  const SizedBox(height: 20),
-                              itemBuilder: (context, index) {
-                                final casa = caseUtente[index];
-                                return _HouseCard(
-                                  casa: casa,
-                                  onTap: () {
-                                    ActiveCasaScope.read(
-                                      context,
-                                    ).selectCasa(casa.id);
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute<void>(
-                                        builder: (_) =>
-                                            HubCasaAdminScreen(casaId: casa.id),
-                                      ),
-                                    );
-                                  },
-                                );
-                              },
+                    ),
+                    const SizedBox(height: 20),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 15),
+                      child: FilledButton(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) =>
+                                  const CompilazioneFormCreaCasaScreen(),
                             ),
+                          );
+                        },
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size.fromHeight(50),
+                          backgroundColor: const Color(0xFF5A2FC5),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                  ),
-                  const SizedBox(height: 20),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 15),
-                    child: FilledButton(
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) =>
-                                const CompilazioneFormCreaCasaScreen(),
-                          ),
-                        );
-                      },
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size.fromHeight(50),
-                        backgroundColor: const Color(0xFF5A2FC5),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
                         ),
-                      ),
-                      child: const Text(
-                        'Aggiungi casa',
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w800,
+                        child: const Text(
+                          'Aggiungi casa',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                ],
-              ),
-            );
-          },
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
@@ -153,9 +161,10 @@ class _ErrorState extends StatelessWidget {
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.caseCount});
+  const _Header({required this.caseCount, required this.future});
 
   final int caseCount;
+  final Future<List<Casa>> future;
 
   @override
   Widget build(BuildContext context) {
@@ -182,44 +191,46 @@ class _Header extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
+              Text(
                 'Le mie case',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  height: 1.1,
-                  fontWeight: FontWeight.w800,
+                style: AppTextStyles.dashboardHeaderTitle.copyWith(
+                  color: AppColors.textOnDark,
                 ),
               ),
               const SizedBox(height: 6),
               Text(
                 '$caseCount ${caseCount == 1 ? 'casa attiva' : 'case attive'}',
-                style: const TextStyle(
-                  color: Color(0xFF9D77FF),
-                  fontSize: 14,
-                  height: 1.1,
-                  fontWeight: FontWeight.w800,
+                style: AppTextStyles.dashboardHeaderSubtitle.copyWith(
+                  color: AppColors.brandAccent,
                 ),
               ),
             ],
           ),
         ),
-        CircleAvatar(
-          radius: 26,
-          backgroundColor: Color(0xFF3F33B8),
-          child: Text(
-            resolveUserInitials(
-              displayName: ApiProvider.client.currentUserName,
-              email: ApiProvider.client.currentUserEmail,
-              fallback: '??',
-            ),
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
+        _CurrentUserAvatar(future: future),
       ],
+    );
+  }
+}
+
+class _CurrentUserAvatar extends StatelessWidget {
+  const _CurrentUserAvatar({required this.future});
+
+  final Future<List<Casa>> future;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<Casa>>(
+      future: future,
+      builder: (context, snapshot) {
+        return UserAvatar(
+          radius: 26,
+          userId: _me.currentUserAvatarSeed,
+          firstName: _me.currentUserFirstName,
+          lastName: _me.currentUserLastName,
+          fullName: _me.currentUserDisplayName,
+        );
+      },
     );
   }
 }

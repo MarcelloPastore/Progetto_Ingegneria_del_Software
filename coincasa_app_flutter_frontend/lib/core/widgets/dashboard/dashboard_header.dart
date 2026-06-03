@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
-import 'package:coincasa_app/core/utils/user_initials.dart';
+import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 
 class DashboardHeader extends StatelessWidget {
   const DashboardHeader({super.key});
@@ -11,20 +11,12 @@ class DashboardHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        CircleAvatar(
+        UserAvatar(
           radius: AppSizes.p22,
-          backgroundColor: AppColors.surfaceTint,
-          child: Text(
-            resolveUserInitials(
-              displayName: ApiProvider.client.currentUserName,
-              email: ApiProvider.client.currentUserEmail,
-              fallback: '??',
-            ),
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+          userId: ApiProvider.client.currentUserAvatarSeed,
+          firstName: ApiProvider.client.currentUserFirstName,
+          lastName: ApiProvider.client.currentUserLastName,
+          fullName: ApiProvider.client.currentUserDisplayName,
         ),
         const SizedBox(width: AppSizes.p14),
         Expanded(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
@@ -7,7 +8,9 @@ import 'package:coincasa_app/core/models/turno.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/utils/route_observer.dart';
+import 'package:coincasa_app/core/utils/user_initials.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 import 'package:coincasa_app/features/turni/screens/dettaglio_turno_admin.dart';
 import 'package:coincasa_app/features/turni/screens/turno_create_screen.dart';
 
@@ -98,93 +101,96 @@ class _ListaTurniScreenState extends ConsumerState<ListaTurniScreen>
       orElse: () => const <Turno>[],
     );
 
-    return Scaffold(
-      backgroundColor: AppColors.darkBackground,
-      bottomNavigationBar: const HouseQuickNav(currentRoute: '/turni'),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: AppColors.darkBackground,
+        bottomNavigationBar: const HouseQuickNav(currentRoute: '/turni'),
+        body: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSizes.p16,
+                    AppSizes.p10,
+                    AppSizes.p16,
+                    AppSizes.p24,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'Turni',
+                        textAlign: TextAlign.center,
+                        style: AppTextStyles.screenTitleStrong.copyWith(
+                          color: AppColors.brandAccent,
+                          fontSize: 40,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: AppSizes.p14),
+                      Text(
+                        'Calendario',
+                        style: AppTextStyles.screenTitleStrong.copyWith(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: AppSizes.p8),
+                      _TurniCalendarCard(turni: calendarTurni),
+                      const SizedBox(height: AppSizes.p35),
+                      Text(
+                        'Turni assegnati',
+                        style: AppTextStyles.screenTitleStrong.copyWith(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: AppSizes.p8),
+                      turniAsync.when(
+                        loading: () => const _TurniStatePanel(
+                          message: 'Caricamento turni...',
+                        ),
+                        error: (_, _) => const _TurniStatePanel(
+                          message: 'Impossibile caricare i turni.',
+                        ),
+                        data: (turni) => turni.isEmpty
+                            ? const _TurniStatePanel(
+                                message:
+                                    'Non ci sono turni per adesso...\nCreane subito uno nuovo!',
+                              )
+                            : _AssignedTurniCard(
+                                turni: turni,
+                                onTurnoTap: (turno) =>
+                                    Navigator.of(context).pushNamed(
+                                      DettaglioTurnoAdminScreen.routeName,
+                                      arguments: turno.id,
+                                    ),
+                              ),
+                      ),
+                      const SizedBox(height: AppSizes.p40),
+                    ],
+                  ),
+                ),
+              ),
+              Padding(
                 padding: const EdgeInsets.fromLTRB(
-                  AppSizes.p16,
                   AppSizes.p10,
-                  AppSizes.p16,
-                  AppSizes.p24,
+                  AppSizes.p0,
+                  AppSizes.p10,
+                  AppSizes.p14,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      'Turni',
-                      textAlign: TextAlign.center,
-                      style: AppTextStyles.screenTitleStrong.copyWith(
-                        color: AppColors.brandAccent,
-                        fontSize: 40,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: AppSizes.p14),
-                    Text(
-                      'Calendario',
-                      style: AppTextStyles.screenTitleStrong.copyWith(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: AppSizes.p8),
-                    _TurniCalendarCard(turni: calendarTurni),
-                    const SizedBox(height: AppSizes.p35),
-                    Text(
-                      'Turni assegnati',
-                      style: AppTextStyles.screenTitleStrong.copyWith(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: AppSizes.p8),
-                    turniAsync.when(
-                      loading: () => const _TurniStatePanel(
-                        message: 'Caricamento turni...',
-                      ),
-                      error: (_, _) => const _TurniStatePanel(
-                        message: 'Impossibile caricare i turni.',
-                      ),
-                      data: (turni) => turni.isEmpty
-                          ? const _TurniStatePanel(
-                              message:
-                                  'Non ci sono turni per adesso...\nCreane subito uno nuovo!',
-                            )
-                          : _AssignedTurniCard(
-                              turni: turni,
-                              onTurnoTap: (turno) =>
-                                  Navigator.of(context).pushNamed(
-                                    DettaglioTurnoAdminScreen.routeName,
-                                    arguments: turno.id,
-                                  ),
-                            ),
-                    ),
-                    const SizedBox(height: AppSizes.p40),
-                  ],
+                child: _InsertTurnoButton(
+                  onPressed:
+                      widget.onInserisciTurno ??
+                      () => Navigator.of(
+                        context,
+                      ).pushNamed(TurnoCreateScreen.routeName),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSizes.p10,
-                AppSizes.p0,
-                AppSizes.p10,
-                AppSizes.p14,
-              ),
-              child: _InsertTurnoButton(
-                onPressed:
-                    widget.onInserisciTurno ??
-                    () => Navigator.of(
-                      context,
-                    ).pushNamed(TurnoCreateScreen.routeName),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -414,6 +420,9 @@ class _TurniCalendarCardState extends State<_TurniCalendarCard> {
 
   static Color? _markerForDate(DateTime date, List<Turno> turni) {
     for (final turno in turni) {
+      if (turno.assegnatarioId.isEmpty) {
+        continue;
+      }
       final turnoDate = turno.dataProssimaPulizia;
       if (turnoDate != null && _isSameDate(turnoDate, date)) {
         return _colorForAssignee(turno.assegnatarioNome);
@@ -425,8 +434,11 @@ class _TurniCalendarCardState extends State<_TurniCalendarCard> {
   static List<_CalendarLegendItem> _legendItems(List<Turno> turni) {
     final items = <String, Color>{};
     for (final turno in turni) {
-      final label = _initials(turno.assegnatarioNome);
-      if (label != '?' && !items.containsKey(label)) {
+      if (turno.assegnatarioId.isEmpty) {
+        continue;
+      }
+      final label = resolveUserInitials(displayName: turno.assegnatarioNome);
+      if (label != '?' && label != '??' && !items.containsKey(label)) {
         items[label] = _colorForAssignee(turno.assegnatarioNome);
       }
       if (items.length == 3) {
@@ -438,20 +450,6 @@ class _TurniCalendarCardState extends State<_TurniCalendarCard> {
           (entry) => _CalendarLegendItem(label: entry.key, color: entry.value),
         )
         .toList(growable: false);
-  }
-
-  static String _initials(String name) {
-    final trimmed = name.trim();
-    if (trimmed.isEmpty || trimmed == 'Non assegnato') {
-      return '?';
-    }
-    final parts = trimmed.split(RegExp(r'\s+'));
-    if (parts.length >= 2) {
-      return '${parts.first[0]}${parts[1][0]}'.toUpperCase();
-    }
-    return trimmed.length >= 2
-        ? trimmed.substring(0, 2).toUpperCase()
-        : trimmed.toUpperCase();
   }
 
   static Color _colorForAssignee(String name) {
@@ -633,25 +631,11 @@ class _AssignedTurniCard extends StatelessWidget {
   final List<Turno> turni;
   final ValueChanged<Turno> onTurnoTap;
 
-  static const _avatarColors = [
-    Color(0xFF2F8F46),
-    Color(0xFF78542A),
-    Color(0xFF60347D),
-    Color(0xFF347A88),
-  ];
-
   static const _whenColors = [
     Color(0xFF2E8641),
     Color(0xFF835C2F),
     Color(0xFF65347C),
     Color(0xFF286D76),
-  ];
-
-  static const _textColors = [
-    Color(0xFF66FF7B),
-    Color(0xFFFFA83D),
-    Color(0xFFE889FF),
-    Colors.cyanAccent,
   ];
 
   @override
@@ -680,32 +664,17 @@ class _AssignedTurniCard extends StatelessWidget {
               bottom: index == turni.length - 1 ? 0 : AppSizes.p18,
             ),
             child: _AssignedTurnoRow(
-              initials: _initials(turno.assegnatarioNome),
+              userId: turno.assegnatarioId,
+              displayName: turno.assegnatarioNome,
               task: turno.titolo,
               when: _whenLabel(turno.dataProssimaPulizia),
-              avatarColor: _avatarColors[index % _avatarColors.length],
               whenColor: _whenColors[index % _whenColors.length],
-              textColor: _textColors[index % _textColors.length],
               onTap: () => onTurnoTap(turno),
             ),
           );
         }),
       ),
     );
-  }
-
-  static String _initials(String name) {
-    final trimmed = name.trim();
-    if (trimmed.isEmpty || trimmed == 'Non assegnato') {
-      return '?';
-    }
-    final parts = trimmed.split(RegExp(r'\s+'));
-    if (parts.length >= 2) {
-      return '${parts.first[0]}${parts[1][0]}'.toUpperCase();
-    }
-    return trimmed.length >= 2
-        ? trimmed.substring(0, 2).toUpperCase()
-        : trimmed.toUpperCase();
   }
 
   static String _whenLabel(DateTime? date) {
@@ -775,21 +744,19 @@ class _TurniStatePanel extends StatelessWidget {
 
 class _AssignedTurnoRow extends StatelessWidget {
   const _AssignedTurnoRow({
-    required this.initials,
+    required this.userId,
+    required this.displayName,
     required this.task,
     required this.when,
-    required this.avatarColor,
     required this.whenColor,
-    required this.textColor,
     this.onTap,
   });
 
-  final String initials;
+  final String? userId;
+  final String displayName;
   final String task;
   final String when;
-  final Color avatarColor;
   final Color whenColor;
-  final Color textColor;
   final VoidCallback? onTap;
 
   @override
@@ -801,17 +768,11 @@ class _AssignedTurnoRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: AppSizes.p2),
         child: Row(
           children: [
-            CircleAvatar(
+            UserAvatar(
               radius: AppSizes.p23,
-              backgroundColor: avatarColor,
-              child: Text(
-                initials,
-                style: AppTextStyles.bodyStrong.copyWith(
-                  color: textColor,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
+              userId: userId?.isNotEmpty == true ? userId : null,
+              fullName: displayName.trim().isNotEmpty ? displayName : null,
+              fallback: '?',
             ),
             const SizedBox(width: AppSizes.p24),
             Expanded(
@@ -836,7 +797,7 @@ class _AssignedTurnoRow extends StatelessWidget {
               child: Text(
                 when,
                 style: AppTextStyles.bodyStrong.copyWith(
-                  color: textColor,
+                  color: AppColors.textOnDark,
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
                 ),

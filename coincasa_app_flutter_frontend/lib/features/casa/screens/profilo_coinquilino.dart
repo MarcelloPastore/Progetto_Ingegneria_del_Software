@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:coincasa_app/core/api/api_provider.dart';
-import 'package:coincasa_app/core/utils/user_initials.dart';
 import 'package:coincasa_app/features/casa/screens/promuovi_coinquilino.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 
 class ProfiloCoinquilinoScreen extends StatelessWidget {
   const ProfiloCoinquilinoScreen({super.key});
@@ -62,37 +62,13 @@ class _UserAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        CircleAvatar(
-          radius: 18,
-          backgroundColor: Color(0xFF3F33B8),
-          child: Text(
-            resolveUserInitials(
-              displayName: ApiProvider.client.currentUserName,
-              email: ApiProvider.client.currentUserEmail,
-              fallback: '??',
-            ),
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-        Positioned(
-          top: 2,
-          right: 2,
-          child: Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: const Color(0xFFFF7B6D),
-              borderRadius: BorderRadius.circular(99),
-            ),
-          ),
-        ),
-      ],
+    return UserAvatar(
+      radius: 18,
+      userId: ApiProvider.client.currentUserAvatarSeed,
+      firstName: ApiProvider.client.currentUserFirstName,
+      lastName: ApiProvider.client.currentUserLastName,
+      fullName: ApiProvider.client.currentUserDisplayName,
+      showPresenceDot: true,
     );
   }
 }
@@ -118,18 +94,7 @@ class _ProfileCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          const CircleAvatar(
-            radius: 39,
-            backgroundColor: Color(0xFF355A82),
-            child: Text(
-              'F',
-              style: TextStyle(
-                color: Color(0xFF63C6FF),
-                fontSize: 26,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
+          const UserAvatar(radius: 39, fullName: 'Francesco Verdi'),
           const SizedBox(height: 6),
           const Text(
             'Francesco Verdi',

@@ -1,11 +1,38 @@
 import 'api_client.dart';
 
+class AuthLoginResult {
+  const AuthLoginResult({required this.token, required this.user});
+
+  final String token;
+  final AuthUser user;
+}
+
+class AuthUser {
+  const AuthUser({
+    required this.id,
+    required this.username,
+    required this.nome,
+    required this.cognome,
+  });
+
+  final String id;
+  final String username;
+  final String nome;
+  final String cognome;
+
+  String get displayName {
+    final parts = [nome, cognome].where((part) => part.trim().isNotEmpty);
+    final fullName = parts.join(' ').trim();
+    return fullName.isNotEmpty ? fullName : username;
+  }
+}
+
 class AuthApi {
   AuthApi(this._client);
 
   final ApiClient _client;
 
-  Future<String> login({
+  Future<AuthLoginResult> login({
     required String email,
     required String password,
   }) async {
@@ -19,7 +46,12 @@ class AuthApi {
       throw const FormatException('Missing access token in response.');
     }
 
-    return token;
+    final user = _extractUser(data);
+    if (user == null) {
+      throw const FormatException('Missing user data in response.');
+    }
+
+    return AuthLoginResult(token: token, user: user);
   }
 
   Future<void> register({
@@ -110,6 +142,27 @@ class AuthApi {
         return token;
       }
     }
+    return null;
+  }
+
+  AuthUser? _extractUser(dynamic data) {
+    if (data is Map<String, dynamic>) {
+      final user = data['user'];
+      if (user is Map<String, dynamic>) {
+        final id = user['id'];
+        if (id is! String || id.trim().isEmpty) {
+          return null;
+        }
+
+        return AuthUser(
+          id: id,
+          username: user['username']?.toString() ?? '',
+          nome: user['nome']?.toString() ?? '',
+          cognome: user['cognome']?.toString() ?? '',
+        );
+      }
+    }
+
     return null;
   }
 }

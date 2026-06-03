@@ -57,8 +57,6 @@ final _turniInquiliniProvider = FutureProvider.autoDispose
       return ApiProvider.casa.listInquilini(casaId);
     });
 
-const _currentUserName = 'luigione';
-
 String _assigneeDisplayName(Inquilino inquilino) {
   final nome = inquilino.nome.trim();
   if (nome.isNotEmpty) {
@@ -72,14 +70,37 @@ String _assigneeDisplayName(Inquilino inquilino) {
 }
 
 bool _isCurrentUser(Inquilino inquilino) {
-  final values = [
-    inquilino.nome,
-    inquilino.nomeCompleto,
-    inquilino.username,
-    _assigneeDisplayName(inquilino),
-  ];
+  final currentId = ApiProvider.client.currentUserId?.trim();
+  if (currentId != null && currentId.isNotEmpty) {
+    if (inquilino.id.trim() == currentId) {
+      return true;
+    }
+  }
 
-  return values.any((value) => value.trim().toLowerCase() == _currentUserName);
+  final currentEmail = ApiProvider.client.currentUserEmail
+      ?.trim()
+      .toLowerCase();
+  final currentDisplayName = ApiProvider.client.currentUserDisplayName
+      ?.trim()
+      .toLowerCase();
+  final currentFirstName = ApiProvider.client.currentUserFirstName
+      ?.trim()
+      .toLowerCase();
+  final currentLastName = ApiProvider.client.currentUserLastName
+      ?.trim()
+      .toLowerCase();
+
+  final values = <String>{
+    inquilino.nome.trim().toLowerCase(),
+    inquilino.nomeCompleto.trim().toLowerCase(),
+    inquilino.username.trim().toLowerCase(),
+    _assigneeDisplayName(inquilino).trim().toLowerCase(),
+  };
+
+  return values.contains(currentEmail) ||
+      values.contains(currentDisplayName) ||
+      values.contains(currentFirstName) ||
+      values.contains(currentLastName);
 }
 
 List<Inquilino> _validAssignees(List<Inquilino> inquilini) {
@@ -94,7 +115,7 @@ Inquilino? _currentUser(List<Inquilino> assignees) {
       return inquilino;
     }
   }
-  return assignees.isEmpty ? null : assignees.first;
+  return null;
 }
 
 List<Inquilino> _otherHousemates(List<Inquilino> assignees) {
@@ -235,20 +256,11 @@ class _TurniPopupPanelState extends ConsumerState<TurniPopupPanel> {
     final casa = await ref.read(
       _turniCasaProvider(activeCasaController.selectedCasaId).future,
     );
-    final inquilini = await ref.read(_turniInquiliniProvider(casa?.id).future);
-    final assignees = _validAssignees(inquilini);
-    final currentUser = _currentUser(assignees);
-    final assegnatarioId =
-        _selectedInquilinoId ??
-        (currentUser?.id ?? (assignees.isNotEmpty ? assignees.first.id : ''));
+    final assegnatarioId = _selectedInquilinoId?.trim();
     final turnoDate = _selectedTurnoDate ?? _buildTurnoDate();
 
     if (casa == null || casa.id.isEmpty) {
       setState(() => _errorMessage = 'Nessuna casa disponibile.');
-      return;
-    }
-    if (assegnatarioId.isEmpty) {
-      setState(() => _errorMessage = 'Seleziona un assegnatario.');
       return;
     }
     if (turnoDate == null) {
@@ -266,7 +278,8 @@ class _TurniPopupPanelState extends ConsumerState<TurniPopupPanel> {
         'task': _taskController.text.trim(),
         'dataTurno': _payloadDate(turnoDate).toIso8601String(),
         'cadenzaGiorni': _frequenze[_frequenza] ?? 7,
-        'assegnatario': assegnatarioId,
+        if (assegnatarioId != null && assegnatarioId.isNotEmpty)
+          'assegnatario': assegnatarioId,
         'rotazioneTurno': _rotazioneAutomatica,
       });
 
@@ -437,6 +450,8 @@ class _TurnoFormPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final assignees = _validAssignees(inquiliniAsync.value ?? const []);
+    final currentUser = _currentUser(assignees);
     final form = Form(
       key: formKey,
       child: SingleChildScrollView(
@@ -484,6 +499,8 @@ class _TurnoFormPanel extends StatelessWidget {
             _AssigneeDropdown(
               inquiliniAsync: inquiliniAsync,
               selectedId: selectedInquilinoId,
+              currentUserId: currentUser?.id,
+              canAssignOthers: currentUser?.isHomeAdmin == true,
               expanded: assigneeExpanded,
               rotazioneAutomatica: rotazioneAutomatica,
               onToggle: onAssigneeToggle,
@@ -1005,6 +1022,8 @@ class _AssigneeDropdown extends StatefulWidget {
   const _AssigneeDropdown({
     required this.inquiliniAsync,
     required this.selectedId,
+    required this.currentUserId,
+    required this.canAssignOthers,
     required this.expanded,
     required this.rotazioneAutomatica,
     required this.onToggle,
@@ -1014,6 +1033,8 @@ class _AssigneeDropdown extends StatefulWidget {
 
   final AsyncValue<List<Inquilino>> inquiliniAsync;
   final String? selectedId;
+  final String? currentUserId;
+  final bool canAssignOthers;
   final bool expanded;
   final bool rotazioneAutomatica;
   final VoidCallback onToggle;
@@ -1173,7 +1194,6 @@ class _AssigneeDropdownState extends State<_AssigneeDropdown> {
             ),
             data: (inquilini) {
               final assignees = _validAssignees(inquilini);
-              final me = _currentUser(assignees);
               final otherHousemates = _otherHousemates(assignees);
               final selected = _selectedInquilino(
                 otherHousemates,
@@ -1183,22 +1203,37 @@ class _AssigneeDropdownState extends State<_AssigneeDropdown> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _AssignMeButton(
-                    selected:
-                        widget.selectedId == null ||
-                        (me != null && widget.selectedId == me.id),
-                    onTap: me == null ? null : () => widget.onSelected(me.id),
-                  ),
-                  if (selected != null && otherHousemates.isNotEmpty) ...[
-                    const SizedBox(height: AppSizes.p18),
-                    CompositedTransformTarget(
-                      link: _menuLink,
-                      child: _SelectedAssigneeButton(
-                        label: 'Assegna a ${_assigneeDisplayName(selected)}',
-                        expanded: widget.expanded,
-                        onTap: widget.onToggle,
-                      ),
+                  if (!widget.canAssignOthers) ...[
+                    _AssignMeButton(
+                      selected:
+                          widget.selectedId == null ||
+                          (widget.currentUserId != null &&
+                              widget.selectedId == widget.currentUserId),
+                      onTap: widget.currentUserId == null
+                          ? null
+                          : () => widget.onSelected(widget.currentUserId!),
                     ),
+                  ] else ...[
+                    _AssignMeButton(
+                      selected:
+                          widget.selectedId == null ||
+                          (widget.currentUserId != null &&
+                              widget.selectedId == widget.currentUserId),
+                      onTap: widget.currentUserId == null
+                          ? null
+                          : () => widget.onSelected(widget.currentUserId!),
+                    ),
+                    if (selected != null && otherHousemates.isNotEmpty) ...[
+                      const SizedBox(height: AppSizes.p18),
+                      CompositedTransformTarget(
+                        link: _menuLink,
+                        child: _SelectedAssigneeButton(
+                          label: 'Assegna a ${_assigneeDisplayName(selected)}',
+                          expanded: widget.expanded,
+                          onTap: widget.onToggle,
+                        ),
+                      ),
+                    ],
                   ],
                 ],
               );

@@ -75,13 +75,19 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      final token = await ApiProvider.auth.login(
+      final loginResult = await ApiProvider.auth.login(
         email: email,
         password: password,
       );
 
-      ApiProvider.client.setAuthToken(token);
-      ApiProvider.client.setCurrentUserIdentity(email: email);
+      ApiProvider.client.setAuthToken(loginResult.token);
+      ApiProvider.client.setCurrentUserIdentity(
+        id: loginResult.user.id,
+        email: email,
+        name: loginResult.user.nome,
+        surname: loginResult.user.cognome,
+        displayName: loginResult.user.displayName,
+      );
 
       // Verifica se l'utente ha almeno una casa
       List<dynamic> caseUtente = [];
@@ -102,7 +108,13 @@ class _LoginScreenState extends State<LoginScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => CasaWelcomeScreen(email: email),
+            builder: (context) => CasaWelcomeScreen(
+              email: email,
+              userId: loginResult.user.id,
+              firstName: loginResult.user.nome,
+              lastName: loginResult.user.cognome,
+              displayName: loginResult.user.displayName,
+            ),
           ),
         );
       }

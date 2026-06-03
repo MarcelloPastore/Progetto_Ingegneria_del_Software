@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 
 class CondividiCodiceScreen extends StatefulWidget {
   const CondividiCodiceScreen({super.key, required this.casaId});
@@ -34,7 +35,9 @@ class _CondividiCodiceScreenState extends State<CondividiCodiceScreen> {
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -56,6 +59,16 @@ class _CondividiCodiceScreenState extends State<CondividiCodiceScreen> {
         ),
         actions: [
           IconButton(onPressed: _reload, icon: const Icon(Icons.refresh)),
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: UserAvatar(
+              radius: 18,
+              userId: ApiProvider.client.currentUserAvatarSeed,
+              firstName: ApiProvider.client.currentUserFirstName,
+              lastName: ApiProvider.client.currentUserLastName,
+              fullName: ApiProvider.client.currentUserDisplayName,
+            ),
+          ),
         ],
       ),
       body: SafeArea(

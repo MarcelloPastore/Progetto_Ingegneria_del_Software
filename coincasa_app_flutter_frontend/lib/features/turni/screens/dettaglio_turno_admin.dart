@@ -7,6 +7,7 @@ import 'package:coincasa_app/core/models/turno.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 import 'package:coincasa_app/features/turni/screens/assegna_a_me.dart';
 
 String _assigneeDisplayName(Inquilino inquilino) {
@@ -26,6 +27,13 @@ String _assigneeDisplayName(Inquilino inquilino) {
 }
 
 bool _matchesCurrentUser(Inquilino inquilino) {
+  final currentId = ApiProvider.client.currentUserId?.trim();
+  if (currentId != null && currentId.isNotEmpty) {
+    if (inquilino.id.trim() == currentId) {
+      return true;
+    }
+  }
+
   final email = ApiProvider.client.currentUserEmail?.trim().toLowerCase();
   final name = ApiProvider.client.currentUserName?.trim().toLowerCase();
   final normalizedValues = <String>{
@@ -478,16 +486,7 @@ class _ResponsibleCard extends StatelessWidget {
         ? _assigneeDisplayName(current)
         : (turno?.assegnatarioNome.isNotEmpty == true
               ? turno!.assegnatarioNome
-              : 'Non assegnato');
-    final initials = label.trim().isEmpty
-        ? '?'
-        : label
-              .trim()
-              .split(RegExp(r'\s+'))
-              .take(2)
-              .map((part) => part[0])
-              .join()
-              .toUpperCase();
+              : '?');
 
     return Container(
       decoration: _cardDecoration(),
@@ -511,17 +510,14 @@ class _ResponsibleCard extends StatelessWidget {
           const SizedBox(height: AppSizes.p18),
           Row(
             children: [
-              CircleAvatar(
+              UserAvatar(
                 radius: 20,
-                backgroundColor: const Color(0xFF2F8F46),
-                child: Text(
-                  initials,
-                  style: const TextStyle(
-                    color: Color(0xFF66FF7B),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
+                userId: current?.id,
+                firstName: current?.nome,
+                lastName: current?.cognome,
+                fullName:
+                    current?.nomeCompleto ?? (label == '?' ? null : label),
+                fallback: '?',
               ),
               const SizedBox(width: AppSizes.p10),
               Column(

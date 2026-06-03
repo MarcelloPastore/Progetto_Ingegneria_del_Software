@@ -3,9 +3,49 @@ import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
+import 'package:coincasa_app/core/utils/user_initials.dart';
 import 'package:coincasa_app/features/casa/screens/condividi_codice.dart';
 import 'package:coincasa_app/features/casa/screens/elimina_coinquilino.dart'
     show showEliminaCoinquilinoDialog;
+
+// Riferimento globale per il file all'utente corrente per facilitare l'accesso alle variabili di sessione
+final _me = ApiProvider.client;
+
+Inquilino? _resolveCurrentInquilino(List<Inquilino> coinquilini) {
+  final currentId = _me.currentUserId?.trim();
+  if (currentId != null && currentId.isNotEmpty) {
+    for (final coinquilino in coinquilini) {
+      if (coinquilino.id.trim() == currentId) {
+        return coinquilino;
+      }
+    }
+  }
+
+  final currentEmail = _me.currentUserEmail?.trim().toLowerCase();
+  if (currentEmail != null && currentEmail.isNotEmpty) {
+    for (final coinquilino in coinquilini) {
+      if (coinquilino.email.trim().toLowerCase() == currentEmail) {
+        return coinquilino;
+      }
+    }
+  }
+
+  final currentDisplayName = _me.currentUserDisplayName?.trim().toLowerCase();
+  if (currentDisplayName != null && currentDisplayName.isNotEmpty) {
+    for (final coinquilino in coinquilini) {
+      final values = [
+        coinquilino.nomeCompleto,
+        coinquilino.username,
+      ].map((value) => value.trim().toLowerCase());
+      if (values.contains(currentDisplayName)) {
+        return coinquilino;
+      }
+    }
+  }
+
+  return null;
+}
 
 class ListaCoinquiliniScreen extends StatefulWidget {
   const ListaCoinquiliniScreen({super.key, required this.casaId});
@@ -25,8 +65,19 @@ class _ListaCoinquiliniScreenState extends State<ListaCoinquiliniScreen> {
     _future = _load();
   }
 
-  Future<List<Inquilino>> _load() {
-    return ApiProvider.casa.listInquilini(widget.casaId);
+  Future<List<Inquilino>> _load() async {
+    final coinquilini = await ApiProvider.casa.listInquilini(widget.casaId);
+    final current = _resolveCurrentInquilino(coinquilini);
+    if (current != null) {
+      _me.setCurrentUserIdentity(
+        id: current.id,
+        email: current.email,
+        name: current.nome,
+        surname: current.cognome,
+        displayName: current.nomeCompleto,
+      );
+    }
+    return coinquilini;
   }
 
   void _reload() {
@@ -37,11 +88,9 @@ class _ListaCoinquiliniScreenState extends State<ListaCoinquiliniScreen> {
 
   Future<void> _promuovi(Inquilino inquilino) async {
     try {
-      await ApiProvider.casa.updateRuolo(
-        widget.casaId,
-        inquilino.id,
-        {'ruolo': 'HomeAdmin'},
-      );
+      await ApiProvider.casa.updateRuolo(widget.casaId, inquilino.id, {
+        'ruolo': 'HomeAdmin',
+      });
       if (!mounted) {
         return;
       }
@@ -53,9 +102,9 @@ class _ListaCoinquiliniScreenState extends State<ListaCoinquiliniScreen> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Promozione non riuscita.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Promozione non riuscita.')));
     }
   }
 
@@ -73,19 +122,19 @@ class _ListaCoinquiliniScreenState extends State<ListaCoinquiliniScreen> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Rimozione non riuscita.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Rimozione non riuscita.')));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F5FB),
+      backgroundColor: AppColors.pageBackground,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: const Color(0xFF5A3AE0),
+        backgroundColor: AppColors.brandPrimary,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new),
           onPressed: Navigator.of(context).pop,
@@ -93,6 +142,10 @@ class _ListaCoinquiliniScreenState extends State<ListaCoinquiliniScreen> {
         title: const Text('Lista coinquilini'),
         actions: [
           IconButton(onPressed: _reload, icon: const Icon(Icons.refresh)),
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: _CurrentUserAvatar(future: _future),
+          ),
         ],
       ),
       body: SafeArea(
@@ -162,8 +215,10 @@ class _ListaCoinquiliniScreenState extends State<ListaCoinquiliniScreen> {
                                     showEliminaCoinquilinoDialog(
                                       context,
                                       nomeCoinquilino: coinquilino.nomeCompleto,
-                                      iniziali: _initials(
-                                        coinquilino.nomeCompleto,
+                                      iniziali: resolveUserInitials(
+                                        name: coinquilino.nome,
+                                        surname: coinquilino.cognome,
+                                        displayName: coinquilino.nomeCompleto,
                                       ),
                                       onRimuovi: () => _rimuovi(coinquilino),
                                     );
@@ -218,6 +273,32 @@ class _ListaCoinquiliniScreenState extends State<ListaCoinquiliniScreen> {
   }
 }
 
+class _CurrentUserAvatar extends StatelessWidget {
+  const _CurrentUserAvatar({required this.future});
+
+  final Future<List<Inquilino>> future;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<Inquilino>>(
+      future: future,
+      builder: (context, snapshot) {
+        final current = snapshot.hasData
+            ? _resolveCurrentInquilino(snapshot.data!)
+            : null;
+
+        return UserAvatar(
+          radius: 20,
+          userId: current?.id ?? _me.currentUserAvatarSeed,
+          firstName: current?.nome ?? _me.currentUserFirstName,
+          lastName: current?.cognome ?? _me.currentUserLastName,
+          fullName: current?.nomeCompleto ?? _me.currentUserDisplayName,
+        );
+      },
+    );
+  }
+}
+
 class _ErrorState extends StatelessWidget {
   const _ErrorState({required this.onRetry});
 
@@ -238,14 +319,6 @@ class _ErrorState extends StatelessWidget {
       ),
     );
   }
-}
-
-String _initials(String name) {
-  final words = name.trim().split(RegExp(r'\s+'));
-  if (words.length >= 2) {
-    return '${words[0][0]}${words[1][0]}'.toUpperCase();
-  }
-  return name.trim().isEmpty ? '?' : name.trim().substring(0, 1).toUpperCase();
 }
 
 class _CoinquilinoTile extends StatelessWidget {
@@ -278,18 +351,16 @@ class _CoinquilinoTile extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
+          UserAvatar(
             radius: 28,
-            backgroundColor: coinquilino.isHomeAdmin
-                ? AppColors.brandPrimary
-                : const Color(0xFF3B456D),
-            child: Text(
-              _initials(coinquilino.nomeCompleto),
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+            userId: coinquilino.id,
+            firstName: coinquilino.nome,
+            lastName: coinquilino.cognome,
+            fullName: coinquilino.nomeCompleto,
+            borderColor: coinquilino.isHomeAdmin
+                ? const Color.fromARGB(255, 125, 86, 209)
+                : null,
+            borderWidth: coinquilino.isHomeAdmin ? 2 : 0,
           ),
           const SizedBox(width: 14),
           Expanded(

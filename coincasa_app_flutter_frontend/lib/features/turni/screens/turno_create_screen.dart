@@ -40,6 +40,46 @@ final turnoCreateFormProvider =
       _TurnoCreateFormState
     >((ref) => _TurnoCreateFormController());
 
+Inquilino? _resolveCurrentInquilino(List<Inquilino> inquilini) {
+  final currentId = ApiProvider.client.currentUserId?.trim();
+  if (currentId != null && currentId.isNotEmpty) {
+    for (final inquilino in inquilini) {
+      if (inquilino.id.trim() == currentId) {
+        return inquilino;
+      }
+    }
+  }
+
+  final currentEmail = ApiProvider.client.currentUserEmail
+      ?.trim()
+      .toLowerCase();
+  if (currentEmail != null && currentEmail.isNotEmpty) {
+    for (final inquilino in inquilini) {
+      if (inquilino.email.trim().toLowerCase() == currentEmail) {
+        return inquilino;
+      }
+    }
+  }
+
+  final currentDisplayName = ApiProvider.client.currentUserDisplayName
+      ?.trim()
+      .toLowerCase();
+  if (currentDisplayName != null && currentDisplayName.isNotEmpty) {
+    for (final inquilino in inquilini) {
+      final values = <String>{
+        inquilino.nomeCompleto.trim().toLowerCase(),
+        inquilino.nome.trim().toLowerCase(),
+        inquilino.username.trim().toLowerCase(),
+      };
+      if (values.contains(currentDisplayName)) {
+        return inquilino;
+      }
+    }
+  }
+
+  return null;
+}
+
 class TurnoCreateScreen extends ConsumerStatefulWidget {
   const TurnoCreateScreen({super.key});
 
@@ -70,21 +110,17 @@ class _TurnoCreateScreenState extends ConsumerState<TurnoCreateScreen> {
     final casa = await ref.read(
       turniCreateCasaProvider(activeCasaController.selectedCasaId).future,
     );
-    final inquilini = await ref.read(
-      turniCreateInquiliniProvider(casa?.id).future,
-    );
-    final fallbackAssignee = inquilini.isNotEmpty ? inquilini.first.id : '';
-    final assigneeId = form.selectedInquilinoId ?? fallbackAssignee;
+    final assigneeId = form.selectedInquilinoId?.trim();
     final turnoDate = form.turnoDate;
 
-    if (!controller.validateBeforeSubmit(hasAssignee: assigneeId.isNotEmpty)) {
+    if (!controller.validateBeforeSubmit()) {
       return;
     }
     if (casa == null || casa.id.isEmpty) {
       controller.setSubmitError('Nessuna casa disponibile.');
       return;
     }
-    if (turnoDate == null || assigneeId.isEmpty) {
+    if (turnoDate == null) {
       controller.setSubmitError('Dati mancanti: compila i campi necessari');
       return;
     }
@@ -96,7 +132,8 @@ class _TurnoCreateScreenState extends ConsumerState<TurnoCreateScreen> {
         'dataTurno': _payloadDate(turnoDate).toIso8601String(),
         'cadenzaGiorni':
             _TurnoCreateFormState.frequencyDays[form.frequency] ?? 7,
-        'assegnatario': assigneeId,
+        if (assigneeId != null && assigneeId.isNotEmpty)
+          'assegnatario': assigneeId,
         'rotazioneTurno': form.autoRotation,
       });
 
@@ -164,18 +201,26 @@ class _TurnoCreateScreenState extends ConsumerState<TurnoCreateScreen> {
                   loading: () => const _AssigneeLoading(),
                   error: (_, _) => _AssigneeSection(
                     inquilini: const [],
+                    canAssignOthers: false,
+                    currentUserId: null,
                     selectedId: form.selectedInquilinoId,
                     showError:
                         form.showErrors && form.selectedInquilinoId == null,
                     onSelected: controller.setAssignee,
                   ),
-                  data: (inquilini) => _AssigneeSection(
-                    inquilini: _assigneeChoices(inquilini),
-                    selectedId: form.selectedInquilinoId,
-                    showError:
-                        form.showErrors && form.selectedInquilinoId == null,
-                    onSelected: controller.setAssignee,
-                  ),
+                  data: (inquilini) {
+                    final assignees = _assigneeChoices(inquilini);
+                    final currentUser = _resolveCurrentInquilino(assignees);
+                    return _AssigneeSection(
+                      inquilini: assignees,
+                      canAssignOthers: currentUser?.isHomeAdmin == true,
+                      currentUserId: currentUser?.id,
+                      selectedId: form.selectedInquilinoId,
+                      showError:
+                          form.showErrors && form.selectedInquilinoId == null,
+                      onSelected: controller.setAssignee,
+                    );
+                  },
                 ),
                 const SizedBox(height: 20),
                 _DateRow(
@@ -215,18 +260,18 @@ class _TurnoCreateScreenState extends ConsumerState<TurnoCreateScreen> {
                     onChanged: controller.setFrequency,
                   ),
                 ),
-                SizedBox(height: form.frequencyExpanded ? 24 : 90),
+                SizedBox(height: form.frequencyExpanded ? 16 : 34),
                 _AutoRotationRow(
                   value: form.autoRotation,
                   onChanged: controller.setAutoRotation,
                 ),
                 if (form.showMissingError) ...[
-                  const SizedBox(height: 48),
+                  const SizedBox(height: 18),
                   const _ErrorLine(
                     message: 'Dati mancanti: compila i campi necessari',
                   ),
                 ],
-                SizedBox(height: form.showMissingError ? 47 : 124),
+                SizedBox(height: form.showMissingError ? 20 : 34),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: _SaveButton(
@@ -476,9 +521,9 @@ class _TurnoCreateFormController extends StateNotifier<_TurnoCreateFormState> {
     isSubmitting: false,
   );
 
-  bool validateBeforeSubmit({required bool hasAssignee}) {
+  bool validateBeforeSubmit() {
     state = state.copyWith(showErrors: true, submitError: null);
-    return state.task.trim().isNotEmpty && state.hasValidDate && hasAssignee;
+    return state.task.trim().isNotEmpty && state.hasValidDate;
   }
 }
 
@@ -545,25 +590,32 @@ class _AssigneeLoading extends StatelessWidget {
 class _AssigneeSection extends StatelessWidget {
   const _AssigneeSection({
     required this.inquilini,
+    required this.canAssignOthers,
+    required this.currentUserId,
     required this.selectedId,
     required this.showError,
     required this.onSelected,
   });
 
   final List<Inquilino> inquilini;
+  final bool canAssignOthers;
+  final String? currentUserId;
   final String? selectedId;
   final bool showError;
   final ValueChanged<String> onSelected;
 
   @override
   Widget build(BuildContext context) {
-    if (inquilini.length <= 1) {
-      final id = inquilini.isEmpty ? 'me' : inquilini.first.id;
+    final fallbackId = currentUserId?.trim().isNotEmpty == true
+        ? currentUserId!.trim()
+        : (inquilini.isNotEmpty ? inquilini.first.id : 'unknown-user-id');
+
+    if (!canAssignOthers || inquilini.length <= 1) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
         child: _AssignMeButton(
-          selected: selectedId == id,
-          onTap: () => onSelected(id),
+          selected: selectedId == fallbackId,
+          onTap: () => onSelected(fallbackId),
         ),
       );
     }
@@ -656,36 +708,101 @@ class _AssignMeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppSizes.radius8),
-      child: Container(
-        height: 38,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF68B86C), Color(0xFF2E7736)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-          borderRadius: BorderRadius.circular(AppSizes.radius8),
-          border: selected
-              ? Border.all(color: AppColors.statusPositive, width: 2)
-              : null,
-          boxShadow: const [
-            BoxShadow(
-              color: AppColors.shadowStrong,
-              blurRadius: AppSizes.p5,
-              offset: Offset(0, AppSizes.p3),
+    return _AnimatedAssignMeButton(selected: selected, onTap: onTap);
+  }
+}
+
+class _AnimatedAssignMeButton extends StatefulWidget {
+  const _AnimatedAssignMeButton({required this.selected, required this.onTap});
+
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  State<_AnimatedAssignMeButton> createState() =>
+      _AnimatedAssignMeButtonState();
+}
+
+class _AnimatedAssignMeButtonState extends State<_AnimatedAssignMeButton> {
+  bool _pressed = false;
+
+  Color _topColor() {
+    if (_pressed) {
+      return widget.selected
+          ? const Color(0xFF7BE47E)
+          : const Color(0xFF77C879);
+    }
+    return widget.selected ? const Color(0xFF53C95B) : const Color(0xFF68B86C);
+  }
+
+  Color _bottomColor() {
+    if (_pressed) {
+      return widget.selected
+          ? const Color(0xFF2C7D34)
+          : const Color(0xFF256A2D);
+    }
+    return widget.selected ? const Color(0xFF2E9F3D) : const Color(0xFF2E7736);
+  }
+
+  Color _textColor() {
+    if (_pressed) {
+      return const Color(0xFFF3FFF3);
+    }
+    return widget.selected ? const Color(0xFFE7FFE8) : AppColors.statusPositive;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.transparent,
+      child: InkWell(
+        onTap: widget.onTap,
+        onHighlightChanged: (value) {
+          if (value != _pressed && mounted) {
+            setState(() => _pressed = value);
+          }
+        },
+        borderRadius: BorderRadius.circular(AppSizes.radius8),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
+          curve: Curves.easeOut,
+          height: 46,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [_topColor(), _bottomColor()],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
             ),
-          ],
-        ),
-        child: Text(
-          'Assegna a me',
-          style: AppTextStyles.bodyStrong.copyWith(
-            color: AppColors.statusPositive,
-            fontSize: 19,
-            fontWeight: FontWeight.w900,
+            borderRadius: BorderRadius.circular(AppSizes.radius8),
+            border: Border.all(
+              color: widget.selected
+                  ? const Color(0xFFB4FFB8)
+                  : const Color(0xFF17371A),
+              width: 1.3,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: _pressed
+                    ? const Color(0x33000000)
+                    : const Color(0x55000000),
+                blurRadius: _pressed ? 4 : 10,
+                offset: Offset(0, _pressed ? 1 : 4),
+              ),
+            ],
+          ),
+          child: AnimatedScale(
+            duration: const Duration(milliseconds: 120),
+            scale: _pressed ? 0.985 : 1,
+            child: Text(
+              'Assegna a me',
+              style: AppTextStyles.bodyStrong.copyWith(
+                color: _textColor(),
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.2,
+              ),
+            ),
           ),
         ),
       ),

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:coincasa_app/core/api/api_provider.dart';
-import 'package:coincasa_app/core/utils/user_initials.dart';
 import 'package:coincasa_app/features/casa/screens/hub_casa_admin.dart';
 import 'package:coincasa_app/features/casa/screens/promuovi_coinquilino.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 
 class ProfiloAdminScreen extends StatelessWidget {
   const ProfiloAdminScreen({super.key});
@@ -61,37 +61,13 @@ class _UserAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        CircleAvatar(
-          radius: 18,
-          backgroundColor: Color(0xFF3F33B8),
-          child: Text(
-            resolveUserInitials(
-              displayName: ApiProvider.client.currentUserName,
-              email: ApiProvider.client.currentUserEmail,
-              fallback: '??',
-            ),
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-        Positioned(
-          top: 2,
-          right: 2,
-          child: Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: const Color(0xFFFF7B6D),
-              borderRadius: BorderRadius.circular(99),
-            ),
-          ),
-        ),
-      ],
+    return UserAvatar(
+      radius: 18,
+      userId: ApiProvider.client.currentUserAvatarSeed,
+      firstName: ApiProvider.client.currentUserFirstName,
+      lastName: ApiProvider.client.currentUserLastName,
+      fullName: ApiProvider.client.currentUserDisplayName,
+      showPresenceDot: true,
     );
   }
 }
@@ -101,6 +77,15 @@ class _AdminProfileCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final name = [
+      ApiProvider.client.currentUserFirstName,
+      ApiProvider.client.currentUserLastName,
+    ].where((part) => part != null && part.trim().isNotEmpty).join(' ').trim();
+    final displayName = name.isNotEmpty
+        ? name
+        : (ApiProvider.client.currentUserDisplayName ?? 'Utente');
+    final email = ApiProvider.client.currentUserEmail ?? '';
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
@@ -117,33 +102,28 @@ class _AdminProfileCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          const CircleAvatar(
+          UserAvatar(
             radius: 45,
-            backgroundColor: Color(0xFF17611E),
-            child: Text(
-              'M',
-              style: TextStyle(
-                color: Color(0xFF4DFF83),
-                fontSize: 32,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
+            userId: ApiProvider.client.currentUserAvatarSeed,
+            firstName: ApiProvider.client.currentUserFirstName,
+            lastName: ApiProvider.client.currentUserLastName,
+            fullName: displayName,
           ),
           const SizedBox(height: 10),
-          const Text(
-            'Marco Rossi (tu)',
+          Text(
+            '$displayName (tu)',
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 20,
               fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
-            'm.verdi@gmail.com',
+          Text(
+            email,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               color: Color(0xFFD2D4DF),
               fontSize: 16,
               fontWeight: FontWeight.w500,

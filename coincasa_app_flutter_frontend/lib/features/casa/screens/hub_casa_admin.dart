@@ -5,13 +5,51 @@ import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
-import 'package:coincasa_app/core/utils/user_initials.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 import 'package:coincasa_app/features/casa/screens/archivio_documenti_vuoto.dart';
 import 'package:coincasa_app/features/casa/screens/condividi_codice.dart';
 import 'package:coincasa_app/features/casa/screens/elimina_casa.dart';
 import 'package:coincasa_app/features/casa/screens/lista_case.dart';
 import 'package:coincasa_app/features/casa/screens/lista_coinquilini.dart';
+
+// Riferimento globale per il file all'utente corrente per facilitare l'accesso alle variabili di sessione
+final _me = ApiProvider.client;
+
+Inquilino? _resolveCurrentInquilino(List<Inquilino> coinquilini) {
+  final currentId = _me.currentUserId?.trim();
+  if (currentId != null && currentId.isNotEmpty) {
+    for (final coinquilino in coinquilini) {
+      if (coinquilino.id.trim() == currentId) {
+        return coinquilino;
+      }
+    }
+  }
+
+  final currentEmail = _me.currentUserEmail?.trim().toLowerCase();
+  if (currentEmail != null && currentEmail.isNotEmpty) {
+    for (final coinquilino in coinquilini) {
+      if (coinquilino.email.trim().toLowerCase() == currentEmail) {
+        return coinquilino;
+      }
+    }
+  }
+
+  final currentDisplayName = _me.currentUserDisplayName?.trim().toLowerCase();
+  if (currentDisplayName != null && currentDisplayName.isNotEmpty) {
+    for (final coinquilino in coinquilini) {
+      final values = [
+        coinquilino.nomeCompleto,
+        coinquilino.username,
+      ].map((value) => value.trim().toLowerCase());
+      if (values.contains(currentDisplayName)) {
+        return coinquilino;
+      }
+    }
+  }
+
+  return null;
+}
 
 class HubCasaAdminScreen extends StatefulWidget {
   const HubCasaAdminScreen({super.key, this.casaId});
@@ -26,7 +64,6 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
   late Future<_HubCasaData> _future;
   late ActiveCasaController _activeCasaController;
   bool _initialized = false;
-  String _currentUserInitials = '??';
 
   @override
   void didChangeDependencies() {
@@ -64,41 +101,22 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
     ]);
 
     final inquilini = results[1] as List<Inquilino>;
-    _currentUserInitials = _resolveCurrentUserInitials(inquilini);
+    final current = _resolveCurrentInquilino(inquilini);
+    if (current != null) {
+      _me.setCurrentUserIdentity(
+        id: current.id,
+        email: current.email,
+        name: current.nome,
+        surname: current.cognome,
+        displayName: current.nomeCompleto,
+      );
+    }
 
     return _HubCasaData(
       casa: results[0] as Casa,
       inquilini: inquilini,
       speseCount: (results[2] as List).length,
       turniCount: (results[3] as List).length,
-    );
-  }
-
-  String _resolveCurrentUserInitials(List<Inquilino> inquilini) {
-    final email = ApiProvider.client.currentUserEmail?.trim().toLowerCase();
-    Inquilino? current;
-
-    if (email != null && email.isNotEmpty) {
-      for (final inquilino in inquilini) {
-        if (inquilino.email.trim().toLowerCase() == email) {
-          current = inquilino;
-          break;
-        }
-      }
-    }
-
-    if (current == null) {
-      return resolveUserInitials(
-        displayName: ApiProvider.client.currentUserName,
-        email: ApiProvider.client.currentUserEmail,
-        fallback: '??',
-      );
-    }
-
-    return resolveUserInitials(
-      displayName: current.nomeCompleto,
-      email: current.email,
-      fallback: '??',
     );
   }
 
@@ -151,17 +169,7 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
           IconButton(onPressed: _reload, icon: const Icon(Icons.refresh)),
           Padding(
             padding: const EdgeInsets.only(right: 16),
-            child: CircleAvatar(
-              radius: 18,
-              backgroundColor: const Color(0xFF38B7B0),
-              child: Text(
-                _currentUserInitials,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
+            child: _CurrentUserAvatar(future: _future),
           ),
         ],
       ),
@@ -213,6 +221,32 @@ class _HubCasaData {
   final List<Inquilino> inquilini;
   final int speseCount;
   final int turniCount;
+}
+
+class _CurrentUserAvatar extends StatelessWidget {
+  const _CurrentUserAvatar({required this.future});
+
+  final Future<_HubCasaData> future;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<_HubCasaData>(
+      future: future,
+      builder: (context, snapshot) {
+        final current = snapshot.hasData
+            ? _resolveCurrentInquilino(snapshot.data!.inquilini)
+            : null;
+
+        return UserAvatar(
+          radius: 18,
+          userId: current?.id ?? _me.currentUserAvatarSeed,
+          firstName: current?.nome ?? _me.currentUserFirstName,
+          lastName: current?.cognome ?? _me.currentUserLastName,
+          fullName: current?.nomeCompleto ?? _me.currentUserDisplayName,
+        );
+      },
+    );
+  }
 }
 
 class _HubErrorState extends StatelessWidget {
@@ -616,17 +650,21 @@ class _DeleteHouseButton extends StatelessWidget {
       width: double.infinity,
       child: FilledButton(
         onPressed: onPressed,
-        style: FilledButton.styleFrom(
-          backgroundColor: const Color(0xFF5A0C0C),
-          foregroundColor: Colors.white,
+        style: OutlinedButton.styleFrom(
+          backgroundColor: AppColors.errorContainerStrong,
+          foregroundColor: AppColors.errorStrong,
+          side: const BorderSide(color: AppColors.errorStrong, width: 2),
+          padding: const EdgeInsets.symmetric(vertical: 13),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(18),
           ),
-          padding: const EdgeInsets.symmetric(vertical: 16),
         ),
-        child: const Text(
-          'Lascia la casa',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+        child: Text(
+          'lascia la casa',
+          style: AppTextStyles.buttonCompact.copyWith(
+            color: AppColors.errorStrong,
+            fontWeight: FontWeight.w800,
+          ),
         ),
       ),
     );

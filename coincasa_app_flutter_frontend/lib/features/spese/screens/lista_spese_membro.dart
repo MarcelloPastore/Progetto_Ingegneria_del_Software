@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
@@ -42,17 +43,20 @@ class ListaSpeseMembroScreen extends ConsumerWidget {
     final selectedCasaId = ActiveCasaScope.read(context).selectedCasaId;
     final asyncData = ref.watch(_memberSpeseDataProvider(selectedCasaId));
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF151127),
-      bottomNavigationBar: const HouseQuickNav(currentRoute: '/spese'),
-      body: SafeArea(
-        child: asyncData.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (_, _) =>
-              const _StateMessage(message: 'Dati non disponibili.'),
-          data: (data) => data == null
-              ? const _StateMessage(message: 'Nessuna casa disponibile.')
-              : _MemberSpeseContent(data: data),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: const Color(0xFF151127),
+        bottomNavigationBar: const HouseQuickNav(currentRoute: '/spese'),
+        body: SafeArea(
+          child: asyncData.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (_, _) =>
+                const _StateMessage(message: 'Dati non disponibili.'),
+            data: (data) => data == null
+                ? const _StateMessage(message: 'Nessuna casa disponibile.')
+                : _MemberSpeseContent(data: data),
+          ),
         ),
       ),
     );

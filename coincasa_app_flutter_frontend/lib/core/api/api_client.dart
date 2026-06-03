@@ -22,26 +22,69 @@ class ApiClient {
   final String baseUrl;
   final http.Client _httpClient;
   String? _authToken;
+  String? _currentUserId;
   String? _currentUserEmail;
-  String? _currentUserName;
+  String? _currentUserDisplayName;
+  String? _currentUserFirstName;
+  String? _currentUserLastName;
+  String? _currentUserAvatarSeed;
 
   void setAuthToken(String? token) {
     _authToken = token;
   }
 
-  void setCurrentUserIdentity({String? email, String? name}) {
+  void setCurrentUserIdentity({
+    String? id,
+    String? email,
+    String? name,
+    String? surname,
+    String? displayName,
+  }) {
+    if (id != null) {
+      final normalized = id.trim();
+      _currentUserId = normalized.isEmpty ? null : normalized;
+      _currentUserAvatarSeed = _currentUserId;
+    }
     if (email != null) {
       final normalized = email.trim().toLowerCase();
       _currentUserEmail = normalized.isEmpty ? null : normalized;
     }
     if (name != null) {
       final normalized = name.trim();
-      _currentUserName = normalized.isEmpty ? null : normalized;
+      _currentUserFirstName = normalized.isEmpty ? null : normalized;
     }
+    if (surname != null) {
+      final normalized = surname.trim();
+      _currentUserLastName = normalized.isEmpty ? null : normalized;
+    }
+
+    final fullName = [
+      _currentUserFirstName,
+      _currentUserLastName,
+    ].whereType<String>().where((part) => part.isNotEmpty).join(' ').trim();
+
+    if (fullName.isNotEmpty) {
+      _currentUserDisplayName = fullName;
+      return;
+    }
+
+    final normalizedDisplayName = displayName?.trim() ?? '';
+    if (normalizedDisplayName.isNotEmpty) {
+      _currentUserDisplayName = normalizedDisplayName;
+      return;
+    }
+
+    final emailLocalPart = _currentUserEmail?.split('@').first.trim() ?? '';
+    _currentUserDisplayName = emailLocalPart.isNotEmpty ? emailLocalPart : null;
   }
 
+  String? get currentUserId => _currentUserId;
   String? get currentUserEmail => _currentUserEmail;
-  String? get currentUserName => _currentUserName;
+  String? get currentUserName => _currentUserDisplayName;
+  String? get currentUserDisplayName => _currentUserDisplayName;
+  String? get currentUserFirstName => _currentUserFirstName;
+  String? get currentUserLastName => _currentUserLastName;
+  String? get currentUserAvatarSeed => _currentUserAvatarSeed;
 
   Uri buildUri(String path, [Map<String, String>? queryParameters]) {
     final merged = _mergePath(baseUrl, path);
