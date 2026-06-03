@@ -73,6 +73,7 @@ export const SpesaInfoSchema = z.object({
 export type SpesaInfoDto = z.infer<typeof SpesaInfoSchema>;
 
 export const QuotaSpesaSchema = z.object({
+  id: z.string(),
   quota: z.number(),
   dataPagamento: isoDateTimeString.nullable(),
   utente: AssegnatarioInfoSchema,
