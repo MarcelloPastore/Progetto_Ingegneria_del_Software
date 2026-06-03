@@ -1,14 +1,7 @@
 ### TODO LIST - correzioni da apportare lato flutter
-- [ ] **GESTIONE TURNI:** Nella schermata di inserimento/modifica turno, rimuovere i campi giorno e mese; integrare un'icona calendario affiancata dal testo "Prima data del turno".
-- [ ] **GESTIONE TURNI:** Modificare la palette cromatica dei messaggi di successo, poiché l'attuale layout li fa confondere con dei pulsanti, non si capisce quandi i pulsanti "assegna a me" o "assegna a ..." vengono cliccati.
-- [ ] **AUTENTICAZIONE:** Variare il colore della dicitura "Verifica Codice" commutandolo in grigio chiaro.
-- [ ] **Dettaglio turno (user):** fare nel file @dettaglio_turno_admin.dart la schermata con controllo ruolo e se è user mostrare solo "assegna a me" e togliere "assegna a un altro".
-- [ ] **Color-Coding:** Associare un colore univoco a ogni inquilino al fine di mappare cromaticamente i turni all'interno del calendario.
 - [ ] **Gestione Permessi:** Per ciascuna schermata, implementare le divergenze funzionali tra HomeAdmin e Inquilino (ove previste).
-- [ ] **Inibizione Azioni:** Renderizzare come grigi e non cliccabili i pulsanti legati ad azioni esclusive dell'HomeAdmin (es. la rotazione del turno).
 - [ ] **FIX NAVIGAZIONE:** Rimappare i flussi del pulsante "torna indietro", definendo la destinazione ad-hoc per ogni singola schermata.
 - [ ] **Flusso Crea Casa:** Il percorso Crea Casa -> Copia link di invito -> Click su X deve essere isolato; l'azione di chiusura post-creazione non deve reindirizzare l'utente ad altre schermate estranee.
-- [ ] **GESTIONE CASA:** Configurare un valore di preselezione automatica nel campo "Tipo di abitazione" (es. "Appartamento Condiviso").
 - [ ] **DASHBOARD:** Il widget del turno odierno deve mostrare l'icona profilo dell'assegnatario corrente, rimuovendo la spunta verde.
 - [ ] **DASHBOARD:** Ordinare rigorosamente da sinistra verso destra gli anelli grafici presenti nella sezione Salute Casa.
 - [ ] **DASHBOARD:** Rimuovere la scritta "Urgente" sempre visibile dai problemi aperti; mantenerla attiva solo nel caso specifico in cui non vi siano problemi aperti.

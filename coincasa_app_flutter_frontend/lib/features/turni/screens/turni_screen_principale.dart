@@ -762,38 +762,31 @@ class _DatePreviewRow extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: _DateInputChip(
-              controller: dayController,
-              hintText: 'gg...',
-              validator: _validateDay,
-              onChanged: onDateChanged,
-            ),
-          ),
-          const SizedBox(width: AppSizes.p8),
-          Expanded(
-            child: _DateInputChip(
-              controller: monthController,
-              hintText: 'MM...',
-              validator: _validateMonth,
-              onChanged: onDateChanged,
-            ),
-          ),
-          const SizedBox(width: AppSizes.p20),
-          Expanded(
-            flex: 2,
             child: InkWell(
               onTap: onDateTap,
               borderRadius: BorderRadius.circular(AppSizes.radius8),
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: AppSizes.p10),
-                child: Text(
-                  'Data turno',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.bodyStrong.copyWith(
-                    color: AppColors.textMutedLight,
-                    fontSize: 19,
-                  ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today_rounded,
+                      color: AppColors.textMutedLight,
+                      size: 20,
+                    ),
+                    const SizedBox(width: AppSizes.p12),
+                    Expanded(
+                      child: Text(
+                        'Data Inizio Turno',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.bodyStrong.copyWith(
+                          color: AppColors.textMutedLight,
+                          fontSize: 19,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -1243,26 +1236,27 @@ class _AssigneeDropdownState extends State<_AssigneeDropdown> {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              Flexible(
-                child: Text(
-                  'Rotazione automatica',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.bodyStrong.copyWith(
-                    decoration: TextDecoration.underline,
-                    decorationColor: AppColors.textMutedLight,
+                  Flexible(
+                    child: Text(
+                      'Rotazione automatica',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.bodyStrong.copyWith(
+                        color: widget.canAssignOthers ? AppColors.textMutedLight : AppColors.textMutedDark,
+                        decoration: widget.canAssignOthers ? TextDecoration.underline : TextDecoration.none,
+                        decorationColor: widget.canAssignOthers ? AppColors.textMutedLight : AppColors.textMutedDark,
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              const SizedBox(width: AppSizes.p10),
-              Switch(
-                value: widget.rotazioneAutomatica,
-                onChanged: widget.onRotazioneChanged,
-                activeThumbColor: AppColors.textOnDark,
-                activeTrackColor: AppColors.brandSecondary,
-                inactiveThumbColor: AppColors.textMutedLight,
-                inactiveTrackColor: AppColors.dividerDark,
-              ),
+                  const SizedBox(width: AppSizes.p10),
+                  Switch(
+                    value: widget.rotazioneAutomatica,
+                    onChanged: widget.canAssignOthers ? widget.onRotazioneChanged : null,
+                    activeThumbColor: widget.canAssignOthers ? AppColors.textOnDark : AppColors.textMutedDark,
+                    activeTrackColor: widget.canAssignOthers ? AppColors.brandSecondary : AppColors.dividerDark,
+                    inactiveThumbColor: AppColors.textMutedLight,
+                    inactiveTrackColor: AppColors.dividerDark,
+                  ),
             ],
           ),
         ],

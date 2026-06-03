@@ -261,10 +261,17 @@ class _TurnoCreateScreenState extends ConsumerState<TurnoCreateScreen> {
                   ),
                 ),
                 SizedBox(height: form.frequencyExpanded ? 16 : 34),
-                _AutoRotationRow(
-                  value: form.autoRotation,
-                  onChanged: controller.setAutoRotation,
-                ),
+                // determine if current user is HomeAdmin to enable rotation toggle
+                Builder(builder: (context) {
+                  final assignees = inquiliniAsync.value ?? const <Inquilino>[];
+                  final currentUser = _resolveCurrentInquilino(assignees);
+                  final canToggleRotation = currentUser?.isHomeAdmin == true;
+                  return _AutoRotationRow(
+                    value: form.autoRotation,
+                    onChanged: canToggleRotation ? controller.setAutoRotation : (_) {},
+                    enabled: canToggleRotation,
+                  );
+                }),
                 if (form.showMissingError) ...[
                   const SizedBox(height: 18),
                   const _ErrorLine(
@@ -901,41 +908,31 @@ class _DateRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
         child: Row(
           children: [
-            _DateChip(
-              width: 78,
-              controller: dayController,
-              hintText: 'gg...',
-              hasError: hasError,
-              onChanged: onDayChanged,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            ),
-            const SizedBox(width: 8),
-            _DateChip(
-              width: 78,
-              controller: monthController,
-              hintText: 'MM...',
-              hasError: hasError,
-              onChanged: onMonthChanged,
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp('[a-zA-Z0-9]')),
-              ],
-            ),
-            const SizedBox(width: 20),
             Expanded(
               child: InkWell(
                 onTap: onPickDate,
                 borderRadius: BorderRadius.circular(AppSizes.radius8),
-                child: Text(
-                  hasError ? 'Data turno *' : 'Data turno',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.bodyStrong.copyWith(
-                    color: hasError
-                        ? AppColors.errorStrong
-                        : AppColors.textMutedLight,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                  ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today_rounded,
+                      color: hasError ? AppColors.errorStrong : AppColors.textMutedLight,
+                      size: 22,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        hasError ? 'Data Inizio Turno *' : 'Data Inizio Turno',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.bodyStrong.copyWith(
+                          color: hasError ? AppColors.errorStrong : AppColors.textMutedLight,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -1115,10 +1112,11 @@ class _FrequencyDropdown extends StatelessWidget {
 }
 
 class _AutoRotationRow extends StatelessWidget {
-  const _AutoRotationRow({required this.value, required this.onChanged});
+  const _AutoRotationRow({required this.value, required this.onChanged, this.enabled = true});
 
   final bool value;
-  final ValueChanged<bool> onChanged;
+  final ValueChanged<bool>? onChanged;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -1126,23 +1124,23 @@ class _AutoRotationRow extends StatelessWidget {
       children: [
         Expanded(
           child: Text(
-            'Rotazione automatica assegnatario',
-            maxLines: 1,
-            overflow: TextOverflow.clip,
-            style: AppTextStyles.bodyStrong.copyWith(
-              color: AppColors.textMutedLight,
-              fontSize: 16,
+              'Rotazione automatica assegnatario',
+              maxLines: 1,
+              overflow: TextOverflow.clip,
+              style: AppTextStyles.bodyStrong.copyWith(
+                color: enabled ? AppColors.textMutedLight : AppColors.textMutedDark,
+                fontSize: 16,
+              ),
             ),
+        ),
+          Switch(
+            value: value,
+            onChanged: enabled ? onChanged : null,
+            activeThumbColor: enabled ? AppColors.textOnDark : AppColors.textMutedDark,
+            activeTrackColor: enabled ? AppColors.brandAccent : AppColors.dividerDark,
+            inactiveThumbColor: AppColors.textOnDark,
+            inactiveTrackColor: AppColors.textMutedDark,
           ),
-        ),
-        Switch(
-          value: value,
-          onChanged: onChanged,
-          activeThumbColor: AppColors.textOnDark,
-          activeTrackColor: AppColors.brandAccent,
-          inactiveThumbColor: AppColors.textOnDark,
-          inactiveTrackColor: AppColors.textMutedDark,
-        ),
       ],
     );
   }

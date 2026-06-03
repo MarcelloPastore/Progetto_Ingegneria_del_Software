@@ -67,7 +67,12 @@ class _CompilazioneFormCreaCasaScreenState
     if (widget.name != null) _nameController.text = widget.name!;
     if (widget.city != null) _cityController.text = widget.city!;
     if (widget.address != null) _addressController.text = widget.address!;
-    if (widget.type != null) _selectedType = widget.type;
+    if (widget.type != null) {
+      _selectedType = widget.type;
+    } else {
+      // Default preselection for the house type
+      _selectedType = 'Appartamento condiviso';
+    }
   }
 
   bool get _isFormValid {
