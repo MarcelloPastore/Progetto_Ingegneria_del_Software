@@ -1,7 +1,7 @@
 ### TODO LIST - correzioni da apportare lato flutter
 - [ ] **Gestione Permessi:** Per ciascuna schermata, implementare le divergenze funzionali tra HomeAdmin e Inquilino (ove previste).
 - [ ] **FIX NAVIGAZIONE:** Rimappare i flussi del pulsante "torna indietro", definendo la destinazione ad-hoc per ogni singola schermata.
-- [ ] **Flusso Crea Casa:** Il percorso Crea Casa -> Copia link di invito -> Click su X deve essere isolato; l'azione di chiusura post-creazione non deve reindirizzare l'utente ad altre schermate estranee.
+- [/] **Flusso Crea Casa:** Il percorso Crea Casa -> Copia link di invito -> Click su X deve essere isolato; l'azione di chiusura post-creazione non deve reindirizzare l'utente ad altre schermate estranee.
 - [ ] **DASHBOARD:** Il widget del turno odierno deve mostrare l'icona profilo dell'assegnatario corrente, rimuovendo la spunta verde.
 - [ ] **DASHBOARD:** Ordinare rigorosamente da sinistra verso destra gli anelli grafici presenti nella sezione Salute Casa.
 - [ ] **DASHBOARD:** Rimuovere la scritta "Urgente" sempre visibile dai problemi aperti; mantenerla attiva solo nel caso specifico in cui non vi siano problemi aperti.

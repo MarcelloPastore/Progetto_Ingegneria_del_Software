@@ -152,15 +152,7 @@ class CasaCreataSuccessoScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: AppSizes.p28),
                         FilledButton(
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (_) => CasaPreSchermataHubCasaScreen(
-                                  houseName: name,
-                                ),
-                              ),
-                            );
-                          },
+                          onPressed: () => _copyInviteCode(context),
                           style: FilledButton.styleFrom(
                             minimumSize: const Size.fromHeight(AppSizes.p56),
                             backgroundColor: AppColors.brandPrimary,
