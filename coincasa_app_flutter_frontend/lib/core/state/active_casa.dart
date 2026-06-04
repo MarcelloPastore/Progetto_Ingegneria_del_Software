@@ -5,7 +5,14 @@ import 'package:coincasa_app/core/models/casa.dart';
 class ActiveCasaController extends ChangeNotifier {
   String? _selectedCasaId;
 
+  /// Casa completa attualmente selezionata, disponibile dopo la prima
+  /// chiamata a [resolveCasa]. Consente lettura sincrona del ruolo.
+  Casa? _selectedCasa;
+
   String? get selectedCasaId => _selectedCasaId;
+
+  /// Restituisce la [Casa] correntemente selezionata, se già nota.
+  Casa? get selectedCasa => _selectedCasa;
 
   void selectCasa(String casaId) {
     if (_selectedCasaId == casaId) {
@@ -13,6 +20,10 @@ class ActiveCasaController extends ChangeNotifier {
     }
 
     _selectedCasaId = casaId;
+    // Invalida la Casa in cache perché l'id è cambiato.
+    if (_selectedCasa?.id != casaId) {
+      _selectedCasa = null;
+    }
     notifyListeners();
   }
 
@@ -26,6 +37,7 @@ class ActiveCasaController extends ChangeNotifier {
       orElse: () => caseUtente.first,
     );
     _selectedCasaId = selected.id;
+    _selectedCasa = selected;
 
     return selected;
   }

@@ -352,6 +352,18 @@ abstract final class AppTheme {
         labelLarge: AppTextStyles.button,
       );
 
+  /// Transizione istantanea: usata dalla navbar per switch tra sezioni.
+  static const pageTransitionsTheme = PageTransitionsTheme(
+    builders: {
+      TargetPlatform.android: _InstantPageTransition(),
+      TargetPlatform.iOS: _InstantPageTransition(),
+      TargetPlatform.windows: _InstantPageTransition(),
+      TargetPlatform.macOS: _InstantPageTransition(),
+      TargetPlatform.linux: _InstantPageTransition(),
+      TargetPlatform.fuchsia: _InstantPageTransition(),
+    },
+  );
+
   static final ThemeData lightTheme = ThemeData(
     useMaterial3: true,
     colorScheme:
@@ -370,6 +382,7 @@ abstract final class AppTheme {
         ),
     scaffoldBackgroundColor: AppColors.pageBackground,
     textTheme: _textTheme,
+    pageTransitionsTheme: pageTransitionsTheme,
     appBarTheme: const AppBarTheme(
       backgroundColor: AppColors.pageBackground,
       foregroundColor: AppColors.textPrimary,
@@ -408,6 +421,23 @@ abstract final class AppTheme {
       borderRadius: BorderRadius.circular(AppSizes.radius12),
       borderSide: BorderSide(color: color, width: width),
     );
+  }
+}
+
+/// Transizione senza animazione: la nuova schermata appare istantaneamente.
+/// Usata per lo switch tra sezioni della navbar principale.
+class _InstantPageTransition extends PageTransitionsBuilder {
+  const _InstantPageTransition();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    return child;
   }
 }
 

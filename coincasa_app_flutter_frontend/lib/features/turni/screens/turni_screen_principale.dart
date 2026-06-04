@@ -319,73 +319,77 @@ class _TurniPopupPanelState extends ConsumerState<TurniPopupPanel> {
     final canSubmit =
         _taskController.text.trim().isNotEmpty && _buildTurnoDate() != null;
 
-    final panel = ConstrainedBox(
-      constraints: BoxConstraints(
-        maxWidth: 382,
-        maxHeight: MediaQuery.sizeOf(context).height * 0.9,
-      ),
-      child: Material(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppSizes.radius12),
-        elevation: AppSizes.p8,
-        child: _TurnoFormPanel(
-          formKey: _formKey,
-          taskController: _taskController,
-          dayController: _dayController,
-          monthController: _monthController,
-          frequenza: _frequenza,
-          frequenze: _frequenze.keys.toList(growable: false),
-          frequencyExpanded: _frequencyExpanded,
-          assigneeExpanded: _assigneeExpanded,
-          selectedInquilinoId: _selectedInquilinoId,
-          rotazioneAutomatica: _rotazioneAutomatica,
-          inquiliniAsync: inquiliniAsync,
-          errorMessage: _errorMessage,
-          isSubmitting: _isSubmitting,
-          canSubmit: canSubmit,
-          onSubmit: _submit,
-          onTaskChanged: () => setState(() => _errorMessage = null),
-          onDateTap: _pickTurnoDate,
-          onDateChanged: () {
-            setState(() {
-              _selectedTurnoDate = _buildTurnoDate();
-              _errorMessage = null;
-            });
-          },
-          onFrequencyToggle: () {
-            setState(() {
-              _frequencyExpanded = !_frequencyExpanded;
-              _assigneeExpanded = false;
-            });
-          },
-          onFrequencyChanged: (value) {
-            setState(() {
-              _frequenza = value;
-              _frequencyExpanded = false;
-            });
-          },
-          onAssigneeToggle: () {
-            setState(() {
-              _assigneeExpanded = !_assigneeExpanded;
-              _frequencyExpanded = false;
-            });
-          },
-          onAssigneeSelected: (id) {
-            setState(() {
-              _selectedInquilinoId = id;
-              _assigneeExpanded = false;
-              _errorMessage = null;
-            });
-          },
-          onRotazioneChanged: (value) {
-            setState(() => _rotazioneAutomatica = value);
-          },
-          onCancel: () => Navigator.of(context).pop(),
-          showTabs: widget.showTabs,
-          showFrame: widget.showFrame,
-        ),
-      ),
+    final body = _TurnoFormPanel(
+      formKey: _formKey,
+      taskController: _taskController,
+      dayController: _dayController,
+      monthController: _monthController,
+      frequenza: _frequenza,
+      frequenze: _frequenze.keys.toList(growable: false),
+      frequencyExpanded: _frequencyExpanded,
+      assigneeExpanded: _assigneeExpanded,
+      selectedInquilinoId: _selectedInquilinoId,
+      rotazioneAutomatica: _rotazioneAutomatica,
+      inquiliniAsync: inquiliniAsync,
+      errorMessage: _errorMessage,
+      isSubmitting: _isSubmitting,
+      canSubmit: canSubmit,
+      onSubmit: _submit,
+      onTaskChanged: () => setState(() => _errorMessage = null),
+      onDateTap: _pickTurnoDate,
+      onDateChanged: () {
+        setState(() {
+          _selectedTurnoDate = _buildTurnoDate();
+          _errorMessage = null;
+        });
+      },
+      onFrequencyToggle: () {
+        setState(() {
+          _frequencyExpanded = !_frequencyExpanded;
+          _assigneeExpanded = false;
+        });
+      },
+      onFrequencyChanged: (value) {
+        setState(() {
+          _frequenza = value;
+          _frequencyExpanded = false;
+        });
+      },
+      onAssigneeToggle: () {
+        setState(() {
+          _assigneeExpanded = !_assigneeExpanded;
+          _frequencyExpanded = false;
+        });
+      },
+      onAssigneeSelected: (id) {
+        setState(() {
+          _selectedInquilinoId = id;
+          _assigneeExpanded = false;
+          _errorMessage = null;
+        });
+      },
+      onRotazioneChanged: (value) {
+        setState(() => _rotazioneAutomatica = value);
+      },
+      onCancel: () => Navigator.of(context).pop(),
+      showTabs: widget.showTabs,
+      showFrame: widget.showFrame,
     );
+
+    final panel = widget.showFrame
+        ? ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: 382,
+              maxHeight: MediaQuery.sizeOf(context).height * 0.9,
+            ),
+            child: Material(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(AppSizes.radius12),
+              elevation: AppSizes.p8,
+              child: body,
+            ),
+          )
+        : body;
 
     return widget.useSafeArea ? SafeArea(child: panel) : panel;
   }
@@ -580,7 +584,7 @@ class _TurnoFormPanel extends StatelessWidget {
       return form;
     }
 
-    return _TurniPanelFrame(backgroundColor: const Color.fromARGB(255, 198, 22, 22), child: form);
+    return _TurniPanelFrame(backgroundColor: AppColors.surface, child: form);
   }
 }
 

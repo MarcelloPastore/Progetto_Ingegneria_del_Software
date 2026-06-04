@@ -32,7 +32,7 @@ class HouseQuickNav extends StatelessWidget {
     _HouseNavEntry(
       label: 'Problemi',
       asset: 'assets/Icons/problemi.png',
-      route: SegnalaProblemaScreen.routeName,
+      route: '/problemi',
     ),
   ];
 
@@ -58,6 +58,7 @@ class HouseQuickNav extends StatelessWidget {
                 child: _HouseBottomNavItem(
                   entry: entry,
                   selected: _isSelected(entry.route, currentRoute),
+                  currentRoute: currentRoute,
                 ),
               ),
             )
@@ -67,7 +68,7 @@ class HouseQuickNav extends StatelessWidget {
   }
 
   static bool _isSelected(String entryRoute, String currentRoute) {
-    if (entryRoute == SegnalaProblemaScreen.routeName) {
+    if (entryRoute == '/problemi') {
       return currentRoute == '/problemi' ||
           currentRoute == SegnalaProblemaScreen.routeName;
     }
@@ -77,19 +78,40 @@ class HouseQuickNav extends StatelessWidget {
 }
 
 class _HouseBottomNavItem extends StatelessWidget {
-  const _HouseBottomNavItem({required this.entry, required this.selected});
+  const _HouseBottomNavItem({
+    required this.entry,
+    required this.selected,
+    required this.currentRoute,
+  });
 
   final _HouseNavEntry entry;
   final bool selected;
+  final String currentRoute;
+
+  void _onTap(BuildContext context) {
+    if (selected) {
+      // Già nella sezione corretta: torna alla schermata principale
+      // della sezione facendo pop di tutte le route fino alla root.
+      Navigator.of(context).popUntil(
+        (route) => route.settings.name == entry.route || route.isFirst,
+      );
+      return;
+    }
+
+    // Naviga a una sezione diversa: rimuove tutto lo stack corrente
+    // e sostituisce con la root della nuova sezione, senza animazione.
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      entry.route,
+      (route) => false,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final color = selected ? AppColors.statusInfo : AppColors.textOnDark;
 
     return InkWell(
-      onTap: selected
-          ? null
-          : () => Navigator.of(context).pushReplacementNamed(entry.route),
+      onTap: () => _onTap(context),
       borderRadius: BorderRadius.circular(AppSizes.radius8),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: AppSizes.p4),
