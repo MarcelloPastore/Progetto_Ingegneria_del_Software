@@ -61,7 +61,7 @@ Content-Type: application/json
 Authorization: Bearer {{ auth_token_alice_login }}
 
 {
-  "nome": "Casa Test18",
+  "nome": "Casa Test",
   "indirizzo": "Via dei Test 1",
   "citta": "TestTown",
   "tipoCasa": "Appartamento"

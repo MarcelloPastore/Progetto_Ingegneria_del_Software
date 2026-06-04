@@ -1,6 +1,7 @@
 /tmp
 /out-tsc
 
+/coincasa_app_flutter_frontend
 /node_modules
 /dist
 npm-debug.log*
