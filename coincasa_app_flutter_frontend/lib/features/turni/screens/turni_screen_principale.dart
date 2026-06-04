@@ -580,7 +580,7 @@ class _TurnoFormPanel extends StatelessWidget {
       return form;
     }
 
-    return _TurniPanelFrame(backgroundColor: AppColors.surface, child: form);
+    return _TurniPanelFrame(backgroundColor: const Color.fromARGB(255, 198, 22, 22), child: form);
   }
 }
 

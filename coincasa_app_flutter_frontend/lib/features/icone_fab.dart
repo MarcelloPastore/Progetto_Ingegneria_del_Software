@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/features/problemi/screens/FAB_problemi_screen.dart';
 import 'package:coincasa_app/features/spese/screens/inserisci_spesa_admin.dart';
 import 'package:coincasa_app/features/turni/screens/turni_screen_principale.dart';
 
@@ -19,13 +20,11 @@ class _DashboardCreatePopupState extends State<DashboardCreatePopup> {
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.sizeOf(context);
-    final popupWidth = screenSize.width < 399 ? screenSize.width - 32 : 367.0;
-    final popupHeight = screenSize.height < 690
-        ? screenSize.height - 64
-        : 638.0;
+    final popupWidth = screenSize.width < 450 ? screenSize.width - 20 : 410.0;
+    final popupHeight = 850.0;
 
     return Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       backgroundColor: Colors.transparent,
       child: Container(
         width: popupWidth,
@@ -48,9 +47,9 @@ class _DashboardCreatePopupState extends State<DashboardCreatePopup> {
           borderRadius: BorderRadius.circular(13),
           child: Column(
             children: [
-              const SizedBox(height: 14),
+              const SizedBox(height: 8),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: _CreateTabBar(
                   selectedTab: _selectedTab,
                   onChanged: (tab) => setState(() => _selectedTab = tab),
@@ -59,7 +58,7 @@ class _DashboardCreatePopupState extends State<DashboardCreatePopup> {
               const SizedBox(height: 8),
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 22),
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 22),
                   child: _PopupBody(tab: _selectedTab),
                 ),
               ),
@@ -148,13 +147,11 @@ class _PopupBody extends StatelessWidget {
   Widget build(BuildContext context) {
     return switch (tab) {
       DashboardCreateTab.spesa => const InserisciSpesaPopupContent(),
-      DashboardCreateTab.problema => const _ShortcutPanel(
-        title: 'Nuovo Problema',
-        icon: Icons.report_problem,
-        description:
-            'Apri la sezione problemi per registrare o seguire una segnalazione.',
-        buttonLabel: 'Vai ai problemi',
-        routeName: '/problemi',
+      DashboardCreateTab.problema => const ProblemiPopupPanel(
+        useSafeArea: false,
+        showTabs: false,
+        showFrame: false,
+        showHeader: false,
       ),
       DashboardCreateTab.turno => const TurniPopupPanel(
         useSafeArea: false,

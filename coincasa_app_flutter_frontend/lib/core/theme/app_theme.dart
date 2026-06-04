@@ -48,6 +48,9 @@ abstract final class AppColors {
   static const success = Color(0xFF2E7D32);
   static const successBright = Color(0xFF3EAE4F);
   static const info = Color(0xFF1565C0);
+  static const problemPriorityUrgent = Color(0xFFFF0005);
+  static const problemPriorityMedium = Color(0xFFFF8D28);
+  static const problemPriorityLow = Color(0xFFFFCC00);
   static const statusPositive = Color(0xFF5EEB64);
   static const statusNegative = Color(0xFFF75C6C);
   static const statusWarning = Color(0xFFF8A541);
