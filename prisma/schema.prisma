@@ -110,7 +110,7 @@ model Spesa {
   anticipataDaRel Utente?   @relation("SpesaAnticipata", fields: [anticipataDa], references: [id])
   anticipataDa    String?   @db.ObjectId
   scadenzaRel     Scadenza? @relation(fields: [idScadenza], references: [id])
-  idScadenza      String?   @unique @db.ObjectId
+  idScadenza      String?   @db.ObjectId
 
   partecipanti    String[] @db.ObjectId
   partecipantiRel Utente[] @relation("SpesaPartecipanti", fields: [partecipanti], references: [id])
@@ -146,7 +146,7 @@ model Scadenza {
 
   casaRel  Casa   @relation(fields: [idCasa], references: [id])
   idCasa   String @db.ObjectId
-  spesaRel Spesa? @relation
+  spese    Spesa[]
 
   turni Turno[]
 

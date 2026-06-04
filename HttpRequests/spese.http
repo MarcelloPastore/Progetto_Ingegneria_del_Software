@@ -17,7 +17,7 @@ Authorization: Bearer {{token}}
 GET {{baseUrl}}/case/{{idCasa}}/spese/{{idSpesa}}
 Authorization: Bearer {{token}}
 
-### Crea spesa
+### Crea spesa (senza scadenza)
 POST {{baseUrl}}/case/{{idCasa}}/spese
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -25,7 +25,21 @@ Content-Type: application/json
 {
   "descrizione": "Spesa supermercato",
   "importo": 120.50,
-  "dataScadenza": "2026-05-31",
+  "partecipanti": [
+    "{{idUtente}}",
+    "{{idInquilino}}"
+  ]
+}
+
+### Crea spesa (con scadenza ricorrente)
+POST {{baseUrl}}/case/{{idCasa}}/spese
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "descrizione": "Bolletta luce",
+  "importo": 80.00,
+  "dataScadenza": "2026-06-30",
   "partecipanti": [
     "{{idUtente}}",
     "{{idInquilino}}"
