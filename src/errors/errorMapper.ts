@@ -10,6 +10,8 @@ import {
   InvalidTokenPayloadError,
   UserNotFoundError,
   InvalidOrExpiredResetCodeError,
+  EmailDeliveryError,
+  InvalidEmailVerificationTokenError,
 } from "./appErrors";
 import { HttpError } from "./httpErrors";
 
@@ -135,6 +137,22 @@ export function mapErrorToHttp(error: unknown): HttpErrorPayload {
       statusCode: 400,
       message: error.message,
       code: "INVALID_OR_EXPIRED_RESET_CODE",
+    };
+  }
+
+  if (error instanceof EmailDeliveryError) {
+    return {
+      statusCode: 502,
+      message: error.message,
+      code: "EMAIL_DELIVERY_ERROR",
+    };
+  }
+
+  if (error instanceof InvalidEmailVerificationTokenError) {
+    return {
+      statusCode: 400,
+      message: error.message,
+      code: "INVALID_EMAIL_VERIFICATION_TOKEN",
     };
   }
 

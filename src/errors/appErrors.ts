@@ -53,3 +53,17 @@ export class InvalidOrExpiredResetCodeError extends Error {
     this.name = "InvalidOrExpiredResetCodeError";
   }
 }
+
+export class EmailDeliveryError extends Error {
+  constructor() {
+    super("Impossibile inviare l'email di verifica");
+    this.name = "EmailDeliveryError";
+  }
+}
+
+export class InvalidEmailVerificationTokenError extends Error {
+  constructor() {
+    super("Token di verifica email non valido o scaduto");
+    this.name = "InvalidEmailVerificationTokenError";
+  }
+}

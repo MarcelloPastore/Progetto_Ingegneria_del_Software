@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { AuthService } from "../service/AuthService";
-import { RegisterData } from "../dto/auth.dto";
+import { RegisterData, VerifyEmailData } from "../dto/auth.dto";
 import { getJwt } from "../utils/jwt";
 import { sendErrorReply } from "../utils/errorReply";
 
@@ -87,11 +87,15 @@ export class AuthController {
     }
   };
   verificaEmail = async (
-    request: FastifyRequest<{ Body: { email: string } }>,
+    request: FastifyRequest<{
+      Body?: VerifyEmailData;
+      Querystring?: VerifyEmailData;
+    }>,
     reply: FastifyReply,
   ) => {
     try {
-      const result = await authService.verificaEmail(request.body);
+      const payload = request.body ?? request.query;
+      const result = await authService.verificaEmail(payload);
       return reply.send(result);
     } catch (error) {
       return this.handleAuthFailure(reply, error);

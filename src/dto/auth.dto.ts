@@ -13,3 +13,8 @@ export interface PublicUser {
   nome: string;
   cognome: string;
 }
+
+export interface VerifyEmailData {
+  email: string;
+  token: string;
+}
