@@ -10,6 +10,12 @@ import 'features/scadenze/scadenze.dart';
 import 'features/spese/spese.dart';
 import 'features/turni/turni.dart';
 
+/// Observer globale usato dalle schermate per rilevare
+/// il ritorno al focus (didPopNext) e aggiornare i dati.
+/// Usa ModalRoute[dynamic] perché i named routes restituiscono ModalRoute[dynamic].
+final RouteObserver<ModalRoute<dynamic>> appRouteObserver =
+    RouteObserver<ModalRoute<dynamic>>();
+
 class CoinCasaApp extends StatelessWidget {
   CoinCasaApp({super.key});
 
@@ -22,11 +28,12 @@ class CoinCasaApp extends StatelessWidget {
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
+        navigatorObservers: [appRouteObserver],
         home: const LoginScreen(),
         routes: {
           '/login': (_) => const LoginScreen(),
           '/dashboard': (_) => const DashboardScreen(),
-          '/spese': (_) => const ListaSpeseAdminScreen(),
+          '/spese': (_) => const SpeseScreen(),
           ListaSpeseAdminScreen.routeName: (_) => const ListaSpeseAdminScreen(),
           ListaSpeseMembroScreen.routeName: (_) =>
               const ListaSpeseMembroScreen(),

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import 'package:coincasa_app/app.dart';
+
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/turno.dart';
@@ -22,21 +24,52 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
   late Future<_DashboardData> _dashboardDataFuture;
   late ActiveCasaController _activeCasaController;
   bool _initialized = false;
 
   @override
+  void initState() {
+    super.initState();
+    // Forza il refresh ad ogni apertura (anche via pushReplacementNamed dalla bottom nav)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() {
+        _dashboardDataFuture = _loadDashboardData();
+      });
+    });
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_initialized) {
-      return;
-    }
-
     _activeCasaController = ActiveCasaScope.read(context);
-    _dashboardDataFuture = _loadDashboardData();
-    _initialized = true;
+    // Registra il RouteObserver ad ogni chiamata (sicuro: unsubscribe avviene in dispose)
+    final route = ModalRoute.of(context);
+    if (route != null) {
+      appRouteObserver.subscribe(this, route);
+    }
+    // Prima inizializzazione del Future (il refresh vero avviene in initState/didPopNext)
+    if (!_initialized) {
+      _dashboardDataFuture = _loadDashboardData();
+      _initialized = true;
+    }
+  }
+
+  @override
+  void dispose() {
+    appRouteObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  /// Ricarica i dati ogni volta che si torna a questa schermata.
+  @override
+  void didPopNext() {
+    super.didPopNext();
+    setState(() {
+      _dashboardDataFuture = _loadDashboardData();
+    });
   }
 
   Future<_DashboardData> _loadDashboardData() async {

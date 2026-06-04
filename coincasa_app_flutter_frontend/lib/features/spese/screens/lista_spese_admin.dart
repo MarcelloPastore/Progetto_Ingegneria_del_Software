@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:coincasa_app/app.dart';
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/spesa.dart';
@@ -38,7 +39,49 @@ class ListaSpeseAdminScreen extends ConsumerStatefulWidget {
       _ListaSpeseAdminScreenState();
 }
 
-class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen> {
+class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
+    with RouteAware {
+  @override
+  void initState() {
+    super.initState();
+    // Invalida i provider ad ogni apertura della schermata (anche via pushReplacementNamed)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final casaId = ActiveCasaScope.read(context).selectedCasaId;
+      if (casaId != null) {
+        ref.invalidate(_speseProvider(casaId));
+        ref.invalidate(_saldiProvider(casaId));
+      }
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route != null) {
+      appRouteObserver.subscribe(this, route);
+    }
+  }
+
+  @override
+  void dispose() {
+    appRouteObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  /// Chiamato quando si torna a questa schermata dopo un pop da una route superiore.
+  @override
+  void didPopNext() {
+    super.didPopNext();
+    final selectedCasaId =
+        ActiveCasaScope.read(context).selectedCasaId;
+    if (selectedCasaId != null) {
+      ref.invalidate(_speseProvider(selectedCasaId));
+      ref.invalidate(_saldiProvider(selectedCasaId));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final activeCasaController = ActiveCasaScope.read(context);
@@ -373,82 +416,106 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen> {
   Widget _buildSpesaItem(BuildContext context, Spesa spesa) {
     final initials = _getInitials(spesa.descrizione);
     final backgroundColor = _getAvatarColor(initials);
+    final isPagata = _isSpesaPagata(spesa);
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSizes.p16),
-      child: InkWell(
-        onTap: () => Navigator.of(
-          context,
-        ).pushNamed(DettaglioSpesaAdminScreen.routeName, arguments: spesa.id),
-        borderRadius: BorderRadius.circular(AppSizes.radius8),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSizes.p6),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 37,
-                decoration: ShapeDecoration(
-                  color: backgroundColor,
-                  shape: const OvalBorder(),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  initials,
-                  style: TextStyle(
-                    color: _getInitialsColor(initials),
-                    fontSize: 16,
-                    fontFamily: 'Inter',
-                    fontWeight: FontWeight.w500,
+    return Opacity(
+      opacity: isPagata ? 0.4 : 1.0,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: AppSizes.p16),
+        child: InkWell(
+          onTap: () => Navigator.of(
+            context,
+          ).pushNamed(DettaglioSpesaAdminScreen.routeName, arguments: spesa.id),
+          borderRadius: BorderRadius.circular(AppSizes.radius8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSizes.p6),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 37,
+                  decoration: ShapeDecoration(
+                    color: backgroundColor,
+                    shape: const OvalBorder(),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    initials,
+                    style: TextStyle(
+                      color: _getInitialsColor(initials),
+                      fontSize: 16,
+                      fontFamily: 'Inter',
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: AppSizes.p16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      spesa.descrizione,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontFamily: 'Inter',
-                        fontWeight: FontWeight.w600,
+                const SizedBox(width: AppSizes.p16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        spesa.descrizione,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontFamily: 'Inter',
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: AppSizes.p4),
-                    Text(
-                      '${_formatDate(spesa.data)} - da pagare',
-                      style: const TextStyle(
-                        color: Color(0xFF908F8F),
-                        fontSize: 12,
-                        fontFamily: 'Inter',
-                        fontWeight: FontWeight.w500,
+                      const SizedBox(height: AppSizes.p4),
+                      Text(
+                        isPagata
+                            ? '${_formatDate(spesa.data)} - pagata'
+                            : '${_formatDate(spesa.data)} - da pagare',
+                        style: TextStyle(
+                          color: isPagata
+                              ? const Color(0xFF47CC5D)
+                              : const Color(0xFF908F8F),
+                          fontSize: 12,
+                          fontFamily: 'Inter',
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              Text(
-                '€${spesa.importo.toStringAsFixed(2)}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontFamily: 'Inter',
-                  fontWeight: FontWeight.w600,
+                Text(
+                  '€${spesa.importo.toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-              const SizedBox(width: AppSizes.p8),
-              const Icon(
-                Icons.chevron_right,
-                color: Color(0xFF908F8F),
-                size: AppSizes.p20,
-              ),
-            ],
+                const SizedBox(width: AppSizes.p8),
+                const Icon(
+                  Icons.chevron_right,
+                  color: Color(0xFF908F8F),
+                  size: AppSizes.p20,
+                ),
+              ],
+            ),
           ),
         ),
       ),
+    );
+  }
+
+  /// Restituisce true se tutte le quote non escluse della spesa risultano pagate.
+  bool _isSpesaPagata(Spesa spesa) {
+    final partecipanti = spesa.partecipanti;
+    if (partecipanti.isEmpty) return false;
+    final nonEsclusi = partecipanti
+        .where((p) => p['escluso'] != true)
+        .toList();
+    if (nonEsclusi.isEmpty) return false;
+    return nonEsclusi.every(
+      (p) =>
+          p['pagato'] == true ||
+          p['pagata'] == true ||
+          p['saldato'] == true,
     );
   }
 

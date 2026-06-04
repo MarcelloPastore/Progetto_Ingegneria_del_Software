@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:coincasa_app/app.dart';
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/spesa.dart';
@@ -27,19 +28,61 @@ final _memberSpeseDataProvider = FutureProvider.autoDispose
       return _MemberSpeseData(
         casa: casa,
         spese: spese,
-        totaleMese: spese.fold(0, (sum, spesa) => sum + spesa.importo),
+        totaleMese: amounts[0],
         credito: amounts[1],
         debito: amounts[2],
       );
     });
 
-class ListaSpeseMembroScreen extends ConsumerWidget {
+class ListaSpeseMembroScreen extends ConsumerStatefulWidget {
   const ListaSpeseMembroScreen({super.key});
 
   static const String routeName = '/spese/membro';
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ListaSpeseMembroScreen> createState() =>
+      _ListaSpeseMembroScreenState();
+}
+
+class _ListaSpeseMembroScreenState
+    extends ConsumerState<ListaSpeseMembroScreen>
+    with RouteAware {
+  @override
+  void initState() {
+    super.initState();
+    // Invalida il provider ad ogni apertura della schermata (anche via pushReplacementNamed)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final casaId = ActiveCasaScope.read(context).selectedCasaId;
+      ref.invalidate(_memberSpeseDataProvider(casaId));
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route != null) {
+      appRouteObserver.subscribe(this, route);
+    }
+  }
+
+  @override
+  void dispose() {
+    appRouteObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  /// Chiamato quando si torna a questa schermata dopo un pop da una route superiore.
+  @override
+  void didPopNext() {
+    super.didPopNext();
+    final selectedCasaId = ActiveCasaScope.read(context).selectedCasaId;
+    ref.invalidate(_memberSpeseDataProvider(selectedCasaId));
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final selectedCasaId = ActiveCasaScope.read(context).selectedCasaId;
     final asyncData = ref.watch(_memberSpeseDataProvider(selectedCasaId));
 
@@ -250,62 +293,87 @@ class _ExpenseTile extends StatelessWidget {
     final creator = spesa.creatoreNome.isEmpty
         ? 'coinquilino'
         : spesa.creatoreNome;
-    return InkWell(
-      onTap: () => Navigator.of(
-        context,
-      ).pushNamed(DettaglioSpesaDebitoreScreen.routeName, arguments: spesa.id),
-      child: Container(
-        height: 39,
-        padding: const EdgeInsets.symmetric(horizontal: 5),
-        color: Colors.transparent,
-        child: Row(
-          children: [
-            _Avatar(initials: _initials(creator)),
-            const SizedBox(width: 13),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    spesa.descrizione.isEmpty ? 'Spesa' : spesa.descrizione,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontFamily: 'Inter',
-                      fontWeight: FontWeight.w800,
+    final isPagata = _isSpesaPagata(spesa);
+
+    return Opacity(
+      opacity: isPagata ? 0.4 : 1.0,
+      child: InkWell(
+        onTap: () => Navigator.of(
+          context,
+        ).pushNamed(DettaglioSpesaDebitoreScreen.routeName, arguments: spesa.id),
+        child: Container(
+          height: 39,
+          padding: const EdgeInsets.symmetric(horizontal: 5),
+          color: Colors.transparent,
+          child: Row(
+            children: [
+              _Avatar(initials: _initials(creator)),
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      spesa.descrizione.isEmpty ? 'Spesa' : spesa.descrizione,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontFamily: 'Inter',
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
-                  ),
-                  Text(
-                    '${spesa.data.day} ${_monthShort(spesa.data.month)} - $creator ha pagato',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFF918D9A),
-                      fontSize: 11,
-                      fontFamily: 'Inter',
-                      fontWeight: FontWeight.w600,
+                    Text(
+                      isPagata
+                          ? '${spesa.data.day} ${_monthShort(spesa.data.month)} - pagata'
+                          : '${spesa.data.day} ${_monthShort(spesa.data.month)} - $creator ha pagato',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: isPagata
+                            ? const Color(0xFF4DE45F)
+                            : const Color(0xFF918D9A),
+                        fontSize: 11,
+                        fontFamily: 'Inter',
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            Text(
-              _formatCurrency(spesa.importo),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 15,
-                fontFamily: 'Inter',
-                fontWeight: FontWeight.w800,
+              Text(
+                _formatCurrency(spesa.importo),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontFamily: 'Inter',
+                  fontWeight: FontWeight.w800,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
+}
+
+/// Restituisce true se tutte le quote non escluse della spesa risultano pagate.
+bool _isSpesaPagata(Spesa spesa) {
+  final partecipanti = spesa.partecipanti;
+  if (partecipanti.isEmpty) return false;
+  final nonEsclusi = partecipanti
+      .where((p) => p['escluso'] != true)
+      .toList();
+  if (nonEsclusi.isEmpty) return false;
+  return nonEsclusi.every(
+    (p) =>
+        p['pagato'] == true ||
+        p['pagata'] == true ||
+        p['saldato'] == true,
+  );
 }
 
 class _BlueOutlineButton extends StatelessWidget {
