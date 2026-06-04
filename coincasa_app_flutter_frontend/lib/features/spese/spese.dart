@@ -10,3 +10,4 @@ export 'screens/lista_spese_membro.dart';
 export 'screens/modifiche_spese_negata.dart';
 export 'screens/modifiche_spese_successo.dart';
 export 'screens/pareggia_conti.dart';
+export 'screens/spese_screen.dart';

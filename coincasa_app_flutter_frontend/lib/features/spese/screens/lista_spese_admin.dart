@@ -8,8 +8,8 @@ import 'package:coincasa_app/core/models/spesa.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
-import 'package:coincasa_app/features/icone_fab.dart';
 import 'package:coincasa_app/features/spese/screens/dettaglio_spesa_admin.dart';
+import 'package:coincasa_app/features/spese/screens/inserisci_spesa_admin.dart';
 import 'package:coincasa_app/features/spese/screens/pareggia_conti.dart';
 
 final _speseProvider = FutureProvider.autoDispose.family<List<Spesa>, String>((
@@ -78,7 +78,10 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen> {
                   // Group spese by month
                   final speseGroupedByMonth = <DateTime, List<Spesa>>{};
                   for (final spesa in spese) {
-                    final monthKey = DateTime(spesa.data.year, spesa.data.month);
+                    final monthKey = DateTime(
+                      spesa.data.year,
+                      spesa.data.month,
+                    );
                     speseGroupedByMonth.putIfAbsent(monthKey, () => []);
                     speseGroupedByMonth[monthKey]!.add(spesa);
                   }
@@ -237,10 +240,9 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () => showDialog<void>(
-                  context: context,
-                  builder: (_) => const DashboardCreatePopup(),
-                ),
+                onPressed: () => Navigator.of(
+                  context,
+                ).pushNamed(InserisciSpesaScreen.routeName),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF0B45BA),
                   padding: const EdgeInsets.symmetric(vertical: AppSizes.p16),
@@ -663,10 +665,9 @@ class _EmptyExpensesContent extends StatelessWidget {
               ),
               const SizedBox(height: AppSizes.p32),
               ElevatedButton(
-                onPressed: () => showDialog<void>(
-                  context: context,
-                  builder: (_) => const DashboardCreatePopup(),
-                ),
+                onPressed: () => Navigator.of(
+                  context,
+                ).pushNamed(InserisciSpesaScreen.routeName),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF5B2BC1),
                   elevation: 4,

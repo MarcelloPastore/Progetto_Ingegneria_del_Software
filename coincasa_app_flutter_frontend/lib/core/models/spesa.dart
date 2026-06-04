@@ -125,6 +125,7 @@ class Spesa {
     final direct =
         json['creatoreId'] ??
         json['createdById'] ??
+        json['ownerId'] ??
         json['utenteId'] ??
         json['idUtente'] ??
         json['pagatoreId'] ??
@@ -132,7 +133,11 @@ class Spesa {
     if (direct != null) {
       return direct.toString();
     }
-    final creator = json['creatore'] ?? json['createdBy'] ?? json['pagatore'];
+    final creator =
+        json['creatore'] ??
+        json['createdBy'] ??
+        json['owner'] ??
+        json['pagatore'];
     if (creator is Map<String, dynamic>) {
       final id = creator['id'] ?? creator['idUtente'] ?? creator['userId'];
       return id?.toString() ?? '';
@@ -144,12 +149,17 @@ class Spesa {
     final direct =
         json['creatoreNome'] ??
         json['createdByName'] ??
+        json['ownerName'] ??
         json['pagatoreNome'] ??
         json['pagatoDa'];
     if (direct != null) {
       return direct.toString();
     }
-    final creator = json['creatore'] ?? json['createdBy'] ?? json['pagatore'];
+    final creator =
+        json['creatore'] ??
+        json['createdBy'] ??
+        json['owner'] ??
+        json['pagatore'];
     if (creator is Map<String, dynamic>) {
       final name =
           creator['nome'] ??

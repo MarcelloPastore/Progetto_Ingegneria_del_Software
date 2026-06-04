@@ -491,7 +491,7 @@ class _Summary extends StatelessWidget {
         children: [
           _SummaryRow(
             label: 'Chi deve pagare',
-            value: names.isEmpty ? 'Marco, Emilia' : names.join(', '),
+            value: names.isEmpty ? 'Nessuno' : names.join(', '),
           ),
           const Divider(color: Color(0xFFB8B5C1)),
           _SummaryRow(
@@ -666,7 +666,12 @@ BoxDecoration _cardDecoration(Color borderColor) {
 }
 
 String _quotaName(Quota quota, List<Inquilino> inquilini) {
-  final id = quota.raw['inquilinoId'] ?? quota.raw['idInquilino'];
+  final id =
+      quota.raw['inquilinoId'] ??
+      quota.raw['idInquilino'] ??
+      quota.raw['utenteId'] ??
+      quota.raw['idUtente'] ??
+      (quota.raw['utente'] is Map ? quota.raw['utente']['id'] : null);
   if (id != null) {
     for (final inquilino in inquilini) {
       if (inquilino.id == id.toString()) {
@@ -676,7 +681,11 @@ String _quotaName(Quota quota, List<Inquilino> inquilini) {
       }
     }
   }
-  return quota.raw['nome']?.toString() ?? '';
+  return quota.raw['nome']?.toString() ??
+      (quota.raw['utente'] is Map
+          ? quota.raw['utente']['username']?.toString()
+          : null) ??
+      '';
 }
 
 String _formatCurrency(double value) {

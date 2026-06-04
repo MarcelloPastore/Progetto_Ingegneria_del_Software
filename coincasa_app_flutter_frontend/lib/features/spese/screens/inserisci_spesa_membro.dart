@@ -100,7 +100,7 @@ mixin _InserisciSpesaMembroFormMixin<T extends StatefulWidget> on State<T> {
   bool _paidForAll = true;
   bool _isSubmitting = false;
   bool _showErrors = false;
-  DateTime _date = DateTime(2026, 5, 15);
+  DateTime _date = DateTime.now();
   final Set<String> _selectedIds = <String>{};
 
   bool get _isPopup;
@@ -134,7 +134,10 @@ mixin _InserisciSpesaMembroFormMixin<T extends StatefulWidget> on State<T> {
 
     if (mounted && _selectedIds.isEmpty) {
       setState(() {
-        _selectedIds.addAll(inquilini.map((inquilino) => inquilino.id));
+        final currentId = current?.id;
+        if (currentId != null && currentId.isNotEmpty) {
+          _selectedIds.add(currentId);
+        }
       });
     }
 
@@ -146,6 +149,14 @@ mixin _InserisciSpesaMembroFormMixin<T extends StatefulWidget> on State<T> {
   }
 
   Inquilino? _resolveCurrentUser(List<Inquilino> inquilini) {
+    final userId = ApiProvider.client.currentUserId?.trim();
+    if (userId != null && userId.isNotEmpty) {
+      for (final inquilino in inquilini) {
+        if (inquilino.id == userId) {
+          return inquilino;
+        }
+      }
+    }
     final email = ApiProvider.client.currentUserEmail?.trim().toLowerCase();
     final name = ApiProvider.client.currentUserName?.trim().toLowerCase();
     for (final inquilino in inquilini) {
@@ -199,11 +210,17 @@ mixin _InserisciSpesaMembroFormMixin<T extends StatefulWidget> on State<T> {
     setState(() => _isSubmitting = true);
     try {
       await ApiProvider.spese.create(data.casa.id, {
-        'descrizione': _descrizioneController.text.trim(),
+        'descrizione': _descrizioneController.text.trim().isEmpty
+            ? 'Spesa'
+            : _descrizioneController.text.trim(),
         'importo': amount,
-        'data': _date.toIso8601String(),
-        'partecipanti': _selectedIds.toList(),
-        'hoAnticipatoPerTutti': _paidForAll,
+        'dataScadenza': _date.toIso8601String().split('T').first,
+        'partecipanti': _buildPartecipantiIds(
+          selectedIds: _selectedIds,
+          currentUserId: data.currentUserId,
+        ),
+        if (_paidForAll && data.currentUserId != null)
+          'anticipataDa': data.currentUserId,
         'isRicorrente': false,
       });
       if (!mounted) {
@@ -318,6 +335,9 @@ mixin _InserisciSpesaMembroFormMixin<T extends StatefulWidget> on State<T> {
                     amount: _parsedAmount,
                     hasError: _hasParticipantsError,
                     onToggle: (id) {
+                      if (id == data.currentUserId) {
+                        return;
+                      }
                       setState(() {
                         if (_selectedIds.contains(id)) {
                           _selectedIds.remove(id);
@@ -638,7 +658,7 @@ class _ParticipantRow extends StatelessWidget {
     final label = _displayName(inquilino);
     final muted = isCurrentUser;
     return InkWell(
-      onTap: onToggle,
+      onTap: isCurrentUser ? null : onToggle,
       child: SizedBox(
         height: 46,
         child: Row(
@@ -660,7 +680,7 @@ class _ParticipantRow extends StatelessWidget {
             ),
             Checkbox(
               value: selected,
-              onChanged: (_) => onToggle(),
+              onChanged: isCurrentUser ? null : (_) => onToggle(),
               activeColor: const Color(0xFF5A2CBD),
               checkColor: Colors.white,
               side: const BorderSide(color: Color(0xFF817B8C), width: 2),
@@ -932,6 +952,17 @@ class _MemberExpenseData {
   final Casa casa;
   final List<Inquilino> inquilini;
   final String? currentUserId;
+}
+
+List<String> _buildPartecipantiIds({
+  required Set<String> selectedIds,
+  required String? currentUserId,
+}) {
+  final partecipanti = <String>{...selectedIds};
+  if (currentUserId != null && currentUserId.isNotEmpty) {
+    partecipanti.add(currentUserId);
+  }
+  return partecipanti.toList();
 }
 
 String _displayName(Inquilino inquilino) {

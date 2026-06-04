@@ -80,16 +80,28 @@ class _InserisciSpesaScreenState extends ConsumerState<InserisciSpesaScreen> {
 
     controller.setSubmitting(true);
     try {
+      final inquilini = await ref.read(
+        speseCreateInquiliniProvider(casa.id).future,
+      );
+      final currentUserId = _resolveCurrentUserId(inquilini);
+      final partecipanti = _buildPartecipantiIds(
+        selectedIds: form.selectedInquiliniIds,
+        currentUserId: currentUserId,
+      );
       final normalizedImporto = form.importo.replaceAll(',', '.');
-      final nuovaSpesa = await ApiProvider.spese.create(casa.id, {
+      final payload = <String, dynamic>{
         'descrizione': form.descrizione.trim(),
         'importo': double.parse(normalizedImporto),
-        'data': DateTime.now().toIso8601String(),
-        'partecipanti': form.selectedInquiliniIds.toList(),
-        'hoAnticipatoPerTutti': form.hoAnticipatoPerTutti,
+        'partecipanti': partecipanti,
         'isRicorrente': form.spesaRicorrente,
-        if (form.spesaRicorrente) 'frequenza': form.frequenza,
-      });
+        if (form.hoAnticipatoPerTutti && currentUserId != null)
+          'anticipataDa': currentUserId,
+        if (form.spesaRicorrente) ...{
+          'dataScadenza': DateTime.now().toIso8601String().split('T').first,
+          'cadenzaGiorni': _cadenzaGiorniFor(form.frequenza),
+        },
+      };
+      final nuovaSpesa = await ApiProvider.spese.create(casa.id, payload);
 
       if (!mounted) {
         return;
@@ -158,17 +170,28 @@ class _InserisciSpesaScreenState extends ConsumerState<InserisciSpesaScreen> {
                   error: (_, _) => _DivisioneSection(
                     inquilini: const [],
                     selectedIds: form.selectedInquiliniIds,
+                    currentUserId: null,
                     showError:
                         form.showErrors && form.selectedInquiliniIds.isEmpty,
                     onSelected: controller.toggleInquilino,
                   ),
-                  data: (inquilini) => _DivisioneSection(
-                    inquilini: inquilini,
-                    selectedIds: form.selectedInquiliniIds,
-                    showError:
-                        form.showErrors && form.selectedInquiliniIds.isEmpty,
-                    onSelected: controller.toggleInquilino,
-                  ),
+                  data: (inquilini) {
+                    final currentUserId = _resolveCurrentUserId(inquilini);
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (!mounted) {
+                        return;
+                      }
+                      controller.ensureSelected(currentUserId);
+                    });
+                    return _DivisioneSection(
+                      inquilini: inquilini,
+                      selectedIds: form.selectedInquiliniIds,
+                      currentUserId: currentUserId,
+                      showError:
+                          form.showErrors && form.selectedInquiliniIds.isEmpty,
+                      onSelected: controller.toggleInquilino,
+                    );
+                  },
                 ),
                 const SizedBox(height: 20),
                 _PaidForAllRow(
@@ -275,16 +298,28 @@ class _InserisciSpesaPopupContentState
 
     controller.setSubmitting(true);
     try {
+      final inquilini = await ref.read(
+        speseCreateInquiliniProvider(casa.id).future,
+      );
+      final currentUserId = _resolveCurrentUserId(inquilini);
+      final partecipanti = _buildPartecipantiIds(
+        selectedIds: form.selectedInquiliniIds,
+        currentUserId: currentUserId,
+      );
       final normalizedImporto = form.importo.replaceAll(',', '.');
-      final nuovaSpesa = await ApiProvider.spese.create(casa.id, {
+      final payload = <String, dynamic>{
         'descrizione': form.descrizione.trim(),
         'importo': double.parse(normalizedImporto),
-        'data': DateTime.now().toIso8601String(),
-        'partecipanti': form.selectedInquiliniIds.toList(),
-        'hoAnticipatoPerTutti': form.hoAnticipatoPerTutti,
+        'partecipanti': partecipanti,
         'isRicorrente': form.spesaRicorrente,
-        if (form.spesaRicorrente) 'frequenza': form.frequenza,
-      });
+        if (form.hoAnticipatoPerTutti && currentUserId != null)
+          'anticipataDa': currentUserId,
+        if (form.spesaRicorrente) ...{
+          'dataScadenza': DateTime.now().toIso8601String().split('T').first,
+          'cadenzaGiorni': _cadenzaGiorniFor(form.frequenza),
+        },
+      };
+      final nuovaSpesa = await ApiProvider.spese.create(casa.id, payload);
 
       if (!mounted) {
         return;
@@ -346,15 +381,26 @@ class _InserisciSpesaPopupContentState
           error: (_, _) => _DivisioneSection(
             inquilini: const [],
             selectedIds: form.selectedInquiliniIds,
+            currentUserId: null,
             showError: form.showErrors && form.selectedInquiliniIds.isEmpty,
             onSelected: controller.toggleInquilino,
           ),
-          data: (inquilini) => _DivisioneSection(
-            inquilini: inquilini,
-            selectedIds: form.selectedInquiliniIds,
-            showError: form.showErrors && form.selectedInquiliniIds.isEmpty,
-            onSelected: controller.toggleInquilino,
-          ),
+          data: (inquilini) {
+            final currentUserId = _resolveCurrentUserId(inquilini);
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) {
+                return;
+              }
+              controller.ensureSelected(currentUserId);
+            });
+            return _DivisioneSection(
+              inquilini: inquilini,
+              selectedIds: form.selectedInquiliniIds,
+              currentUserId: currentUserId,
+              showError: form.showErrors && form.selectedInquiliniIds.isEmpty,
+              onSelected: controller.toggleInquilino,
+            );
+          },
         ),
         const SizedBox(height: 12),
         _PaidForAllRow(
@@ -410,6 +456,7 @@ class _SpesaCreateFormState {
     this.importo = '',
     this.descrizione = '',
     this.selectedInquiliniIds = const {},
+    this.currentUserId,
     this.hoAnticipatoPerTutti = false,
     this.spesaRicorrente = false,
     this.frequenza = 'Mensile',
@@ -421,6 +468,7 @@ class _SpesaCreateFormState {
   final String importo;
   final String descrizione;
   final Set<String> selectedInquiliniIds;
+  final String? currentUserId;
   final bool hoAnticipatoPerTutti;
   final bool spesaRicorrente;
   final String frequenza;
@@ -430,12 +478,14 @@ class _SpesaCreateFormState {
 
   bool get canSubmit =>
       importo.trim().isNotEmpty &&
-      (double.tryParse(importo.trim()) ?? 0) > 0 &&
+      (double.tryParse(importo.trim().replaceAll(',', '.')) ?? 0) > 0 &&
+      descrizione.trim().isNotEmpty &&
       selectedInquiliniIds.isNotEmpty &&
       !isSubmitting;
 
   bool get hasValidImporto =>
-      importo.trim().isNotEmpty && (double.tryParse(importo.trim()) ?? 0) > 0;
+      importo.trim().isNotEmpty &&
+      (double.tryParse(importo.trim().replaceAll(',', '.')) ?? 0) > 0;
 
   bool get showMissingError => submitError.isNotEmpty && showErrors;
 }
@@ -448,7 +498,10 @@ class _SpesaCreateFormController extends StateNotifier<_SpesaCreateFormState> {
       importo: value,
       descrizione: state.descrizione,
       selectedInquiliniIds: state.selectedInquiliniIds,
+      currentUserId: state.currentUserId,
       hoAnticipatoPerTutti: state.hoAnticipatoPerTutti,
+      spesaRicorrente: state.spesaRicorrente,
+      frequenza: state.frequenza,
       showErrors: state.showErrors,
     );
   }
@@ -458,6 +511,7 @@ class _SpesaCreateFormController extends StateNotifier<_SpesaCreateFormState> {
       importo: state.importo,
       descrizione: value,
       selectedInquiliniIds: state.selectedInquiliniIds,
+      currentUserId: state.currentUserId,
       hoAnticipatoPerTutti: state.hoAnticipatoPerTutti,
       spesaRicorrente: state.spesaRicorrente,
       frequenza: state.frequenza,
@@ -466,6 +520,9 @@ class _SpesaCreateFormController extends StateNotifier<_SpesaCreateFormState> {
   }
 
   void toggleInquilino(String inquilinoId) {
+    if (inquilinoId == state.currentUserId) {
+      return;
+    }
     final newIds = {...state.selectedInquiliniIds};
     if (newIds.contains(inquilinoId)) {
       newIds.remove(inquilinoId);
@@ -476,10 +533,32 @@ class _SpesaCreateFormController extends StateNotifier<_SpesaCreateFormState> {
       importo: state.importo,
       descrizione: state.descrizione,
       selectedInquiliniIds: newIds,
+      currentUserId: state.currentUserId,
       hoAnticipatoPerTutti: state.hoAnticipatoPerTutti,
       spesaRicorrente: state.spesaRicorrente,
       frequenza: state.frequenza,
       showErrors: state.showErrors,
+    );
+  }
+
+  void ensureSelected(String? inquilinoId) {
+    if (inquilinoId == null ||
+        inquilinoId.isEmpty ||
+        (state.selectedInquiliniIds.contains(inquilinoId) &&
+            state.currentUserId == inquilinoId)) {
+      return;
+    }
+    state = _SpesaCreateFormState(
+      importo: state.importo,
+      descrizione: state.descrizione,
+      selectedInquiliniIds: {...state.selectedInquiliniIds, inquilinoId},
+      currentUserId: inquilinoId,
+      hoAnticipatoPerTutti: state.hoAnticipatoPerTutti,
+      spesaRicorrente: state.spesaRicorrente,
+      frequenza: state.frequenza,
+      showErrors: state.showErrors,
+      isSubmitting: state.isSubmitting,
+      submitError: state.submitError,
     );
   }
 
@@ -488,6 +567,7 @@ class _SpesaCreateFormController extends StateNotifier<_SpesaCreateFormState> {
       importo: state.importo,
       descrizione: state.descrizione,
       selectedInquiliniIds: state.selectedInquiliniIds,
+      currentUserId: state.currentUserId,
       hoAnticipatoPerTutti: value,
       spesaRicorrente: state.spesaRicorrente,
       frequenza: state.frequenza,
@@ -500,6 +580,7 @@ class _SpesaCreateFormController extends StateNotifier<_SpesaCreateFormState> {
       importo: state.importo,
       descrizione: state.descrizione,
       selectedInquiliniIds: state.selectedInquiliniIds,
+      currentUserId: state.currentUserId,
       hoAnticipatoPerTutti: state.hoAnticipatoPerTutti,
       spesaRicorrente: value,
       frequenza: state.frequenza,
@@ -512,6 +593,7 @@ class _SpesaCreateFormController extends StateNotifier<_SpesaCreateFormState> {
       importo: state.importo,
       descrizione: state.descrizione,
       selectedInquiliniIds: state.selectedInquiliniIds,
+      currentUserId: state.currentUserId,
       hoAnticipatoPerTutti: state.hoAnticipatoPerTutti,
       spesaRicorrente: state.spesaRicorrente,
       frequenza: value,
@@ -521,13 +603,15 @@ class _SpesaCreateFormController extends StateNotifier<_SpesaCreateFormState> {
 
   bool validateBeforeSubmit() {
     final hasValidImporto = state.hasValidImporto;
+    final hasDescrizione = state.descrizione.trim().isNotEmpty;
     final hasInquilini = state.selectedInquiliniIds.isNotEmpty;
 
-    if (!hasValidImporto || !hasInquilini) {
+    if (!hasValidImporto || !hasDescrizione || !hasInquilini) {
       state = _SpesaCreateFormState(
         importo: state.importo,
         descrizione: state.descrizione,
         selectedInquiliniIds: state.selectedInquiliniIds,
+        currentUserId: state.currentUserId,
         hoAnticipatoPerTutti: state.hoAnticipatoPerTutti,
         spesaRicorrente: state.spesaRicorrente,
         frequenza: state.frequenza,
@@ -543,6 +627,7 @@ class _SpesaCreateFormController extends StateNotifier<_SpesaCreateFormState> {
       importo: state.importo,
       descrizione: state.descrizione,
       selectedInquiliniIds: state.selectedInquiliniIds,
+      currentUserId: state.currentUserId,
       hoAnticipatoPerTutti: state.hoAnticipatoPerTutti,
       spesaRicorrente: state.spesaRicorrente,
       frequenza: state.frequenza,
@@ -556,6 +641,7 @@ class _SpesaCreateFormController extends StateNotifier<_SpesaCreateFormState> {
       importo: state.importo,
       descrizione: state.descrizione,
       selectedInquiliniIds: state.selectedInquiliniIds,
+      currentUserId: state.currentUserId,
       hoAnticipatoPerTutti: state.hoAnticipatoPerTutti,
       spesaRicorrente: state.spesaRicorrente,
       frequenza: state.frequenza,
@@ -563,6 +649,48 @@ class _SpesaCreateFormController extends StateNotifier<_SpesaCreateFormState> {
       submitError: error,
     );
   }
+}
+
+String? _resolveCurrentUserId(List<Inquilino> inquilini) {
+  final userId = ApiProvider.client.currentUserId;
+  if (userId != null && userId.trim().isNotEmpty) {
+    return userId.trim();
+  }
+  final email = ApiProvider.client.currentUserEmail?.trim().toLowerCase();
+  final name = ApiProvider.client.currentUserName?.trim().toLowerCase();
+  for (final inquilino in inquilini) {
+    final values = [
+      inquilino.email,
+      inquilino.username,
+      inquilino.nome,
+      inquilino.nomeCompleto,
+    ].map((value) => value.trim().toLowerCase());
+    if ((email != null && values.contains(email)) ||
+        (name != null && values.contains(name))) {
+      return inquilino.id;
+    }
+  }
+  return inquilini.isNotEmpty ? inquilini.first.id : null;
+}
+
+List<String> _buildPartecipantiIds({
+  required Set<String> selectedIds,
+  required String? currentUserId,
+}) {
+  final partecipanti = <String>{...selectedIds};
+  if (currentUserId != null && currentUserId.isNotEmpty) {
+    partecipanti.add(currentUserId);
+  }
+  return partecipanti.toList();
+}
+
+int _cadenzaGiorniFor(String frequenza) {
+  return switch (frequenza) {
+    'Bimestrale' => 60,
+    'Trimestrale' => 90,
+    'Annuale' => 365,
+    _ => 30,
+  };
 }
 
 // UI Components
@@ -685,12 +813,14 @@ class _DivisioneSection extends StatelessWidget {
   const _DivisioneSection({
     required this.inquilini,
     required this.selectedIds,
+    required this.currentUserId,
     required this.showError,
     required this.onSelected,
   });
 
   final List<Inquilino> inquilini;
   final Set<String> selectedIds;
+  final String? currentUserId;
   final bool showError;
   final ValueChanged<String> onSelected;
 
@@ -714,11 +844,13 @@ class _DivisioneSection extends StatelessWidget {
         ...inquilini.asMap().entries.map((entry) {
           final inquilino = entry.value;
           final isSelected = selectedIds.contains(inquilino.id);
+          final isCurrentUser = inquilino.id == currentUserId;
           return Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: _InquilinoCheckbox(
               inquilino: inquilino,
               isSelected: isSelected,
+              isCurrentUser: isCurrentUser,
               onChanged: () => onSelected(inquilino.id),
             ),
           );
@@ -736,11 +868,13 @@ class _InquilinoCheckbox extends StatelessWidget {
   const _InquilinoCheckbox({
     required this.inquilino,
     required this.isSelected,
+    required this.isCurrentUser,
     required this.onChanged,
   });
 
   final Inquilino inquilino;
   final bool isSelected;
+  final bool isCurrentUser;
   final VoidCallback onChanged;
 
   Color _getAvatarColor(String id) {
@@ -766,7 +900,7 @@ class _InquilinoCheckbox extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: onChanged,
+          onTap: isCurrentUser ? null : onChanged,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             child: Row(
@@ -790,6 +924,8 @@ class _InquilinoCheckbox extends StatelessWidget {
                 Expanded(
                   child: Text(
                     inquilino.nome,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: AppTextStyles.screenTitleStrong.copyWith(
                       color: AppColors.textOnDark,
                       fontSize: 14,
@@ -798,7 +934,7 @@ class _InquilinoCheckbox extends StatelessWidget {
                 ),
                 Checkbox(
                   value: isSelected,
-                  onChanged: (_) => onChanged(),
+                  onChanged: isCurrentUser ? null : (_) => onChanged(),
                   activeColor: AppColors.brandAccent,
                 ),
               ],

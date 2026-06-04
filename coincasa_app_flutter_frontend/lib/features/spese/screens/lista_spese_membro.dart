@@ -134,7 +134,9 @@ class _MemberSpeseContent extends StatelessWidget {
               ],
               _PrimaryBlueButton(
                 label: 'Inserisci una nuova spesa',
-                onPressed: () => showInserisciSpesaMembroDialog(context),
+                onPressed: () => Navigator.of(
+                  context,
+                ).pushNamed(InserisciSpesaMembroScreen.routeName),
               ),
             ],
           ),

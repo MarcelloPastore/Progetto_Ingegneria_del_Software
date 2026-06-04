@@ -6,7 +6,7 @@ import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
-import 'package:coincasa_app/features/icone_fab.dart';
+import 'package:coincasa_app/features/spese/screens/inserisci_spesa_admin.dart';
 
 class NessunaSpeseRegistrataScreen extends StatelessWidget {
   const NessunaSpeseRegistrataScreen({super.key});
@@ -111,10 +111,9 @@ class NessunaSpeseRegistrataScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: AppSizes.p32),
                     ElevatedButton(
-                      onPressed: () => showDialog<void>(
-                        context: context,
-                        builder: (_) => const DashboardCreatePopup(),
-                      ),
+                      onPressed: () => Navigator.of(
+                        context,
+                      ).pushNamed(InserisciSpesaScreen.routeName),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF5B2BC1),
                         elevation: 4,
@@ -123,7 +122,9 @@ class NessunaSpeseRegistrataScreen extends StatelessWidget {
                           vertical: AppSizes.p16,
                         ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppSizes.radius15),
+                          borderRadius: BorderRadius.circular(
+                            AppSizes.radius15,
+                          ),
                         ),
                       ),
                       child: const Text(

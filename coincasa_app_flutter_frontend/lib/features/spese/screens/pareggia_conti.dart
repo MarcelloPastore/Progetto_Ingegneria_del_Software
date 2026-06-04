@@ -80,11 +80,7 @@ class _PareggiaContiScreenState extends ConsumerState<PareggiaContiScreen> {
       if (data == null) {
         return;
       }
-      await ApiProvider.spese.pareggia(data.casa.id, {
-        'daInquilinoId': transfer.fromId,
-        'aInquilinoId': transfer.toId,
-        'importo': transfer.amount,
-      });
+      await ApiProvider.spese.pareggia(data.casa.id, [transfer.toId]);
       if (!mounted) {
         return;
       }
@@ -313,7 +309,9 @@ class _TransfersCard extends StatelessWidget {
             _TransferTile(
               row: rows[index],
               submitting: submittingKey == rows[index].key,
-              onPressed: () => onMarkTransfer(rows[index]),
+              onPressed: rows[index].canMark
+                  ? () => onMarkTransfer(rows[index])
+                  : null,
             ),
             if (index < rows.length - 1) const Divider(height: 1),
           ],
@@ -375,7 +373,7 @@ class _TransferTile extends StatelessWidget {
 
   final _TransferRow row;
   final bool submitting;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -424,7 +422,11 @@ class _TransferTile extends StatelessWidget {
               ),
             ),
             child: Text(
-              submitting ? '...' : 'Segna',
+              submitting
+                  ? '...'
+                  : row.canMark
+                  ? 'Segna'
+                  : 'Solo debitore',
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 14,
@@ -575,6 +577,7 @@ class _TransferRow {
     required this.toName,
     required this.fromInitials,
     required this.amount,
+    required this.canMark,
   });
 
   final String fromId;
@@ -583,6 +586,7 @@ class _TransferRow {
   final String toName;
   final String fromInitials;
   final double amount;
+  final bool canMark;
 
   String get key => '$fromId-$toId-${amount.toStringAsFixed(2)}';
 }
@@ -614,6 +618,7 @@ List<_TransferRow> _minimalTransfers(List<_BalanceRow> balances) {
         toName: creditor.row.name,
         fromInitials: debtor.row.initials,
         amount: amount,
+        canMark: debtor.row.isCurrentUser,
       ),
     );
     debtor.amount -= amount;
@@ -648,6 +653,10 @@ String _displayName(Inquilino inquilino) {
 }
 
 bool _isCurrentUser(Inquilino inquilino) {
+  final userId = ApiProvider.client.currentUserId?.trim();
+  if (userId != null && userId.isNotEmpty) {
+    return inquilino.id == userId;
+  }
   final email = ApiProvider.client.currentUserEmail?.trim().toLowerCase();
   if (email == null || email.isEmpty) {
     return false;

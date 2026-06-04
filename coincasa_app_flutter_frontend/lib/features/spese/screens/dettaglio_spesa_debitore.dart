@@ -98,9 +98,7 @@ class _DebtorDetailContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final canManage = data.spesa.isCreatedBy(data.currentUserId);
     final payingNames = _payingNames(data);
-    final quota = data.quote.isEmpty
-        ? 0.0
-        : data.spesa.importo / data.quote.length;
+    final quota = data.quote.isEmpty ? 0.0 : data.quote.first.importo;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(21, 14, 21, 34),
@@ -553,7 +551,8 @@ String _quotaUserId(Quota quota) {
       raw['idInquilino'] ??
       raw['utenteId'] ??
       raw['idUtente'] ??
-      raw['userId'];
+      raw['userId'] ??
+      (raw['utente'] is Map ? raw['utente']['id'] : null);
   return id?.toString() ?? '';
 }
 
@@ -566,6 +565,7 @@ String _nameForQuota(Quota quota, List<Inquilino> inquilini) {
   return raw['nome']?.toString() ??
       raw['name']?.toString() ??
       raw['username']?.toString() ??
+      (raw['utente'] is Map ? raw['utente']['username']?.toString() : null) ??
       'Coinquilino';
 }
 

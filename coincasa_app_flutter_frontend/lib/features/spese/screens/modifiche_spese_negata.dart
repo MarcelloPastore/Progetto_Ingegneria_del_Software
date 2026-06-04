@@ -102,16 +102,22 @@ class _ModificheSpeseNegataScreenState
   ) {
     final ids = <String>{};
     for (final quota in quote) {
-      final id = quota.raw['inquilinoId'] ?? quota.raw['idInquilino'];
-      if (id != null) {
-        ids.add(id.toString());
+      if (quota.utenteId.isNotEmpty) {
+        ids.add(quota.utenteId);
       }
     }
     if (ids.isNotEmpty) {
       return ids;
     }
     for (final item in spesa.partecipanti) {
-      final id = item['id'] ?? item['inquilinoId'] ?? item['idInquilino'];
+      final utente = item['utente'];
+      final id =
+          item['id'] ??
+          item['utenteId'] ??
+          item['idUtente'] ??
+          item['inquilinoId'] ??
+          item['idInquilino'] ??
+          (utente is Map<String, dynamic> ? utente['id'] : null);
       if (id != null) {
         ids.add(id.toString());
       }
@@ -128,15 +134,19 @@ class _ModificheSpeseNegataScreenState
       final importo = double.parse(
         _amountController.text.trim().replaceAll(',', '.'),
       );
+      final partecipanti = <String>{..._selectedIds};
+      if (data.spesa.creatoreId.isNotEmpty) {
+        partecipanti.add(data.spesa.creatoreId);
+      }
       final updated = await ApiProvider.spese
           .update(data.casa.id, data.spesa.id, {
             'descrizione': _descriptionController.text.trim(),
             'importo': importo,
-            'data': _date.toIso8601String(),
-            'partecipanti': _selectedIds.toList(),
-            'hoAnticipatoPerTutti': _paidForAll,
+            'dataScadenza': _date.toIso8601String().split('T').first,
+            'partecipanti': partecipanti.toList(),
+            if (!_paidForAll) 'anticipataDa': null,
             'isRicorrente': _recurring,
-            if (_recurring) 'frequenza': _frequency,
+            if (_recurring) 'cadenzaGiorni': _cadenzaGiorniFor(_frequency),
           });
       if (!mounted) {
         return;
@@ -968,17 +978,26 @@ double _parseAmount(String value) {
 }
 
 String _quotaName(Quota quota, List<Inquilino> inquilini) {
-  final id = quota.raw['inquilinoId'] ?? quota.raw['idInquilino'];
-  if (id != null) {
+  final id = quota.utenteId;
+  if (id.isNotEmpty) {
     for (final inquilino in inquilini) {
-      if (inquilino.id == id.toString()) {
+      if (inquilino.id == id) {
         return inquilino.nomeCompleto.isEmpty
             ? inquilino.nome
             : inquilino.nomeCompleto;
       }
     }
   }
-  return quota.raw['nome']?.toString() ?? '';
+  return quota.utenteNome;
+}
+
+int _cadenzaGiorniFor(String frequenza) {
+  return switch (frequenza) {
+    'Bimestrale' => 60,
+    'Trimestrale' => 90,
+    'Annuale' => 365,
+    _ => 30,
+  };
 }
 
 String _initials(String name) {

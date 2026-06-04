@@ -109,9 +109,10 @@ class _DetailContent extends StatelessWidget {
         .where((row) => !row.isExcluded && !row.isPaid)
         .map((row) => row.name)
         .toList();
-    final quotaPerPersona = rows.isEmpty
+    final includedRows = rows.where((row) => !row.isExcluded).length;
+    final quotaPerPersona = includedRows == 0
         ? data.spesa.importo
-        : data.spesa.importo / rows.where((row) => !row.isExcluded).length;
+        : data.spesa.importo / includedRows;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(
@@ -254,14 +255,12 @@ class _DetailContent extends StatelessWidget {
 
     if (data.spesa.partecipanti.isNotEmpty) {
       return data.spesa.partecipanti.map((partecipante) {
-        final name =
-            partecipante['nome']?.toString() ??
-            partecipante['name']?.toString() ??
-            partecipante['username']?.toString() ??
-            'Coinquilino';
+        final name = _nameForPartecipante(partecipante);
         final excluded = partecipante['escluso'] == true;
         final paid =
-            partecipante['pagato'] == true || partecipante['pagata'] == true;
+            partecipante['pagato'] == true ||
+            partecipante['pagata'] == true ||
+            partecipante['saldato'] == true;
         return _QuotaRowData(
           name: name,
           initials: _initials(name),
@@ -271,32 +270,7 @@ class _DetailContent extends StatelessWidget {
       }).toList();
     }
 
-    return const [
-      _QuotaRowData(
-        name: 'Francesco (Tu)',
-        initials: 'FR',
-        isPaid: true,
-        isExcluded: false,
-      ),
-      _QuotaRowData(
-        name: 'Marco',
-        initials: 'MR',
-        isPaid: false,
-        isExcluded: false,
-      ),
-      _QuotaRowData(
-        name: 'Emilia',
-        initials: 'EM',
-        isPaid: false,
-        isExcluded: false,
-      ),
-      _QuotaRowData(
-        name: 'Emma',
-        initials: 'E',
-        isPaid: false,
-        isExcluded: true,
-      ),
-    ];
+    return const [];
   }
 }
 
@@ -562,7 +536,8 @@ String _nameForQuota(Quota quota, List<Inquilino> inquilini) {
       raw['idInquilino'] ??
       raw['utenteId'] ??
       raw['idUtente'] ??
-      raw['userId'];
+      raw['userId'] ??
+      (raw['utente'] is Map ? raw['utente']['id'] : null);
   if (id != null) {
     for (final inquilino in inquilini) {
       if (inquilino.id == id.toString()) {
@@ -575,6 +550,25 @@ String _nameForQuota(Quota quota, List<Inquilino> inquilini) {
   return raw['nome']?.toString() ??
       raw['name']?.toString() ??
       raw['username']?.toString() ??
+      (raw['utente'] is Map ? raw['utente']['username']?.toString() : null) ??
+      'Coinquilino';
+}
+
+String _nameForPartecipante(Map<String, dynamic> partecipante) {
+  final utente = partecipante['utente'];
+  if (utente is Map) {
+    final nome =
+        utente['nome'] ??
+        utente['name'] ??
+        utente['username'] ??
+        utente['email'];
+    if (nome != null && nome.toString().trim().isNotEmpty) {
+      return nome.toString();
+    }
+  }
+  return partecipante['nome']?.toString() ??
+      partecipante['name']?.toString() ??
+      partecipante['username']?.toString() ??
       'Coinquilino';
 }
 
