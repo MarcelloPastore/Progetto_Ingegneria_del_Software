@@ -29,15 +29,17 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
   late ActiveCasaController _activeCasaController;
   bool _initialized = false;
 
+  /// Cache statica: sopravvive alla distruzione del widget (pushReplacementNamed).
+  static _DashboardData? _cachedData;
+  bool _isBackgroundRefreshing = false;
+
   @override
   void initState() {
     super.initState();
-    // Forza il refresh ad ogni apertura (anche via pushReplacementNamed dalla bottom nav)
+    // Avvia subito un aggiornamento in background dopo il primo frame.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      setState(() {
-        _dashboardDataFuture = _loadDashboardData();
-      });
+      _triggerRefresh();
     });
   }
 
@@ -50,9 +52,17 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
     if (route != null) {
       appRouteObserver.subscribe(this, route);
     }
-    // Prima inizializzazione del Future (il refresh vero avviene in initState/didPopNext)
+    // Prima inizializzazione: usa la cache per mostrare subito i dati (se disponibili),
+    // altrimenti avvia il caricamento da rete.
     if (!_initialized) {
-      _dashboardDataFuture = _loadDashboardData();
+      if (_cachedData != null) {
+        _dashboardDataFuture = Future.value(_cachedData);
+      } else {
+        _dashboardDataFuture = _fetchFromNetwork().then((data) {
+          _cachedData = data;
+          return data;
+        });
+      }
       _initialized = true;
     }
   }
@@ -67,12 +77,40 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
   @override
   void didPopNext() {
     super.didPopNext();
-    setState(() {
-      _dashboardDataFuture = _loadDashboardData();
-    });
+    _triggerRefresh();
   }
 
-  Future<_DashboardData> _loadDashboardData() async {
+  /// Stale-while-revalidate: mostra subito i dati in cache e aggiorna silenziosamente in background.
+  void _triggerRefresh() {
+    if (_cachedData != null) {
+      setState(() {
+        _isBackgroundRefreshing = true;
+        _dashboardDataFuture = Future.value(_cachedData!);
+      });
+      _fetchFromNetwork().then((fresh) {
+        if (!mounted) return;
+        _cachedData = fresh;
+        setState(() {
+          _dashboardDataFuture = Future.value(fresh);
+          _isBackgroundRefreshing = false;
+        });
+      }).catchError((_) {
+        if (mounted) setState(() => _isBackgroundRefreshing = false);
+      });
+    } else {
+      // Prima visita senza cache: se già in caricamento da didChangeDependencies non fare nulla.
+      if (_initialized) return;
+      setState(() {
+        _dashboardDataFuture = _fetchFromNetwork().then((data) {
+          _cachedData = data;
+          return data;
+        });
+      });
+    }
+  }
+
+  /// Fetch effettivo dei dati da rete.
+  Future<_DashboardData> _fetchFromNetwork() async {
     final caseUtente = await ApiProvider.casa.list();
     if (caseUtente.isEmpty) {
       return const _DashboardData(
@@ -124,10 +162,9 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
       return;
     }
 
-    setState(() {
-      _activeCasaController.selectCasa(casaId);
-      _dashboardDataFuture = _loadDashboardData();
-    });
+    _activeCasaController.selectCasa(casaId);
+    _cachedData = null; // Invalida la cache al cambio di casa
+    _triggerRefresh();
   }
 
   List<HouseHealthBadgeData> _buildHouseHealthBadges(List<Turno> turni) {
@@ -205,11 +242,7 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
                     const SizedBox(height: AppSizes.p28),
                     _TodayTurnSection(
                       dashboardDataFuture: _dashboardDataFuture,
-                      onRefresh: () {
-                        setState(() {
-                          _dashboardDataFuture = _loadDashboardData();
-                        });
-                      },
+                      onRefresh: _triggerRefresh,
                     ),
                     const SizedBox(height: AppSizes.p28),
                     _EmptyCalendarSection(
@@ -218,6 +251,16 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
                   ],
                 ),
               ),
+              if (_isBackgroundRefreshing)
+                const Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: LinearProgressIndicator(
+                    minHeight: 2,
+                    backgroundColor: Colors.transparent,
+                  ),
+                ),
               Positioned(
                 right: AppSizes.p10,
                 bottom: AppSizes.p24,
