@@ -1,5 +1,6 @@
 ### TODO LIST - correzioni da apportare lato flutter
 - [ ] **Gestione Permessi:** Per ciascuna schermata, implementare le divergenze funzionali tra HomeAdmin e Inquilino (ove previste).
+- [ ] **FAB turno** eliminare container/background bianco duplicato nel FAB turni.
 - [ ] **Animazione navigazione tra sezioni** cambiare il modo in cui avvengono le animazioni di transizione tra le sezioni dell'house_quick_nav: se clicco sulla sezione "Spese" non deve fare slide verso sinistra bensì senza slide, animazione on-tap istantanea. Rimuovere la transition slide che si presenta quando si naviga verso sezioni successive, per esempio da "Spese" a "Turni" e così via.
 - [ ] **FIX NAVIGAZIONE:** Rimappare i flussi del pulsante "torna indietro", definendo la destinazione ad-hoc per ogni singola schermata.
 - [/] **Flusso Crea Casa:** Il percorso Crea Casa -> Copia link di invito -> Click su X deve essere isolato; l'azione di chiusura post-creazione non deve reindirizzare l'utente ad altre schermate estranee.
