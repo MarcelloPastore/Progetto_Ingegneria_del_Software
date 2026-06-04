@@ -41,6 +41,9 @@ class ListaSpeseAdminScreen extends ConsumerStatefulWidget {
 
 class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
     with RouteAware {
+  /// Cache statica: sopravvive a pushReplacementNamed e autoDispose dei provider.
+  static List<Spesa>? _cachedSpese;
+  static Map<String, double>? _cachedSaldi;
   @override
   void initState() {
     super.initState();
@@ -99,10 +102,20 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
 
     final speseAsync = ref.watch(_speseProvider(selectedCasaId));
     final saldiAsync = ref.watch(_saldiProvider(selectedCasaId));
-    final hasSpese = speseAsync.maybeWhen(
-      data: (spese) => spese.isNotEmpty,
-      orElse: () => false,
-    );
+
+    // Aggiorna le cache ad ogni arrivo di dati freschi.
+    speseAsync.whenData((s) => _cachedSpese = s);
+    saldiAsync.whenData((s) => _cachedSaldi = s);
+
+    // Usa la cache come fallback durante il caricamento.
+    final effectiveSpese =
+        speseAsync.maybeWhen(data: (s) => s, orElse: () => null) ??
+        _cachedSpese;
+    final effectiveSaldi =
+        saldiAsync.maybeWhen(data: (s) => s, orElse: () => null) ??
+        _cachedSaldi;
+    final isLoading = speseAsync.isLoading && effectiveSpese == null;
+    final hasSpese = (effectiveSpese?.isNotEmpty) ?? false;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -112,100 +125,112 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
         body: SafeArea(
           child: Stack(
             children: [
-              speseAsync.when(
-                data: (spese) {
-                  if (spese.isEmpty) {
-                    return const _EmptyExpensesContent();
-                  }
-
-                  // Group spese by month
-                  final speseGroupedByMonth = <DateTime, List<Spesa>>{};
-                  for (final spesa in spese) {
-                    final monthKey = DateTime(
-                      spesa.data.year,
-                      spesa.data.month,
-                    );
-                    speseGroupedByMonth.putIfAbsent(monthKey, () => []);
-                    speseGroupedByMonth[monthKey]!.add(spesa);
-                  }
-
-                  // Sort months in reverse order
-                  final sortedMonths = speseGroupedByMonth.keys.toList()
-                    ..sort((a, b) => b.compareTo(a));
-
-                  return SingleChildScrollView(
-                    padding: const EdgeInsets.only(bottom: 170),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Header
-                        const Padding(
-                          padding: EdgeInsets.only(top: AppSizes.p42),
-                          child: Center(
-                            child: Text(
-                              'Spese',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 24,
-                                fontFamily: 'Inter',
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: AppSizes.p24),
-
-                        // Monthly balance card
-                        saldiAsync.when(
-                          data: (saldi) {
-                            return _buildBalanceCard(saldi);
-                          },
-                          loading: () =>
-                              const Center(child: CircularProgressIndicator()),
-                          error: (err, stack) => const SizedBox.shrink(),
-                        ),
-                        const SizedBox(height: AppSizes.p32),
-
-                        // Spese list
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSizes.p22,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              for (
-                                int monthIndex = 0;
-                                monthIndex < sortedMonths.length;
-                                monthIndex++
-                              ) ...[
-                                _buildMonthHeader(
-                                  sortedMonths[monthIndex],
-                                  isOpen: monthIndex == 0,
-                                ),
-                                const SizedBox(height: AppSizes.p16),
-                                for (final spesa
-                                    in speseGroupedByMonth[sortedMonths[monthIndex]]!)
-                                  _buildSpesaItem(context, spesa),
-                                if (monthIndex < sortedMonths.length - 1)
-                                  const SizedBox(height: AppSizes.p24),
-                              ],
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: AppSizes.p24),
-                      ],
-                    ),
-                  );
-                },
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (err, stack) => Center(child: Text('Errore: $err')),
-              ),
-
+              if (isLoading)
+                const Center(child: CircularProgressIndicator())
+              else if (speseAsync.hasError && effectiveSpese == null)
+                Center(child: Text('Errore: ${speseAsync.error}'))
+              else
+                _buildContent(
+                  context,
+                  effectiveSpese ?? const [],
+                  effectiveSaldi,
+                ),
+              // Indicatore sottile di refresh in background
+              if (speseAsync.isLoading && effectiveSpese != null)
+                const Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: LinearProgressIndicator(
+                    minHeight: 2,
+                    backgroundColor: Colors.transparent,
+                  ),
+                ),
               if (hasSpese) _buildBottomActions(context),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildContent(
+    BuildContext context,
+    List<Spesa> spese,
+    Map<String, double>? saldi,
+  ) {
+    if (spese.isEmpty) {
+      return const _EmptyExpensesContent();
+    }
+
+    // Group spese by month
+    final speseGroupedByMonth = <DateTime, List<Spesa>>{};
+    for (final spesa in spese) {
+      final monthKey = DateTime(spesa.data.year, spesa.data.month);
+      speseGroupedByMonth.putIfAbsent(monthKey, () => []);
+      speseGroupedByMonth[monthKey]!.add(spesa);
+    }
+
+    // Sort months in reverse order
+    final sortedMonths = speseGroupedByMonth.keys.toList()
+      ..sort((a, b) => b.compareTo(a));
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(bottom: 170),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          const Padding(
+            padding: EdgeInsets.only(top: AppSizes.p42),
+            child: Center(
+              child: Text(
+                'Spese',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontFamily: 'Inter',
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSizes.p24),
+
+          // Monthly balance card
+          if (saldi != null)
+            _buildBalanceCard(saldi)
+          else
+            const SizedBox.shrink(),
+          const SizedBox(height: AppSizes.p32),
+
+          // Spese list
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSizes.p22),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (
+                  int monthIndex = 0;
+                  monthIndex < sortedMonths.length;
+                  monthIndex++
+                ) ...[
+                  _buildMonthHeader(
+                    sortedMonths[monthIndex],
+                    isOpen: monthIndex == 0,
+                  ),
+                  const SizedBox(height: AppSizes.p16),
+                  for (final spesa
+                      in speseGroupedByMonth[sortedMonths[monthIndex]]!)
+                    _buildSpesaItem(context, spesa),
+                  if (monthIndex < sortedMonths.length - 1)
+                    const SizedBox(height: AppSizes.p24),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSizes.p24),
+        ],
       ),
     );
   }

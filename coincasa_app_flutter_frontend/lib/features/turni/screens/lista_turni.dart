@@ -49,6 +49,8 @@ class ListaTurniScreen extends ConsumerStatefulWidget {
 
 class _ListaTurniScreenState extends ConsumerState<ListaTurniScreen>
     with RouteAware {
+  /// Cache statica: sopravvive a pushReplacementNamed e autoDispose dei provider.
+  static List<Turno>? _cachedTurni;
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -96,10 +98,14 @@ class _ListaTurniScreenState extends ConsumerState<ListaTurniScreen>
       error: (error, stackTrace) =>
           AsyncValue<List<Turno>>.error(error, stackTrace),
     );
-    final calendarTurni = turniAsync.maybeWhen(
-      data: (turni) => turni,
-      orElse: () => const <Turno>[],
-    );
+    // Aggiorna la cache ogni volta che arrivano dati freschi.
+    turniAsync.whenData((t) => _cachedTurni = t);
+
+    // Usa la cache come fallback durante il caricamento.
+    final calendarTurni =
+        turniAsync.maybeWhen(data: (t) => t, orElse: () => null) ??
+        _cachedTurni ??
+        const <Turno>[];
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -148,26 +154,40 @@ class _ListaTurniScreenState extends ConsumerState<ListaTurniScreen>
                         ),
                       ),
                       const SizedBox(height: AppSizes.p8),
-                      turniAsync.when(
-                        loading: () => const _TurniStatePanel(
-                          message: 'Caricamento turni...',
-                        ),
-                        error: (_, _) => const _TurniStatePanel(
-                          message: 'Impossibile caricare i turni.',
-                        ),
-                        data: (turni) => turni.isEmpty
-                            ? const _TurniStatePanel(
+                      Builder(
+                        builder: (context) {
+                          final effectiveTurni = turniAsync.maybeWhen(
+                            data: (t) => t,
+                            orElse: () => null,
+                          ) ?? _cachedTurni;
+
+                          if (effectiveTurni != null) {
+                            if (effectiveTurni.isEmpty) {
+                              return const _TurniStatePanel(
                                 message:
                                     'Non ci sono turni per adesso...\nCreane subito uno nuovo!',
-                              )
-                            : _AssignedTurniCard(
-                                turni: turni,
-                                onTurnoTap: (turno) =>
-                                    Navigator.of(context).pushNamed(
-                                      DettaglioTurnoAdminScreen.routeName,
-                                      arguments: turno.id,
-                                    ),
-                              ),
+                              );
+                            }
+                            return _AssignedTurniCard(
+                              turni: effectiveTurni,
+                              onTurnoTap: (turno) =>
+                                  Navigator.of(context).pushNamed(
+                                    DettaglioTurnoAdminScreen.routeName,
+                                    arguments: turno.id,
+                                  ),
+                            );
+                          }
+
+                          if (turniAsync.hasError) {
+                            return const _TurniStatePanel(
+                              message: 'Impossibile caricare i turni.',
+                            );
+                          }
+
+                          return const _TurniStatePanel(
+                            message: 'Caricamento turni...',
+                          );
+                        },
                       ),
                       const SizedBox(height: AppSizes.p40),
                     ],
