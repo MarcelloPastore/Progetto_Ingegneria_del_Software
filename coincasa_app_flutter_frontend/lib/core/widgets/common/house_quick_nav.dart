@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/features/problemi/screens/segnala_problema_screen.dart';
 
 class HouseQuickNav extends StatelessWidget {
   const HouseQuickNav({super.key, required this.currentRoute});
@@ -31,7 +32,7 @@ class HouseQuickNav extends StatelessWidget {
     _HouseNavEntry(
       label: 'Problemi',
       asset: 'assets/Icons/problemi.png',
-      route: '/problemi',
+      route: SegnalaProblemaScreen.routeName,
     ),
   ];
 
@@ -56,13 +57,22 @@ class HouseQuickNav extends StatelessWidget {
               (entry) => Expanded(
                 child: _HouseBottomNavItem(
                   entry: entry,
-                  selected: entry.route == currentRoute,
+                  selected: _isSelected(entry.route, currentRoute),
                 ),
               ),
             )
             .toList(),
       ),
     );
+  }
+
+  static bool _isSelected(String entryRoute, String currentRoute) {
+    if (entryRoute == SegnalaProblemaScreen.routeName) {
+      return currentRoute == '/problemi' ||
+          currentRoute == SegnalaProblemaScreen.routeName;
+    }
+
+    return entryRoute == currentRoute;
   }
 }
 

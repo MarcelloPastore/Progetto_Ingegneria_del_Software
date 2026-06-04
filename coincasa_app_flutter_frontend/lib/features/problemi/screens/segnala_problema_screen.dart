@@ -327,7 +327,7 @@ class _SegnalaProblemaScreenState
                   // Priorità section
                   _SectionLabel(
                     label: 'Priorità',
-                    color: AppColors.brandSecondary,
+                    color: AppColors.brandAccent,
                   ),
                   const SizedBox(height: AppSizes.p10),
                   _PriorityRow(
@@ -573,8 +573,8 @@ class _PriorityChip extends StatelessWidget {
           gradient: gradient,
           borderRadius: BorderRadius.circular(AppSizes.radius16),
           border: Border.all(
-            color: selected ? AppColors.brandAccent : AppColors.surfaceTint,
-            width: 3.5,
+            color: selected ? AppColors.brandAccent : AppColors.darkBackground,
+            width: 3,
           ),
           boxShadow: [
             BoxShadow(

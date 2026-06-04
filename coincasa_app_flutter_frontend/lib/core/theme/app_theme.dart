@@ -17,7 +17,7 @@ abstract final class AppColors {
   static const primaryBorder = Color(0xFF9C8BF0);
 
   static const pageBackground = Color(0xFFF6F5FB);
-  static const darkBackground = Color(0xFF090616);
+  static const darkBackground = Color.fromARGB(255, 26, 19, 56);
   static const surface = Color(0xFFFFFFFF);
   static const surfaceDark = Color(0xFF151528);
   static const surfaceDarkElevated = Color(0xFF1F2848);
