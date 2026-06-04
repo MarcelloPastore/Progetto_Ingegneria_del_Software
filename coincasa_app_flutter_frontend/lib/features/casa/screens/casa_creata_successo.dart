@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:coincasa_app/features/casa/screens/casa_pre_schermata_hub_casa.dart';
 import 'package:coincasa_app/features/dashboard/screens/dashboard_screen.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 

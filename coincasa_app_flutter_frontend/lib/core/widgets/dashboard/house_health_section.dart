@@ -48,12 +48,10 @@ class HouseHealthSection extends StatelessWidget {
               horizontal: AppSizes.p20,
               vertical: AppSizes.p18,
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: badges.isEmpty
-                  ? [
-                      const Expanded(
+            child: badges.isEmpty
+                ? const Row(
+                    children: [
+                      Expanded(
                         child: Center(
                           child: Text(
                             'Nessun turno disponibile',
@@ -62,22 +60,41 @@ class HouseHealthSection extends StatelessWidget {
                           ),
                         ),
                       ),
-                    ]
-                  : List.generate(badges.length, (index) {
-                      final badge = badges[index];
-                      return Flexible(
-                        fit: FlexFit.loose,
-                        child: Padding(
-                          padding: EdgeInsets.only(
-                            right: index == badges.length - 1
-                                ? 0
-                                : AppSizes.p12,
-                          ),
-                          child: _HealthBadge(data: badge),
+                    ],
+                  )
+                : badges.length > 4
+                    ? SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: List.generate(badges.length, (index) {
+                            final badge = badges[index];
+                            return Padding(
+                              padding: EdgeInsets.only(
+                                right: index == badges.length - 1
+                                    ? 0
+                                    : AppSizes.p18,
+                              ),
+                              child: _HealthBadge(data: badge),
+                            );
+                          }),
                         ),
-                      );
-                    }),
-            ),
+                      )
+                    : Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: List.generate(badges.length, (index) {
+                          final badge = badges[index];
+                          return Padding(
+                            padding: EdgeInsets.only(
+                              right: index == badges.length - 1
+                                  ? 0
+                                  : AppSizes.p18,
+                            ),
+                            child: _HealthBadge(data: badge),
+                          );
+                        }),
+                      ),
           ),
         ),
       ],

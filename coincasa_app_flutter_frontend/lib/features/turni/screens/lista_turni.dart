@@ -640,6 +640,16 @@ class _AssignedTurniCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final sorted = [...turni]
+      ..sort((a, b) {
+        final aDate = a.dataProssimaPulizia;
+        final bDate = b.dataProssimaPulizia;
+        if (aDate == null && bDate == null) return 0;
+        if (aDate == null) return 1;
+        if (bDate == null) return -1;
+        return aDate.compareTo(bDate);
+      });
+
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF272746),
@@ -657,11 +667,11 @@ class _AssignedTurniCard extends StatelessWidget {
         vertical: AppSizes.p14,
       ),
       child: Column(
-        children: List.generate(turni.length, (index) {
-          final turno = turni[index];
+        children: List.generate(sorted.length, (index) {
+          final turno = sorted[index];
           return Padding(
             padding: EdgeInsets.only(
-              bottom: index == turni.length - 1 ? 0 : AppSizes.p18,
+              bottom: index == sorted.length - 1 ? 0 : AppSizes.p18,
             ),
             child: _AssignedTurnoRow(
               userId: turno.assegnatarioId,
@@ -817,28 +827,54 @@ class _InsertTurnoButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FilledButton(
-      onPressed: onPressed,
-      style: FilledButton.styleFrom(
-        backgroundColor: AppColors.statusInfo,
-        disabledBackgroundColor: AppColors.statusInfo,
-        foregroundColor: AppColors.textOnDark,
-        disabledForegroundColor: AppColors.textOnDark,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSizes.p24,
-          vertical: AppSizes.p12,
+    return SizedBox(
+      height: 52,
+      width: double.infinity,
+      child: DecoratedBox(
+        decoration: ShapeDecoration(
+          gradient: LinearGradient(
+            begin: const Alignment(0.50, 0.00),
+            end: const Alignment(0.50, 1.00),
+            colors: [
+              Colors.white.withValues(alpha: 0.20),
+              Colors.white.withValues(alpha: 0),
+            ],
+          ),
+          shape: RoundedRectangleBorder(
+            side: const BorderSide(
+              width: 2,
+              strokeAlign: BorderSide.strokeAlignOutside,
+              color: Color(0xFF4796EA),
+            ),
+            borderRadius: BorderRadius.circular(15),
+          ),
+          shadows: const [
+            BoxShadow(
+              color: Color(0x3F000000),
+              blurRadius: 4,
+              offset: Offset(0, 4),
+            ),
+          ],
         ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSizes.p18),
-          side: const BorderSide(color: AppColors.textMutedLight, width: 2),
-        ),
-        elevation: AppSizes.p6,
-      ),
-      child: Text(
-        'Inserisci turno',
-        style: AppTextStyles.buttonCompact.copyWith(
-          fontSize: 16,
-          fontWeight: FontWeight.w700,
+        child: OutlinedButton(
+          onPressed: onPressed,
+          style: OutlinedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            side: BorderSide.none,
+            padding: EdgeInsets.zero,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
+            ),
+          ),
+          child: const Text(
+            'Inserisci turno',
+            style: TextStyle(
+              color: Color(0xFF4796EA),
+              fontSize: 18,
+              fontFamily: 'Inter',
+              fontWeight: FontWeight.w800,
+            ),
+          ),
         ),
       ),
     );

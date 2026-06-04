@@ -150,7 +150,7 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
       return bDate.compareTo(aDate);
     });
 
-    return badges.take(4).toList(growable: false);
+    return badges;
   }
 
   String _formatHouseHealthCaption(String title) {
@@ -205,6 +205,11 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
                     const SizedBox(height: AppSizes.p28),
                     _TodayTurnSection(
                       dashboardDataFuture: _dashboardDataFuture,
+                      onRefresh: () {
+                        setState(() {
+                          _dashboardDataFuture = _loadDashboardData();
+                        });
+                      },
                     ),
                     const SizedBox(height: AppSizes.p28),
                     _EmptyCalendarSection(
@@ -749,10 +754,147 @@ class _EmptyProblemsSection extends StatelessWidget {
   }
 }
 
-class _TodayTurnSection extends StatelessWidget {
-  const _TodayTurnSection({required this.dashboardDataFuture});
+class _TodayTurnSection extends StatefulWidget {
+  const _TodayTurnSection({
+    required this.dashboardDataFuture,
+    required this.onRefresh,
+  });
 
   final Future<_DashboardData> dashboardDataFuture;
+  final VoidCallback onRefresh;
+
+  @override
+  State<_TodayTurnSection> createState() => _TodayTurnSectionState();
+}
+
+class _TodayTurnSectionState extends State<_TodayTurnSection> {
+  final Set<String> _completingIds = {};
+
+  Future<void> _completaTurno(String casaId, String turnoId) async {
+    setState(() {
+      _completingIds.add(turnoId);
+    });
+    try {
+      await ApiProvider.turni.completa(casaId, turnoId);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Turno completato con successo!')),
+        );
+        widget.onRefresh();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Impossibile completare il turno. Riprova.'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _completingIds.remove(turnoId);
+        });
+      }
+    }
+  }
+
+  Widget _buildCompleteButton(String casaId, Turno turno) {
+    final isCompleting = _completingIds.contains(turno.id);
+    if (isCompleting) {
+      return const SizedBox(
+        width: 24,
+        height: 24,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          valueColor: AlwaysStoppedAnimation<Color>(AppColors.lockOrange),
+        ),
+      );
+    }
+    return SizedBox(
+      height: 38,
+      child: DecoratedBox(
+        decoration: ShapeDecoration(
+          gradient: LinearGradient(
+            begin: const Alignment(0.50, 0.00),
+            end: const Alignment(0.50, 1.00),
+            colors: [
+              Colors.white.withValues(alpha: 0.20),
+              Colors.white.withValues(alpha: 0),
+            ],
+          ),
+          shape: RoundedRectangleBorder(
+            side: const BorderSide(
+              width: 2,
+              strokeAlign: BorderSide.strokeAlignOutside,
+              color: AppColors.lockOrange,
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          shadows: const [
+            BoxShadow(
+              color: Color(0x3F000000),
+              blurRadius: 4,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: OutlinedButton(
+          onPressed: () => _completaTurno(casaId, turno.id),
+          style: OutlinedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            side: BorderSide.none,
+            padding: const EdgeInsets.symmetric(horizontal: AppSizes.p16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          child: const Text(
+            'Completa',
+            style: TextStyle(
+              color: AppColors.lockOrange,
+              fontSize: 15,
+              fontFamily: 'Inter',
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTurnoRow(Turno turno, String? casaId, bool isLast) {
+    final isCurrentAssignee =
+        casaId != null && turno.assegnatarioId == _me.currentUserId;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: isLast ? 0 : AppSizes.p12),
+      child: Row(
+        children: [
+          UserAvatar(
+            radius: 24,
+            userId: turno.assegnatarioId,
+            fullName: turno.assegnatarioNome,
+            fallback: '?',
+          ),
+          const SizedBox(width: AppSizes.p14),
+          Expanded(
+            child: Text(
+              turno.titolo,
+              style: AppTextStyles.dashboardCardTitleOnDark.copyWith(
+                color: AppColors.textOnDark,
+                fontSize: 18,
+              ),
+            ),
+          ),
+          if (isCurrentAssignee) ...[
+            const SizedBox(width: AppSizes.p8),
+            _buildCompleteButton(casaId, turno),
+          ],
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -762,13 +904,13 @@ class _TodayTurnSection extends StatelessWidget {
         const _CenteredSectionTitle('TURNO DI OGGI'),
         const SizedBox(height: AppSizes.p10),
         FutureBuilder<_DashboardData>(
-          future: dashboardDataFuture,
+          future: widget.dashboardDataFuture,
           builder: (context, snapshot) {
             final turniOggi = snapshot.data?.turniOggi ?? const <Turno>[];
             final isLoading =
                 snapshot.connectionState == ConnectionState.waiting &&
                 snapshot.data == null;
-            final turno = turniOggi.isNotEmpty ? turniOggi.first : null;
+            final casaId = snapshot.data?.casaSelezionataId;
 
             return InkWell(
               onTap: () => Navigator.of(context).pushNamed('/turni'),
@@ -791,13 +933,71 @@ class _TodayTurnSection extends StatelessWidget {
                   AppSizes.p20,
                   AppSizes.p16,
                 ),
-                child: _StatusRow(
-                  title: isLoading
-                      ? 'Caricamento turno...'
-                      : turno?.titolo ?? 'Nessuna pulizia da fare!',
-                  status: '',
-                  titleColor: AppColors.textOnDark,
-                ),
+                child: isLoading
+                    ? Row(
+                        children: [
+                          Container(
+                            width: AppSizes.p48,
+                            height: AppSizes.p48,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColors.surfaceDark,
+                            ),
+                          ),
+                          const SizedBox(width: AppSizes.p14),
+                          Expanded(
+                            child: Text(
+                              'Caricamento turno...',
+                              style: AppTextStyles.dashboardCardTitleOnDark
+                                  .copyWith(
+                                    color: AppColors.textOnDark,
+                                    fontSize: 18,
+                                  ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : turniOggi.isEmpty
+                    ? Row(
+                        children: [
+                          Container(
+                            width: AppSizes.p48,
+                            height: AppSizes.p48,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: AppColors.statusPositive,
+                                width: 2,
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.check,
+                              color: AppColors.statusPositive,
+                              size: AppSizes.p28,
+                            ),
+                          ),
+                          const SizedBox(width: AppSizes.p14),
+                          Expanded(
+                            child: Text(
+                              'Nessuna pulizia da fare!',
+                              style: AppTextStyles.dashboardCardTitleOnDark
+                                  .copyWith(
+                                    color: AppColors.textOnDark,
+                                    fontSize: 18,
+                                  ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        children: List.generate(turniOggi.length, (i) {
+                          return _buildTurnoRow(
+                            turniOggi[i],
+                            casaId,
+                            i == turniOggi.length - 1,
+                          );
+                        }),
+                      ),
               ),
             );
           },
@@ -806,6 +1006,7 @@ class _TodayTurnSection extends StatelessWidget {
     );
   }
 }
+
 
 class _StatusRow extends StatelessWidget {
   const _StatusRow({
@@ -977,6 +1178,26 @@ class _EmptyCalendarSection extends StatelessWidget {
                             );
                           },
                         ),
+                        const SizedBox(height: AppSizes.p20),
+                        const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            _LegendItem(
+                              color: AppColors.statusInfo,
+                              label: 'Turni',
+                            ),
+                            SizedBox(width: AppSizes.p20),
+                            _LegendItem(
+                              color: AppColors.statusNegative,
+                              label: 'Scadenze',
+                            ),
+                            SizedBox(width: AppSizes.p20),
+                            _LegendItem(
+                              color: AppColors.keyYellow,
+                              label: 'Spese',
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -1038,7 +1259,7 @@ class _DashboardCalendarDay extends StatelessWidget {
           width: 7,
           height: 7,
           decoration: BoxDecoration(
-            color: hasTurno ? AppColors.brandAccent : AppColors.transparent,
+            color: hasTurno ? AppColors.statusInfo : AppColors.transparent,
             shape: BoxShape.circle,
           ),
         ),
@@ -1062,6 +1283,39 @@ class _CenteredSectionTitle extends StatelessWidget {
         letterSpacing: 0,
       ),
       textAlign: TextAlign.center,
+    );
+  }
+}
+
+class _LegendItem extends StatelessWidget {
+  const _LegendItem({required this.color, required this.label});
+
+  final Color color;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: AppSizes.p6),
+        Text(
+          label,
+          style: AppTextStyles.dashboardLegendLabel.copyWith(
+            color: AppColors.textOnDark,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
     );
   }
 }
