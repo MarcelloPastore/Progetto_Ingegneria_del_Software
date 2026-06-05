@@ -8,26 +8,29 @@ import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/utils/user_initials.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/features/dashboard/screens/dashboard_screen.dart';
 import 'package:coincasa_app/features/spese/screens/dettaglio_spesa_admin.dart';
 
-final speseCreateCasaProvider = FutureProvider.autoDispose
-    .family<Casa?, String?>((ref, selectedCasaId) async {
-      final caseUtente = await ApiProvider.casa.list();
-      if (caseUtente.isEmpty) {
-        return null;
+final speseCreateCasaProvider = FutureProvider.family<Casa?, String?>((
+  ref,
+  selectedCasaId,
+) async {
+  final caseUtente = await ApiProvider.casa.list();
+  if (caseUtente.isEmpty) {
+    return null;
+  }
+  if (selectedCasaId != null && selectedCasaId.isNotEmpty) {
+    for (final casa in caseUtente) {
+      if (casa.id == selectedCasaId) {
+        return casa;
       }
-      if (selectedCasaId != null && selectedCasaId.isNotEmpty) {
-        for (final casa in caseUtente) {
-          if (casa.id == selectedCasaId) {
-            return casa;
-          }
-        }
-      }
-      return caseUtente.first;
-    });
+    }
+  }
+  return caseUtente.first;
+});
 
-final speseCreateInquiliniProvider = FutureProvider.autoDispose
-    .family<List<Inquilino>, String?>((ref, casaId) {
+final speseCreateInquiliniProvider =
+    FutureProvider.family<List<Inquilino>, String?>((ref, casaId) {
       if (casaId == null || casaId.isEmpty) {
         return const [];
       }
@@ -246,7 +249,9 @@ class _InserisciSpesaScreenState extends ConsumerState<InserisciSpesaScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: _CancelButton(
                     enabled: !form.isSubmitting,
-                    onPressed: () => Navigator.of(context).pop(),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
                   ),
                 ),
               ],
@@ -444,6 +449,16 @@ class _InserisciSpesaPopupContentState
           enabled: form.canSubmit,
           submitting: form.isSubmitting,
           onPressed: _submit,
+        ),
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 28),
+          child: _CancelButton(
+            enabled: !form.isSubmitting,
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+          ),
         ),
       ],
     );
@@ -1089,18 +1104,18 @@ class _CancelButton extends StatelessWidget {
     return OutlinedButton(
       onPressed: enabled ? onPressed : null,
       style: OutlinedButton.styleFrom(
-        side: const BorderSide(color: AppColors.statusNegative, width: 2),
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSizes.radius8),
-        ),
-        disabledForegroundColor: AppColors.textMuted.withValues(alpha: 0.5),
+        backgroundColor: AppColors.errorContainerStrong,
+        foregroundColor: AppColors.errorStrong,
+        side: const BorderSide(color: AppColors.errorStrong, width: 2),
+        padding: const EdgeInsets.symmetric(vertical: 13),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        disabledForegroundColor: AppColors.textMuted.withValues(alpha: 0.42),
       ),
       child: Text(
         'Annulla',
-        style: AppTextStyles.screenTitleStrong.copyWith(
-          color: AppColors.statusNegative,
-          fontSize: 16,
+        style: AppTextStyles.buttonCompact.copyWith(
+          color: AppColors.errorStrong,
+          fontWeight: FontWeight.w800,
         ),
       ),
     );

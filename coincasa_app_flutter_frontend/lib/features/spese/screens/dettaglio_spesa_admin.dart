@@ -282,6 +282,11 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Estrae solo il primo nome per ogni elemento nella lista dei pagatori
+    final firstNamesOnly = payerNames.map((name) {
+      return name.trim().split(RegExp(r'\s+')).first;
+    }).toList();
+
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF1E1A2D),
@@ -296,7 +301,10 @@ class _SummaryCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _SummaryRow(label: 'Chi deve pagare', value: payerNames.join(', ')),
+          _SummaryRow(
+            label: 'Chi deve pagare',
+            value: firstNamesOnly.join(', '),
+          ),
           const Divider(color: Color(0xFF716E76), height: AppSizes.p18),
           _SummaryRow(
             label: 'Quota per persone',

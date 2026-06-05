@@ -31,7 +31,7 @@ Future<void> showTurniScreenPrincipaleDialog(BuildContext context) {
   );
 }
 
-final _turniCasaProvider = FutureProvider.autoDispose.family<Casa?, String?>((
+final _turniCasaProvider = FutureProvider.family<Casa?, String?>((
   ref,
   selectedCasaId,
 ) async {
@@ -49,13 +49,14 @@ final _turniCasaProvider = FutureProvider.autoDispose.family<Casa?, String?>((
   return caseUtente.first;
 });
 
-final _turniInquiliniProvider = FutureProvider.autoDispose
-    .family<List<Inquilino>, String?>((ref, casaId) {
-      if (casaId == null || casaId.isEmpty) {
-        return const [];
-      }
-      return ApiProvider.casa.listInquilini(casaId);
-    });
+final _turniInquiliniProvider = FutureProvider.family<List<Inquilino>, String?>(
+  (ref, casaId) {
+    if (casaId == null || casaId.isEmpty) {
+      return const [];
+    }
+    return ApiProvider.casa.listInquilini(casaId);
+  },
+);
 
 String _assigneeDisplayName(Inquilino inquilino) {
   final nome = inquilino.nome.trim();
@@ -584,7 +585,10 @@ class _TurnoFormPanel extends StatelessWidget {
       return form;
     }
 
-    return _TurniPanelFrame(backgroundColor: AppColors.surface, child: form);
+    return _TurniPanelFrame(
+      backgroundColor: const Color.fromARGB(255, 198, 22, 22),
+      child: form,
+    );
   }
 }
 
@@ -1240,27 +1244,39 @@ class _AssigneeDropdownState extends State<_AssigneeDropdown> {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-                  Flexible(
-                    child: Text(
-                      'Rotazione automatica',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.bodyStrong.copyWith(
-                        color: widget.canAssignOthers ? AppColors.textMutedLight : AppColors.textMutedDark,
-                        decoration: widget.canAssignOthers ? TextDecoration.underline : TextDecoration.none,
-                        decorationColor: widget.canAssignOthers ? AppColors.textMutedLight : AppColors.textMutedDark,
-                      ),
-                    ),
+              Flexible(
+                child: Text(
+                  'Rotazione automatica',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.bodyStrong.copyWith(
+                    color: widget.canAssignOthers
+                        ? AppColors.textMutedLight
+                        : AppColors.textMutedDark,
+                    decoration: widget.canAssignOthers
+                        ? TextDecoration.underline
+                        : TextDecoration.none,
+                    decorationColor: widget.canAssignOthers
+                        ? AppColors.textMutedLight
+                        : AppColors.textMutedDark,
                   ),
-                  const SizedBox(width: AppSizes.p10),
-                  Switch(
-                    value: widget.rotazioneAutomatica,
-                    onChanged: widget.canAssignOthers ? widget.onRotazioneChanged : null,
-                    activeThumbColor: widget.canAssignOthers ? AppColors.textOnDark : AppColors.textMutedDark,
-                    activeTrackColor: widget.canAssignOthers ? AppColors.brandSecondary : AppColors.dividerDark,
-                    inactiveThumbColor: AppColors.textMutedLight,
-                    inactiveTrackColor: AppColors.dividerDark,
-                  ),
+                ),
+              ),
+              const SizedBox(width: AppSizes.p10),
+              Switch(
+                value: widget.rotazioneAutomatica,
+                onChanged: widget.canAssignOthers
+                    ? widget.onRotazioneChanged
+                    : null,
+                activeThumbColor: widget.canAssignOthers
+                    ? AppColors.textOnDark
+                    : AppColors.textMutedDark,
+                activeTrackColor: widget.canAssignOthers
+                    ? AppColors.brandSecondary
+                    : AppColors.dividerDark,
+                inactiveThumbColor: AppColors.textMutedLight,
+                inactiveTrackColor: AppColors.dividerDark,
+              ),
             ],
           ),
         ],

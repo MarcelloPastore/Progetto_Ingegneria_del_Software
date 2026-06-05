@@ -77,8 +77,7 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
   @override
   void didPopNext() {
     super.didPopNext();
-    final selectedCasaId =
-        ActiveCasaScope.read(context).selectedCasaId;
+    final selectedCasaId = ActiveCasaScope.read(context).selectedCasaId;
     if (selectedCasaId != null) {
       ref.invalidate(_speseProvider(selectedCasaId));
       ref.invalidate(_saldiProvider(selectedCasaId));
@@ -305,24 +304,53 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
               ),
             ),
             const SizedBox(height: AppSizes.p18),
-            SizedBox(
+            Container(
               width: double.infinity,
-              child: ElevatedButton(
+              height: 53.28,
+              decoration: ShapeDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color.lerp(AppColors.brandPrimary, Colors.white, 0.30)!,
+                    AppColors.brandPrimary,
+                    Color.lerp(AppColors.brandPrimary, Colors.black, 0.18)!,
+                  ],
+                  stops: const [0, 0.62, 1],
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                shadows: const [
+                  BoxShadow(
+                    color: Color(0x3F000000),
+                    blurRadius: 4,
+                    offset: Offset(0, 4),
+                    spreadRadius: 0,
+                  ),
+                ],
+              ),
+              child: OutlinedButton(
                 onPressed: () => Navigator.of(
                   context,
                 ).pushNamed(InserisciSpesaScreen.routeName),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0B45BA),
-                  padding: const EdgeInsets.symmetric(vertical: AppSizes.p16),
+                style: OutlinedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  foregroundColor: Colors.transparent,
+                  side: BorderSide.none,
+                  padding: EdgeInsets.zero,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppSizes.radius15),
+                    borderRadius: BorderRadius.circular(15),
                   ),
+                  elevation: 0,
+                  shadowColor: Colors.transparent,
                 ),
                 child: const Text(
                   'Inserisci una nuova spesa',
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 20,
+                    fontSize: 22,
                     fontFamily: 'Inter',
                     fontWeight: FontWeight.w600,
                   ),
@@ -532,15 +560,10 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
   bool _isSpesaPagata(Spesa spesa) {
     final partecipanti = spesa.partecipanti;
     if (partecipanti.isEmpty) return false;
-    final nonEsclusi = partecipanti
-        .where((p) => p['escluso'] != true)
-        .toList();
+    final nonEsclusi = partecipanti.where((p) => p['escluso'] != true).toList();
     if (nonEsclusi.isEmpty) return false;
     return nonEsclusi.every(
-      (p) =>
-          p['pagato'] == true ||
-          p['pagata'] == true ||
-          p['saldato'] == true,
+      (p) => p['pagato'] == true || p['pagata'] == true || p['saldato'] == true,
     );
   }
 
@@ -756,26 +779,56 @@ class _EmptyExpensesContent extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: AppSizes.p32),
-              ElevatedButton(
-                onPressed: () => Navigator.of(
-                  context,
-                ).pushNamed(InserisciSpesaScreen.routeName),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF5B2BC1),
-                  elevation: 4,
-                  shadowColor: Colors.black.withValues(alpha: 0.38),
-                  padding: const EdgeInsets.symmetric(vertical: AppSizes.p16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppSizes.radius15),
+              Container(
+                width: double.infinity,
+                height: 53.28,
+                decoration: ShapeDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color.lerp(AppColors.brandPrimary, Colors.white, 0.30)!,
+                      AppColors.brandPrimary,
+                      Color.lerp(AppColors.brandPrimary, Colors.black, 0.18)!,
+                    ],
+                    stops: const [0, 0.62, 1],
                   ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  shadows: const [
+                    BoxShadow(
+                      color: Color(0x3F000000),
+                      blurRadius: 4,
+                      offset: Offset(0, 4),
+                      spreadRadius: 0,
+                    ),
+                  ],
                 ),
-                child: const Text(
-                  'Inserisci spesa',
-                  style: TextStyle(
-                    color: Color(0xFFF6F6F6),
-                    fontSize: 23,
-                    fontFamily: 'Inter',
-                    fontWeight: FontWeight.w800,
+                child: OutlinedButton(
+                  onPressed: () => Navigator.of(
+                    context,
+                  ).pushNamed(InserisciSpesaScreen.routeName),
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    foregroundColor: Colors.transparent,
+                    side: BorderSide.none,
+                    padding: EdgeInsets.zero,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    elevation: 0,
+                    shadowColor: Colors.transparent,
+                  ),
+                  child: const Text(
+                    'Inserisci spesa',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontFamily: 'Inter',
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),

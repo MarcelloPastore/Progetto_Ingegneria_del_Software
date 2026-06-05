@@ -7,6 +7,7 @@ import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/features/dashboard/screens/dashboard_screen.dart';
 import 'package:coincasa_app/features/spese/screens/inserisci_spesa_successo.dart';
 
 Future<void> showInserisciSpesaMembroDialog(BuildContext context) {
@@ -369,6 +370,13 @@ mixin _InserisciSpesaMembroFormMixin<T extends StatefulWidget> on State<T> {
                   _SubmitButton(
                     isSubmitting: _isSubmitting,
                     onPressed: () => _submit(data),
+                  ),
+                  const SizedBox(height: 8),
+                  _CancelButton(
+                    enabled: !_isSubmitting,
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
                   ),
                 ],
               ),
@@ -875,6 +883,40 @@ class _SubmitButton extends StatelessWidget {
             color: Colors.white,
             fontSize: 22,
             fontFamily: 'Inter',
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CancelButton extends StatelessWidget {
+  const _CancelButton({required this.enabled, required this.onPressed});
+
+  final bool enabled;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 28),
+      child: OutlinedButton(
+        onPressed: enabled ? onPressed : null,
+        style: OutlinedButton.styleFrom(
+          backgroundColor: AppColors.errorContainerStrong,
+          foregroundColor: AppColors.errorStrong,
+          side: const BorderSide(color: AppColors.errorStrong, width: 2),
+          padding: const EdgeInsets.symmetric(vertical: 13),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+          disabledForegroundColor: AppColors.textMuted.withValues(alpha: 0.42),
+        ),
+        child: Text(
+          'Annulla',
+          style: AppTextStyles.buttonCompact.copyWith(
+            color: AppColors.errorStrong,
             fontWeight: FontWeight.w800,
           ),
         ),

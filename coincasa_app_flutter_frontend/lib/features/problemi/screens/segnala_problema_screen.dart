@@ -14,27 +14,25 @@ import 'package:coincasa_app/features/problemi/screens/popup_successo_FAB.dart';
 // Providers
 // ---------------------------------------------------------------------------
 
-final _segnalaCasaProvider =
-    FutureProvider.autoDispose.family<Casa?, String?>(
-  (ref, selectedCasaId) async {
-    final caseUtente = await ApiProvider.casa.list();
-    if (caseUtente.isEmpty) return null;
-    if (selectedCasaId != null && selectedCasaId.isNotEmpty) {
-      for (final casa in caseUtente) {
-        if (casa.id == selectedCasaId) return casa;
-      }
+final _segnalaCasaProvider = FutureProvider.family<Casa?, String?>((
+  ref,
+  selectedCasaId,
+) async {
+  final caseUtente = await ApiProvider.casa.list();
+  if (caseUtente.isEmpty) return null;
+  if (selectedCasaId != null && selectedCasaId.isNotEmpty) {
+    for (final casa in caseUtente) {
+      if (casa.id == selectedCasaId) return casa;
     }
-    return caseUtente.first;
-  },
-);
+  }
+  return caseUtente.first;
+});
 
 final _segnalaInquiliniProvider =
-    FutureProvider.autoDispose.family<List<Inquilino>, String?>(
-  (ref, casaId) async {
-    if (casaId == null || casaId.isEmpty) return const [];
-    return ApiProvider.casa.listInquilini(casaId);
-  },
-);
+    FutureProvider.family<List<Inquilino>, String?>((ref, casaId) async {
+      if (casaId == null || casaId.isEmpty) return const [];
+      return ApiProvider.casa.listInquilini(casaId);
+    });
 
 // ---------------------------------------------------------------------------
 // Form enums & state
@@ -98,12 +96,12 @@ class _SegnalaFormState {
       nome: nome ?? this.nome,
       descrizione: descrizione ?? this.descrizione,
       priorita: clearPriorita ? null : priorita ?? this.priorita,
-      assignmentMode:
-          clearAssignment ? null : assignmentMode ?? this.assignmentMode,
+      assignmentMode: clearAssignment
+          ? null
+          : assignmentMode ?? this.assignmentMode,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       showErrors: showErrors ?? this.showErrors,
-      submitError:
-          clearSubmitError ? null : submitError ?? this.submitError,
+      submitError: clearSubmitError ? null : submitError ?? this.submitError,
     );
   }
 }
@@ -123,14 +121,13 @@ class _SegnalaFormController extends StateNotifier<_SegnalaFormState> {
   void setAssignment(_AssignmentMode v) =>
       state = state.copyWith(assignmentMode: v, clearSubmitError: true);
 
-  void setSubmitting(bool v) =>
-      state = state.copyWith(isSubmitting: v);
+  void setSubmitting(bool v) => state = state.copyWith(isSubmitting: v);
 
   void setSubmitError(String msg) => state = state.copyWith(
-        isSubmitting: false,
-        submitError: msg,
-        showErrors: true,
-      );
+    isSubmitting: false,
+    submitError: msg,
+    showErrors: true,
+  );
 
   bool validate() {
     state = state.copyWith(showErrors: true, clearSubmitError: true);
@@ -141,9 +138,10 @@ class _SegnalaFormController extends StateNotifier<_SegnalaFormState> {
 }
 
 final _segnalaFormProvider =
-    StateNotifierProvider.autoDispose<_SegnalaFormController, _SegnalaFormState>(
-  (ref) => _SegnalaFormController(),
-);
+    StateNotifierProvider.autoDispose<
+      _SegnalaFormController,
+      _SegnalaFormState
+    >((ref) => _SegnalaFormController());
 
 // ---------------------------------------------------------------------------
 // Screen
@@ -159,8 +157,7 @@ class SegnalaProblemaScreen extends ConsumerStatefulWidget {
       _SegnalaProblemaScreenState();
 }
 
-class _SegnalaProblemaScreenState
-    extends ConsumerState<SegnalaProblemaScreen> {
+class _SegnalaProblemaScreenState extends ConsumerState<SegnalaProblemaScreen> {
   final _nomeCtrl = TextEditingController();
   final _descrCtrl = TextEditingController();
 
@@ -189,8 +186,7 @@ class _SegnalaProblemaScreenState
       return;
     }
 
-    final assigneeId =
-        await _resolveAssigneeId(form.assignmentMode, casa.id);
+    final assigneeId = await _resolveAssigneeId(form.assignmentMode, casa.id);
     if (form.assignmentMode == _AssignmentMode.me &&
         (assigneeId == null || assigneeId.isEmpty)) {
       controller.setSubmitError(
@@ -236,8 +232,7 @@ class _SegnalaProblemaScreenState
     if (mode != _AssignmentMode.me) return null;
     final currentUserId = ApiProvider.client.currentUserId?.trim();
     if (currentUserId != null && currentUserId.isNotEmpty) return currentUserId;
-    final inquilini =
-        await ref.read(_segnalaInquiliniProvider(casaId).future);
+    final inquilini = await ref.read(_segnalaInquiliniProvider(casaId).future);
     return _resolveCurrentInquilino(inquilini)?.id;
   }
 
@@ -248,8 +243,7 @@ class _SegnalaProblemaScreenState
         if (i.id.trim() == currentId) return i;
       }
     }
-    final email =
-        ApiProvider.client.currentUserEmail?.trim().toLowerCase();
+    final email = ApiProvider.client.currentUserEmail?.trim().toLowerCase();
     if (email != null && email.isNotEmpty) {
       for (final i in inquilini) {
         if (i.email.trim().toLowerCase() == email) return i;
@@ -259,10 +253,10 @@ class _SegnalaProblemaScreenState
   }
 
   String _priorityPayload(_Priorita p) => switch (p) {
-        _Priorita.urgent => 'Urgente',
-        _Priorita.medium => 'Media',
-        _Priorita.low => 'Bassa',
-      };
+    _Priorita.urgent => 'Urgente',
+    _Priorita.medium => 'Media',
+    _Priorita.low => 'Bassa',
+  };
 
   // -- Build ----------------------------------------------------------------
 
@@ -277,12 +271,10 @@ class _SegnalaProblemaScreenState
         onTap: () => FocusScope.of(context).unfocus(),
         child: Scaffold(
           backgroundColor: AppColors.darkBackground,
-          bottomNavigationBar:
-              const HouseQuickNav(currentRoute: '/problemi'),
+          bottomNavigationBar: const HouseQuickNav(currentRoute: '/problemi'),
           body: SafeArea(
             child: SingleChildScrollView(
-              keyboardDismissBehavior:
-                  ScrollViewKeyboardDismissBehavior.onDrag,
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               padding: const EdgeInsets.fromLTRB(
                 AppSizes.p20,
                 AppSizes.p20,
@@ -346,9 +338,7 @@ class _SegnalaProblemaScreenState
                   // Error banner
                   if (form.hasAnyError) ...[
                     const SizedBox(height: AppSizes.p14),
-                    _SegnalaErrorBanner(
-                      message: _buildErrorMessage(form),
-                    ),
+                    _SegnalaErrorBanner(message: _buildErrorMessage(form)),
                   ],
 
                   const SizedBox(height: AppSizes.p20),
@@ -372,9 +362,7 @@ class _SegnalaProblemaScreenState
                   const SizedBox(height: AppSizes.p12),
 
                   // Annulla button
-                  _CancelButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
+                  _CancelButton(onPressed: () => Navigator.of(context).pop()),
                 ],
               ),
             ),
@@ -413,8 +401,9 @@ class _SegnalaTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borderColor =
-        hasError ? AppColors.errorStrong : AppColors.primaryBorder;
+    final borderColor = hasError
+        ? AppColors.errorStrong
+        : AppColors.primaryBorder;
 
     return Stack(
       children: [
@@ -629,8 +618,9 @@ class _AssigneeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borderColor =
-        hasError ? AppColors.errorStrong : AppColors.primaryBorder;
+    final borderColor = hasError
+        ? AppColors.errorStrong
+        : AppColors.primaryBorder;
 
     return Stack(
       children: [
@@ -729,8 +719,7 @@ class _AssigneeButton extends StatelessWidget {
           color: fillColor,
           borderRadius: BorderRadius.circular(AppSizes.radius12),
           border: Border.all(
-            color:
-                selected ? borderColor : AppColors.surfaceDarkElevated,
+            color: selected ? borderColor : AppColors.surfaceDarkElevated,
             width: selected ? 3 : 2.5,
           ),
           boxShadow: const [
@@ -774,11 +763,7 @@ class _SegnalaErrorBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const Icon(
-          Icons.error_rounded,
-          color: AppColors.errorStrong,
-          size: 20,
-        ),
+        const Icon(Icons.error_rounded, color: AppColors.errorStrong, size: 20),
         const SizedBox(width: AppSizes.p6),
         Expanded(
           child: Text(

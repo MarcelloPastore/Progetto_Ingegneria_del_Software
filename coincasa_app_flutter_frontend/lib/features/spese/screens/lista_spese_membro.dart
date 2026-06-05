@@ -7,6 +7,7 @@ import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/spesa.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
+import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/features/spese/screens/dettaglio_spesa_debitore.dart';
 import 'package:coincasa_app/features/spese/screens/inserisci_spesa_membro.dart';
@@ -44,8 +45,7 @@ class ListaSpeseMembroScreen extends ConsumerStatefulWidget {
       _ListaSpeseMembroScreenState();
 }
 
-class _ListaSpeseMembroScreenState
-    extends ConsumerState<ListaSpeseMembroScreen>
+class _ListaSpeseMembroScreenState extends ConsumerState<ListaSpeseMembroScreen>
     with RouteAware {
   @override
   void initState() {
@@ -298,9 +298,10 @@ class _ExpenseTile extends StatelessWidget {
     return Opacity(
       opacity: isPagata ? 0.4 : 1.0,
       child: InkWell(
-        onTap: () => Navigator.of(
-          context,
-        ).pushNamed(DettaglioSpesaDebitoreScreen.routeName, arguments: spesa.id),
+        onTap: () => Navigator.of(context).pushNamed(
+          DettaglioSpesaDebitoreScreen.routeName,
+          arguments: spesa.id,
+        ),
         child: Container(
           height: 39,
           padding: const EdgeInsets.symmetric(horizontal: 5),
@@ -364,15 +365,10 @@ class _ExpenseTile extends StatelessWidget {
 bool _isSpesaPagata(Spesa spesa) {
   final partecipanti = spesa.partecipanti;
   if (partecipanti.isEmpty) return false;
-  final nonEsclusi = partecipanti
-      .where((p) => p['escluso'] != true)
-      .toList();
+  final nonEsclusi = partecipanti.where((p) => p['escluso'] != true).toList();
   if (nonEsclusi.isEmpty) return false;
   return nonEsclusi.every(
-    (p) =>
-        p['pagato'] == true ||
-        p['pagata'] == true ||
-        p['saldato'] == true,
+    (p) => p['pagato'] == true || p['pagata'] == true || p['saldato'] == true,
   );
 }
 
@@ -446,25 +442,51 @@ class _PrimaryBlueButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 52,
+    return Container(
       width: double.infinity,
-      child: ElevatedButton(
+      height: 53.28,
+      decoration: ShapeDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color.lerp(AppColors.brandPrimary, Colors.white, 0.30)!,
+            AppColors.brandPrimary,
+            Color.lerp(AppColors.brandPrimary, Colors.black, 0.18)!,
+          ],
+          stops: const [0, 0.62, 1],
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        shadows: const [
+          BoxShadow(
+            color: Color(0x3F000000),
+            blurRadius: 4,
+            offset: Offset(0, 4),
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: OutlinedButton(
         onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF0B58D5),
+        style: OutlinedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          foregroundColor: Colors.transparent,
+          side: BorderSide.none,
+          padding: EdgeInsets.zero,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
-            side: const BorderSide(color: Color(0xFF8D8A92), width: 1.4),
           ),
+          elevation: 0,
+          shadowColor: Colors.transparent,
         ),
         child: Text(
           label,
+          textAlign: TextAlign.center,
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 18,
+            fontSize: 22,
             fontFamily: 'Inter',
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),

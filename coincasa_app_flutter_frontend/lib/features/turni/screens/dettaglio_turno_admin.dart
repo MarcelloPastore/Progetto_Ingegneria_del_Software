@@ -105,7 +105,6 @@ class _DettaglioTurnoAdminScreenState
   late Future<_TurnoDetailData?> _detailFuture;
   bool _confirmDelete = false;
   bool _isSubmitting = false;
-  bool _assignFutureTurns = true;
   bool _assigneeMenuOpen = false;
   String? _selectedAssigneeId;
 
@@ -282,86 +281,84 @@ class _DettaglioTurnoAdminScreenState
           backgroundColor: AppColors.darkBackground,
           bottomNavigationBar: const HouseQuickNav(currentRoute: '/turni'),
           body: SafeArea(
-            child: Stack(
-              children: [
-                SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSizes.p14,
-                    AppSizes.p8,
-                    AppSizes.p14,
-                    AppSizes.p20,
-                  ),
-                  child: Opacity(
-                    opacity: _confirmDelete ? 0.42 : 1,
+            child: GestureDetector(
+              onTap: () {
+                if (_confirmDelete) {
+                  setState(() => _confirmDelete = false);
+                }
+              },
+              behavior: HitTestBehavior.translucent,
+              child: Stack(
+                children: [
+                  SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSizes.p14,
+                      AppSizes.p8,
+                      AppSizes.p14,
+                      AppSizes.p20,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        _DetailHeader(
-                          onBack: () => Navigator.of(context).pop(),
-                        ),
-                        const SizedBox(height: AppSizes.p24),
-                        _TurnoSummaryCard(turno: data?.turno),
-                        const SizedBox(height: AppSizes.p24),
-                        _ResponsibleCard(
-                          turno: data?.turno,
-                          inquilini: data?.inquilini ?? const [],
-                        ),
-                        const SizedBox(height: AppSizes.p48),
-                        Text(
-                          'Vuoi occupartene tu?',
-                          style: AppTextStyles.bodyStrong.copyWith(
-                            color: AppColors.textMutedLight,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
+                        Opacity(
+                          opacity: _confirmDelete ? 0.42 : 1,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _DetailHeader(
+                                onBack: () => Navigator.of(context).pop(),
+                              ),
+                              const SizedBox(height: AppSizes.p24),
+                              _TurnoSummaryCard(turno: data?.turno),
+                              const SizedBox(height: AppSizes.p24),
+                              _ResponsibleCard(
+                                turno: data?.turno,
+                                inquilini: data?.inquilini ?? const [],
+                              ),
+                              const SizedBox(height: AppSizes.p48),
+                              Text(
+                                'Vuoi occupartene tu?',
+                                style: AppTextStyles.bodyStrong.copyWith(
+                                  color: AppColors.textMutedLight,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: AppSizes.p18),
+                              _PrimaryActionButton(
+                                label: isLoading
+                                    ? 'Caricamento...'
+                                    : 'Assegna a me',
+                                onPressed: _isSubmitting || data == null
+                                    ? null
+                                    : () => _handleAssignMe(data),
+                              ),
+                              if (assignees.isNotEmpty) ...[
+                                const SizedBox(height: AppSizes.p10),
+                                _AssigneeSelector(
+                                  assignees: assignees,
+                                  selectedAssigneeId: selectedAssigneeId,
+                                  selectedAssigneeLabel: _selectedAssigneeLabel(
+                                    assignees,
+                                  ),
+                                  expanded: _assigneeMenuOpen,
+                                  isSubmitting: _isSubmitting,
+                                  onToggle: () {
+                                    setState(() {
+                                      _assigneeMenuOpen = !_assigneeMenuOpen;
+                                    });
+                                  },
+                                  onSelected: (value) {
+                                    if (data != null) {
+                                      _handleAssigneeSelected(data, value);
+                                    }
+                                  },
+                                ),
+                              ],
+                              const SizedBox(height: AppSizes.p8),
+                              const SizedBox(height: AppSizes.p90),
+                            ],
                           ),
-                        ),
-                        const SizedBox(height: AppSizes.p18),
-                        _PrimaryActionButton(
-                          label: isLoading ? 'Caricamento...' : 'Assegna a me',
-                          onPressed: _isSubmitting || data == null
-                              ? null
-                              : () => _handleAssignMe(data),
-                        ),
-                        if (assignees.isNotEmpty) ...[
-                          const SizedBox(height: AppSizes.p10),
-                          _AssigneeSelector(
-                            assignees: assignees,
-                            selectedAssigneeId: selectedAssigneeId,
-                            selectedAssigneeLabel: _selectedAssigneeLabel(
-                              assignees,
-                            ),
-                            expanded: _assigneeMenuOpen,
-                            isSubmitting: _isSubmitting,
-                            onToggle: () {
-                              setState(() {
-                                _assigneeMenuOpen = !_assigneeMenuOpen;
-                              });
-                            },
-                            onSelected: (value) {
-                              if (data != null) {
-                                _handleAssigneeSelected(data, value);
-                              }
-                            },
-                          ),
-                        ],
-                        const SizedBox(height: AppSizes.p8),
-                        Text(
-                          'I turni successivi non subiranno cambiamenti.\nSolo questo turno verra aggiornato.',
-                          textAlign: TextAlign.center,
-                          style: AppTextStyles.bodyStrong.copyWith(
-                            color: AppColors.textMutedLight.withValues(
-                              alpha: 0.82,
-                            ),
-                            fontSize: 14,
-                            height: 1.15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: AppSizes.p90),
-                        _FutureTurnsToggle(
-                          value: _assignFutureTurns,
-                          onChanged: (value) =>
-                              setState(() => _assignFutureTurns = value),
                         ),
                         const SizedBox(height: AppSizes.p40),
                         _DeleteTurnoButton(
@@ -371,18 +368,15 @@ class _DettaglioTurnoAdminScreenState
                       ],
                     ),
                   ),
-                ),
-                if (_confirmDelete)
-                  Positioned(
-                    left: AppSizes.p20,
-                    right: AppSizes.p20,
-                    top: 300,
-                    child: _DeleteWarningCard(
-                      onTapOutside: () =>
-                          setState(() => _confirmDelete = false),
+                  if (_confirmDelete)
+                    Positioned(
+                      left: AppSizes.p20,
+                      right: AppSizes.p20,
+                      top: 300,
+                      child: const _DeleteWarningCard(),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
         );
@@ -823,42 +817,6 @@ class _AssigneeMenu extends StatelessWidget {
   }
 }
 
-class _FutureTurnsToggle extends StatelessWidget {
-  const _FutureTurnsToggle({required this.value, required this.onChanged});
-
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            'assegna anche i turni successivi',
-            style: AppTextStyles.bodyStrong.copyWith(
-              color: AppColors.textMutedLight,
-              fontSize: 16,
-              fontStyle: FontStyle.italic,
-              decoration: TextDecoration.underline,
-              decorationColor: AppColors.textMutedLight,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-        Switch(
-          value: value,
-          onChanged: onChanged,
-          activeThumbColor: AppColors.textOnDark,
-          activeTrackColor: AppColors.brandAccent,
-          inactiveThumbColor: AppColors.textMutedLight,
-          inactiveTrackColor: AppColors.dividerDark,
-        ),
-      ],
-    );
-  }
-}
-
 class _DeleteTurnoButton extends StatelessWidget {
   const _DeleteTurnoButton({
     required this.confirmMode,
@@ -898,14 +856,12 @@ class _DeleteTurnoButton extends StatelessWidget {
 }
 
 class _DeleteWarningCard extends StatelessWidget {
-  const _DeleteWarningCard({required this.onTapOutside});
-
-  final VoidCallback onTapOutside;
+  const _DeleteWarningCard();
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTapOutside,
+      onTap: () {}, // Evita che il click sulla card chiuda il warning
       child: Container(
         decoration: BoxDecoration(
           color: const Color(0xFF5A2F0D),
@@ -1007,26 +963,66 @@ class TurnoRimossoScreen extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              OutlinedButton(
-                onPressed: () =>
-                    Navigator.of(context).pushReplacementNamed('/turni'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.brandAccent,
-                  side: const BorderSide(
-                    color: AppColors.brandSecondary,
-                    width: 1.8,
+              Container(
+                width:
+                    double.infinity, // Adapted from 340, keeping it responsive
+                height: 53.28, // As per requested style
+                decoration: ShapeDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color.lerp(AppColors.brandPrimary, Colors.white, 0.30)!,
+                      AppColors.brandPrimary,
+                      Color.lerp(AppColors.brandPrimary, Colors.black, 0.18)!,
+                    ],
+                    stops: const [0, 0.62, 1],
                   ),
-                  padding: const EdgeInsets.symmetric(vertical: AppSizes.p16),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppSizes.radius12),
+                    borderRadius: BorderRadius.circular(
+                      15,
+                    ), // As per requested style
                   ),
+                  shadows: const [
+                    BoxShadow(
+                      color: Color(0x005228AD),
+                      blurRadius: 4,
+                      offset: Offset(0, 4),
+                      spreadRadius: 0,
+                    ),
+                  ],
                 ),
-                child: Text(
-                  'Torna ai turni',
-                  style: AppTextStyles.buttonCompact.copyWith(
-                    color: AppColors.brandAccent,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
+                child: OutlinedButton(
+                  onPressed: () =>
+                      Navigator.of(context).pushReplacementNamed('/turni'),
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: Colors
+                        .transparent, // Make button background transparent to show gradient
+                    foregroundColor:
+                        Colors.transparent, // Text color handled by Text widget
+                    side: BorderSide.none, // Remove button border
+                    padding: EdgeInsets
+                        .zero, // Padding handled by the outer Container's height
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        15,
+                      ), // Match outer container's border radius
+                    ),
+                    elevation: 0, // Remove default button elevation
+                    shadowColor:
+                        Colors.transparent, // Remove default button shadow
+                  ),
+                  child: const Text(
+                    // Use const for performance
+                    'Torna ai turni',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      // As per requested style
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontFamily: 'Inter',
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),

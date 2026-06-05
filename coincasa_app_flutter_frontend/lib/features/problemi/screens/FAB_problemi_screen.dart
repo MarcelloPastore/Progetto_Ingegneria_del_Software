@@ -9,30 +9,32 @@ import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/primary_button.dart';
+import 'package:coincasa_app/features/dashboard/screens/dashboard_screen.dart';
 import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 import 'package:coincasa_app/features/problemi/screens/popup_successo_FAB.dart';
 
-final _problemiCasaProvider = FutureProvider.autoDispose.family<Casa?, String?>(
-  (ref, selectedCasaId) async {
-    final caseUtente = await ApiProvider.casa.list();
-    if (caseUtente.isEmpty) {
-      return null;
-    }
+final _problemiCasaProvider = FutureProvider.family<Casa?, String?>((
+  ref,
+  selectedCasaId,
+) async {
+  final caseUtente = await ApiProvider.casa.list();
+  if (caseUtente.isEmpty) {
+    return null;
+  }
 
-    if (selectedCasaId != null && selectedCasaId.isNotEmpty) {
-      for (final casa in caseUtente) {
-        if (casa.id == selectedCasaId) {
-          return casa;
-        }
+  if (selectedCasaId != null && selectedCasaId.isNotEmpty) {
+    for (final casa in caseUtente) {
+      if (casa.id == selectedCasaId) {
+        return casa;
       }
     }
+  }
 
-    return caseUtente.first;
-  },
-);
+  return caseUtente.first;
+});
 
-final _problemiInquiliniProvider = FutureProvider.autoDispose
-    .family<List<Inquilino>, String?>((ref, casaId) async {
+final _problemiInquiliniProvider =
+    FutureProvider.family<List<Inquilino>, String?>((ref, casaId) async {
       if (casaId == null || casaId.isEmpty) {
         return const [];
       }
@@ -397,6 +399,9 @@ class _ProblemiPopupPanelState extends ConsumerState<ProblemiPopupPanel> {
                 }
                 Navigator.of(context).pushReplacementNamed(route);
               },
+              onCancel: () {
+                Navigator.of(context).pop();
+              },
               showTabs: widget.showTabs,
               resolveBannerText: _resolveBannerText,
             ),
@@ -413,6 +418,9 @@ class _ProblemiPopupPanelState extends ConsumerState<ProblemiPopupPanel> {
                 return;
               }
               Navigator.of(context).pushReplacementNamed(route);
+            },
+            onCancel: () {
+              Navigator.of(context).pop();
             },
             showTabs: widget.showTabs,
             resolveBannerText: _resolveBannerText,
@@ -434,7 +442,8 @@ class _ProblemiPopupPanelState extends ConsumerState<ProblemiPopupPanel> {
                       ? constraints.maxHeight
                       : 640.0;
                   return SingleChildScrollView(
-                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
                     padding: const EdgeInsets.fromLTRB(
                       4,
                       AppSizes.p10,
@@ -495,6 +504,7 @@ class _ProblemiFormContent extends StatelessWidget {
     required this.onSubmit,
     required this.onRouteSelected,
     required this.showTabs,
+    required this.onCancel,
     required this.resolveBannerText,
   });
 
@@ -505,6 +515,7 @@ class _ProblemiFormContent extends StatelessWidget {
   final VoidCallback onSubmit;
   final ValueChanged<String> onRouteSelected;
   final bool showTabs;
+  final VoidCallback onCancel;
   final String Function(_ProblemiCreateFormState form) resolveBannerText;
 
   @override
@@ -579,6 +590,29 @@ class _ProblemiFormContent extends StatelessWidget {
             label: 'Segnala problema',
             isLoading: form.isSubmitting,
             onPressed: form.canSubmit ? onSubmit : null,
+          ),
+        ),
+        const SizedBox(height: AppSizes.p8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSizes.p28),
+          child: OutlinedButton(
+            onPressed: form.isSubmitting ? null : onCancel,
+            style: OutlinedButton.styleFrom(
+              backgroundColor: AppColors.errorContainerStrong,
+              foregroundColor: AppColors.errorStrong,
+              side: const BorderSide(color: AppColors.errorStrong, width: 2),
+              padding: const EdgeInsets.symmetric(vertical: 13),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+            ),
+            child: Text(
+              'Annulla',
+              style: AppTextStyles.buttonCompact.copyWith(
+                color: AppColors.errorStrong,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
           ),
         ),
       ],
@@ -777,7 +811,9 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = hasError ? AppColors.errorStrong : (textColor ?? AppColors.brandAccent);
+    final color = hasError
+        ? AppColors.errorStrong
+        : (textColor ?? AppColors.brandAccent);
     return Row(
       children: [
         Expanded(
@@ -973,7 +1009,9 @@ class _PriorityChip extends StatelessWidget {
       stops: const [0, 0.62, 1],
     );
 
-    final borderColor = selected ? AppColors.brandAccent : AppColors.surfaceTint;
+    final borderColor = selected
+        ? AppColors.brandAccent
+        : AppColors.surfaceTint;
     final borderWidth = 3.5;
 
     return InkWell(
@@ -985,10 +1023,7 @@ class _PriorityChip extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: background,
           borderRadius: BorderRadius.circular(AppSizes.radius16),
-          border: Border.all(
-            color: borderColor,
-            width: borderWidth,
-          ),
+          border: Border.all(color: borderColor, width: borderWidth),
           boxShadow: [
             BoxShadow(
               color: selected
