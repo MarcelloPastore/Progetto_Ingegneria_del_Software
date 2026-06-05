@@ -175,8 +175,6 @@ class _TurniPopupPanelState extends ConsumerState<TurniPopupPanel> {
 
   final _formKey = GlobalKey<FormState>();
   final _taskController = TextEditingController();
-  final _dayController = TextEditingController();
-  final _monthController = TextEditingController();
   String _frequenza = 'Ogni settimana';
   String? _selectedInquilinoId;
   DateTime? _selectedTurnoDate;
@@ -189,27 +187,7 @@ class _TurniPopupPanelState extends ConsumerState<TurniPopupPanel> {
   @override
   void dispose() {
     _taskController.dispose();
-    _dayController.dispose();
-    _monthController.dispose();
     super.dispose();
-  }
-
-  DateTime? _buildTurnoDate() {
-    final day = int.tryParse(_dayController.text.trim());
-    final month = int.tryParse(_monthController.text.trim());
-    if (day == null || month == null || month < 1 || month > 12) {
-      return null;
-    }
-
-    final now = DateTime.now();
-    var candidate = DateTime(now.year, month, day);
-    if (candidate.month != month || candidate.day != day) {
-      return null;
-    }
-    if (candidate.isBefore(DateTime(now.year, now.month, now.day))) {
-      candidate = DateTime(now.year + 1, month, day);
-    }
-    return candidate;
   }
 
   Future<void> _pickTurnoDate() async {
@@ -218,7 +196,7 @@ class _TurniPopupPanelState extends ConsumerState<TurniPopupPanel> {
     final firstDate = DateTime(now.year, now.month, now.day);
     final picked = await showDatePicker(
       context: context,
-      initialDate: _selectedTurnoDate ?? _buildTurnoDate() ?? firstDate,
+      initialDate: _selectedTurnoDate ?? firstDate,
       firstDate: firstDate,
       lastDate: DateTime(now.year + 3, 12, 31),
       builder: (context, child) {
@@ -241,8 +219,6 @@ class _TurniPopupPanelState extends ConsumerState<TurniPopupPanel> {
 
     setState(() {
       _selectedTurnoDate = picked;
-      _dayController.text = picked.day.toString().padLeft(2, '0');
-      _monthController.text = picked.month.toString().padLeft(2, '0');
       _errorMessage = null;
     });
   }
@@ -258,7 +234,7 @@ class _TurniPopupPanelState extends ConsumerState<TurniPopupPanel> {
       _turniCasaProvider(activeCasaController.selectedCasaId).future,
     );
     final assegnatarioId = _selectedInquilinoId?.trim();
-    final turnoDate = _selectedTurnoDate ?? _buildTurnoDate();
+    final turnoDate = _selectedTurnoDate;
 
     if (casa == null || casa.id.isEmpty) {
       setState(() => _errorMessage = 'Nessuna casa disponibile.');
@@ -318,13 +294,12 @@ class _TurniPopupPanelState extends ConsumerState<TurniPopupPanel> {
           AsyncValue<List<Inquilino>>.error(error, stackTrace),
     );
     final canSubmit =
-        _taskController.text.trim().isNotEmpty && _buildTurnoDate() != null;
+        _taskController.text.trim().isNotEmpty && _selectedTurnoDate != null;
 
     final body = _TurnoFormPanel(
       formKey: _formKey,
       taskController: _taskController,
-      dayController: _dayController,
-      monthController: _monthController,
+      selectedTurnoDate: _selectedTurnoDate,
       frequenza: _frequenza,
       frequenze: _frequenze.keys.toList(growable: false),
       frequencyExpanded: _frequencyExpanded,
@@ -338,12 +313,6 @@ class _TurniPopupPanelState extends ConsumerState<TurniPopupPanel> {
       onSubmit: _submit,
       onTaskChanged: () => setState(() => _errorMessage = null),
       onDateTap: _pickTurnoDate,
-      onDateChanged: () {
-        setState(() {
-          _selectedTurnoDate = _buildTurnoDate();
-          _errorMessage = null;
-        });
-      },
       onFrequencyToggle: () {
         setState(() {
           _frequencyExpanded = !_frequencyExpanded;
@@ -400,8 +369,7 @@ class _TurnoFormPanel extends StatelessWidget {
   const _TurnoFormPanel({
     required this.formKey,
     required this.taskController,
-    required this.dayController,
-    required this.monthController,
+    required this.selectedTurnoDate,
     required this.frequenza,
     required this.frequenze,
     required this.frequencyExpanded,
@@ -415,7 +383,6 @@ class _TurnoFormPanel extends StatelessWidget {
     required this.onSubmit,
     required this.onTaskChanged,
     required this.onDateTap,
-    required this.onDateChanged,
     required this.onFrequencyToggle,
     required this.onFrequencyChanged,
     required this.onAssigneeToggle,
@@ -428,8 +395,7 @@ class _TurnoFormPanel extends StatelessWidget {
 
   final GlobalKey<FormState> formKey;
   final TextEditingController taskController;
-  final TextEditingController dayController;
-  final TextEditingController monthController;
+  final DateTime? selectedTurnoDate;
   final String frequenza;
   final List<String> frequenze;
   final bool frequencyExpanded;
@@ -443,7 +409,6 @@ class _TurnoFormPanel extends StatelessWidget {
   final VoidCallback onSubmit;
   final VoidCallback onTaskChanged;
   final VoidCallback onDateTap;
-  final VoidCallback onDateChanged;
   final VoidCallback onFrequencyToggle;
   final ValueChanged<String> onFrequencyChanged;
   final VoidCallback onAssigneeToggle;
@@ -479,10 +444,8 @@ class _TurnoFormPanel extends StatelessWidget {
             _TaskField(controller: taskController, onChanged: onTaskChanged),
             const SizedBox(height: AppSizes.p20),
             _DatePreviewRow(
-              dayController: dayController,
-              monthController: monthController,
+              selectedDate: selectedTurnoDate,
               onDateTap: onDateTap,
-              onDateChanged: onDateChanged,
             ),
             const SizedBox(height: AppSizes.p20),
             Text(
@@ -740,19 +703,22 @@ class _TaskField extends StatelessWidget {
 
 class _DatePreviewRow extends StatelessWidget {
   const _DatePreviewRow({
-    required this.dayController,
-    required this.monthController,
+    required this.selectedDate,
     required this.onDateTap,
-    required this.onDateChanged,
   });
 
-  final TextEditingController dayController;
-  final TextEditingController monthController;
+  final DateTime? selectedDate;
   final VoidCallback onDateTap;
-  final VoidCallback onDateChanged;
 
   @override
   Widget build(BuildContext context) {
+    String label = 'Data Inizio Turno';
+    if (selectedDate != null) {
+      final day = selectedDate!.day.toString().padLeft(2, '0');
+      final month = selectedDate!.month.toString().padLeft(2, '0');
+      label = 'Data inizio turno: $day/$month';
+    }
+
     return Container(
       constraints: const BoxConstraints(minHeight: 47),
       decoration: BoxDecoration(
@@ -779,17 +745,17 @@ class _DatePreviewRow extends StatelessWidget {
                   children: [
                     Icon(
                       Icons.calendar_today_rounded,
-                      color: AppColors.textMutedLight,
+                      color: selectedDate != null ? AppColors.brandAccent : AppColors.textMutedLight,
                       size: 20,
                     ),
                     const SizedBox(width: AppSizes.p12),
                     Expanded(
                       child: Text(
-                        'Data Inizio Turno',
+                        label,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: AppTextStyles.bodyStrong.copyWith(
-                          color: AppColors.textMutedLight,
+                          color: selectedDate != null ? AppColors.textOnDark : AppColors.textMutedLight,
                           fontSize: 19,
                         ),
                       ),
@@ -803,86 +769,8 @@ class _DatePreviewRow extends StatelessWidget {
       ),
     );
   }
-
-  static String? _validateDay(String? value) {
-    final trimmed = value?.trim() ?? '';
-    if (trimmed.isEmpty) {
-      return 'gg';
-    }
-    final day = int.tryParse(trimmed);
-    if (day == null || day < 1 || day > 31) {
-      return '1-31';
-    }
-    return null;
-  }
-
-  static String? _validateMonth(String? value) {
-    final trimmed = value?.trim() ?? '';
-    if (trimmed.isEmpty) {
-      return 'MM';
-    }
-    final month = int.tryParse(trimmed);
-    if (month == null || month < 1 || month > 12) {
-      return '1-12';
-    }
-    return null;
-  }
 }
 
-class _DateInputChip extends StatelessWidget {
-  const _DateInputChip({
-    required this.controller,
-    required this.hintText,
-    required this.validator,
-    required this.onChanged,
-  });
-
-  final TextEditingController controller;
-  final String hintText;
-  final FormFieldValidator<String> validator;
-  final VoidCallback onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: TextInputType.number,
-      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-      maxLength: 2,
-      textInputAction: TextInputAction.next,
-      validator: validator,
-      onChanged: (_) => onChanged(),
-      style: AppTextStyles.inputHint.copyWith(
-        color: AppColors.textOnDark,
-        fontSize: 16,
-      ),
-      decoration: InputDecoration(
-        counterText: '',
-        hintText: hintText,
-        hintStyle: AppTextStyles.inputHint.copyWith(
-          color: AppColors.textOnDark,
-          fontSize: 16,
-        ),
-        filled: true,
-        fillColor: AppColors.brandPrimary,
-        isDense: true,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppSizes.p8,
-          vertical: AppSizes.p6,
-        ),
-        border: _dateInputBorder(AppColors.textOnDark),
-        enabledBorder: _dateInputBorder(AppColors.textOnDark),
-        focusedBorder: _dateInputBorder(AppColors.brandAccent, width: 1.5),
-        errorBorder: _dateInputBorder(AppColors.errorStrong),
-        focusedErrorBorder: _dateInputBorder(AppColors.errorStrong, width: 1.5),
-        errorStyle: AppTextStyles.fieldError.copyWith(
-          color: AppColors.errorStrong,
-          height: 0.8,
-        ),
-      ),
-    );
-  }
-}
 
 class _FrequencyDropdown extends StatelessWidget {
   const _FrequencyDropdown({
@@ -1482,9 +1370,3 @@ OutlineInputBorder _fieldBorder(Color color, {double width = 1}) {
   );
 }
 
-OutlineInputBorder _dateInputBorder(Color color, {double width = 1}) {
-  return OutlineInputBorder(
-    borderRadius: BorderRadius.circular(AppSizes.radius8),
-    borderSide: BorderSide(color: color, width: width),
-  );
-}

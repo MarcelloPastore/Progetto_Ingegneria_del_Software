@@ -14,6 +14,8 @@ import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 import 'package:coincasa_app/features/turni/screens/dettaglio_turno_admin.dart';
 import 'package:coincasa_app/features/turni/screens/turno_create_screen.dart';
 
+final _me = ApiProvider.client;
+
 final _listaTurniCasaProvider = FutureProvider.autoDispose
     .family<Casa?, String?>((ref, selectedCasaId) async {
       final caseUtente = await ApiProvider.casa.list();
@@ -51,6 +53,38 @@ class _ListaTurniScreenState extends ConsumerState<ListaTurniScreen>
     with RouteAware {
   /// Cache statica: sopravvive a pushReplacementNamed e autoDispose dei provider.
   static List<Turno>? _cachedTurni;
+
+  final Set<String> _completingIds = {};
+
+  Future<void> _completaTurno(String casaId, String turnoId) async {
+    setState(() {
+      _completingIds.add(turnoId);
+    });
+    try {
+      await ApiProvider.turni.completa(casaId, turnoId);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Turno completato con successo!')),
+        );
+        _refreshTurni();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Impossibile completare il turno. Riprova.'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _completingIds.remove(turnoId);
+        });
+      }
+    }
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -146,14 +180,6 @@ class _ListaTurniScreenState extends ConsumerState<ListaTurniScreen>
                       const SizedBox(height: AppSizes.p8),
                       _TurniCalendarCard(turni: calendarTurni),
                       const SizedBox(height: AppSizes.p35),
-                      Text(
-                        'Turni assegnati',
-                        style: AppTextStyles.screenTitleStrong.copyWith(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: AppSizes.p8),
                       Builder(
                         builder: (context) {
                           final effectiveTurni = turniAsync.maybeWhen(
@@ -163,29 +189,150 @@ class _ListaTurniScreenState extends ConsumerState<ListaTurniScreen>
 
                           if (effectiveTurni != null) {
                             if (effectiveTurni.isEmpty) {
-                              return const _TurniStatePanel(
-                                message:
-                                    'Non ci sono turni per adesso...\nCreane subito uno nuovo!',
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Text(
+                                    'Turni assegnati',
+                                    style: AppTextStyles.screenTitleStrong.copyWith(
+                                      fontSize: 26,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                  const SizedBox(height: AppSizes.p8),
+                                  const _TurniStatePanel(
+                                    message:
+                                        'Non ci sono turni per adesso...\nCreane subito uno nuovo!',
+                                  ),
+                                ],
                               );
                             }
-                            return _AssignedTurniCard(
-                              turni: effectiveTurni,
-                              onTurnoTap: (turno) =>
-                                  Navigator.of(context).pushNamed(
-                                    DettaglioTurnoAdminScreen.routeName,
-                                    arguments: turno.id,
+
+                            final now = DateTime.now();
+                            final today = DateTime(now.year, now.month, now.day);
+
+                            final turniScaduti = effectiveTurni.where((t) {
+                              if (t.completato) return false;
+                              final date = t.dataProssimaPulizia;
+                              if (date == null) return false;
+                              final dateOnly = DateTime(date.year, date.month, date.day);
+                              return dateOnly.isBefore(today) || dateOnly.isAtSameMomentAs(today);
+                            }).toList()
+                              ..sort((a, b) {
+                                final aDate = a.dataProssimaPulizia;
+                                final bDate = b.dataProssimaPulizia;
+                                if (aDate == null && bDate == null) return 0;
+                                if (aDate == null) return 1;
+                                if (bDate == null) return -1;
+                                return aDate.compareTo(bDate);
+                              });
+
+                            final turniAssegnati = effectiveTurni.where((t) {
+                              if (t.completato) return false;
+                              final date = t.dataProssimaPulizia;
+                              if (date == null) return true;
+                              final dateOnly = DateTime(date.year, date.month, date.day);
+                              return dateOnly.isAfter(today);
+                            }).toList()
+                              ..sort((a, b) {
+                                final aDate = a.dataProssimaPulizia;
+                                final bDate = b.dataProssimaPulizia;
+                                if (aDate == null && bDate == null) return 0;
+                                if (aDate == null) return 1;
+                                if (bDate == null) return -1;
+                                return aDate.compareTo(bDate);
+                              });
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                if (turniScaduti.isNotEmpty) ...[
+                                  Text(
+                                    'Turni scaduti',
+                                    style: AppTextStyles.screenTitleStrong.copyWith(
+                                      fontSize: 26,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppColors.statusNegative,
+                                    ),
                                   ),
+                                  const SizedBox(height: AppSizes.p8),
+                                  _ExpiredTurniCard(
+                                    turni: turniScaduti,
+                                    onTurnoTap: (turno) =>
+                                        Navigator.of(context).pushNamed(
+                                          DettaglioTurnoAdminScreen.routeName,
+                                          arguments: turno.id,
+                                        ),
+                                    currentUserId: _me.currentUserId,
+                                    casaId: casaAsync.value?.id,
+                                    completingIds: _completingIds,
+                                    onCompleta: _completaTurno,
+                                  ),
+                                  const SizedBox(height: AppSizes.p35),
+                                ],
+                                Text(
+                                  'Turni assegnati',
+                                  style: AppTextStyles.screenTitleStrong.copyWith(
+                                    fontSize: 26,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                const SizedBox(height: AppSizes.p8),
+                                if (turniAssegnati.isEmpty)
+                                  const _TurniStatePanel(
+                                    message: 'Non ci sono turni assegnati.',
+                                  )
+                                else
+                                  _AssignedTurniCard(
+                                    turni: turniAssegnati,
+                                    onTurnoTap: (turno) =>
+                                        Navigator.of(context).pushNamed(
+                                          DettaglioTurnoAdminScreen.routeName,
+                                          arguments: turno.id,
+                                        ),
+                                    currentUserId: _me.currentUserId,
+                                    casaId: casaAsync.value?.id,
+                                    completingIds: _completingIds,
+                                    onCompleta: _completaTurno,
+                                  ),
+                              ],
                             );
                           }
 
                           if (turniAsync.hasError) {
-                            return const _TurniStatePanel(
-                              message: 'Impossibile caricare i turni.',
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Text(
+                                  'Turni assegnati',
+                                  style: AppTextStyles.screenTitleStrong.copyWith(
+                                    fontSize: 26,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                const SizedBox(height: AppSizes.p8),
+                                const _TurniStatePanel(
+                                  message: 'Impossibile caricare i turni.',
+                                ),
+                              ],
                             );
                           }
 
-                          return const _TurniStatePanel(
-                            message: 'Caricamento turni...',
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                'Turni assegnati',
+                                style: AppTextStyles.screenTitleStrong.copyWith(
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: AppSizes.p8),
+                              const _TurniStatePanel(
+                                message: 'Caricamento turni...',
+                              ),
+                            ],
                           );
                         },
                       ),
@@ -645,11 +792,59 @@ class _CalendarLegendDot extends StatelessWidget {
   }
 }
 
+String _formatTurnoDateLabel(DateTime? date) {
+  if (date == null) {
+    return 'turno';
+  }
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final target = DateTime(date.year, date.month, date.day);
+  
+  final deltaMs = target.millisecondsSinceEpoch - today.millisecondsSinceEpoch;
+  final delta = (deltaMs / 86400000).round();
+
+  if (delta == 0) {
+    return 'oggi';
+  }
+  if (delta == 1) {
+    return 'domani';
+  }
+  if (delta == -1) {
+    return 'ieri';
+  }
+  if (delta == -2) {
+    return "l'altro ieri";
+  }
+  if (delta > 1 && delta < 7) {
+    return const [
+      'lunedi',
+      'martedi',
+      'mercoledi',
+      'giovedi',
+      'venerdi',
+      'sabato',
+      'domenica',
+    ][target.weekday - 1];
+  }
+  return '${target.day.toString().padLeft(2, '0')}/${target.month.toString().padLeft(2, '0')}';
+}
+
 class _AssignedTurniCard extends StatelessWidget {
-  const _AssignedTurniCard({required this.turni, required this.onTurnoTap});
+  const _AssignedTurniCard({
+    required this.turni,
+    required this.onTurnoTap,
+    required this.currentUserId,
+    required this.casaId,
+    required this.completingIds,
+    required this.onCompleta,
+  });
 
   final List<Turno> turni;
   final ValueChanged<Turno> onTurnoTap;
+  final String? currentUserId;
+  final String? casaId;
+  final Set<String> completingIds;
+  final void Function(String casaId, String turnoId) onCompleta;
 
   static const _whenColors = [
     Color(0xFF2E8641),
@@ -660,16 +855,6 @@ class _AssignedTurniCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sorted = [...turni]
-      ..sort((a, b) {
-        final aDate = a.dataProssimaPulizia;
-        final bDate = b.dataProssimaPulizia;
-        if (aDate == null && bDate == null) return 0;
-        if (aDate == null) return 1;
-        if (bDate == null) return -1;
-        return aDate.compareTo(bDate);
-      });
-
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF272746),
@@ -687,18 +872,31 @@ class _AssignedTurniCard extends StatelessWidget {
         vertical: AppSizes.p14,
       ),
       child: Column(
-        children: List.generate(sorted.length, (index) {
-          final turno = sorted[index];
+        children: List.generate(turni.length, (index) {
+          final turno = turni[index];
+          final isCurrentAssignee =
+              currentUserId != null &&
+              currentUserId!.isNotEmpty &&
+              turno.assegnatarioId == currentUserId;
+
           return Padding(
             padding: EdgeInsets.only(
-              bottom: index == sorted.length - 1 ? 0 : AppSizes.p18,
+              bottom: index == turni.length - 1 ? 0 : AppSizes.p18,
             ),
-            child: _AssignedTurnoRow(
+            child: _TurnoListRow(
               userId: turno.assegnatarioId,
               displayName: turno.assegnatarioNome,
               task: turno.titolo,
-              when: _whenLabel(turno.dataProssimaPulizia),
+              when: _formatTurnoDateLabel(turno.dataProssimaPulizia),
               whenColor: _whenColors[index % _whenColors.length],
+              isCurrentAssignee: isCurrentAssignee,
+              isCompleting: completingIds.contains(turno.id),
+              onCompletaTap: () {
+                if (casaId != null) {
+                  onCompleta(casaId!, turno.id);
+                }
+              },
+              isExpired: false,
               onTap: () => onTurnoTap(turno),
             ),
           );
@@ -706,33 +904,82 @@ class _AssignedTurniCard extends StatelessWidget {
       ),
     );
   }
+}
 
-  static String _whenLabel(DateTime? date) {
-    if (date == null) {
-      return 'turno';
-    }
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final target = DateTime(date.year, date.month, date.day);
-    final delta = target.difference(today).inDays;
-    if (delta == 0) {
-      return 'oggi';
-    }
-    if (delta == 1) {
-      return 'domani';
-    }
-    if (delta > 1 && delta < 7) {
-      return const [
-        'lunedi',
-        'martedi',
-        'mercoledi',
-        'giovedi',
-        'venerdi',
-        'sabato',
-        'domenica',
-      ][target.weekday - 1];
-    }
-    return '${target.day}/${target.month}';
+class _ExpiredTurniCard extends StatelessWidget {
+  const _ExpiredTurniCard({
+    required this.turni,
+    required this.onTurnoTap,
+    required this.currentUserId,
+    required this.casaId,
+    required this.completingIds,
+    required this.onCompleta,
+  });
+
+  final List<Turno> turni;
+  final ValueChanged<Turno> onTurnoTap;
+  final String? currentUserId;
+  final String? casaId;
+  final Set<String> completingIds;
+  final void Function(String casaId, String turnoId) onCompleta;
+
+  static const _whenColors = [
+    Color(0xFF2E8641),
+    Color(0xFF835C2F),
+    Color(0xFF65347C),
+    Color(0xFF286D76),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF272746),
+        borderRadius: BorderRadius.circular(AppSizes.radius16),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadowStrong,
+            blurRadius: AppSizes.p10,
+            offset: Offset(0, AppSizes.p5),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.p14,
+        vertical: AppSizes.p14,
+      ),
+      child: Column(
+        children: List.generate(turni.length, (index) {
+          final turno = turni[index];
+          final isCurrentAssignee =
+              currentUserId != null &&
+              currentUserId!.isNotEmpty &&
+              turno.assegnatarioId == currentUserId;
+
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: index == turni.length - 1 ? 0 : AppSizes.p18,
+            ),
+            child: _TurnoListRow(
+              userId: turno.assegnatarioId,
+              displayName: turno.assegnatarioNome,
+              task: turno.titolo,
+              when: _formatTurnoDateLabel(turno.dataProssimaPulizia),
+              whenColor: _whenColors[index % _whenColors.length],
+              isCurrentAssignee: isCurrentAssignee,
+              isCompleting: completingIds.contains(turno.id),
+              onCompletaTap: () {
+                if (casaId != null) {
+                  onCompleta(casaId!, turno.id);
+                }
+              },
+              isExpired: true,
+              onTap: () => onTurnoTap(turno),
+            ),
+          );
+        }),
+      ),
+    );
   }
 }
 
@@ -772,13 +1019,17 @@ class _TurniStatePanel extends StatelessWidget {
   }
 }
 
-class _AssignedTurnoRow extends StatelessWidget {
-  const _AssignedTurnoRow({
+class _TurnoListRow extends StatelessWidget {
+  const _TurnoListRow({
     required this.userId,
     required this.displayName,
     required this.task,
     required this.when,
     required this.whenColor,
+    required this.isCurrentAssignee,
+    required this.isCompleting,
+    required this.onCompletaTap,
+    required this.isExpired,
     this.onTap,
   });
 
@@ -787,10 +1038,16 @@ class _AssignedTurnoRow extends StatelessWidget {
   final String task;
   final String when;
   final Color whenColor;
+  final bool isCurrentAssignee;
+  final bool isCompleting;
+  final VoidCallback onCompletaTap;
+  final bool isExpired;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
+    final taskColor = isExpired ? AppColors.statusNegative : const Color(0xFFD6D7E8);
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppSizes.radius8),
@@ -809,12 +1066,17 @@ class _AssignedTurnoRow extends StatelessWidget {
               child: Text(
                 task,
                 style: AppTextStyles.bodyStrong.copyWith(
-                  color: const Color(0xFFD6D7E8),
+                  color: taskColor,
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
                 ),
               ),
             ),
+            if (isCurrentAssignee) ...[
+              const SizedBox(width: AppSizes.p8),
+              _buildCompleteButton(),
+            ],
+            const SizedBox(width: AppSizes.p8),
             Container(
               constraints: const BoxConstraints(minWidth: 82),
               height: AppSizes.p32,
@@ -830,10 +1092,60 @@ class _AssignedTurnoRow extends StatelessWidget {
                   color: AppColors.textOnDark,
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
+                  fontStyle: FontStyle.italic,
                 ),
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompleteButton() {
+    if (isCompleting) {
+      return const SizedBox(
+        width: 24,
+        height: 24,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          valueColor: AlwaysStoppedAnimation<Color>(AppColors.statusPositive),
+        ),
+      );
+    }
+    return SizedBox(
+      height: AppSizes.p32,
+      child: DecoratedBox(
+        decoration: ShapeDecoration(
+          color: const Color(0xFF2E8641).withValues(alpha: 0.20),
+          shape: RoundedRectangleBorder(
+            side: const BorderSide(
+              width: 1.5,
+              color: AppColors.statusPositive,
+            ),
+            borderRadius: BorderRadius.circular(AppSizes.radius8),
+          ),
+        ),
+        child: OutlinedButton(
+          onPressed: onCompletaTap,
+          style: OutlinedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            side: BorderSide.none,
+            padding: const EdgeInsets.symmetric(horizontal: AppSizes.p12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSizes.radius8),
+            ),
+          ),
+          child: const Text(
+            'Completa',
+            style: TextStyle(
+              color: AppColors.statusPositive,
+              fontSize: 15,
+              fontFamily: 'Inter',
+              fontWeight: FontWeight.w800,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
         ),
       ),
     );

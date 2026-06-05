@@ -91,14 +91,10 @@ class TurnoCreateScreen extends ConsumerStatefulWidget {
 
 class _TurnoCreateScreenState extends ConsumerState<TurnoCreateScreen> {
   final _taskController = TextEditingController();
-  final _dayController = TextEditingController();
-  final _monthController = TextEditingController();
 
   @override
   void dispose() {
     _taskController.dispose();
-    _dayController.dispose();
-    _monthController.dispose();
     super.dispose();
   }
 
@@ -224,11 +220,8 @@ class _TurnoCreateScreenState extends ConsumerState<TurnoCreateScreen> {
                 ),
                 const SizedBox(height: 20),
                 _DateRow(
-                  dayController: _dayController,
-                  monthController: _monthController,
+                  selectedDate: form.turnoDate,
                   hasError: form.showErrors && !form.hasValidDate,
-                  onDayChanged: controller.setDay,
-                  onMonthChanged: controller.setMonth,
                   onPickDate: () => _pickDate(form.turnoDate),
                 ),
                 if (form.showDatePastError) ...[
@@ -330,8 +323,6 @@ class _TurnoCreateScreenState extends ConsumerState<TurnoCreateScreen> {
       return;
     }
 
-    _dayController.text = picked.day.toString().padLeft(2, '0');
-    _monthController.text = _monthLabel(picked.month);
     ref.read(turnoCreateFormProvider.notifier).setPickedDate(picked);
   }
 
@@ -876,23 +867,26 @@ class _AssigneeChip extends StatelessWidget {
 
 class _DateRow extends StatelessWidget {
   const _DateRow({
-    required this.dayController,
-    required this.monthController,
+    required this.selectedDate,
     required this.hasError,
-    required this.onDayChanged,
-    required this.onMonthChanged,
     required this.onPickDate,
   });
 
-  final TextEditingController dayController;
-  final TextEditingController monthController;
+  final DateTime? selectedDate;
   final bool hasError;
-  final ValueChanged<String> onDayChanged;
-  final ValueChanged<String> onMonthChanged;
   final VoidCallback onPickDate;
 
   @override
   Widget build(BuildContext context) {
+    String label = 'Data Inizio Turno';
+    if (selectedDate != null) {
+      final day = selectedDate!.day.toString().padLeft(2, '0');
+      final month = selectedDate!.month.toString().padLeft(2, '0');
+      label = 'Data inizio turno: $day/$month';
+    } else if (hasError) {
+      label = 'Data Inizio Turno *';
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
@@ -916,17 +910,21 @@ class _DateRow extends StatelessWidget {
                   children: [
                     Icon(
                       Icons.calendar_today_rounded,
-                      color: hasError ? AppColors.errorStrong : AppColors.textMutedLight,
+                      color: (hasError || selectedDate != null)
+                          ? (selectedDate != null ? AppColors.brandAccent : AppColors.errorStrong)
+                          : AppColors.textMutedLight,
                       size: 22,
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        hasError ? 'Data Inizio Turno *' : 'Data Inizio Turno',
+                        label,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: AppTextStyles.bodyStrong.copyWith(
-                          color: hasError ? AppColors.errorStrong : AppColors.textMutedLight,
+                          color: (hasError || selectedDate != null)
+                              ? (selectedDate != null ? AppColors.textOnDark : AppColors.errorStrong)
+                              : AppColors.textMutedLight,
                           fontSize: 20,
                           fontWeight: FontWeight.w800,
                         ),
@@ -943,60 +941,6 @@ class _DateRow extends StatelessWidget {
   }
 }
 
-class _DateChip extends StatelessWidget {
-  const _DateChip({
-    required this.width,
-    required this.controller,
-    required this.hintText,
-    required this.hasError,
-    required this.onChanged,
-    required this.inputFormatters,
-  });
-
-  final double width;
-  final TextEditingController controller;
-  final String hintText;
-  final bool hasError;
-  final ValueChanged<String> onChanged;
-  final List<TextInputFormatter> inputFormatters;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: width,
-      child: TextField(
-        controller: controller,
-        onChanged: onChanged,
-        maxLength: 3,
-        inputFormatters: inputFormatters,
-        style: AppTextStyles.input.copyWith(fontSize: 15),
-        decoration: InputDecoration(
-          counterText: '',
-          hintText: hintText,
-          hintStyle: AppTextStyles.inputHint.copyWith(
-            color: hasError ? AppColors.errorStrong : AppColors.textOnDark,
-            fontSize: 15,
-          ),
-          filled: true,
-          fillColor: hasError
-              ? AppColors.errorContainerStrong
-              : AppColors.brandPrimary,
-          isDense: true,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 9,
-            vertical: 4,
-          ),
-          enabledBorder: _outline(
-            hasError ? AppColors.errorStrong : AppColors.textOnDark,
-          ),
-          focusedBorder: _outline(
-            hasError ? AppColors.errorStrong : AppColors.textOnDark,
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class _FrequencyDropdown extends StatelessWidget {
   const _FrequencyDropdown({
