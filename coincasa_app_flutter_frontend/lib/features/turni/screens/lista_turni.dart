@@ -374,7 +374,7 @@ class _TurniCalendarCard extends StatefulWidget {
 }
 
 class _TurniCalendarCardState extends State<_TurniCalendarCard> {
-  static const _weekdaysShort = ['Lu', 'Ma', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
+  static const _weekdaysShort = ['L', 'M', 'M', 'G', 'V', 'S', 'D'];
   static const _weekdaysTiny = ['L', 'M', 'M', 'G', 'V', 'S', 'D'];
   static const _monthNames = [
     'Gennaio',
