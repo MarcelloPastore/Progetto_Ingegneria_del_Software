@@ -509,7 +509,7 @@ class _TurniCalendarCardState extends State<_TurniCalendarCard> {
                     day: '${day.date.day}',
                     muted: !day.inFocusedMonth,
                     selected: day.isToday,
-                    marker: day.marker,
+                    markers: day.markers,
                   );
                 },
               )
@@ -521,7 +521,7 @@ class _TurniCalendarCardState extends State<_TurniCalendarCard> {
                         child: _WeekDayCell(
                           day: '${day.date.day}',
                           selected: day.isToday,
-                          marker: day.marker,
+                          markers: day.markers,
                         ),
                       ),
                     )
@@ -533,7 +533,7 @@ class _TurniCalendarCardState extends State<_TurniCalendarCard> {
                 ...legend.expand(
                   (item) => [
                     _CalendarLegendDot(color: item.color, label: item.label),
-                    const SizedBox(width: AppSizes.p18),
+                    const SizedBox(width: AppSizes.p12),
                   ],
                 ),
                 const Spacer(),
@@ -567,7 +567,7 @@ class _TurniCalendarCardState extends State<_TurniCalendarCard> {
         date: date,
         inFocusedMonth: date.month == month.month,
         isToday: _isSameDate(date, DateTime.now()),
-        marker: _markerForDate(date, widget.turni),
+        markers: _markersForDate(date, widget.turni),
       );
     });
   }
@@ -585,17 +585,17 @@ class _TurniCalendarCardState extends State<_TurniCalendarCard> {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
-  static Color? _markerForDate(DateTime date, List<Turno> turni) {
+  static List<Color> _markersForDate(DateTime date, List<Turno> turni) {
+    final colors = <Color>[];
     for (final turno in turni) {
-      if (turno.assegnatarioId.isEmpty) {
-        continue;
-      }
+      if (turno.assegnatarioId.isEmpty) continue;
       final turnoDate = turno.dataProssimaPulizia;
       if (turnoDate != null && _isSameDate(turnoDate, date)) {
-        return _colorForAssignee(turno.assegnatarioNome);
+        colors.add(_colorForAssignee(turno.assegnatarioNome));
+        if (colors.length == 4) break;
       }
     }
-    return null;
+    return colors;
   }
 
   static List<_CalendarLegendItem> _legendItems(List<Turno> turni) {
@@ -643,25 +643,25 @@ class _CalendarGridDay {
     required this.date,
     required this.inFocusedMonth,
     required this.isToday,
-    required this.marker,
+    required this.markers,
   });
 
   final DateTime date;
   final bool inFocusedMonth;
   final bool isToday;
-  final Color? marker;
+  final List<Color> markers;
 }
 
 class _WeekDayCell extends StatelessWidget {
   const _WeekDayCell({
     required this.day,
     required this.selected,
-    required this.marker,
+    required this.markers,
   });
 
   final String day;
   final bool selected;
-  final Color? marker;
+  final List<Color> markers;
 
   @override
   Widget build(BuildContext context) {
@@ -688,13 +688,27 @@ class _WeekDayCell extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 3),
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: marker ?? AppColors.transparent,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (markers.isEmpty)
+              const SizedBox(width: 10, height: 10)
+            else
+              ...markers.asMap().entries.map(
+                (e) => Padding(
+                  padding: EdgeInsets.only(left: e.key == 0 ? 0 : 2),
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: e.value,
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ],
     );
@@ -706,13 +720,13 @@ class _CalendarDayCell extends StatelessWidget {
     required this.day,
     required this.muted,
     required this.selected,
-    required this.marker,
+    required this.markers,
   });
 
   final String day;
   final bool muted;
   final bool selected;
-  final Color? marker;
+  final List<Color> markers;
 
   @override
   Widget build(BuildContext context) {
@@ -749,13 +763,27 @@ class _CalendarDayCell extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSizes.p4),
-        Container(
-          width: AppSizes.p8,
-          height: AppSizes.p8,
-          decoration: BoxDecoration(
-            color: marker ?? AppColors.transparent,
-            shape: BoxShape.circle,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (markers.isEmpty)
+              const SizedBox(width: 8, height: 8)
+            else
+              ...markers.asMap().entries.map(
+                (e) => Padding(
+                  padding: EdgeInsets.only(left: e.key == 0 ? 0 : 2),
+                  child: Container(
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: e.value,
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ],
     );
@@ -774,8 +802,8 @@ class _CalendarLegendDot extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: AppSizes.p18,
-          height: AppSizes.p18,
+          width: 11,
+          height: 11,
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: AppSizes.p5),
@@ -783,8 +811,8 @@ class _CalendarLegendDot extends StatelessWidget {
           label,
           style: AppTextStyles.bodyStrong.copyWith(
             color: AppColors.textMutedLight,
-            fontSize: 16,
-            fontWeight: FontWeight.w800,
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ],

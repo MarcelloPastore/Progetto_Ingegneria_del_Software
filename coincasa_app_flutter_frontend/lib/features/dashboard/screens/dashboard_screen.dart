@@ -944,7 +944,7 @@ class _TodayTurnSectionState extends State<_TodayTurnSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const _CenteredSectionTitle('TURNO DI OGGI'),
+        const _CenteredSectionTitle('TURNI DI OGGI'),
         const SizedBox(height: AppSizes.p10),
         FutureBuilder<_DashboardData>(
           future: widget.dashboardDataFuture,
@@ -1210,12 +1210,13 @@ class _EmptyCalendarSection extends StatelessWidget {
                               itemBuilder: (context, index) {
                                 final date = days[index];
                                 final inMonth = date.month == month.month;
-                                final hasTurno =
-                                    inMonth && _hasTurno(date, turni);
+                                final markers = inMonth
+                                    ? _markersForDate(date, turni)
+                                    : const <Color>[];
 
                                 return _DashboardCalendarDay(
                                   day: inMonth ? '${date.day}' : '',
-                                  hasTurno: hasTurno,
+                                  markers: markers,
                                 );
                               },
                             );
@@ -1261,22 +1262,27 @@ class _EmptyCalendarSection extends StatelessWidget {
     return List.generate(42, (index) => start.add(Duration(days: index)));
   }
 
-  static bool _hasTurno(DateTime date, List<Turno> turni) {
-    return turni.any((turno) {
+  static List<Color> _markersForDate(DateTime date, List<Turno> turni) {
+    final colors = <Color>[];
+    for (final turno in turni) {
       final turnoDate = turno.dataProssimaPulizia;
-      return turnoDate != null &&
+      if (turnoDate != null &&
           turnoDate.year == date.year &&
           turnoDate.month == date.month &&
-          turnoDate.day == date.day;
-    });
+          turnoDate.day == date.day) {
+        colors.add(AppColors.statusInfo);
+        if (colors.length == 4) break;
+      }
+    }
+    return colors;
   }
 }
 
 class _DashboardCalendarDay extends StatelessWidget {
-  const _DashboardCalendarDay({required this.day, required this.hasTurno});
+  const _DashboardCalendarDay({required this.day, required this.markers});
 
   final String day;
-  final bool hasTurno;
+  final List<Color> markers;
 
   @override
   Widget build(BuildContext context) {
@@ -1298,13 +1304,27 @@ class _DashboardCalendarDay extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 2),
-        Container(
-          width: 7,
-          height: 7,
-          decoration: BoxDecoration(
-            color: hasTurno ? AppColors.statusInfo : AppColors.transparent,
-            shape: BoxShape.circle,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (markers.isEmpty)
+              const SizedBox(width: 7, height: 7)
+            else
+              ...markers.asMap().entries.map(
+                (e) => Padding(
+                  padding: EdgeInsets.only(left: e.key == 0 ? 0 : 2),
+                  child: Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: e.value,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ],
     );
@@ -1342,8 +1362,8 @@ class _LegendItem extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 8,
-          height: 8,
+          width: 11,
+          height: 11,
           decoration: BoxDecoration(
             color: color,
             shape: BoxShape.circle,
@@ -1354,7 +1374,7 @@ class _LegendItem extends StatelessWidget {
           label,
           style: AppTextStyles.dashboardLegendLabel.copyWith(
             color: AppColors.textOnDark,
-            fontSize: 12,
+            fontSize: 13,
             fontWeight: FontWeight.w600,
           ),
         ),
