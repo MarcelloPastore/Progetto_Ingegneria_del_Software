@@ -238,19 +238,40 @@ export class TurnoService {
       idTurno,
       idUtente,
     );
+
+    const membriIds = await casaRepository.getMembriCasaIds(idCasa);
+    const membriSet = new Set(membriIds);
     const ordine = turno.ordineRotazione ?? [];
-    const ordineLength = ordine.length;
-    const indiceCorrente = turno.indiceRotazioneCorrente ?? 0;
+
+    const nuoviMembri = membriIds.filter((id: string) => !ordine.includes(id));
+
+    let ordineAggiornato = [...ordine];
+    if (nuoviMembri.length > 0) {
+      const indiceAssegnatario = ordineAggiornato.indexOf(
+        turno.assegnatarioCorrente,
+      );
+      ordineAggiornato.splice(indiceAssegnatario, 0, ...nuoviMembri);
+    }
+
+    ordineAggiornato = ordineAggiornato.filter((id: string) =>
+      membriSet.has(id),
+    );
+
+    const ordineLength = ordineAggiornato.length;
+    const indiceCorrente = ordineAggiornato.indexOf(turno.assegnatarioCorrente);
 
     const indiceProssimo =
       ordineLength === 0 ? indiceCorrente : (indiceCorrente + 1) % ordineLength;
     const assegnatarioProssimo =
-      ordineLength === 0 ? turno.assegnatarioCorrente : ordine[indiceProssimo];
+      ordineLength === 0
+        ? turno.assegnatarioCorrente
+        : ordineAggiornato[indiceProssimo];
 
     const aggiornamento = await turnoRepository.updateTurno(idTurno, {
       dataUltimaPulizia: new Date(),
       indiceRotazioneCorrente: indiceProssimo,
       assegnatarioCorrente: assegnatarioProssimo,
+      ordineRotazione: ordineAggiornato,
     });
 
     return turnoConverter.toDto(aggiornamento);
