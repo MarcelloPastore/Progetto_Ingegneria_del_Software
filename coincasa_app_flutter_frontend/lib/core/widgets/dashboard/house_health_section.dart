@@ -4,10 +4,19 @@ import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'dashboard_section_title.dart';
 
 class HouseHealthBadgeData {
-  const HouseHealthBadgeData({required this.caption, this.lastCleaningDate});
+  const HouseHealthBadgeData({
+    required this.caption,
+    this.lastCleaningDate,
+    this.nextCleaningDate,
+    this.cadenzaGiorni = 1,
+    this.completato = false,
+  });
 
   final String caption;
   final DateTime? lastCleaningDate;
+  final DateTime? nextCleaningDate;
+  final int cadenzaGiorni;
+  final bool completato;
 }
 
 class HouseHealthSection extends StatelessWidget {
@@ -23,9 +32,9 @@ class HouseHealthSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const DashboardSectionTitle('SALUTE DELLA CASA'),
+        const _CenteredSectionTitle('SALUTE DELLA CASA'),
         const SizedBox(height: AppSizes.p14),
         InkWell(
           onTap: routeName == null
@@ -134,20 +143,27 @@ class _HealthBadge extends StatelessWidget {
   }
 
   Color get _color {
-    final days = _daysSinceCleaning;
-    if (days == null) {
-      return const Color(0xFFE4E8F3);
-    }
-    if (days <= 1) {
-      return const Color(0xFF38C85A);
-    }
-    if (days <= 3) {
-      return const Color(0xFFFFA62B);
-    }
-    if (days <= 7) {
+    final nextDate = data.nextCleaningDate;
+    if (nextDate == null) return const Color(0xFF9EA5B8); // grigio: nessuna data
+
+    final today = DateTime.now();
+    final todayOnly = DateTime(today.year, today.month, today.day);
+    final nextOnly = DateTime(nextDate.year, nextDate.month, nextDate.day);
+    final daysUntil = nextOnly.difference(todayOnly).inDays;
+
+    // Grigio: scaduto da più di 3 giorni
+    if (daysUntil < -3) return const Color(0xFF9EA5B8);
+    // Rosso: giorno della scadenza e i 3 giorni successivi (se non completato)
+    if (!data.completato && daysUntil >= -3 && daysUntil <= 0) {
       return const Color(0xFFFF4D4D);
     }
-    return const Color(0xFFDDE2EF);
+    // Soglia arancione proporzionale alla cadenza (1/3 della frequenza).
+    // Per turni giornalieri (cadenzaGiorni=1) la soglia è 0, quindi
+    // non esiste fase arancione: si passa direttamente da verde a rosso.
+    final orangeThreshold = data.cadenzaGiorni ~/ 3;
+    if (daysUntil <= orangeThreshold) return const Color(0xFFFFA62B);
+    // Verde: abbondante margine prima della scadenza
+    return const Color(0xFF38C85A);
   }
 
   @override
@@ -182,6 +198,25 @@ class _HealthBadge extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _CenteredSectionTitle extends StatelessWidget {
+  const _CenteredSectionTitle(this.title);
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: AppTextStyles.dashboardSectionTitle.copyWith(
+        color: AppColors.textMuted,
+        fontSize: 18,
+        letterSpacing: 0,
+      ),
+      textAlign: TextAlign.center,
     );
   }
 }

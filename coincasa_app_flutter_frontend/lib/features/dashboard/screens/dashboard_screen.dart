@@ -173,21 +173,37 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
           (turno) => HouseHealthBadgeData(
             caption: _formatHouseHealthCaption(turno.titolo),
             lastCleaningDate: turno.dataUltimaPuliziaEffettiva,
+            nextCleaningDate: turno.dataProssimaPulizia,
+            cadenzaGiorni: turno.cadenzaGiorni,
+            completato: turno.completato,
           ),
         )
         .where((badge) => badge.caption.trim().isNotEmpty)
-        .toList(growable: false);
+        .toList(growable: true);
 
-    badges.sort((a, b) {
-      final aDate = a.lastCleaningDate;
-      final bDate = b.lastCleaningDate;
-      if (aDate == null && bDate == null) return 0;
-      if (aDate == null) return 1;
-      if (bDate == null) return -1;
-      return bDate.compareTo(aDate);
-    });
+    // Ordina per priorità cromatica: grigio (0) → rosso (1) → arancione (2) → verde (3)
+    badges.sort((a, b) => _badgeColorOrder(a).compareTo(_badgeColorOrder(b)));
 
     return badges;
+  }
+
+  /// Calcola la priorità di ordinamento in base al colore dell'anello.
+  /// Deve rispecchiare la stessa logica di _HealthBadge._color.
+  static int _badgeColorOrder(HouseHealthBadgeData badge) {
+    final nextDate = badge.nextCleaningDate;
+    if (nextDate == null) return 0; // grigio
+
+    final today = DateTime.now();
+    final todayOnly = DateTime(today.year, today.month, today.day);
+    final nextOnly = DateTime(nextDate.year, nextDate.month, nextDate.day);
+    final daysUntil = nextOnly.difference(todayOnly).inDays;
+
+    if (daysUntil < -3) return 0; // grigio
+    if (!badge.completato && daysUntil >= -3 && daysUntil <= 0) return 1; // rosso
+    // Soglia arancione proporzionale alla cadenza, identica a _HealthBadge._color
+    final orangeThreshold = badge.cadenzaGiorni ~/ 3;
+    if (daysUntil <= orangeThreshold) return 2; // arancione
+    return 3; // verde
   }
 
   String _formatHouseHealthCaption(String title) {
