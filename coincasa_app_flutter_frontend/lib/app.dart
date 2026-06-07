@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'core/state/active_casa.dart';
 import 'core/theme/app_theme.dart';
+import 'core/widgets/common/no_connection_screen.dart';
 import 'features/auth/auth.dart';
 import 'features/casa/casa.dart';
 import 'features/dashboard/dashboard.dart';
@@ -16,6 +17,8 @@ import 'features/turni/turni.dart';
 final RouteObserver<ModalRoute<dynamic>> appRouteObserver =
     RouteObserver<ModalRoute<dynamic>>();
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 class CoinCasaApp extends StatelessWidget {
   CoinCasaApp({super.key});
 
@@ -28,9 +31,11 @@ class CoinCasaApp extends StatelessWidget {
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
+        navigatorKey: navigatorKey,
         navigatorObservers: [appRouteObserver],
         home: const LoginScreen(),
         routes: {
+          NoConnectionScreen.routeName: (_) => const NoConnectionScreen(),
           '/login': (_) => const LoginScreen(),
           '/dashboard': (_) => const DashboardScreen(),
           '/spese': (_) => const SpeseScreen(),

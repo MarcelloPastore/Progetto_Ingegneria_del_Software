@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:coincasa_app/app.dart';
+import 'package:coincasa_app/core/widgets/common/no_connection_screen.dart';
 
 import '../config/env.dart';
 
@@ -155,40 +157,45 @@ class ApiClient {
     final encodedBody = body == null ? null : jsonEncode(body);
     late http.Response response;
 
-    switch (method) {
-      case 'GET':
-        response = await _httpClient.get(uri, headers: headers);
-        break;
-      case 'POST':
-        response = await _httpClient.post(
-          uri,
-          headers: headers,
-          body: encodedBody,
-        );
-        break;
-      case 'PUT':
-        response = await _httpClient.put(
-          uri,
-          headers: headers,
-          body: encodedBody,
-        );
-        break;
-      case 'PATCH':
-        response = await _httpClient.patch(
-          uri,
-          headers: headers,
-          body: encodedBody,
-        );
-        break;
-      case 'DELETE':
-        response = await _httpClient.delete(
-          uri,
-          headers: headers,
-          body: encodedBody,
-        );
-        break;
-      default:
-        throw ArgumentError('Unsupported method: $method');
+    try {
+      switch (method) {
+        case 'GET':
+          response = await _httpClient.get(uri, headers: headers);
+          break;
+        case 'POST':
+          response = await _httpClient.post(
+            uri,
+            headers: headers,
+            body: encodedBody,
+          );
+          break;
+        case 'PUT':
+          response = await _httpClient.put(
+            uri,
+            headers: headers,
+            body: encodedBody,
+          );
+          break;
+        case 'PATCH':
+          response = await _httpClient.patch(
+            uri,
+            headers: headers,
+            body: encodedBody,
+          );
+          break;
+        case 'DELETE':
+          response = await _httpClient.delete(
+            uri,
+            headers: headers,
+            body: encodedBody,
+          );
+          break;
+        default:
+          throw ArgumentError('Unsupported method: $method');
+      }
+    } catch (e) {
+      _handleConnectionError();
+      rethrow;
     }
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -201,6 +208,12 @@ class ApiClient {
 
     final decoded = jsonDecode(response.body);
     return _extractData(decoded);
+  }
+
+  void _handleConnectionError() {
+    if (!NoConnectionScreen.isShowing) {
+      navigatorKey.currentState?.pushNamed(NoConnectionScreen.routeName);
+    }
   }
 
   dynamic _extractData(dynamic decoded) {

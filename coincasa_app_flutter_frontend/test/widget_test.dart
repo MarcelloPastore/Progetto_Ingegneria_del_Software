@@ -77,6 +77,6 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: AccountActivatedScreen(email: 'marco@gmail.com')));
 
     expect(find.text('Account attivato!'), findsOneWidget);
-    expect(find.text('Continua'), findsOneWidget);
+    expect(find.text('Vai al login'), findsOneWidget);
   });
 }

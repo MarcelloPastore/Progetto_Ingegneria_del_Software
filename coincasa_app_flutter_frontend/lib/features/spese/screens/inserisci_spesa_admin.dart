@@ -8,7 +8,6 @@ import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/utils/user_initials.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
-import 'package:coincasa_app/features/dashboard/screens/dashboard_screen.dart';
 import 'package:coincasa_app/features/spese/screens/dettaglio_spesa_admin.dart';
 
 final speseCreateCasaProvider = FutureProvider.family<Casa?, String?>((

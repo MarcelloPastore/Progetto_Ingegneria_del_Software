@@ -7,7 +7,6 @@ import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
-import 'package:coincasa_app/features/dashboard/screens/dashboard_screen.dart';
 import 'package:coincasa_app/features/spese/screens/inserisci_spesa_successo.dart';
 
 Future<void> showInserisciSpesaMembroDialog(BuildContext context) {
