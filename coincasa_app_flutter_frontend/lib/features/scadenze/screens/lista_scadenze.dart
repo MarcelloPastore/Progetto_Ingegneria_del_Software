@@ -1,0 +1,159 @@
+import 'package:flutter/material.dart';
+
+class ScadenzaItem {
+	final String title;
+	final String subtitle;
+	final String date;
+	final String badgeText;
+	final Color badgeColor;
+
+	ScadenzaItem(this.title, this.subtitle, this.date, this.badgeText, this.badgeColor);
+}
+
+class ListaScadenze extends StatelessWidget {
+	const ListaScadenze({Key? key}) : super(key: key);
+
+	@override
+	Widget build(BuildContext context) {
+		final inScadenza = [
+			ScadenzaItem('Affitto', 'Pagamento mensile', '31/05/2026', 'Oggi', const Color(0xFFFF2525)),
+			ScadenzaItem('Bolletta gas', 'Rata mensile', '3/06/2026', '3 giorni', const Color(0xFFD98842)),
+		];
+
+		final prossime = [
+			ScadenzaItem('Revisione Caldaia', 'Rata mensile', '20/06/2026', '25 gg', const Color(0xFF79FF31)),
+		];
+
+		return Scaffold(
+			backgroundColor: const Color(0xFF09051F),
+			body: SafeArea(
+				child: Padding(
+					padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+					child: Column(
+						children: [
+							const SizedBox(height: 8),
+							Text(
+								'Scadenze',
+								style: TextStyle(
+									color: const Color(0xFF956FE7),
+									fontSize: 32,
+									fontWeight: FontWeight.w700,
+									fontFamily: 'Inter',
+								),
+							),
+							const SizedBox(height: 16),
+							Expanded(
+								child: ListView(
+									children: [
+										const Text('IN SCADENZA', style: TextStyle(color: Color(0xFFD8D5D5), fontWeight: FontWeight.w700)),
+										const SizedBox(height: 8),
+										...inScadenza.map((s) => _buildCard(context, s, borderColorForBadge(s.badgeColor))).toList(),
+										const SizedBox(height: 12),
+										const Text('PROSSIME', style: TextStyle(color: Color(0xFFD8D5D5), fontWeight: FontWeight.w700)),
+										const SizedBox(height: 8),
+										...prossime.map((s) => _buildCard(context, s, borderColorForBadge(s.badgeColor))).toList(),
+										const SizedBox(height: 20),
+										SizedBox(
+											width: double.infinity,
+											height: 48,
+											child: ElevatedButton(
+												onPressed: () {
+													// TODO: collegare la navigazione per aggiungere una scadenza
+												},
+												style: ElevatedButton.styleFrom(
+													backgroundColor: const Color(0xFF5228AD),
+													shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+												),
+												child: const Text('Aggiungi scadenza', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+											),
+										),
+										const SizedBox(height: 24),
+									],
+								),
+							),
+						],
+					),
+				),
+			),
+			bottomNavigationBar: BottomAppBar(
+				color: const Color(0xFF16213D),
+				child: Padding(
+					padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+					child: Row(
+						mainAxisAlignment: MainAxisAlignment.spaceBetween,
+						children: [
+							_navItem(Icons.home, 'Home'),
+							_navItem(Icons.attach_money, 'Spese'),
+							_navItem(Icons.schedule, 'Turni'),
+							_navItem(Icons.calendar_today, 'Scadenze', active: true),
+							_navItem(Icons.report, 'Problemi'),
+						],
+					),
+				),
+			),
+		);
+	}
+
+	Widget _navItem(IconData icon, String label, {bool active = false}) {
+		return Column(
+			mainAxisSize: MainAxisSize.min,
+			children: [
+				Icon(icon, size: 28, color: active ? const Color(0xFF4695EA) : const Color(0xFFC9C9C9)),
+				const SizedBox(height: 4),
+				Text(label, style: TextStyle(color: active ? const Color(0xFF4695EA) : const Color(0xFFC9C9C9), fontSize: 12)),
+			],
+		);
+	}
+
+	Widget _buildCard(BuildContext context, ScadenzaItem s, Color borderColor) {
+		return Container(
+			margin: const EdgeInsets.symmetric(vertical: 8),
+			decoration: BoxDecoration(
+				color: const Color(0xFF16203C),
+				borderRadius: BorderRadius.circular(10),
+				border: Border(left: BorderSide(width: 6, color: borderColor)),
+				boxShadow: const [BoxShadow(color: Color(0x3F000000), blurRadius: 4, offset: Offset(0, 4))],
+			),
+			child: Padding(
+				padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+				child: Row(
+					crossAxisAlignment: CrossAxisAlignment.start,
+					children: [
+						Expanded(
+							child: Column(
+								crossAxisAlignment: CrossAxisAlignment.start,
+								children: [
+									Text(s.title, style: const TextStyle(color: Color(0xFFD8D5D5), fontSize: 20, fontWeight: FontWeight.w700)),
+									const SizedBox(height: 4),
+									Text(s.subtitle, style: const TextStyle(color: Color(0xFFD8D5D5), fontSize: 16, fontWeight: FontWeight.w500)),
+									const SizedBox(height: 8),
+									Text(s.date, style: const TextStyle(color: Color(0xFFD8D5D5), fontSize: 16, fontWeight: FontWeight.w500)),
+								],
+							),
+						),
+						const SizedBox(width: 8),
+						Column(
+							crossAxisAlignment: CrossAxisAlignment.end,
+							children: [
+								Container(
+									padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+									decoration: BoxDecoration(color: s.badgeColor.withOpacity(0.95), borderRadius: BorderRadius.circular(6)),
+									child: Text(s.badgeText, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+								),
+								const SizedBox(height: 8),
+								Container(
+									padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+									decoration: BoxDecoration(color: const Color(0xFF31166F), borderRadius: BorderRadius.circular(6)),
+									child: const Text('Ricorrente', style: TextStyle(color: Color(0xFFB29BFE), fontWeight: FontWeight.w700)),
+								),
+							],
+						),
+					],
+				),
+			),
+		);
+	}
+
+	Color borderColorForBadge(Color badge) => badge;
+}
+
