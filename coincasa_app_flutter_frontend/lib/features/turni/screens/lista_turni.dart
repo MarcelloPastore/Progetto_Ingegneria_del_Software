@@ -883,53 +883,34 @@ class _AssignedTurniCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF272746),
-        borderRadius: BorderRadius.circular(AppSizes.radius16),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.shadowStrong,
-            blurRadius: AppSizes.p10,
-            offset: Offset(0, AppSizes.p5),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSizes.p14,
-        vertical: AppSizes.p14,
-      ),
-      child: Column(
-        children: List.generate(turni.length, (index) {
-          final turno = turni[index];
-          final isCurrentAssignee =
-              currentUserId != null &&
-              currentUserId!.isNotEmpty &&
-              turno.assegnatarioId == currentUserId;
+    return Column(
+      children: List.generate(turni.length, (index) {
+        final turno = turni[index];
+        final isCurrentAssignee =
+            currentUserId != null &&
+            currentUserId!.isNotEmpty &&
+            turno.assegnatarioId == currentUserId;
 
-          return Padding(
-            padding: EdgeInsets.only(
-              bottom: index == turni.length - 1 ? 0 : AppSizes.p18,
-            ),
-            child: _TurnoListRow(
-              userId: turno.assegnatarioId,
-              displayName: turno.assegnatarioNome,
-              task: turno.titolo,
-              when: _formatTurnoDateLabel(turno.dataProssimaPulizia),
-              whenColor: _whenColors[index % _whenColors.length],
-              isCurrentAssignee: isCurrentAssignee,
-              isCompleting: completingIds.contains(turno.id),
-              onCompletaTap: () {
-                if (casaId != null) {
-                  onCompleta(casaId!, turno.id);
-                }
-              },
-              isExpired: false,
-              onTap: () => onTurnoTap(turno),
-            ),
-          );
-        }),
-      ),
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: index == turni.length - 1 ? 0 : AppSizes.p10,
+          ),
+          child: _TurnoCard(
+            userId: turno.assegnatarioId,
+            displayName: turno.assegnatarioNome,
+            task: turno.titolo,
+            when: _formatTurnoDateLabel(turno.dataProssimaPulizia),
+            whenColor: _whenColors[index % _whenColors.length],
+            isCurrentAssignee: isCurrentAssignee,
+            isCompleting: completingIds.contains(turno.id),
+            onCompletaTap: () {
+              if (casaId != null) onCompleta(casaId!, turno.id);
+            },
+            isExpired: false,
+            onTap: () => onTurnoTap(turno),
+          ),
+        );
+      }),
     );
   }
 }
@@ -960,53 +941,34 @@ class _ExpiredTurniCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF272746),
-        borderRadius: BorderRadius.circular(AppSizes.radius16),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.shadowStrong,
-            blurRadius: AppSizes.p10,
-            offset: Offset(0, AppSizes.p5),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSizes.p14,
-        vertical: AppSizes.p14,
-      ),
-      child: Column(
-        children: List.generate(turni.length, (index) {
-          final turno = turni[index];
-          final isCurrentAssignee =
-              currentUserId != null &&
-              currentUserId!.isNotEmpty &&
-              turno.assegnatarioId == currentUserId;
+    return Column(
+      children: List.generate(turni.length, (index) {
+        final turno = turni[index];
+        final isCurrentAssignee =
+            currentUserId != null &&
+            currentUserId!.isNotEmpty &&
+            turno.assegnatarioId == currentUserId;
 
-          return Padding(
-            padding: EdgeInsets.only(
-              bottom: index == turni.length - 1 ? 0 : AppSizes.p18,
-            ),
-            child: _TurnoListRow(
-              userId: turno.assegnatarioId,
-              displayName: turno.assegnatarioNome,
-              task: turno.titolo,
-              when: _formatTurnoDateLabel(turno.dataProssimaPulizia),
-              whenColor: _whenColors[index % _whenColors.length],
-              isCurrentAssignee: isCurrentAssignee,
-              isCompleting: completingIds.contains(turno.id),
-              onCompletaTap: () {
-                if (casaId != null) {
-                  onCompleta(casaId!, turno.id);
-                }
-              },
-              isExpired: true,
-              onTap: () => onTurnoTap(turno),
-            ),
-          );
-        }),
-      ),
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: index == turni.length - 1 ? 0 : AppSizes.p10,
+          ),
+          child: _TurnoCard(
+            userId: turno.assegnatarioId,
+            displayName: turno.assegnatarioNome,
+            task: turno.titolo,
+            when: _formatTurnoDateLabel(turno.dataProssimaPulizia),
+            whenColor: _whenColors[index % _whenColors.length],
+            isCurrentAssignee: isCurrentAssignee,
+            isCompleting: completingIds.contains(turno.id),
+            onCompletaTap: () {
+              if (casaId != null) onCompleta(casaId!, turno.id);
+            },
+            isExpired: true,
+            onTap: () => onTurnoTap(turno),
+          ),
+        );
+      }),
     );
   }
 }
@@ -1047,8 +1009,8 @@ class _TurniStatePanel extends StatelessWidget {
   }
 }
 
-class _TurnoListRow extends StatelessWidget {
-  const _TurnoListRow({
+class _TurnoCard extends StatelessWidget {
+  const _TurnoCard({
     required this.userId,
     required this.displayName,
     required this.task,
@@ -1072,114 +1034,155 @@ class _TurnoListRow extends StatelessWidget {
   final bool isExpired;
   final VoidCallback? onTap;
 
+  static const _cardRadius = Radius.circular(AppSizes.radius12);
+  static const _cardBorderRadius = BorderRadius.all(_cardRadius);
+
   @override
   Widget build(BuildContext context) {
-    final taskColor = isExpired ? AppColors.statusNegative : const Color(0xFFD6D7E8);
+    final showCompleta = isCurrentAssignee && isExpired;
+    final taskColor =
+        isExpired ? AppColors.statusNegative : const Color(0xFFD6D7E8);
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppSizes.radius8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppSizes.p2),
-        child: Row(
+    return ClipRRect(
+      borderRadius: _cardBorderRadius,
+      child: Material(
+        color: const Color(0xFF272746),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            UserAvatar(
-              radius: AppSizes.p23,
-              userId: userId?.isNotEmpty == true ? userId : null,
-              fullName: displayName.trim().isNotEmpty ? displayName : null,
-              fallback: '?',
-            ),
-            const SizedBox(width: AppSizes.p24),
-            Expanded(
-              child: Text(
-                task,
-                style: AppTextStyles.bodyStrong.copyWith(
-                  color: taskColor,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
+            // ── Riga principale ───────────────────────────────────────────
+            InkWell(
+              onTap: onTap,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  AppSizes.p14,
+                  AppSizes.p14,
+                  AppSizes.p14,
+                  showCompleta ? AppSizes.p12 : AppSizes.p14,
+                ),
+                child: Row(
+                  children: [
+                    UserAvatar(
+                      radius: AppSizes.p23,
+                      userId: userId?.isNotEmpty == true ? userId : null,
+                      fullName:
+                          displayName.trim().isNotEmpty ? displayName : null,
+                      fallback: '?',
+                    ),
+                    const SizedBox(width: AppSizes.p14),
+                    Expanded(
+                      child: Text(
+                        task,
+                        style: AppTextStyles.bodyStrong.copyWith(
+                          color: taskColor,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSizes.p10),
+                    // Badge data — inline, peso secondario
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSizes.p10,
+                        vertical: AppSizes.p5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: whenColor.withValues(alpha: 0.85),
+                        borderRadius: BorderRadius.circular(AppSizes.radius8),
+                      ),
+                      child: Text(
+                        when,
+                        style: AppTextStyles.bodyStrong.copyWith(
+                          color: AppColors.textOnDark,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-            const SizedBox(width: AppSizes.p8),
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                if (isCurrentAssignee && isExpired) ...[
-                  _buildCompleteButton(),
-                  const SizedBox(height: 4),
-                ],
-                Container(
-                  constraints: const BoxConstraints(minWidth: 82),
-                  height: AppSizes.p32,
-                  alignment: Alignment.center,
-                  padding: const EdgeInsets.symmetric(horizontal: AppSizes.p10),
-                  decoration: BoxDecoration(
-                    color: whenColor,
-                    borderRadius: BorderRadius.circular(AppSizes.radius8),
-                  ),
-                  child: Text(
-                    when,
-                    style: AppTextStyles.bodyStrong.copyWith(
-                      color: AppColors.textOnDark,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+
+            // ── Barra "Completa" ──────────────────────────────────────────
+            if (showCompleta) ...[
+              const Divider(
+                height: 1,
+                thickness: 1,
+                color: AppColors.dividerOnDark,
+              ),
+              _CompletaBar(
+                isCompleting: isCompleting,
+                onTap: onCompletaTap,
+              ),
+            ],
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildCompleteButton() {
+class _CompletaBar extends StatelessWidget {
+  const _CompletaBar({required this.isCompleting, required this.onTap});
+
+  final bool isCompleting;
+  final VoidCallback onTap;
+
+  static const _bottomRadius = BorderRadius.only(
+    bottomLeft: Radius.circular(AppSizes.radius12),
+    bottomRight: Radius.circular(AppSizes.radius12),
+  );
+
+  @override
+  Widget build(BuildContext context) {
     if (isCompleting) {
       return const SizedBox(
-        width: 24,
-        height: 24,
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(AppColors.statusPositive),
+        height: 44,
+        child: Center(
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor:
+                  AlwaysStoppedAnimation<Color>(AppColors.statusSuccess),
+            ),
+          ),
         ),
       );
     }
-    return SizedBox(
-      height: AppSizes.p32,
-      child: DecoratedBox(
-        decoration: ShapeDecoration(
-          color: const Color(0xFF2E8641).withValues(alpha: 0.20),
-          shape: RoundedRectangleBorder(
-            side: const BorderSide(
-              width: 1.5,
-              color: AppColors.statusPositive,
-            ),
-            borderRadius: BorderRadius.circular(AppSizes.radius8),
-          ),
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: _bottomRadius,
+      child: Container(
+        height: 44,
+        decoration: const BoxDecoration(
+          color: Color(0xFF1B5E20),
+          borderRadius: _bottomRadius,
         ),
-        child: OutlinedButton(
-          onPressed: onCompletaTap,
-          style: OutlinedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            side: BorderSide.none,
-            padding: const EdgeInsets.symmetric(horizontal: AppSizes.p12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppSizes.radius8),
+        alignment: Alignment.center,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.check_rounded,
+              color: AppColors.textOnDark,
+              size: 18,
             ),
-          ),
-          child: const Text(
-            'Completa',
-            style: TextStyle(
-              color: AppColors.statusPositive,
-              fontSize: 15,
-              fontFamily: 'Inter',
-              fontWeight: FontWeight.w800,
-              fontStyle: FontStyle.italic,
+            const SizedBox(width: AppSizes.p6),
+            Text(
+              'Completa',
+              style: AppTextStyles.bodyStrong.copyWith(
+                color: AppColors.textOnDark,
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
