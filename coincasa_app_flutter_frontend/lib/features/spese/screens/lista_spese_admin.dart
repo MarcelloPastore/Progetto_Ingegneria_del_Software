@@ -180,16 +180,16 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header
-          const Padding(
-            padding: EdgeInsets.only(top: AppSizes.p42),
+          Padding(
+            padding: const EdgeInsets.only(top: AppSizes.p42),
             child: Center(
               child: Text(
                 'Spese',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontFamily: 'Inter',
-                  fontWeight: FontWeight.w600,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.screenTitleStrong.copyWith(
+                  color: AppColors.brandAccent,
+                  fontSize: 40,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ),
@@ -716,14 +716,13 @@ class _EmptyExpensesContent extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
+              Text(
                 'Spese',
-                textAlign: TextAlign.left,
-                style: TextStyle(
-                  color: Color(0xFFF6F6F6),
-                  fontSize: 28,
-                  fontFamily: 'Inter',
-                  fontWeight: FontWeight.w700,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.screenTitleStrong.copyWith(
+                  color: AppColors.brandAccent,
+                  fontSize: 40,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
               const SizedBox(height: AppSizes.p20),

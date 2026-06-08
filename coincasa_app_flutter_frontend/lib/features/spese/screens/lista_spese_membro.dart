@@ -133,13 +133,13 @@ class _MemberSpeseContent extends StatelessWidget {
                   ),
                 ),
               ),
-              const Center(
+              Center(
                 child: Text(
                   'Spese',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontFamily: 'Inter',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.screenTitleStrong.copyWith(
+                    color: AppColors.brandAccent,
+                    fontSize: 40,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
