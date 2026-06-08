@@ -1,39 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/problema.dart';
-import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/features/problemi/screens/problema_dettaglio_screen.dart';
 import 'package:coincasa_app/features/problemi/screens/segnala_problema_screen.dart';
 
 // ---------------------------------------------------------------------------
-// Providers
+// Mock data — sostituire con API call quando il backend è pronto
 // ---------------------------------------------------------------------------
 
-final _problemiHomeListProvider =
-    FutureProvider.family<List<Problema>, String?>((ref, casaId) async {
-      if (casaId == null || casaId.isEmpty) return const [];
-      return ApiProvider.problemi.listNonRisolti(casaId);
-    });
+const List<Problema> _mockProblemi = [
+  Problema(
+    id: '1',
+    titolo: 'Lavatrice non funziona',
+    stato: 'Assegnato',
+    priorita: 'Urgente',
+    raw: {'assegnatarioNome': 'Francesco Paola'},
+  ),
+  Problema(
+    id: '2',
+    titolo: 'Caldaia rotta',
+    stato: 'Segnalato',
+    priorita: 'Media',
+    raw: {},
+  ),
+];
 
 // ---------------------------------------------------------------------------
 // Screen
 // ---------------------------------------------------------------------------
 
-class ProblemiHomeScreen extends ConsumerWidget {
+class ProblemiHomeScreen extends StatelessWidget {
   const ProblemiHomeScreen({super.key});
 
   static const String routeName = '/problemi';
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final activeCasa = ActiveCasaScope.of(context);
-    final casaId = activeCasa.selectedCasaId;
-    final problemiAsync = ref.watch(_problemiHomeListProvider(casaId));
+  Widget build(BuildContext context) {
+    const problemi = _mockProblemi;
+    final isEmpty = problemi.isEmpty;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -45,17 +52,13 @@ class ProblemiHomeScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // ── Header ────────────────────────────────────────────────────
-              const _ProblemiHomeHeader(),
+              _ProblemiHomeHeader(isEmpty: isEmpty),
 
               // ── Body ──────────────────────────────────────────────────────
               Expanded(
-                child: problemiAsync.when(
-                  loading: () => const _LoadingBody(),
-                  error: (err, _) => const _ErrorBody(),
-                  data: (problemi) => problemi.isEmpty
-                      ? const _EmptyBody()
-                      : _ListBody(problemi: problemi),
-                ),
+                child: isEmpty
+                    ? const _EmptyBody()
+                    : _ListBody(problemi: problemi),
               ),
 
               // ── Bottom CTA ────────────────────────────────────────────────
@@ -77,10 +80,45 @@ class ProblemiHomeScreen extends ConsumerWidget {
 // ---------------------------------------------------------------------------
 
 class _ProblemiHomeHeader extends StatelessWidget {
-  const _ProblemiHomeHeader();
+  const _ProblemiHomeHeader({required this.isEmpty});
+
+  final bool isEmpty;
 
   @override
   Widget build(BuildContext context) {
+    if (isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSizes.p20,
+          AppSizes.p20,
+          AppSizes.p20,
+          AppSizes.p12,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Casa Verdi',
+              style: AppTextStyles.screenTitle.copyWith(
+                color: AppColors.textOnDark,
+                fontSize: 26,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: AppSizes.p4),
+            Text(
+              'Problemi domestici',
+              style: AppTextStyles.label.copyWith(
+                color: AppColors.brandAccent,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppSizes.p20,
@@ -95,70 +133,6 @@ class _ProblemiHomeHeader extends StatelessWidget {
           color: AppColors.brandAccent,
           fontSize: 32,
           fontWeight: FontWeight.w800,
-        ),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Loading
-// ---------------------------------------------------------------------------
-
-class _LoadingBody extends StatelessWidget {
-  const _LoadingBody();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: CircularProgressIndicator(
-        color: AppColors.brandAccent,
-        strokeWidth: 2.5,
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Error
-// ---------------------------------------------------------------------------
-
-class _ErrorBody extends StatelessWidget {
-  const _ErrorBody();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSizes.p32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.wifi_off_rounded,
-              color: AppColors.textMutedDark,
-              size: 52,
-            ),
-            const SizedBox(height: AppSizes.p16),
-            Text(
-              'Impossibile caricare i problemi',
-              textAlign: TextAlign.center,
-              style: AppTextStyles.screenTitleStrong.copyWith(
-                color: AppColors.textOnDark,
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: AppSizes.p8),
-            Text(
-              'Controlla la connessione e riprova.',
-              textAlign: TextAlign.center,
-              style: AppTextStyles.bodyMuted.copyWith(
-                color: AppColors.textMutedDark,
-                fontSize: 15,
-              ),
-            ),
-          ],
         ),
       ),
     );
