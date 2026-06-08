@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
+import 'package:coincasa_app/core/models/turno.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
@@ -89,8 +89,39 @@ class TurnoCreateScreen extends ConsumerStatefulWidget {
   ConsumerState<TurnoCreateScreen> createState() => _TurnoCreateScreenState();
 }
 
+class _TurnoCreateData {
+  const _TurnoCreateData({
+    required this.casa,
+    required this.inquilini,
+    this.turno,
+  });
+
+  final Casa casa;
+  final List<Inquilino> inquilini;
+  final Turno? turno;
+
+  bool get isEditing => turno != null;
+}
+
 class _TurnoCreateScreenState extends ConsumerState<TurnoCreateScreen> {
   final _taskController = TextEditingController();
+  late Future<_TurnoCreateData?> _future;
+  bool _initializedArgs = false;
+
+  String? get _turnoId {
+    final args = ModalRoute.of(context)?.settings.arguments;
+    return args is String && args.isNotEmpty ? args : null;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_initializedArgs) {
+      return;
+    }
+    _initializedArgs = true;
+    _future = _loadData();
+  }
 
   @override
   void dispose() {
@@ -98,21 +129,72 @@ class _TurnoCreateScreenState extends ConsumerState<TurnoCreateScreen> {
     super.dispose();
   }
 
+  Future<_TurnoCreateData?> _loadData() async {
+    final activeCasaController = ActiveCasaScope.read(context);
+    final caseUtente = await ApiProvider.casa.list();
+    if (caseUtente.isEmpty) {
+      return null;
+    }
+
+    final casa = activeCasaController.resolveCasa(caseUtente);
+    final turnoId = _turnoId;
+
+    Turno? turno;
+    if (turnoId != null) {
+      try {
+        turno = await ApiProvider.turni.getById(casa.id, turnoId);
+      } catch (_) {
+        turno = null;
+      }
+    }
+
+    final inquilini = await ApiProvider.casa.listInquilini(casa.id);
+    if (turno != null) {
+      _hydrateFromTurno(turno);
+    }
+
+    return _TurnoCreateData(casa: casa, inquilini: inquilini, turno: turno);
+  }
+
+  void _hydrateFromTurno(Turno turno) {
+    final controller = ref.read(turnoCreateFormProvider.notifier);
+    final initialDate = turno.dataProssimaPulizia ?? turno.data;
+
+    _taskController.text = turno.titolo;
+    controller.setAllowPastDate(true);
+    controller.setTask(turno.titolo);
+    controller.setFrequency(_frequencyLabelFor(turno.cadenzaGiorni));
+    controller.setAutoRotation(turno.rotazioneAttiva);
+    if (turno.assegnatarioId.isNotEmpty) {
+      controller.setAssignee(turno.assegnatarioId);
+    }
+    if (initialDate != null) {
+      controller.setPickedDate(initialDate);
+    }
+  }
+
+  static String _frequencyLabelFor(int days) {
+    return _TurnoCreateFormState.frequencyDays.entries
+        .firstWhere(
+          (entry) => entry.value == days,
+          orElse: () => const MapEntry('Ogni settimana', 7),
+        )
+        .key;
+  }
+
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
     final controller = ref.read(turnoCreateFormProvider.notifier);
     final form = ref.read(turnoCreateFormProvider);
-    final activeCasaController = ActiveCasaScope.of(context);
-    final casa = await ref.read(
-      turniCreateCasaProvider(activeCasaController.selectedCasaId).future,
-    );
     final assigneeId = form.selectedInquilinoId?.trim();
     final turnoDate = form.turnoDate;
+    final data = await _future;
+    final isEditing = data?.turno != null;
 
     if (!controller.validateBeforeSubmit()) {
       return;
     }
-    if (casa == null || casa.id.isEmpty) {
+    if (data == null || data.casa.id.isEmpty) {
       controller.setSubmitError('Nessuna casa disponibile.');
       return;
     }
@@ -123,22 +205,32 @@ class _TurnoCreateScreenState extends ConsumerState<TurnoCreateScreen> {
 
     controller.setSubmitting(true);
     try {
-      await ApiProvider.turni.create(casa.id, {
+      final payload = {
         'task': form.task.trim(),
-        'dataTurno': _payloadDate(turnoDate).toIso8601String(),
         'cadenzaGiorni':
             _TurnoCreateFormState.frequencyDays[form.frequency] ?? 7,
-        if (assigneeId != null && assigneeId.isNotEmpty)
-          'assegnatario': assigneeId,
         'rotazioneTurno': form.autoRotation,
-      });
+      };
+
+      final existingTurno = data.turno;
+
+      if (isEditing && existingTurno != null) {
+        await ApiProvider.turni.update(data.casa.id, existingTurno.id, payload);
+      } else {
+        payload['dataTurno'] = _payloadDate(turnoDate).toIso8601String();
+        if (assigneeId != null && assigneeId.isNotEmpty) {
+          payload['assegnatario'] = assigneeId;
+        }
+        await ApiProvider.turni.create(data.casa.id, payload);
+      }
 
       if (!mounted) {
         return;
       }
-      Navigator.of(
-        context,
-      ).pushReplacementNamed(TurnoSalvatoConSuccessoScreen.routeName);
+      Navigator.of(context).pushReplacementNamed(
+        TurnoSalvatoConSuccessoScreen.routeName,
+        arguments: TurnoSaveResultArguments(isEditing: isEditing),
+      );
     } catch (_) {
       controller.setSubmitError('Impossibile salvare il turno. Riprova.');
     }
@@ -150,148 +242,153 @@ class _TurnoCreateScreenState extends ConsumerState<TurnoCreateScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final activeCasaController = ActiveCasaScope.of(context);
     final form = ref.watch(turnoCreateFormProvider);
     final controller = ref.read(turnoCreateFormProvider.notifier);
-    final casaAsync = ref.watch(
-      turniCreateCasaProvider(activeCasaController.selectedCasaId),
-    );
-    final inquiliniAsync = casaAsync.when(
-      data: (casa) => ref.watch(turniCreateInquiliniProvider(casa?.id)),
-      loading: () => const AsyncValue<List<Inquilino>>.loading(),
-      error: (error, stackTrace) =>
-          AsyncValue<List<Inquilino>>.error(error, stackTrace),
-    );
+    final future = _future;
 
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       bottomNavigationBar: const HouseQuickNav(currentRoute: '/turni'),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(9, 8, 9, 13),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight:
-                  MediaQuery.sizeOf(context).height -
-                  MediaQuery.paddingOf(context).vertical -
-                  101,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'Inserisci turno',
-                  style: AppTextStyles.screenTitleStrong.copyWith(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                  ),
+      body: FutureBuilder<_TurnoCreateData?>(
+        future: future,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final data = snapshot.data;
+          if (data == null) {
+            return const Center(
+              child: Text(
+                'Dati turno non disponibili.',
+                style: TextStyle(color: Colors.white),
+              ),
+            );
+          }
+
+          final inquilini = data.inquilini;
+          final assignees = _assigneeChoices(inquilini);
+          final currentUser = _resolveCurrentInquilino(assignees);
+          final isEditing = data.isEditing;
+
+          return SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(9, 8, 9, 13),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight:
+                      MediaQuery.sizeOf(context).height -
+                      MediaQuery.paddingOf(context).vertical -
+                      101,
                 ),
-                const SizedBox(height: 17),
-                _TaskField(
-                  controller: _taskController,
-                  hasError: form.showErrors && form.task.trim().isEmpty,
-                  onChanged: controller.setTask,
-                ),
-                const SizedBox(height: 25),
-                inquiliniAsync.when(
-                  loading: () => const _AssigneeLoading(),
-                  error: (_, _) => _AssigneeSection(
-                    inquilini: const [],
-                    canAssignOthers: false,
-                    currentUserId: null,
-                    selectedId: form.selectedInquilinoId,
-                    showError:
-                        form.showErrors && form.selectedInquilinoId == null,
-                    onSelected: controller.setAssignee,
-                  ),
-                  data: (inquilini) {
-                    final assignees = _assigneeChoices(inquilini);
-                    final currentUser = _resolveCurrentInquilino(assignees);
-                    return _AssigneeSection(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      isEditing ? 'Modifica turno' : 'Inserisci turno',
+                      style: AppTextStyles.screenTitleStrong.copyWith(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 17),
+                    _TaskField(
+                      controller: _taskController,
+                      hasError: form.showErrors && form.task.trim().isEmpty,
+                      onChanged: controller.setTask,
+                    ),
+                    const SizedBox(height: 25),
+                    _AssigneeSection(
                       inquilini: assignees,
-                      canAssignOthers: currentUser?.isHomeAdmin == true,
+                      canAssignOthers:
+                          currentUser?.isHomeAdmin == true && !isEditing,
                       currentUserId: currentUser?.id,
                       selectedId: form.selectedInquilinoId,
                       showError:
                           form.showErrors && form.selectedInquilinoId == null,
                       onSelected: controller.setAssignee,
-                    );
-                  },
-                ),
-                const SizedBox(height: 20),
-                _DateRow(
-                  selectedDate: form.turnoDate,
-                  hasError: form.showErrors && !form.hasValidDate,
-                  onPickDate: () => _pickDate(form.turnoDate),
-                ),
-                if (form.showDatePastError) ...[
-                  const SizedBox(height: 12),
-                  const _ErrorLine(
-                    message: 'Data errata: seleziona una data futura',
-                  ),
-                ],
-                const SizedBox(height: 25),
-                Padding(
-                  padding: const EdgeInsets.only(left: 24),
-                  child: Text(
-                    'Frequenza',
-                    style: AppTextStyles.screenTitleStrong.copyWith(
-                      color: AppColors.textMutedLight,
-                      fontSize: 21,
-                      fontWeight: FontWeight.w800,
                     ),
-                  ),
+                    const SizedBox(height: 20),
+                    _DateRow(
+                      selectedDate: form.turnoDate,
+                      hasError: form.showErrors && !form.hasValidDate,
+                      onPickDate: isEditing
+                          ? () {}
+                          : () => _pickDate(form.turnoDate),
+                    ),
+                    if (form.showDatePastError) ...[
+                      const SizedBox(height: 12),
+                      const _ErrorLine(
+                        message: 'Data errata: seleziona una data futura',
+                      ),
+                    ],
+                    const SizedBox(height: 25),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 24),
+                      child: Text(
+                        'Frequenza',
+                        style: AppTextStyles.screenTitleStrong.copyWith(
+                          color: AppColors.textMutedLight,
+                          fontSize: 21,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: _FrequencyDropdown(
+                        value: form.frequency,
+                        expanded: form.frequencyExpanded,
+                        hasError: form.showErrors && form.frequency.isEmpty,
+                        onToggle: controller.toggleFrequency,
+                        onChanged: controller.setFrequency,
+                      ),
+                    ),
+                    SizedBox(height: form.frequencyExpanded ? 16 : 34),
+                    Builder(
+                      builder: (context) {
+                        final canToggleRotation =
+                            currentUser?.isHomeAdmin == true && !isEditing;
+                        return _AutoRotationRow(
+                          value: form.autoRotation,
+                          onChanged: canToggleRotation
+                              ? controller.setAutoRotation
+                              : (_) {},
+                          enabled: canToggleRotation,
+                        );
+                      },
+                    ),
+                    if (form.showMissingError) ...[
+                      const SizedBox(height: 18),
+                      const _ErrorLine(
+                        message: 'Dati mancanti: compila i campi necessari',
+                      ),
+                    ],
+                    SizedBox(height: form.showMissingError ? 20 : 34),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: _SaveButton(
+                        enabled: form.canSubmit,
+                        submitting: form.isSubmitting,
+                        onPressed: _submit,
+                        label: isEditing ? 'Salva modifiche' : 'Salva turno',
+                      ),
+                    ),
+                    const SizedBox(height: 7),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 47),
+                      child: _CancelButton(
+                        enabled: !form.isSubmitting,
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 6),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: _FrequencyDropdown(
-                    value: form.frequency,
-                    expanded: form.frequencyExpanded,
-                    hasError: form.showErrors && form.frequency.isEmpty,
-                    onToggle: controller.toggleFrequency,
-                    onChanged: controller.setFrequency,
-                  ),
-                ),
-                SizedBox(height: form.frequencyExpanded ? 16 : 34),
-                // determine if current user is HomeAdmin to enable rotation toggle
-                Builder(builder: (context) {
-                  final assignees = inquiliniAsync.value ?? const <Inquilino>[];
-                  final currentUser = _resolveCurrentInquilino(assignees);
-                  final canToggleRotation = currentUser?.isHomeAdmin == true;
-                  return _AutoRotationRow(
-                    value: form.autoRotation,
-                    onChanged: canToggleRotation ? controller.setAutoRotation : (_) {},
-                    enabled: canToggleRotation,
-                  );
-                }),
-                if (form.showMissingError) ...[
-                  const SizedBox(height: 18),
-                  const _ErrorLine(
-                    message: 'Dati mancanti: compila i campi necessari',
-                  ),
-                ],
-                SizedBox(height: form.showMissingError ? 20 : 34),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: _SaveButton(
-                    enabled: form.canSubmit,
-                    submitting: form.isSubmitting,
-                    onPressed: _submit,
-                  ),
-                ),
-                const SizedBox(height: 7),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 47),
-                  child: _CancelButton(
-                    enabled: !form.isSubmitting,
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
@@ -357,6 +454,7 @@ class _TurnoCreateFormState {
     this.showErrors = false,
     this.isSubmitting = false,
     this.submitError,
+    this.allowPastDate = false,
   });
 
   static const frequencies = [
@@ -385,9 +483,10 @@ class _TurnoCreateFormState {
   final bool showErrors;
   final bool isSubmitting;
   final String? submitError;
+  final bool allowPastDate;
 
-  DateTime? get turnoDate => _parseDate(day, month);
-  bool get hasValidDate => turnoDate != null && !isPastDate;
+  DateTime? get turnoDate => _parseDate(day, month, allowPast: allowPastDate);
+  bool get hasValidDate => turnoDate != null;
   bool get isPastDate {
     final parsed = _parseDate(day, month, allowPast: true);
     if (parsed == null) {
@@ -398,7 +497,7 @@ class _TurnoCreateFormState {
     return parsed.isBefore(todayOnly);
   }
 
-  bool get showDatePastError => showErrors && isPastDate;
+  bool get showDatePastError => showErrors && isPastDate && !allowPastDate;
   bool get showMissingError =>
       showErrors &&
       submitError == null &&
@@ -420,6 +519,7 @@ class _TurnoCreateFormState {
     bool? showErrors,
     bool? isSubmitting,
     Object? submitError = _sentinel,
+    bool? allowPastDate,
   }) {
     return _TurnoCreateFormState(
       task: task ?? this.task,
@@ -436,6 +536,7 @@ class _TurnoCreateFormState {
       submitError: submitError == _sentinel
           ? this.submitError
           : submitError as String?,
+      allowPastDate: allowPastDate ?? this.allowPastDate,
     );
   }
 
@@ -505,6 +606,8 @@ class _TurnoCreateFormController extends StateNotifier<_TurnoCreateFormState> {
       state = state.copyWith(selectedInquilinoId: id, submitError: null);
   void setAutoRotation(bool value) =>
       state = state.copyWith(autoRotation: value);
+  void setAllowPastDate(bool value) =>
+      state = state.copyWith(allowPastDate: value);
   void toggleFrequency() =>
       state = state.copyWith(frequencyExpanded: !state.frequencyExpanded);
   void setPickedDate(DateTime date) => state = state.copyWith(
@@ -562,23 +665,6 @@ class _TaskField extends StatelessWidget {
         ),
         focusedBorder: _outline(
           hasError ? AppColors.errorStrong : AppColors.brandAccent,
-        ),
-      ),
-    );
-  }
-}
-
-class _AssigneeLoading extends StatelessWidget {
-  const _AssigneeLoading();
-
-  @override
-  Widget build(BuildContext context) {
-    return const SizedBox(
-      height: 74,
-      child: Center(
-        child: CircularProgressIndicator(
-          color: AppColors.brandAccent,
-          strokeWidth: 2.4,
         ),
       ),
     );
@@ -911,7 +997,9 @@ class _DateRow extends StatelessWidget {
                     Icon(
                       Icons.calendar_today_rounded,
                       color: (hasError || selectedDate != null)
-                          ? (selectedDate != null ? AppColors.brandAccent : AppColors.errorStrong)
+                          ? (selectedDate != null
+                                ? AppColors.brandAccent
+                                : AppColors.errorStrong)
                           : AppColors.textMutedLight,
                       size: 22,
                     ),
@@ -923,7 +1011,9 @@ class _DateRow extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: AppTextStyles.bodyStrong.copyWith(
                           color: (hasError || selectedDate != null)
-                              ? (selectedDate != null ? AppColors.textOnDark : AppColors.errorStrong)
+                              ? (selectedDate != null
+                                    ? AppColors.textOnDark
+                                    : AppColors.errorStrong)
                               : AppColors.textMutedLight,
                           fontSize: 20,
                           fontWeight: FontWeight.w800,
@@ -940,7 +1030,6 @@ class _DateRow extends StatelessWidget {
     );
   }
 }
-
 
 class _FrequencyDropdown extends StatelessWidget {
   const _FrequencyDropdown({
@@ -1056,7 +1145,11 @@ class _FrequencyDropdown extends StatelessWidget {
 }
 
 class _AutoRotationRow extends StatelessWidget {
-  const _AutoRotationRow({required this.value, required this.onChanged, this.enabled = true});
+  const _AutoRotationRow({
+    required this.value,
+    required this.onChanged,
+    this.enabled = true,
+  });
 
   final bool value;
   final ValueChanged<bool>? onChanged;
@@ -1068,23 +1161,29 @@ class _AutoRotationRow extends StatelessWidget {
       children: [
         Expanded(
           child: Text(
-              'Rotazione automatica assegnatario',
-              maxLines: 1,
-              overflow: TextOverflow.clip,
-              style: AppTextStyles.bodyStrong.copyWith(
-                color: enabled ? AppColors.textMutedLight : AppColors.textMutedDark,
-                fontSize: 16,
-              ),
+            'Rotazione automatica assegnatario',
+            maxLines: 1,
+            overflow: TextOverflow.clip,
+            style: AppTextStyles.bodyStrong.copyWith(
+              color: enabled
+                  ? AppColors.textMutedLight
+                  : AppColors.textMutedDark,
+              fontSize: 16,
             ),
-        ),
-          Switch(
-            value: value,
-            onChanged: enabled ? onChanged : null,
-            activeThumbColor: enabled ? AppColors.textOnDark : AppColors.textMutedDark,
-            activeTrackColor: enabled ? AppColors.brandAccent : AppColors.dividerDark,
-            inactiveThumbColor: AppColors.textOnDark,
-            inactiveTrackColor: AppColors.textMutedDark,
           ),
+        ),
+        Switch(
+          value: value,
+          onChanged: enabled ? onChanged : null,
+          activeThumbColor: enabled
+              ? AppColors.textOnDark
+              : AppColors.textMutedDark,
+          activeTrackColor: enabled
+              ? AppColors.brandAccent
+              : AppColors.dividerDark,
+          inactiveThumbColor: AppColors.textOnDark,
+          inactiveTrackColor: AppColors.textMutedDark,
+        ),
       ],
     );
   }
@@ -1122,11 +1221,13 @@ class _SaveButton extends StatelessWidget {
     required this.enabled,
     required this.submitting,
     required this.onPressed,
+    required this.label,
   });
 
   final bool enabled;
   final bool submitting;
   final VoidCallback onPressed;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
@@ -1150,7 +1251,7 @@ class _SaveButton extends StatelessWidget {
               ),
             )
           : Text(
-              'Salva Turno',
+              label,
               style: AppTextStyles.buttonCompact.copyWith(
                 fontWeight: FontWeight.w800,
               ),

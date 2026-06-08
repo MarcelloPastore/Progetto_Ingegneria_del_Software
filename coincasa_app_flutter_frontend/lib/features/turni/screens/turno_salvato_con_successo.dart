@@ -2,6 +2,12 @@ import 'package:flutter/material.dart';
 
 import 'package:coincasa_app/core/theme/app_theme.dart';
 
+class TurnoSaveResultArguments {
+  const TurnoSaveResultArguments({required this.isEditing});
+
+  final bool isEditing;
+}
+
 class TurnoSalvatoConSuccessoScreen extends StatelessWidget {
   const TurnoSalvatoConSuccessoScreen({super.key});
 
@@ -9,13 +15,21 @@ class TurnoSalvatoConSuccessoScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final args = ModalRoute.of(context)?.settings.arguments;
+    final isEditing = args is TurnoSaveResultArguments
+        ? args.isEditing
+        : args == true;
+
     return _TurnoSuccessScaffold(
-      title: 'Turno salvato!',
-      description:
-          'Hai salvato il turno con successo. Il\n'
-          'responsabile viene assegnato\n'
-          'automaticamente in rotazione e i turni\n'
-          'successivi restano invariati.',
+      title: isEditing ? 'Turno aggiornato!' : 'Turno salvato!',
+      description: isEditing
+          ? 'Hai aggiornato il turno con successo.\n'
+                'Le modifiche sono state applicate\n'
+                'alla programmazione corrente.'
+          : 'Hai salvato il turno con successo. Il\n'
+                'responsabile viene assegnato\n'
+                'automaticamente in rotazione e i turni\n'
+                'successivi restano invariati.',
       onReturn: () => Navigator.of(context).pushReplacementNamed('/turni'),
     );
   }
@@ -119,14 +133,18 @@ class _PurpleActionButtonState extends State<_PurpleActionButton> {
         duration: const Duration(milliseconds: 120),
         curve: Curves.easeOut,
         height: AppSizes.p56,
-        transform: Matrix4.identity()..scale(_pressed ? 0.986 : 1.0),
+        transform: Matrix4.diagonal3Values(
+          _pressed ? 0.986 : 1.0,
+          _pressed ? 0.986 : 1.0,
+          1.0,
+        ),
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(AppSizes.radius12),
           border: Border.all(color: border, width: 2.0),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(_pressed ? 0.18 : 0.32),
+              color: Colors.black.withValues(alpha: _pressed ? 0.18 : 0.32),
               blurRadius: _pressed ? 6 : 12,
               offset: Offset(0, _pressed ? 3 : 6),
             ),
@@ -155,7 +173,7 @@ class _NotifiedBanner extends StatelessWidget {
     return Container(
       height: AppSizes.p56,
       alignment: Alignment.center,
-     
+
       child: Text(
         'Tutti i coinquilini sono stati avvisati',
         textAlign: TextAlign.center,
