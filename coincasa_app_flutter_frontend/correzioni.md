@@ -11,7 +11,7 @@
 - [/] **GESTIONE TURNI:** Risolvere il glitch nel Dettaglio turno che provoca il caricamento di due schermate consecutive (la prima mostrata vuota, la seconda popolata dai dati del backend).
 - [ ] **GESTIONE TURNI:** Valutare la fattibilità tecnica di aprire i dettagli di un turno direttamente selezionandolo dal calendario (Proposta).
 - [/] **GESTIONE TURNI:** Correggere il pulsante di rimozione del turno, rendendo il feedback visivo di conferma più evidente e graficamente gradevole.
-- [ ] **GESTIONE TURNI:** Integrare la schermata "completa turno".
-- [ ] **GESTIONE TURNI:** Introdurre la schermata di feedback: "Turno assegnato a ... con successo".
+- [/] **GESTIONE TURNI:** Integrare la schermata "completa turno".
+- [/] **GESTIONE TURNI:** Introdurre la schermata di feedback: "Turno assegnato a ... con successo".
 - [/] **GESTIONE TURNI:** Ribilanciare e correggere gli spazi di padding e margine tra i vari widget nella schermata di inserimento turno.
 - [/] **CALENDARIO TURNI:** aggiungere i puntini colorati anche nelle settimane successive per tutti i turni (da valutare).

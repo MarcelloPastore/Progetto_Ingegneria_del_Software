@@ -153,13 +153,6 @@ class _DettaglioTurnoAdminScreenState
     );
   }
 
-  void _reloadDetail() {
-    setState(() {
-      _detailFuture = _loadDetailData();
-      _selectedAssigneeId = null;
-      _assigneeMenuOpen = false;
-    });
-  }
 
   Future<void> _handleAssignMe(_TurnoDetailData data) async {
     setState(() => _isSubmitting = true);
@@ -196,7 +189,12 @@ class _DettaglioTurnoAdminScreenState
         'idUtente': assigneeId,
       });
       if (mounted) {
-        _reloadDetail();
+        final selectedInquilino = _findInquilinoById(data.inquilini, assigneeId);
+        final nomeInquilino = selectedInquilino != null ? _assigneeDisplayName(selectedInquilino) : 'coinquilino';
+        Navigator.of(context).pushNamed(
+          AssegnaAMeSuccessScreen.routeName,
+          arguments: nomeInquilino,
+        );
       }
     } catch (_) {
       if (mounted) {

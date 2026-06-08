@@ -9,6 +9,11 @@ class AssegnaAMeSuccessScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String? username = ModalRoute.of(context)?.settings.arguments as String?;
+    final String title = username != null && username.isNotEmpty
+        ? 'Turno assegnato a $username!'
+        : 'Turno assegnato a te!';
+
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       body: SafeArea(
@@ -30,7 +35,7 @@ class AssegnaAMeSuccessScreen extends StatelessWidget {
               ),
               const SizedBox(height: AppSizes.p35),
               Text(
-                'Turno assegnato a te!',
+                title,
                 textAlign: TextAlign.center,
                 style: AppTextStyles.screenTitleStrong.copyWith(
                   fontSize: 25,
