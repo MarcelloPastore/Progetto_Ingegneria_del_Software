@@ -6,6 +6,7 @@ import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/models/quota.dart';
 import 'package:coincasa_app/core/models/spesa.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
+import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/features/spese/screens/elimina_spesa.dart';
 import 'package:coincasa_app/features/spese/screens/lista_spese_membro.dart';
@@ -24,6 +25,7 @@ class DettaglioSpesaDebitoreScreen extends StatefulWidget {
 class _DettaglioSpesaDebitoreScreenState
     extends State<DettaglioSpesaDebitoreScreen> {
   Future<_DebtorDetailData?>? _future;
+  bool _isPaying = false;
 
   @override
   void didChangeDependencies() {
@@ -60,6 +62,38 @@ class _DettaglioSpesaDebitoreScreenState
     );
   }
 
+  Future<void> _payQuota(String casaId, String spesaId, String quotaId) async {
+    if (_isPaying) return;
+    setState(() {
+      _isPaying = true;
+    });
+    try {
+      await ApiProvider.spese.pagaQuota(casaId, spesaId, quotaId);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Quota pagata con successo!')),
+        );
+        setState(() {
+          _future = _loadData();
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Impossibile pagare la quota. Riprova.'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPaying = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -81,7 +115,11 @@ class _DettaglioSpesaDebitoreScreenState
                 ),
               );
             }
-            return _DebtorDetailContent(data: data);
+            return _DebtorDetailContent(
+              data: data,
+              isPaying: _isPaying,
+              onPayQuota: (quotaId) => _payQuota(data.casa.id, data.spesa.id, quotaId),
+            );
           },
         ),
       ),
@@ -90,9 +128,15 @@ class _DettaglioSpesaDebitoreScreenState
 }
 
 class _DebtorDetailContent extends StatelessWidget {
-  const _DebtorDetailContent({required this.data});
+  const _DebtorDetailContent({
+    required this.data,
+    required this.isPaying,
+    required this.onPayQuota,
+  });
 
   final _DebtorDetailData data;
+  final bool isPaying;
+  final ValueChanged<String> onPayQuota;
 
   @override
   Widget build(BuildContext context) {
@@ -169,7 +213,11 @@ class _DebtorDetailContent extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            _QuotesBox(data: data),
+            _QuotesBox(
+              data: data,
+              isPaying: isPaying,
+              onPayQuota: onPayQuota,
+            ),
             if (canManage) ...[
               const SizedBox(height: 18),
               Row(
@@ -273,9 +321,15 @@ class _InfoRow extends StatelessWidget {
 }
 
 class _QuotesBox extends StatelessWidget {
-  const _QuotesBox({required this.data});
+  const _QuotesBox({
+    required this.data,
+    required this.isPaying,
+    required this.onPayQuota,
+  });
 
   final _DebtorDetailData data;
+  final bool isPaying;
+  final ValueChanged<String> onPayQuota;
 
   @override
   Widget build(BuildContext context) {
@@ -290,7 +344,11 @@ class _QuotesBox extends StatelessWidget {
       child: Column(
         children: [
           for (int index = 0; index < rows.length; index++) ...[
-            _QuoteTile(row: rows[index]),
+            _QuoteTile(
+              row: rows[index],
+              isPaying: isPaying,
+              onPayQuota: onPayQuota,
+            ),
             if (index < rows.length - 1)
               const Divider(height: 1, color: Color(0xFF77727F)),
           ],
@@ -301,12 +359,20 @@ class _QuotesBox extends StatelessWidget {
 }
 
 class _QuoteTile extends StatelessWidget {
-  const _QuoteTile({required this.row});
+  const _QuoteTile({
+    required this.row,
+    required this.isPaying,
+    required this.onPayQuota,
+  });
 
   final _QuoteRow row;
+  final bool isPaying;
+  final ValueChanged<String> onPayQuota;
 
   @override
   Widget build(BuildContext context) {
+    final showPayButton = row.isCurrentUser && !row.excluded && row.quotaId != null && row.status == 'Da pagare';
+
     return Container(
       height: 47,
       color: row.isCurrentUser ? const Color(0xFF8B8993) : Colors.transparent,
@@ -321,8 +387,6 @@ class _QuoteTile extends StatelessWidget {
               style: TextStyle(
                 color: row.excluded
                     ? const Color(0xFF8D8797)
-                    : row.isCurrentUser
-                    ? Colors.white
                     : Colors.white,
                 fontSize: 16,
                 fontFamily: 'Inter',
@@ -331,16 +395,78 @@ class _QuoteTile extends StatelessWidget {
               ),
             ),
           ),
-          Text(
-            row.status,
-            style: TextStyle(
-              color: row.statusColor,
-              fontSize: 15,
-              fontFamily: 'Inter',
-              fontStyle: row.excluded ? FontStyle.italic : FontStyle.normal,
-              fontWeight: FontWeight.w800,
+          if (showPayButton)
+            if (isPaying)
+              const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.lockOrange),
+                ),
+              )
+            else
+              SizedBox(
+                height: 34,
+                child: DecoratedBox(
+                  decoration: ShapeDecoration(
+                    gradient: LinearGradient(
+                      begin: const Alignment(0.50, 0.00),
+                      end: const Alignment(0.50, 1.00),
+                      colors: [
+                        Colors.white.withValues(alpha: 0.20),
+                        Colors.white.withValues(alpha: 0),
+                      ],
+                    ),
+                    shape: RoundedRectangleBorder(
+                      side: const BorderSide(
+                        width: 2,
+                        strokeAlign: BorderSide.strokeAlignOutside,
+                        color: AppColors.lockOrange,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    shadows: const [
+                      BoxShadow(
+                        color: Color(0x3F000000),
+                        blurRadius: 4,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: OutlinedButton(
+                    onPressed: () => onPayQuota(row.quotaId!),
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      side: BorderSide.none,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'Paga',
+                      style: TextStyle(
+                        color: AppColors.lockOrange,
+                        fontSize: 14,
+                        fontFamily: 'Inter',
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ),
+              )
+          else
+            Text(
+              row.status,
+              style: TextStyle(
+                color: row.statusColor,
+                fontSize: 15,
+                fontFamily: 'Inter',
+                fontStyle: row.excluded ? FontStyle.italic : FontStyle.normal,
+                fontWeight: FontWeight.w800,
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -451,6 +577,7 @@ class _QuoteRow {
     required this.statusColor,
     required this.isCurrentUser,
     required this.excluded,
+    this.quotaId,
   });
 
   final String name;
@@ -459,6 +586,7 @@ class _QuoteRow {
   final Color statusColor;
   final bool isCurrentUser;
   final bool excluded;
+  final String? quotaId;
 }
 
 List<_QuoteRow> _quoteRows(_DebtorDetailData data) {
@@ -482,6 +610,7 @@ List<_QuoteRow> _quoteRows(_DebtorDetailData data) {
             : const Color(0xFFFF7A7A),
         isCurrentUser: isCurrent,
         excluded: false,
+        quotaId: quota.id,
       ),
     );
   }

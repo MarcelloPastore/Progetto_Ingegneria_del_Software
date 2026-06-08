@@ -27,6 +27,7 @@ class _DettaglioSpesaAdminScreenState
     extends ConsumerState<DettaglioSpesaAdminScreen> {
   late Future<_SpesaDetailData?> _detailFuture;
   bool _initialized = false;
+  bool _isPaying = false;
 
   @override
   void didChangeDependencies() {
@@ -65,12 +66,48 @@ class _DettaglioSpesaAdminScreenState
           .catchError((_) => const <Inquilino>[]),
     ]);
 
+    final inquilini = results[2] as List<Inquilino>;
+    final currentUser = _resolveCurrentUser(inquilini);
+
     return _SpesaDetailData(
       casa: casa,
       spesa: results[0] as Spesa,
       quote: results[1] as List<Quota>,
-      inquilini: results[2] as List<Inquilino>,
+      inquilini: inquilini,
+      currentUserId: currentUser?.id,
     );
+  }
+
+  Future<void> _payQuota(String casaId, String spesaId, String quotaId) async {
+    if (_isPaying) return;
+    setState(() {
+      _isPaying = true;
+    });
+    try {
+      await ApiProvider.spese.pagaQuota(casaId, spesaId, quotaId);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Quota pagata con successo!')),
+        );
+        setState(() {
+          _detailFuture = _loadDetailData();
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Impossibile pagare la quota. Riprova.'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPaying = false;
+        });
+      }
+    }
   }
 
   @override
@@ -89,7 +126,11 @@ class _DettaglioSpesaAdminScreenState
             if (data == null) {
               return const _DetailState(message: 'Spesa non disponibile.');
             }
-            return _DetailContent(data: data);
+            return _DetailContent(
+              data: data,
+              isPaying: _isPaying,
+              onPayQuota: (quotaId) => _payQuota(data.casa.id, data.spesa.id, quotaId),
+            );
           },
         ),
       ),
@@ -98,9 +139,15 @@ class _DettaglioSpesaAdminScreenState
 }
 
 class _DetailContent extends StatelessWidget {
-  const _DetailContent({required this.data});
+  const _DetailContent({
+    required this.data,
+    required this.isPaying,
+    required this.onPayQuota,
+  });
 
   final _SpesaDetailData data;
+  final bool isPaying;
+  final ValueChanged<String> onPayQuota;
 
   @override
   Widget build(BuildContext context) {
@@ -183,7 +230,11 @@ class _DetailContent extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSizes.p10),
-          _QuoteStatusCard(rows: rows),
+          _QuoteStatusCard(
+            rows: rows,
+            isPaying: isPaying,
+            onPayQuota: onPayQuota,
+          ),
           const SizedBox(height: AppSizes.p56),
           Row(
             children: [
@@ -243,12 +294,17 @@ class _DetailContent extends StatelessWidget {
   List<_QuotaRowData> _buildRows(_SpesaDetailData data) {
     if (data.quote.isNotEmpty) {
       return data.quote.map((quota) {
+        final inquilino = _inquilinoForQuota(quota, data.inquilini);
+        final id = inquilino?.id ?? _quotaUserId(quota);
+        final isCurrent = id.isNotEmpty && id == data.currentUserId;
         final name = _nameForQuota(quota, data.inquilini);
         return _QuotaRowData(
-          name: name,
+          name: isCurrent ? '$name (Tu)' : name,
           initials: _initials(name),
           isPaid: quota.pagata,
           isExcluded: false,
+          isCurrentUser: isCurrent,
+          quotaId: quota.id,
         );
       }).toList();
     }
@@ -352,9 +408,15 @@ class _SummaryRow extends StatelessWidget {
 }
 
 class _QuoteStatusCard extends StatelessWidget {
-  const _QuoteStatusCard({required this.rows});
+  const _QuoteStatusCard({
+    required this.rows,
+    required this.isPaying,
+    required this.onPayQuota,
+  });
 
   final List<_QuotaRowData> rows;
+  final bool isPaying;
+  final ValueChanged<String> onPayQuota;
 
   @override
   Widget build(BuildContext context) {
@@ -371,7 +433,11 @@ class _QuoteStatusCard extends StatelessWidget {
       child: Column(
         children: [
           for (int index = 0; index < rows.length; index++) ...[
-            _QuoteStatusRow(row: rows[index]),
+            _QuoteStatusRow(
+              row: rows[index],
+              isPaying: isPaying,
+              onPayQuota: onPayQuota,
+            ),
             if (index < rows.length - 1)
               const Divider(
                 color: Color(0xFF5D5964),
@@ -386,9 +452,15 @@ class _QuoteStatusCard extends StatelessWidget {
 }
 
 class _QuoteStatusRow extends StatelessWidget {
-  const _QuoteStatusRow({required this.row});
+  const _QuoteStatusRow({
+    required this.row,
+    required this.isPaying,
+    required this.onPayQuota,
+  });
 
   final _QuotaRowData row;
+  final bool isPaying;
+  final ValueChanged<String> onPayQuota;
 
   @override
   Widget build(BuildContext context) {
@@ -403,6 +475,8 @@ class _QuoteStatusRow extends StatelessWidget {
         : row.isPaid
         ? const Color(0xFF2CFF64)
         : const Color(0xFFFF6767);
+
+    final showPayButton = row.isCurrentUser && !row.isPaid && !row.isExcluded && row.quotaId != null;
 
     return Row(
       children: [
@@ -438,16 +512,78 @@ class _QuoteStatusRow extends StatelessWidget {
             ),
           ),
         ),
-        Text(
-          status,
-          style: TextStyle(
-            color: statusColor,
-            fontSize: 18,
-            fontFamily: 'Inter',
-            fontStyle: muted ? FontStyle.italic : FontStyle.normal,
-            fontWeight: FontWeight.w500,
+        if (showPayButton)
+          if (isPaying)
+            const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.lockOrange),
+              ),
+            )
+          else
+            SizedBox(
+              height: 34,
+              child: DecoratedBox(
+                decoration: ShapeDecoration(
+                  gradient: LinearGradient(
+                    begin: const Alignment(0.50, 0.00),
+                    end: const Alignment(0.50, 1.00),
+                    colors: [
+                      Colors.white.withValues(alpha: 0.20),
+                      Colors.white.withValues(alpha: 0),
+                    ],
+                  ),
+                  shape: RoundedRectangleBorder(
+                    side: const BorderSide(
+                      width: 2,
+                      strokeAlign: BorderSide.strokeAlignOutside,
+                      color: AppColors.lockOrange,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  shadows: const [
+                    BoxShadow(
+                      color: Color(0x3F000000),
+                      blurRadius: 4,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: OutlinedButton(
+                  onPressed: () => onPayQuota(row.quotaId!),
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    side: BorderSide.none,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Paga',
+                    style: TextStyle(
+                      color: AppColors.lockOrange,
+                      fontSize: 14,
+                      fontFamily: 'Inter',
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
+            )
+        else
+          Text(
+            status,
+            style: TextStyle(
+              color: statusColor,
+              fontSize: 18,
+              fontFamily: 'Inter',
+              fontStyle: muted ? FontStyle.italic : FontStyle.normal,
+              fontWeight: FontWeight.w500,
+            ),
           ),
-        ),
       ],
     );
   }
@@ -515,12 +651,14 @@ class _SpesaDetailData {
     required this.spesa,
     required this.quote,
     required this.inquilini,
+    this.currentUserId,
   });
 
   final Casa casa;
   final Spesa spesa;
   final List<Quota> quote;
   final List<Inquilino> inquilini;
+  final String? currentUserId;
 }
 
 class _QuotaRowData {
@@ -529,15 +667,42 @@ class _QuotaRowData {
     required this.initials,
     required this.isPaid,
     required this.isExcluded,
+    this.isCurrentUser = false,
+    this.quotaId,
   });
 
   final String name;
   final String initials;
   final bool isPaid;
   final bool isExcluded;
+  final bool isCurrentUser;
+  final String? quotaId;
 }
 
 String _nameForQuota(Quota quota, List<Inquilino> inquilini) {
+  final inquilino = _inquilinoForQuota(quota, inquilini);
+  if (inquilino != null) {
+    return _displayName(inquilino);
+  }
+  final raw = quota.raw;
+  return raw['nome']?.toString() ??
+      raw['name']?.toString() ??
+      raw['username']?.toString() ??
+      (raw['utente'] is Map ? raw['utente']['username']?.toString() : null) ??
+      'Coinquilino';
+}
+
+Inquilino? _inquilinoForQuota(Quota quota, List<Inquilino> inquilini) {
+  final id = _quotaUserId(quota);
+  for (final inquilino in inquilini) {
+    if (inquilino.id == id) {
+      return inquilino;
+    }
+  }
+  return null;
+}
+
+String _quotaUserId(Quota quota) {
   final raw = quota.raw;
   final id =
       raw['inquilinoId'] ??
@@ -546,20 +711,32 @@ String _nameForQuota(Quota quota, List<Inquilino> inquilini) {
       raw['idUtente'] ??
       raw['userId'] ??
       (raw['utente'] is Map ? raw['utente']['id'] : null);
-  if (id != null) {
-    for (final inquilino in inquilini) {
-      if (inquilino.id == id.toString()) {
-        return inquilino.nomeCompleto.isEmpty
-            ? inquilino.email
-            : inquilino.nomeCompleto;
-      }
+  return id?.toString() ?? '';
+}
+
+String _displayName(Inquilino inquilino) {
+  final fullName = inquilino.nomeCompleto.trim();
+  if (fullName.isNotEmpty) return fullName;
+  if (inquilino.username.trim().isNotEmpty) return inquilino.username.trim();
+  return inquilino.email.trim().isEmpty ? 'Coinquilino' : inquilino.email;
+}
+
+Inquilino? _resolveCurrentUser(List<Inquilino> inquilini) {
+  final email = ApiProvider.client.currentUserEmail?.trim().toLowerCase();
+  final name = ApiProvider.client.currentUserName?.trim().toLowerCase();
+  for (final inquilino in inquilini) {
+    final values = [
+      inquilino.email,
+      inquilino.username,
+      inquilino.nome,
+      inquilino.nomeCompleto,
+    ].map((value) => value.trim().toLowerCase());
+    if ((email != null && values.contains(email)) ||
+        (name != null && values.contains(name))) {
+      return inquilino;
     }
   }
-  return raw['nome']?.toString() ??
-      raw['name']?.toString() ??
-      raw['username']?.toString() ??
-      (raw['utente'] is Map ? raw['utente']['username']?.toString() : null) ??
-      'Coinquilino';
+  return inquilini.isNotEmpty ? inquilini.first : null;
 }
 
 String _nameForPartecipante(Map<String, dynamic> partecipante) {
