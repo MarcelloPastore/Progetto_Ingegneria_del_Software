@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class StatoVuoto extends StatelessWidget {
-	const StatoVuoto({Key? key}) : super(key: key);
+	const StatoVuoto({super.key});
 
 	@override
 	Widget build(BuildContext context) {

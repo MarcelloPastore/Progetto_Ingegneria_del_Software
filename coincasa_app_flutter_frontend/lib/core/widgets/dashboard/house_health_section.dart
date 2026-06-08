@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:coincasa_app/core/theme/app_theme.dart';
-import 'dashboard_section_title.dart';
 
 class HouseHealthBadgeData {
   const HouseHealthBadgeData({
