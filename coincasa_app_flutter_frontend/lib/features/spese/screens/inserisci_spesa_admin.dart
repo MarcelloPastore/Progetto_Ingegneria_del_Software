@@ -125,6 +125,11 @@ class _InserisciSpesaScreenState extends ConsumerState<InserisciSpesaScreen> {
     final casaAsync = ref.watch(
       speseCreateCasaProvider(activeCasaController.selectedCasaId),
     );
+    final isAdmin = casaAsync.maybeWhen(
+      data: (casa) =>
+          casa?.ruolo == 'HomeAdmin' || casa?.ruolo == 'SysAdmin',
+      orElse: () => false,
+    );
     final inquiliniAsync = casaAsync.when(
       data: (casa) => ref.watch(speseCreateInquiliniProvider(casa?.id)),
       loading: () => const AsyncValue<List<Inquilino>>.loading(),
@@ -201,33 +206,35 @@ class _InserisciSpesaScreenState extends ConsumerState<InserisciSpesaScreen> {
                   onChanged: controller.setHoAnticipatoPerTutti,
                 ),
                 const SizedBox(height: 12),
-                _RecurringRow(
-                  value: form.spesaRicorrente,
-                  onChanged: controller.setSpesaRicorrente,
-                ),
-                const SizedBox(height: 12),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Text(
-                    'Frequenza',
-                    style: AppTextStyles.screenTitleStrong.copyWith(
-                      color: form.spesaRicorrente
-                          ? AppColors.brandPrimary
-                          : const Color(0xFF6A5A86),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
+                if (isAdmin) ...[
+                  _RecurringRow(
+                    value: form.spesaRicorrente,
+                    onChanged: controller.setSpesaRicorrente,
+                  ),
+                  const SizedBox(height: 12),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Text(
+                      'Frequenza',
+                      style: AppTextStyles.screenTitleStrong.copyWith(
+                        color: form.spesaRicorrente
+                            ? AppColors.brandPrimary
+                            : const Color(0xFF6A5A86),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: _FrequencyDropdown(
-                    value: form.frequenza,
-                    enabled: form.spesaRicorrente,
-                    onChanged: controller.setFrequenza,
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: _FrequencyDropdown(
+                      value: form.frequenza,
+                      enabled: form.spesaRicorrente,
+                      onChanged: controller.setFrequenza,
+                    ),
                   ),
-                ),
+                ],
                 if (form.showMissingError) ...[
                   const SizedBox(height: 24),
                   const _ErrorLine(
@@ -350,6 +357,11 @@ class _InserisciSpesaPopupContentState
     final casaAsync = ref.watch(
       speseCreateCasaProvider(activeCasaController.selectedCasaId),
     );
+    final isAdmin = casaAsync.maybeWhen(
+      data: (casa) =>
+          casa?.ruolo == 'HomeAdmin' || casa?.ruolo == 'SysAdmin',
+      orElse: () => false,
+    );
     final inquiliniAsync = casaAsync.when(
       data: (casa) => ref.watch(speseCreateInquiliniProvider(casa?.id)),
       loading: () => const AsyncValue<List<Inquilino>>.loading(),
@@ -412,33 +424,35 @@ class _InserisciSpesaPopupContentState
           onChanged: controller.setHoAnticipatoPerTutti,
         ),
         const SizedBox(height: 12),
-        _RecurringRow(
-          value: form.spesaRicorrente,
-          onChanged: controller.setSpesaRicorrente,
-        ),
-        const SizedBox(height: 12),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Text(
-            'Frequenza',
-            style: AppTextStyles.screenTitleStrong.copyWith(
-              color: form.spesaRicorrente
-                  ? AppColors.brandPrimary
-                  : const Color(0xFF6A5A86),
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
+        if (isAdmin) ...[
+          _RecurringRow(
+            value: form.spesaRicorrente,
+            onChanged: controller.setSpesaRicorrente,
+          ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Text(
+              'Frequenza',
+              style: AppTextStyles.screenTitleStrong.copyWith(
+                color: form.spesaRicorrente
+                    ? AppColors.brandPrimary
+                    : const Color(0xFF6A5A86),
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: _FrequencyDropdown(
-            value: form.frequenza,
-            enabled: form.spesaRicorrente,
-            onChanged: controller.setFrequenza,
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: _FrequencyDropdown(
+              value: form.frequenza,
+              enabled: form.spesaRicorrente,
+              onChanged: controller.setFrequenza,
+            ),
           ),
-        ),
+        ],
         if (form.showMissingError) ...[
           const SizedBox(height: 14),
           const _ErrorLine(message: 'Dati mancanti: compila i campi necessari'),
