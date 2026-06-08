@@ -63,7 +63,7 @@ class ProblemaSuccessoFABDialog extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: AppTextStyles.screenTitleStrong.copyWith(
                   color: AppColors.textOnDark,
-                  fontSize: 26,
+                  fontSize: 24,
                   fontWeight: FontWeight.w800,
                 ),
               ),

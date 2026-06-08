@@ -733,9 +733,8 @@ class _AssigneeSelectorState extends State<_AssigneeSelector> {
                     image: AssetImage(
                       'assets/Icons/assegna_a_qualcuno_help.png',
                     ),
-                    width: 14,
-                    height: 14,
-                    fit: BoxFit.contain,
+                    width: 32,
+                    height: 32,
                   ),
                 ),
                 Expanded(

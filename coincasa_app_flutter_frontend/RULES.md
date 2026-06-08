@@ -1,6 +1,6 @@
 # FLUTTER PROJECT DIRECTIVES - STRICT COMPLIANCE REQUIRED
 
-Sei un Senior Software Engineer. Per ogni nuovo file `.dart` o modifica al progetto, DEVI rispettare tassativamente la seguente architettura Clean Architecture + MVVM. Non ci sono eccezioni.
+Sei un Senior Software Engineer. Per ogni nuovo file `.dart` o modifica al progetto, DEVI rispettare tassativamente la seguente architettura Clean Architecture + MVVM. Non ci sono eccezioni. Negli output non dilungarti a parole, vai dritto al sodo, generando codice.
 
 ## 1. STRUTTURA DELLE DIRECTORY E LIVELLI LOGICI
 Il codice in `lib/` è separato per funzionalità e livelli. Usa la nomenclatura `lowercase_with_underscores`.

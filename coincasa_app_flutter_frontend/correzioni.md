@@ -9,7 +9,7 @@
 - [/] **DASHBOARD:** Eliminare la dicitura "Oggi" dalla sezione del turno odierno, in quanto superflua e ripetitiva.
 - [/] **GESTIONE TURNI:** Ottimizzare il design del bottone "Inserisci turno" per renderlo pienamente fedele al mockup di Figma.
 - [/] **GESTIONE TURNI:** Risolvere il glitch nel Dettaglio turno che provoca il caricamento di due schermate consecutive (la prima mostrata vuota, la seconda popolata dai dati del backend).
-- [ ] **GESTIONE TURNI:** Valutare la fattibilità tecnica di aprire i dettagli di un turno direttamente selezionandolo dal calendario (Proposta).
+- [X] **GESTIONE TURNI:** Valutare la fattibilità tecnica di aprire i dettagli di un turno direttamente selezionandolo dal calendario (Proposta).
 - [/] **GESTIONE TURNI:** Correggere il pulsante di rimozione del turno, rendendo il feedback visivo di conferma più evidente e graficamente gradevole.
 - [/] **GESTIONE TURNI:** Integrare la schermata "completa turno".
 - [/] **GESTIONE TURNI:** Introdurre la schermata di feedback: "Turno assegnato a ... con successo".
