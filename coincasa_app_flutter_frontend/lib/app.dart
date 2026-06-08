@@ -68,7 +68,7 @@ class CoinCasaApp extends StatelessWidget {
           TurnoCreateScreen.routeName: (_) => const TurnoCreateScreen(),
           TurnoSalvatoConSuccessoScreen.routeName: (_) =>
               const TurnoSalvatoConSuccessoScreen(),
-          '/scadenze': (_) => const ScadenzeScreen(),
+          '/scadenze': (_) => const ListaScadenze(),
           '/problemi': (_) => const ProblemiScreen(),
           SegnalaProblemaScreen.routeName: (_) => const SegnalaProblemaScreen(),
           '/casa': (_) => const ListaCaseScreen(),

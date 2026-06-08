@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 
 class ScadenzaItem {
 	final String title;
@@ -11,7 +13,7 @@ class ScadenzaItem {
 }
 
 class ListaScadenze extends StatelessWidget {
-	const ListaScadenze({Key? key}) : super(key: key);
+	const ListaScadenze({super.key});
 
 	@override
 	Widget build(BuildContext context) {
@@ -34,11 +36,11 @@ class ListaScadenze extends StatelessWidget {
 							const SizedBox(height: 8),
 							Text(
 								'Scadenze',
-								style: TextStyle(
-									color: const Color(0xFF956FE7),
-									fontSize: 32,
-									fontWeight: FontWeight.w700,
-									fontFamily: 'Inter',
+								textAlign: TextAlign.center,
+								style: AppTextStyles.screenTitleStrong.copyWith(
+									color: AppColors.brandAccent,
+									fontSize: 40,
+									fontWeight: FontWeight.w800,
 								),
 							),
 							const SizedBox(height: 16),
@@ -47,11 +49,11 @@ class ListaScadenze extends StatelessWidget {
 									children: [
 										const Text('IN SCADENZA', style: TextStyle(color: Color(0xFFD8D5D5), fontWeight: FontWeight.w700)),
 										const SizedBox(height: 8),
-										...inScadenza.map((s) => _buildCard(context, s, borderColorForBadge(s.badgeColor))).toList(),
+										...inScadenza.map((s) => _buildCard(context, s, borderColorForBadge(s.badgeColor))),
 										const SizedBox(height: 12),
 										const Text('PROSSIME', style: TextStyle(color: Color(0xFFD8D5D5), fontWeight: FontWeight.w700)),
 										const SizedBox(height: 8),
-										...prossime.map((s) => _buildCard(context, s, borderColorForBadge(s.badgeColor))).toList(),
+										...prossime.map((s) => _buildCard(context, s, borderColorForBadge(s.badgeColor))),
 										const SizedBox(height: 20),
 										SizedBox(
 											width: double.infinity,
@@ -75,33 +77,7 @@ class ListaScadenze extends StatelessWidget {
 					),
 				),
 			),
-			bottomNavigationBar: BottomAppBar(
-				color: const Color(0xFF16213D),
-				child: Padding(
-					padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-					child: Row(
-						mainAxisAlignment: MainAxisAlignment.spaceBetween,
-						children: [
-							_navItem(Icons.home, 'Home'),
-							_navItem(Icons.attach_money, 'Spese'),
-							_navItem(Icons.schedule, 'Turni'),
-							_navItem(Icons.calendar_today, 'Scadenze', active: true),
-							_navItem(Icons.report, 'Problemi'),
-						],
-					),
-				),
-			),
-		);
-	}
-
-	Widget _navItem(IconData icon, String label, {bool active = false}) {
-		return Column(
-			mainAxisSize: MainAxisSize.min,
-			children: [
-				Icon(icon, size: 28, color: active ? const Color(0xFF4695EA) : const Color(0xFFC9C9C9)),
-				const SizedBox(height: 4),
-				Text(label, style: TextStyle(color: active ? const Color(0xFF4695EA) : const Color(0xFFC9C9C9), fontSize: 12)),
-			],
+			bottomNavigationBar: const HouseQuickNav(currentRoute: '/scadenze'),
 		);
 	}
 
@@ -137,7 +113,7 @@ class ListaScadenze extends StatelessWidget {
 							children: [
 								Container(
 									padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-									decoration: BoxDecoration(color: s.badgeColor.withOpacity(0.95), borderRadius: BorderRadius.circular(6)),
+									decoration: BoxDecoration(color: s.badgeColor.withValues(alpha: 0.95), borderRadius: BorderRadius.circular(6)),
 									child: Text(s.badgeText, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
 								),
 								const SizedBox(height: 8),

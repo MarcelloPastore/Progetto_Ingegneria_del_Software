@@ -1,1 +1,2 @@
-export 'screens/scadenze_screen.dart';
+export 'screens/lista_scadenze.dart';
+
