@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/features/problemi/screens/FAB_problemi_screen.dart';
+import 'package:coincasa_app/features/scadenze/screens/fab_scadenza.dart';
 import 'package:coincasa_app/features/spese/screens/inserisci_spesa_admin.dart';
 import 'package:coincasa_app/features/turni/screens/turni_screen_principale.dart';
 
@@ -158,86 +159,7 @@ class _PopupBody extends StatelessWidget {
         showTabs: false,
         showFrame: false,
       ),
-      DashboardCreateTab.scadenza => const _ShortcutPanel(
-        title: 'Nuova Scadenza',
-        icon: Icons.event_note,
-        description:
-            'Apri la sezione scadenze per consultare e gestire le date importanti.',
-        buttonLabel: 'Vai alle scadenze',
-        routeName: '/scadenze',
-      ),
+      DashboardCreateTab.scadenza => const FabScadenzaPanel(),
     };
-  }
-}
-
-class _ShortcutPanel extends StatelessWidget {
-  const _ShortcutPanel({
-    required this.title,
-    required this.icon,
-    required this.description,
-    required this.buttonLabel,
-    required this.routeName,
-  });
-
-  final String title;
-  final IconData icon;
-  final String description;
-  final String buttonLabel;
-  final String routeName;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 34),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Icon(icon, size: 76, color: const Color(0xFF5228AD)),
-          const SizedBox(height: 20),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: AppTextStyles.screenTitleStrong.copyWith(
-              color: AppColors.brandPrimary,
-              fontSize: 24,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 14),
-          Text(
-            description,
-            textAlign: TextAlign.center,
-            style: AppTextStyles.screenTitleStrong.copyWith(
-              color: const Color(0xFF727272),
-              fontSize: 15,
-              height: 1.35,
-            ),
-          ),
-          const SizedBox(height: 28),
-          ElevatedButton(
-            onPressed: () {
-              final navigator = Navigator.of(context);
-              navigator.pop();
-              navigator.pushNamed(routeName);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFA48DDA),
-              padding: const EdgeInsets.symmetric(vertical: 13),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-            ),
-            child: Text(
-              buttonLabel,
-              style: AppTextStyles.screenTitleStrong.copyWith(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
