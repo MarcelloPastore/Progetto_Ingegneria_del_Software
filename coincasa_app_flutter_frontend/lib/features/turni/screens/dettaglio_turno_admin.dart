@@ -280,8 +280,14 @@ class _DettaglioTurnoAdminScreenState
         return Scaffold(
           backgroundColor: AppColors.darkBackground,
           bottomNavigationBar: const HouseQuickNav(currentRoute: '/turni'),
-          body: SafeArea(
-            child: GestureDetector(
+          body: isLoading
+              ? const Center(
+                  child: CircularProgressIndicator(
+                    color: AppColors.brandAccent,
+                  ),
+                )
+              : SafeArea(
+                  child: GestureDetector(
               onTap: () {
                 if (_confirmDelete) {
                   setState(() => _confirmDelete = false);
@@ -329,7 +335,11 @@ class _DettaglioTurnoAdminScreenState
                                 label: isLoading
                                     ? 'Caricamento...'
                                     : 'Assegna a me',
-                                onPressed: _isSubmitting || data == null
+                                onPressed: _isSubmitting ||
+                                        data == null ||
+                                        (data.turno.assegnatarioId.isNotEmpty &&
+                                            data.turno.assegnatarioId ==
+                                                ApiProvider.client.currentUserId)
                                     ? null
                                     : () => _handleAssignMe(data),
                               ),
@@ -553,19 +563,23 @@ class _PrimaryActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FilledButton(
-      onPressed: onPressed,
-      style: FilledButton.styleFrom(
-        backgroundColor: AppColors.brandPrimary,
-        foregroundColor: AppColors.textOnDark,
-        padding: const EdgeInsets.symmetric(vertical: AppSizes.p13),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13)),
-      ),
-      child: Text(
-        label,
-        style: AppTextStyles.buttonCompact.copyWith(
-          fontSize: 23,
-          fontWeight: FontWeight.w700,
+    final bool isEnabled = onPressed != null;
+    return Opacity(
+      opacity: isEnabled ? 1.0 : 0.4,
+      child: FilledButton(
+        onPressed: onPressed,
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.brandPrimary,
+          foregroundColor: AppColors.textOnDark,
+          padding: const EdgeInsets.symmetric(vertical: AppSizes.p13),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13)),
+        ),
+        child: Text(
+          label,
+          style: AppTextStyles.buttonCompact.copyWith(
+            fontSize: 23,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
     );

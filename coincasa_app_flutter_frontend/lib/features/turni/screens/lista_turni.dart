@@ -1100,7 +1100,7 @@ class _TurnoListRow extends StatelessWidget {
                 ),
               ),
             ),
-            if (isCurrentAssignee) ...[
+            if (isCurrentAssignee && isExpired) ...[
               const SizedBox(width: AppSizes.p8),
               _buildCompleteButton(),
             ],
