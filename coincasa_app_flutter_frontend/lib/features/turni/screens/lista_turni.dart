@@ -1100,29 +1100,35 @@ class _TurnoListRow extends StatelessWidget {
                 ),
               ),
             ),
-            if (isCurrentAssignee && isExpired) ...[
-              const SizedBox(width: AppSizes.p8),
-              _buildCompleteButton(),
-            ],
             const SizedBox(width: AppSizes.p8),
-            Container(
-              constraints: const BoxConstraints(minWidth: 82),
-              height: AppSizes.p32,
-              alignment: Alignment.center,
-              padding: const EdgeInsets.symmetric(horizontal: AppSizes.p10),
-              decoration: BoxDecoration(
-                color: whenColor,
-                borderRadius: BorderRadius.circular(AppSizes.radius8),
-              ),
-              child: Text(
-                when,
-                style: AppTextStyles.bodyStrong.copyWith(
-                  color: AppColors.textOnDark,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  fontStyle: FontStyle.italic,
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                if (isCurrentAssignee && isExpired) ...[
+                  _buildCompleteButton(),
+                  const SizedBox(height: 4),
+                ],
+                Container(
+                  constraints: const BoxConstraints(minWidth: 82),
+                  height: AppSizes.p32,
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.symmetric(horizontal: AppSizes.p10),
+                  decoration: BoxDecoration(
+                    color: whenColor,
+                    borderRadius: BorderRadius.circular(AppSizes.radius8),
+                  ),
+                  child: Text(
+                    when,
+                    style: AppTextStyles.bodyStrong.copyWith(
+                      color: AppColors.textOnDark,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
           ],
         ),
