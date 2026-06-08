@@ -9,6 +9,7 @@ import 'package:coincasa_app/core/models/spesa.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
 import 'package:coincasa_app/features/spese/screens/dettaglio_spesa_admin.dart';
 import 'package:coincasa_app/features/spese/screens/inserisci_spesa_admin.dart';
 import 'package:coincasa_app/features/spese/screens/pareggia_conti.dart';
@@ -122,29 +123,35 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
         backgroundColor: const Color(0xFF151127),
         bottomNavigationBar: const HouseQuickNav(currentRoute: '/spese'),
         body: SafeArea(
-          child: Stack(
+          child: Column(
             children: [
-              if (isLoading)
-                const Center(child: CircularProgressIndicator())
-              else if (speseAsync.hasError && effectiveSpese == null)
-                Center(child: Text('Errore: ${speseAsync.error}'))
-              else
-                _buildContent(
-                  context,
-                  effectiveSpese ?? const [],
-                  effectiveSaldi,
+              Expanded(
+                child: Stack(
+                  children: [
+                    if (isLoading)
+                      const Center(child: CircularProgressIndicator())
+                    else if (speseAsync.hasError && effectiveSpese == null)
+                      Center(child: Text('Errore: ${speseAsync.error}'))
+                    else
+                      _buildContent(
+                        context,
+                        effectiveSpese ?? const [],
+                        effectiveSaldi,
+                      ),
+                    // Indicatore sottile di refresh in background
+                    if (speseAsync.isLoading && effectiveSpese != null)
+                      const Positioned(
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        child: LinearProgressIndicator(
+                          minHeight: 2,
+                          backgroundColor: Colors.transparent,
+                        ),
+                      ),
+                  ],
                 ),
-              // Indicatore sottile di refresh in background
-              if (speseAsync.isLoading && effectiveSpese != null)
-                const Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  child: LinearProgressIndicator(
-                    minHeight: 2,
-                    backgroundColor: Colors.transparent,
-                  ),
-                ),
+              ),
               if (hasSpese) _buildBottomActions(context),
             ],
           ),
@@ -175,7 +182,7 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
       ..sort((a, b) => b.compareTo(a));
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.only(bottom: 170),
+      padding: const EdgeInsets.only(bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -235,130 +242,26 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
   }
 
   Widget _buildBottomActions(BuildContext context) {
-    return Positioned(
-      bottom: 0,
-      left: 0,
-      right: 0,
-      child: Container(
-        color: const Color(0xFF151127),
-        padding: const EdgeInsets.fromLTRB(
-          AppSizes.p21,
-          AppSizes.p20,
-          AppSizes.p21,
-          AppSizes.p18,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: DecoratedBox(
-                decoration: ShapeDecoration(
-                  gradient: LinearGradient(
-                    begin: const Alignment(0.50, 0.00),
-                    end: const Alignment(0.50, 1.00),
-                    colors: [
-                      Colors.white.withValues(alpha: 0.20),
-                      Colors.white.withValues(alpha: 0),
-                    ],
-                  ),
-                  shape: RoundedRectangleBorder(
-                    side: const BorderSide(
-                      width: 2,
-                      strokeAlign: BorderSide.strokeAlignOutside,
-                      color: Color(0xFF4695EA),
-                    ),
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  shadows: const [
-                    BoxShadow(
-                      color: Color(0x3F000000),
-                      blurRadius: 4,
-                      offset: Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: OutlinedButton(
-                  onPressed: () => Navigator.of(
-                    context,
-                  ).pushNamed(PareggiaContiScreen.routeName),
-                  style: OutlinedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    side: BorderSide.none,
-                    padding: EdgeInsets.zero,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppSizes.radius15),
-                    ),
-                  ),
-                  child: const Text(
-                    'Pareggia i conti',
-                    style: TextStyle(
-                      color: Color(0xFF4695EA),
-                      fontSize: 20,
-                      fontFamily: 'Inter',
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: AppSizes.p18),
-            Container(
-              width: double.infinity,
-              height: 53.28,
-              decoration: ShapeDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Color.lerp(AppColors.brandPrimary, Colors.white, 0.30)!,
-                    AppColors.brandPrimary,
-                    Color.lerp(AppColors.brandPrimary, Colors.black, 0.18)!,
-                  ],
-                  stops: const [0, 0.62, 1],
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                shadows: const [
-                  BoxShadow(
-                    color: Color(0x3F000000),
-                    blurRadius: 4,
-                    offset: Offset(0, 4),
-                    spreadRadius: 0,
-                  ),
-                ],
-              ),
-              child: OutlinedButton(
-                onPressed: () => Navigator.of(
-                  context,
-                ).pushNamed(InserisciSpesaScreen.routeName),
-                style: OutlinedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  foregroundColor: Colors.transparent,
-                  side: BorderSide.none,
-                  padding: EdgeInsets.zero,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  elevation: 0,
-                  shadowColor: Colors.transparent,
-                ),
-                child: const Text(
-                  'Inserisci una nuova spesa',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontFamily: 'Inter',
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SecondaryCtaButton(
+            label: 'Pareggia i conti',
+            color: MainCtaColors.turni,
+            onPressed: () => Navigator.of(
+              context,
+            ).pushNamed(PareggiaContiScreen.routeName),
+          ),
+          const SizedBox(height: 10),
+          MainCtaButton(
+            label: 'Inserisci una nuova spesa',
+            onPressed: () => Navigator.of(
+              context,
+            ).pushNamed(InserisciSpesaScreen.routeName),
+          ),
+        ],
       ),
     );
   }
@@ -778,58 +681,11 @@ class _EmptyExpensesContent extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: AppSizes.p32),
-              Container(
-                width: double.infinity,
-                height: 53.28,
-                decoration: ShapeDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Color.lerp(AppColors.brandPrimary, Colors.white, 0.30)!,
-                      AppColors.brandPrimary,
-                      Color.lerp(AppColors.brandPrimary, Colors.black, 0.18)!,
-                    ],
-                    stops: const [0, 0.62, 1],
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  shadows: const [
-                    BoxShadow(
-                      color: Color(0x3F000000),
-                      blurRadius: 4,
-                      offset: Offset(0, 4),
-                      spreadRadius: 0,
-                    ),
-                  ],
-                ),
-                child: OutlinedButton(
-                  onPressed: () => Navigator.of(
-                    context,
-                  ).pushNamed(InserisciSpesaScreen.routeName),
-                  style: OutlinedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    foregroundColor: Colors.transparent,
-                    side: BorderSide.none,
-                    padding: EdgeInsets.zero,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    elevation: 0,
-                    shadowColor: Colors.transparent,
-                  ),
-                  child: const Text(
-                    'Inserisci spesa',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontFamily: 'Inter',
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
+              MainCtaButton(
+                label: 'Inserisci spesa',
+                onPressed: () => Navigator.of(
+                  context,
+                ).pushNamed(InserisciSpesaScreen.routeName),
               ),
             ],
           ),

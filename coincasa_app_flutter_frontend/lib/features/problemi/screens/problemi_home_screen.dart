@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:coincasa_app/core/models/problema.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
 import 'package:coincasa_app/features/problemi/screens/problema_dettaglio_screen.dart';
 import 'package:coincasa_app/features/problemi/screens/segnala_problema_screen.dart';
 
@@ -503,42 +504,9 @@ class _SegnalaButton extends StatelessWidget {
         AppSizes.p20,
         AppSizes.p16,
       ),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [AppColors.brandSecondary, AppColors.brandPrimary],
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-          ),
-          borderRadius: BorderRadius.circular(AppSizes.radius16),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.brandPrimary.withValues(alpha: 0.45),
-              blurRadius: 14,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Material(
-          color: AppColors.transparent,
-          borderRadius: BorderRadius.circular(AppSizes.radius16),
-          child: InkWell(
-            onTap: onPressed,
-            borderRadius: BorderRadius.circular(AppSizes.radius16),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppSizes.p16),
-              child: Text(
-                'Segnala problema',
-                textAlign: TextAlign.center,
-                style: AppTextStyles.buttonCompact.copyWith(
-                  color: AppColors.textOnDark,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-          ),
-        ),
+      child: MainCtaButton(
+        label: 'Segnala problema',
+        onPressed: onPressed,
       ),
     );
   }

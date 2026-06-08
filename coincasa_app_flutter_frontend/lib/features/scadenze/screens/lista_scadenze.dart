@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
 
 class ScadenzaItem {
 	final String title;
@@ -29,52 +30,50 @@ class ListaScadenze extends StatelessWidget {
 		return Scaffold(
 			backgroundColor: const Color(0xFF09051F),
 			body: SafeArea(
-				child: Padding(
-					padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-					child: Column(
-						children: [
-							const SizedBox(height: 8),
-							Text(
-								'Scadenze',
-								textAlign: TextAlign.center,
-								style: AppTextStyles.screenTitleStrong.copyWith(
-									color: AppColors.brandAccent,
-									fontSize: 40,
-									fontWeight: FontWeight.w800,
-								),
-							),
-							const SizedBox(height: 16),
-							Expanded(
-								child: ListView(
-									children: [
-										const Text('IN SCADENZA', style: TextStyle(color: Color(0xFFD8D5D5), fontWeight: FontWeight.w700)),
-										const SizedBox(height: 8),
-										...inScadenza.map((s) => _buildCard(context, s, borderColorForBadge(s.badgeColor))),
-										const SizedBox(height: 12),
-										const Text('PROSSIME', style: TextStyle(color: Color(0xFFD8D5D5), fontWeight: FontWeight.w700)),
-										const SizedBox(height: 8),
-										...prossime.map((s) => _buildCard(context, s, borderColorForBadge(s.badgeColor))),
-										const SizedBox(height: 20),
-										SizedBox(
-											width: double.infinity,
-											height: 48,
-											child: ElevatedButton(
-												onPressed: () {
-													// TODO: collegare la navigazione per aggiungere una scadenza
-												},
-												style: ElevatedButton.styleFrom(
-													backgroundColor: const Color(0xFF5228AD),
-													shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-												),
-												child: const Text('Aggiungi scadenza', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-											),
+				child: Column(
+					children: [
+						Padding(
+							padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+							child: Column(
+								children: [
+									Text(
+										'Scadenze',
+										textAlign: TextAlign.center,
+										style: AppTextStyles.screenTitleStrong.copyWith(
+											color: AppColors.brandAccent,
+											fontSize: 40,
+											fontWeight: FontWeight.w800,
 										),
-										const SizedBox(height: 24),
-									],
-								),
+									),
+									const SizedBox(height: 16),
+								],
 							),
-						],
-					),
+						),
+						Expanded(
+							child: ListView(
+								padding: const EdgeInsets.symmetric(horizontal: 16),
+								children: [
+									const Text('IN SCADENZA', style: TextStyle(color: Color(0xFFD8D5D5), fontWeight: FontWeight.w700)),
+									const SizedBox(height: 8),
+									...inScadenza.map((s) => _buildCard(context, s, borderColorForBadge(s.badgeColor))),
+									const SizedBox(height: 12),
+									const Text('PROSSIME', style: TextStyle(color: Color(0xFFD8D5D5), fontWeight: FontWeight.w700)),
+									const SizedBox(height: 8),
+									...prossime.map((s) => _buildCard(context, s, borderColorForBadge(s.badgeColor))),
+									const SizedBox(height: 8),
+								],
+							),
+						),
+						Padding(
+							padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+							child: MainCtaButton(
+								label: 'Aggiungi scadenza',
+								onPressed: () {
+									// TODO: collegare la navigazione per aggiungere una scadenza
+								},
+							),
+						),
+					],
 				),
 			),
 			bottomNavigationBar: const HouseQuickNav(currentRoute: '/scadenze'),

@@ -9,6 +9,7 @@ import 'package:coincasa_app/core/models/spesa.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
 import 'package:coincasa_app/features/spese/screens/dettaglio_spesa_debitore.dart';
 import 'package:coincasa_app/features/spese/screens/inserisci_spesa_membro.dart';
 import 'package:coincasa_app/features/spese/screens/pareggia_conti.dart';
@@ -114,10 +115,10 @@ class _MemberSpeseContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final groups = _groupByMonth(data.spese);
-    return Stack(
+    return Column(
       children: [
-        SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(14, 8, 14, 176),
+        Expanded(child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(14, 8, 14, 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -159,23 +160,23 @@ class _MemberSpeseContent extends StatelessWidget {
               ],
             ],
           ),
-        ),
-        Positioned(
-          left: 18,
-          right: 18,
-          bottom: 18,
+        )),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               if (data.spese.isNotEmpty) ...[
-                _BlueOutlineButton(
+                SecondaryCtaButton(
                   label: 'Pareggia i conti',
+                  color: MainCtaColors.turni,
                   onPressed: () => Navigator.of(
                     context,
                   ).pushNamed(PareggiaContiScreen.routeName),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
               ],
-              _PrimaryBlueButton(
+              MainCtaButton(
                 label: 'Inserisci una nuova spesa',
                 onPressed: () => Navigator.of(
                   context,
