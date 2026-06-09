@@ -7,6 +7,7 @@ import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
 import 'package:coincasa_app/features/spese/screens/lista_spese_admin.dart';
 
 class PareggiaContiScreen extends ConsumerStatefulWidget {
@@ -27,9 +28,7 @@ class _PareggiaContiScreenState extends ConsumerState<PareggiaContiScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_initialized) {
-      return;
-    }
+    if (_initialized) return;
     _initialized = true;
     _future = _loadData();
   }
@@ -37,70 +36,114 @@ class _PareggiaContiScreenState extends ConsumerState<PareggiaContiScreen> {
   Future<_PareggiaData?> _loadData() async {
     final activeCasaController = ActiveCasaScope.read(context);
     final caseUtente = await ApiProvider.casa.list();
-    if (caseUtente.isEmpty) {
-      return null;
-    }
+    if (caseUtente.isEmpty) return null;
 
     final casa = activeCasaController.resolveCasa(caseUtente);
     final inquilini = await ApiProvider.casa.listInquilini(casa.id);
     final balances = <_BalanceRow>[];
 
     for (final inquilino in inquilini) {
-      final results = await Future.wait<double>([
-        ApiProvider.spese
-            .getCreditoVerso(casa.id, inquilino.id)
-            .catchError((_) => 0.0),
-        ApiProvider.spese
-            .getDebitoVerso(casa.id, inquilino.id)
-            .catchError((_) => 0.0),
-      ]);
+      final isMe = _isCurrentUser(inquilino);
+      double amount = 0;
+      if (!isMe) {
+        final results = await Future.wait<double>([
+          ApiProvider.spese
+              .getCreditoVerso(casa.id, inquilino.id)
+              .catchError((_) => 0.0),
+          ApiProvider.spese
+              .getDebitoVerso(casa.id, inquilino.id)
+              .catchError((_) => 0.0),
+        ]);
+        // amount > 0 → questa persona mi deve soldi
+        // amount < 0 → devo soldi a questa persona
+        amount = results[0] - results[1];
+      }
       balances.add(
         _BalanceRow(
           id: inquilino.id,
           name: _displayName(inquilino),
           initials: _initials(_displayName(inquilino)),
-          amount: results[0] - results[1],
-          isCurrentUser: _isCurrentUser(inquilino),
+          amount: amount,
+          isCurrentUser: isMe,
         ),
       );
     }
 
-    balances.sort((a, b) => a.name.compareTo(b.name));
+    // Calcola il saldo aggregato dell'utente corrente:
+    // somma di tutti i saldi bilaterali (negativo = devo soldi in totale)
+    final aggregateBalance =
+        balances.where((r) => !r.isCurrentUser).fold<double>(
+          0,
+          (sum, r) => sum + r.amount,
+        );
+    final idx = balances.indexWhere((r) => r.isCurrentUser);
+    if (idx != -1) {
+      final me = balances[idx];
+      balances[idx] = _BalanceRow(
+        id: me.id,
+        name: me.name,
+        initials: me.initials,
+        amount: aggregateBalance,
+        isCurrentUser: true,
+      );
+    }
+
+    balances.sort((a, b) {
+      // Utente corrente sempre PRIMO
+      if (a.isCurrentUser) return -1;
+      if (b.isCurrentUser) return 1;
+      return a.name.compareTo(b.name);
+    });
+
+    final currentUserRow =
+        balances.where((r) => r.isCurrentUser).firstOrNull;
+    final currentUserName = currentUserRow?.name ?? 'Tu';
+    final currentUserInitials = currentUserRow?.initials ?? 'T';
+
+    final transfers = balances
+        .where((r) => !r.isCurrentUser && r.amount < -0.01)
+        .map(
+          (r) => _TransferRow(
+            creditorId: r.id,
+            creditorName: r.name,
+            creditorInitials: r.initials,
+            debtorName: currentUserName,
+            debtorInitials: currentUserInitials,
+            amount: r.amount.abs(),
+          ),
+        )
+        .toList();
+
     return _PareggiaData(
       casa: casa,
       balances: balances,
-      transfers: _minimalTransfers(balances),
+      transfers: transfers,
     );
   }
 
-  Future<void> _markTransfer(_TransferRow transfer) async {
-    setState(() => _submittingKey = transfer.key);
+  Future<void> _settleDebt(String creditorId, String creditorName) async {
+    if (_submittingKey != null) return;
+    setState(() => _submittingKey = creditorId);
     try {
       final data = await _future;
-      if (data == null) {
-        return;
-      }
-      await ApiProvider.spese.pareggia(data.casa.id, [transfer.toId]);
-      if (!mounted) {
-        return;
-      }
+      if (data == null) return;
+      await ApiProvider.spese.pareggia(data.casa.id, [creditorId]);
+      if (!mounted) return;
       setState(() {
         _future = _loadData();
+        _submittingKey = null;
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Trasferimento segnato.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Debito verso $creditorName saldato!')),
+      );
     } catch (_) {
       if (mounted) {
+        setState(() => _submittingKey = null);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Impossibile segnare il trasferimento.'),
+            content: Text('Impossibile saldare il debito. Riprova.'),
           ),
         );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _submittingKey = null);
       }
     }
   }
@@ -111,26 +154,40 @@ class _PareggiaContiScreenState extends ConsumerState<PareggiaContiScreen> {
       backgroundColor: const Color(0xFF151127),
       bottomNavigationBar: const HouseQuickNav(currentRoute: '/spese'),
       body: SafeArea(
-        child: Stack(
+        child: Column(
           children: [
-            FutureBuilder<_PareggiaData?>(
-              future: _future,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState != ConnectionState.done) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                final data = snapshot.data;
-                if (data == null) {
-                  return const _PareggiaState(message: 'Dati non disponibili.');
-                }
-                return _PareggiaContent(
-                  data: data,
-                  submittingKey: _submittingKey,
-                  onMarkTransfer: _markTransfer,
-                );
-              },
+            Expanded(
+              child: FutureBuilder<_PareggiaData?>(
+                future: _future,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState != ConnectionState.done) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  final data = snapshot.data;
+                  if (data == null) {
+                    return const Center(
+                      child: Text(
+                        'Dati non disponibili.',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    );
+                  }
+                  return _PareggiaContent(
+                    data: data,
+                    submittingKey: _submittingKey,
+                    onSettleDebt: _settleDebt,
+                  );
+                },
+              ),
             ),
-            const _PareggiaBottomButton(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
+              child: MainCtaButton(
+                label: 'Torna alle spese',
+                onPressed: () => Navigator.of(context)
+                    .pushReplacementNamed(ListaSpeseAdminScreen.routeName),
+              ),
+            ),
           ],
         ),
       ),
@@ -138,29 +195,30 @@ class _PareggiaContiScreenState extends ConsumerState<PareggiaContiScreen> {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Content
+// ---------------------------------------------------------------------------
+
 class _PareggiaContent extends StatelessWidget {
   const _PareggiaContent({
     required this.data,
     required this.submittingKey,
-    required this.onMarkTransfer,
+    required this.onSettleDebt,
   });
 
   final _PareggiaData data;
   final String? submittingKey;
-  final ValueChanged<_TransferRow> onMarkTransfer;
+  final Future<void> Function(String creditorId, String creditorName)
+      onSettleDebt;
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(
-        AppSizes.p16,
-        AppSizes.p24,
-        AppSizes.p16,
-        112,
-      ),
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Header
           Row(
             children: [
               IconButton(
@@ -168,15 +226,12 @@ class _PareggiaContent extends StatelessWidget {
                 icon: const Icon(
                   Icons.arrow_back,
                   color: AppColors.brandAccent,
-                  size: AppSizes.p28,
+                  size: 28,
                 ),
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(
-                  minWidth: AppSizes.p32,
-                  minHeight: AppSizes.p32,
-                ),
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
               ),
-              const SizedBox(width: AppSizes.p6),
+              const SizedBox(width: 6),
               Text(
                 'Spese',
                 style: AppTextStyles.screenTitleStrong.copyWith(
@@ -187,7 +242,7 @@ class _PareggiaContent extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: AppSizes.p8),
+          const SizedBox(height: 8),
           Text(
             'Pareggia i conti',
             style: AppTextStyles.screenTitleStrong.copyWith(
@@ -195,71 +250,83 @@ class _PareggiaContent extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: AppSizes.p8),
+          const SizedBox(height: 4),
           Text(
-            'Giugno 2026 - ${data.casa.nome}',
+            '${_currentMonthYear()} · ${data.casa.nome}',
             style: AppTextStyles.bodyStrong.copyWith(
               color: const Color(0xFF918D9A),
               fontSize: 16,
             ),
           ),
-          const SizedBox(height: AppSizes.p30),
+          const SizedBox(height: 16),
+
+          // ── Box introduttivo ────────────────────────────────────────────
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E1A30),
+              border: Border.all(color: const Color(0xFF3A3555), width: 1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.info_outline_rounded,
+                  color: Color(0xFF7B74A0),
+                  size: 18,
+                ),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Text(
+                    'Tieni traccia dei crediti e salda i debiti con i coinquilini in un unico click.',
+                    style: TextStyle(
+                      color: Color(0xFF9B94BF),
+                      fontSize: 13,
+                      fontFamily: 'Inter',
+                      fontWeight: FontWeight.w500,
+                      height: 1.45,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // ── Saldi attuali ───────────────────────────────────────────────
           const _SectionTitle('SALDI ATTUALI'),
-          const SizedBox(height: AppSizes.p12),
+          const SizedBox(height: 12),
           _BalancesCard(rows: data.balances),
-          const SizedBox(height: AppSizes.p28),
+          const SizedBox(height: 28),
+
+          // ── Trasferimenti minimi ────────────────────────────────────────
           const _SectionTitle('TRASFERIMENTI MINIMI'),
-          const SizedBox(height: AppSizes.p12),
+          const SizedBox(height: 12),
           _TransfersCard(
-            rows: data.transfers,
+            transfers: data.transfers,
             submittingKey: submittingKey,
-            onMarkTransfer: onMarkTransfer,
+            onSettle: onSettleDebt,
           ),
         ],
       ),
     );
   }
-}
 
-class _PareggiaBottomButton extends StatelessWidget {
-  const _PareggiaBottomButton();
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned(
-      left: AppSizes.p16,
-      right: AppSizes.p16,
-      bottom: AppSizes.p18,
-      child: SizedBox(
-        height: 52,
-        child: ElevatedButton(
-          onPressed: () => Navigator.of(
-            context,
-          ).pushReplacementNamed(ListaSpeseAdminScreen.routeName),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF1458D4),
-            foregroundColor: Colors.white,
-            elevation: 4,
-            shadowColor: Colors.black.withValues(alpha: 0.35),
-            shape: RoundedRectangleBorder(
-              side: const BorderSide(width: 2, color: Color(0xFF77A7F5)),
-              borderRadius: BorderRadius.circular(AppSizes.radius15),
-            ),
-          ),
-          child: const Text(
-            'Torna alle spese',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontFamily: 'Inter',
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ),
-      ),
-    );
+  String _currentMonthYear() {
+    const months = [
+      'Gennaio', 'Febbraio', 'Marzo', 'Aprile',
+      'Maggio', 'Giugno', 'Luglio', 'Agosto',
+      'Settembre', 'Ottobre', 'Novembre', 'Dicembre',
+    ];
+    final now = DateTime.now();
+    return '${months[now.month - 1]} ${now.year}';
   }
 }
+
+// ---------------------------------------------------------------------------
+// Saldi card
+// ---------------------------------------------------------------------------
 
 class _BalancesCard extends StatelessWidget {
   const _BalancesCard({required this.rows});
@@ -269,51 +336,15 @@ class _BalancesCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (rows.isEmpty) {
-      return const _EmptyCard(message: 'Nessun saldo disponibile.');
+      return const _EmptyCard(message: 'Nessun coinquilino trovato.');
     }
-
     return _Panel(
       child: Column(
         children: [
-          for (int index = 0; index < rows.length; index++) ...[
-            _BalanceTile(row: rows[index]),
-            if (index < rows.length - 1) const Divider(height: 1),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _TransfersCard extends StatelessWidget {
-  const _TransfersCard({
-    required this.rows,
-    required this.submittingKey,
-    required this.onMarkTransfer,
-  });
-
-  final List<_TransferRow> rows;
-  final String? submittingKey;
-  final ValueChanged<_TransferRow> onMarkTransfer;
-
-  @override
-  Widget build(BuildContext context) {
-    if (rows.isEmpty) {
-      return const _EmptyCard(message: 'I conti sono gia pareggiati.');
-    }
-
-    return _Panel(
-      child: Column(
-        children: [
-          for (int index = 0; index < rows.length; index++) ...[
-            _TransferTile(
-              row: rows[index],
-              submitting: submittingKey == rows[index].key,
-              onPressed: rows[index].canMark
-                  ? () => onMarkTransfer(rows[index])
-                  : null,
-            ),
-            if (index < rows.length - 1) const Divider(height: 1),
+          for (int i = 0; i < rows.length; i++) ...[
+            _BalanceTile(row: rows[i]),
+            if (i < rows.length - 1)
+              const Divider(height: 1, color: Color(0xFF4A4560)),
           ],
         ],
       ),
@@ -328,31 +359,47 @@ class _BalanceTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isPositive = row.amount >= 0;
+    final Color amountColor;
+    final String amountText;
+
+    if (row.isCurrentUser) {
+      // L'utente corrente è sempre il debitore in questa schermata:
+      // mostra solo il segno "−" senza cifre per evitare confusione.
+      amountColor = const Color(0xFF918D9A);
+      amountText = '−';
+    } else if (row.amount > 0.01) {
+      amountColor = const Color(0xFF5DFF71);
+      amountText = '+€${_fmt(row.amount)}';
+    } else if (row.amount < -0.01) {
+      amountColor = const Color(0xFFFF6767);
+      amountText = '-€${_fmt(row.amount.abs())}';
+    } else {
+      amountColor = const Color(0xFF918D9A);
+      amountText = '±€0';
+    }
+
+    final displayName = row.isCurrentUser ? '${row.name} (Tu)' : row.name;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSizes.p12,
-        vertical: AppSizes.p8,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       child: Row(
         children: [
           _Avatar(initials: row.initials),
-          const SizedBox(width: AppSizes.p12),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
-              row.isCurrentUser ? '${row.name} (Tu)' : row.name,
+              displayName,
               style: AppTextStyles.bodyStrong.copyWith(
-                color: const Color(0xFFC1BFC8),
-                fontSize: 18,
+                color: const Color(0xFFDDDAE8),
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
           Text(
-            '${isPositive ? '+' : '-'}${_formatCurrency(row.amount.abs())}',
+            amountText,
             style: TextStyle(
-              color: isPositive
-                  ? const Color(0xFF5DFF71)
-                  : const Color(0xFFFF6767),
+              color: amountColor,
               fontSize: 19,
               fontFamily: 'Inter',
               fontWeight: FontWeight.w800,
@@ -364,82 +411,167 @@ class _BalanceTile extends StatelessWidget {
   }
 }
 
-class _TransferTile extends StatelessWidget {
-  const _TransferTile({
-    required this.row,
-    required this.submitting,
-    required this.onPressed,
+// ---------------------------------------------------------------------------
+// Trasferimenti minimi card
+// ---------------------------------------------------------------------------
+
+class _TransfersCard extends StatelessWidget {
+  const _TransfersCard({
+    required this.transfers,
+    required this.submittingKey,
+    required this.onSettle,
   });
 
-  final _TransferRow row;
-  final bool submitting;
-  final VoidCallback? onPressed;
+  final List<_TransferRow> transfers;
+  final String? submittingKey;
+  final Future<void> Function(String creditorId, String creditorName) onSettle;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSizes.p12,
-        vertical: AppSizes.p8,
-      ),
-      child: Row(
+    if (transfers.isEmpty) {
+      return const _EmptyCard(message: 'I conti sono già pareggiati 🎉');
+    }
+    return _Panel(
+      child: Column(
         children: [
-          _Avatar(initials: row.fromInitials),
-          const SizedBox(width: AppSizes.p12),
-          Expanded(
-            child: Text(
-              '${row.fromName} paga ${row.toName}',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppTextStyles.bodyStrong.copyWith(
-                color: Colors.white,
-                fontSize: 17,
-              ),
+          for (int i = 0; i < transfers.length; i++) ...[
+            _TransferTile(
+              transfer: transfers[i],
+              submitting: submittingKey == transfers[i].creditorId,
+              disabled: submittingKey != null,
+              onSettle: () =>
+                  onSettle(transfers[i].creditorId, transfers[i].creditorName),
             ),
-          ),
-          Text(
-            _formatCurrency(row.amount),
-            style: const TextStyle(
-              color: Color(0xFFFFDF24),
-              fontSize: 18,
-              fontFamily: 'Inter',
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(width: AppSizes.p12),
-          ElevatedButton(
-            onPressed: submitting ? null : onPressed,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.brandPrimary,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSizes.p12,
-                vertical: AppSizes.p8,
-              ),
-              minimumSize: const Size(64, 34),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppSizes.radius16),
-                side: const BorderSide(color: AppColors.primaryBorder),
-              ),
-            ),
-            child: Text(
-              submitting
-                  ? '...'
-                  : row.canMark
-                  ? 'Segna'
-                  : 'Solo debitore',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontFamily: 'Inter',
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
+            if (i < transfers.length - 1)
+              const Divider(height: 1, color: Color(0xFF4A4560)),
+          ],
         ],
       ),
     );
   }
 }
+
+class _TransferTile extends StatelessWidget {
+  const _TransferTile({
+    required this.transfer,
+    required this.submitting,
+    required this.disabled,
+    required this.onSettle,
+  });
+
+  final _TransferRow transfer;
+  final bool submitting;
+  final bool disabled;
+  final VoidCallback onSettle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      child: Row(
+        children: [
+          _Avatar(initials: transfer.debtorInitials),
+          const SizedBox(width: 10),
+          Expanded(
+            child: RichText(
+              text: TextSpan(
+                style: AppTextStyles.bodyStrong.copyWith(
+                  color: const Color(0xFFDDDAE8),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+                children: [
+                  TextSpan(text: transfer.debtorName),
+                  const TextSpan(
+                    text: ' paga ',
+                    style: TextStyle(color: Color(0xFF918D9A)),
+                  ),
+                  TextSpan(text: transfer.creditorName),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '€${_fmt(transfer.amount)}',
+            style: const TextStyle(
+              color: AppColors.lockOrange,
+              fontSize: 16,
+              fontFamily: 'Inter',
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(width: 10),
+          if (submitting)
+            const SizedBox(
+              width: 28,
+              height: 28,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                color: AppColors.lockOrange,
+              ),
+            )
+          else
+            SizedBox(
+              height: 34,
+              child: DecoratedBox(
+                decoration: ShapeDecoration(
+                  gradient: LinearGradient(
+                    begin: const Alignment(0.50, 0.00),
+                    end: const Alignment(0.50, 1.00),
+                    colors: [
+                      Colors.white.withValues(alpha: 0.20),
+                      Colors.white.withValues(alpha: 0.00),
+                    ],
+                  ),
+                  shape: RoundedRectangleBorder(
+                    side: const BorderSide(
+                      width: 2,
+                      strokeAlign: BorderSide.strokeAlignOutside,
+                      color: AppColors.lockOrange,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  shadows: const [
+                    BoxShadow(
+                      color: Color(0x3F000000),
+                      blurRadius: 4,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: OutlinedButton(
+                  onPressed: disabled ? null : onSettle,
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    disabledBackgroundColor: Colors.transparent,
+                    side: BorderSide.none,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Torna in Pari',
+                    style: TextStyle(
+                      color: AppColors.lockOrange,
+                      fontSize: 13,
+                      fontFamily: 'Inter',
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Shared UI helpers
+// ---------------------------------------------------------------------------
 
 class _Avatar extends StatelessWidget {
   const _Avatar({required this.initials});
@@ -449,8 +581,8 @@ class _Avatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 34,
-      height: 34,
+      width: 38,
+      height: 38,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
@@ -478,7 +610,7 @@ class _Panel extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF312B4A),
-        border: Border.all(color: const Color(0xFF77727F), width: 1.2),
+        border: Border.all(color: const Color(0xFF4A4560), width: 1.2),
         borderRadius: BorderRadius.circular(AppSizes.radius8),
       ),
       child: child,
@@ -495,7 +627,7 @@ class _EmptyCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return _Panel(
       child: Padding(
-        padding: const EdgeInsets.all(AppSizes.p16),
+        padding: const EdgeInsets.all(16),
         child: Text(
           message,
           style: AppTextStyles.bodyStrong.copyWith(
@@ -518,28 +650,17 @@ class _SectionTitle extends StatelessWidget {
       text,
       style: AppTextStyles.screenTitleStrong.copyWith(
         color: const Color(0xFFC1BFC8),
-        fontSize: 18,
+        fontSize: 14,
         fontWeight: FontWeight.w800,
+        letterSpacing: 0.8,
       ),
     );
   }
 }
 
-class _PareggiaState extends StatelessWidget {
-  const _PareggiaState({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        message,
-        style: AppTextStyles.bodyStrong.copyWith(color: Colors.white),
-      ),
-    );
-  }
-}
+// ---------------------------------------------------------------------------
+// Data models
+// ---------------------------------------------------------------------------
 
 class _PareggiaData {
   const _PareggiaData({
@@ -571,96 +692,38 @@ class _BalanceRow {
 
 class _TransferRow {
   const _TransferRow({
-    required this.fromId,
-    required this.toId,
-    required this.fromName,
-    required this.toName,
-    required this.fromInitials,
+    required this.creditorId,
+    required this.creditorName,
+    required this.creditorInitials,
+    required this.debtorName,
+    required this.debtorInitials,
     required this.amount,
-    required this.canMark,
   });
 
-  final String fromId;
-  final String toId;
-  final String fromName;
-  final String toName;
-  final String fromInitials;
+  final String creditorId;
+  final String creditorName;
+  final String creditorInitials;
+  final String debtorName;
+  final String debtorInitials;
   final double amount;
-  final bool canMark;
-
-  String get key => '$fromId-$toId-${amount.toStringAsFixed(2)}';
 }
 
-List<_TransferRow> _minimalTransfers(List<_BalanceRow> balances) {
-  final debtors = balances
-      .where((row) => row.amount < -0.01)
-      .map((row) => _WorkingBalance(row: row, amount: row.amount.abs()))
-      .toList();
-  final creditors = balances
-      .where((row) => row.amount > 0.01)
-      .map((row) => _WorkingBalance(row: row, amount: row.amount))
-      .toList();
-  final transfers = <_TransferRow>[];
-  var debtorIndex = 0;
-  var creditorIndex = 0;
-
-  while (debtorIndex < debtors.length && creditorIndex < creditors.length) {
-    final debtor = debtors[debtorIndex];
-    final creditor = creditors[creditorIndex];
-    final amount = debtor.amount < creditor.amount
-        ? debtor.amount
-        : creditor.amount;
-    transfers.add(
-      _TransferRow(
-        fromId: debtor.row.id,
-        toId: creditor.row.id,
-        fromName: debtor.row.name,
-        toName: creditor.row.name,
-        fromInitials: debtor.row.initials,
-        amount: amount,
-        canMark: debtor.row.isCurrentUser,
-      ),
-    );
-    debtor.amount -= amount;
-    creditor.amount -= amount;
-    if (debtor.amount <= 0.01) {
-      debtorIndex++;
-    }
-    if (creditor.amount <= 0.01) {
-      creditorIndex++;
-    }
-  }
-
-  return transfers;
-}
-
-class _WorkingBalance {
-  _WorkingBalance({required this.row, required this.amount});
-
-  final _BalanceRow row;
-  double amount;
-}
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
 String _displayName(Inquilino inquilino) {
   final name = inquilino.nomeCompleto.trim();
-  if (name.isNotEmpty) {
-    return name;
-  }
-  if (inquilino.username.trim().isNotEmpty) {
-    return inquilino.username.trim();
-  }
+  if (name.isNotEmpty) return name;
+  if (inquilino.username.trim().isNotEmpty) return inquilino.username.trim();
   return inquilino.email.trim().isEmpty ? 'Coinquilino' : inquilino.email;
 }
 
 bool _isCurrentUser(Inquilino inquilino) {
   final userId = ApiProvider.client.currentUserId?.trim();
-  if (userId != null && userId.isNotEmpty) {
-    return inquilino.id == userId;
-  }
+  if (userId != null && userId.isNotEmpty) return inquilino.id == userId;
   final email = ApiProvider.client.currentUserEmail?.trim().toLowerCase();
-  if (email == null || email.isEmpty) {
-    return false;
-  }
+  if (email == null || email.isEmpty) return false;
   return inquilino.email.trim().toLowerCase() == email;
 }
 
@@ -668,16 +731,11 @@ String _initials(String name) {
   final parts = name
       .trim()
       .split(RegExp(r'\s+'))
-      .where((part) => part.isNotEmpty)
+      .where((p) => p.isNotEmpty)
       .toList();
-  if (parts.isEmpty) {
-    return 'C';
-  }
-  if (parts.length == 1) {
-    return parts.first.substring(0, 1).toUpperCase();
-  }
-  return '${parts.first.substring(0, 1)}${parts.last.substring(0, 1)}'
-      .toUpperCase();
+  if (parts.isEmpty) return 'C';
+  if (parts.length == 1) return parts.first[0].toUpperCase();
+  return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
 }
 
 Color _avatarColor(String initials) {
@@ -691,6 +749,4 @@ Color _avatarColor(String initials) {
   return colors[initials.codeUnitAt(0) % colors.length];
 }
 
-String _formatCurrency(double value) {
-  return '€${value.toStringAsFixed(0)}';
-}
+String _fmt(double value) => value.toStringAsFixed(0);
