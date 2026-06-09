@@ -1,4 +1,4 @@
-FROM node:20-bookworm-slim AS build
+FROM node:24.16.0-trixie-slim AS build
 WORKDIR /app
 
 RUN apt-get update \
@@ -9,7 +9,6 @@ COPY package.json package-lock.json ./
 
 RUN --mount=type=cache,target=/root/.npm --mount=type=cache,target=/root/.cache npm ci
 
-COPY prisma ./prisma
 RUN npx prisma generate
 
 COPY tsconfig.json index.ts prisma.config.ts eslint.config.ts vitest.config.ts ./
@@ -17,7 +16,11 @@ COPY src ./src
 
 RUN npm run build
 
-FROM node:20-bookworm-slim
+RUN MONGODB_URI="mongodb://localhost:27017/placeholder" npx prisma generate
+
+RUN npm prune --omit=dev
+
+FROM node:24.16.0-trixie-slim
 WORKDIR /app
 ARG PORT=23109
 ENV NODE_ENV=production
