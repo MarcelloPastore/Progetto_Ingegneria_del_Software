@@ -186,6 +186,10 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
       speseGroupedByMonth[monthKey]!.add(spesa);
     }
 
+    for (final list in speseGroupedByMonth.values) {
+      list.sort((a, b) => b.data.compareTo(a.data));
+    }
+
     final sortedMonths = speseGroupedByMonth.keys.toList()
       ..sort((a, b) => b.compareTo(a));
 

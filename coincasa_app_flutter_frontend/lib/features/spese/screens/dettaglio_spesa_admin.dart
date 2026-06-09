@@ -164,6 +164,8 @@ class _DetailContent extends StatelessWidget {
 
     final isCreator = data.spesa.isCreatedBy(data.currentUserId);
     final hasAnyPaidQuota = _computeHasAnyPaidQuota(data);
+    final hasAnticipatore = _spesaHasAnticipatore(data.spesa.raw);
+    final anticipatoreNome = hasAnticipatore ? data.spesa.creatoreNome : null;
 
     return Column(
       children: [
@@ -226,10 +228,13 @@ class _DetailContent extends StatelessWidget {
             const SizedBox(height: AppSizes.p16),
             const _LockedBanner(),
           ],
-          const SizedBox(height: AppSizes.p32),
+          const SizedBox(height: AppSizes.p24),
+          _CreatorAvatarRow(creatoreNome: data.spesa.creatoreNome),
+          const SizedBox(height: AppSizes.p24),
           _SummaryCard(
             payerNames: payerNames.isEmpty ? const ['Nessuno'] : payerNames,
             quotaPerPersona: quotaPerPersona,
+            anticipatoreNome: anticipatoreNome,
           ),
           const SizedBox(height: AppSizes.p32),
           Text(
@@ -366,15 +371,71 @@ class _LockedBanner extends StatelessWidget {
   }
 }
 
-class _SummaryCard extends StatelessWidget {
-  const _SummaryCard({required this.payerNames, required this.quotaPerPersona});
+class _CreatorAvatarRow extends StatelessWidget {
+  const _CreatorAvatarRow({required this.creatoreNome});
 
-  final List<String> payerNames;
-  final double quotaPerPersona;
+  final String creatoreNome;
 
   @override
   Widget build(BuildContext context) {
-    // Estrae solo il primo nome per ogni elemento nella lista dei pagatori
+    final nome = creatoreNome.trim();
+    final initials = nome.isNotEmpty ? _initials(nome) : 'C';
+    final firstName = nome.isNotEmpty
+        ? nome.split(RegExp(r'\s+')).first
+        : 'Coinquilino';
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          width: 46,
+          height: 46,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: _avatarColor(initials),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            initials,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 17,
+              fontFamily: 'Inter',
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        const SizedBox(width: AppSizes.p12),
+        Text(
+          '$firstName ha creato questa spesa',
+          style: const TextStyle(
+            color: Color(0xFFAFAEAE),
+            fontSize: 15,
+            fontFamily: 'Inter',
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SummaryCard extends StatelessWidget {
+  const _SummaryCard({
+    required this.payerNames,
+    required this.quotaPerPersona,
+    this.anticipatoreNome,
+  });
+
+  final List<String> payerNames;
+  final double quotaPerPersona;
+  final String? anticipatoreNome;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasAnticipatore =
+        anticipatoreNome != null && anticipatoreNome!.trim().isNotEmpty;
+
     final firstNamesOnly = payerNames.map((name) {
       return name.trim().split(RegExp(r'\s+')).first;
     }).toList();
@@ -394,8 +455,10 @@ class _SummaryCard extends StatelessWidget {
       child: Column(
         children: [
           _SummaryRow(
-            label: 'Chi deve pagare',
-            value: firstNamesOnly.join(', '),
+            label: 'Chi ha anticipato',
+            value: hasAnticipatore
+                ? anticipatoreNome!.trim().split(RegExp(r'\s+')).first
+                : '-',
           ),
           const Divider(color: Color(0xFF716E76), height: AppSizes.p18),
           _SummaryRow(
@@ -819,6 +882,21 @@ Color _avatarColor(String initials) {
     Color(0xFF2D5E3F),
   ];
   return colors[initials.codeUnitAt(0) % colors.length];
+}
+
+bool _spesaHasAnticipatore(Map<String, dynamic> raw) {
+  final anticipataDa = raw['anticipataDa'];
+  if (anticipataDa != null && anticipataDa.toString().trim().isNotEmpty) {
+    return true;
+  }
+  final pagatore = raw['pagatore'];
+  if (pagatore is Map && pagatore.isNotEmpty) return true;
+  if (pagatore is String && pagatore.trim().isNotEmpty) return true;
+  final pagatoreNome = raw['pagatoreNome'] ?? raw['pagatoDa'];
+  if (pagatoreNome != null && pagatoreNome.toString().trim().isNotEmpty) {
+    return true;
+  }
+  return false;
 }
 
 String _formatCurrency(double value) {
