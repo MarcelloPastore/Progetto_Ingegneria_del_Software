@@ -1,6 +1,7 @@
 import { Ruolo } from "@prisma/client";
-import { FastifyRequest } from "fastify";
+import { FastifyRequest, FastifyReply } from "fastify";
 import { ForbiddenError } from "../errors/httpErrors";
+import { sendErrorReply } from "../utils/errorReply";
 
 function checkRole(ruolo: Ruolo | undefined, role: Ruolo) {
   const roleHierarchy: Record<Ruolo, number> = {
@@ -17,8 +18,36 @@ function checkRole(ruolo: Ruolo | undefined, role: Ruolo) {
   }
 }
 
+function verifyCasa(req: FastifyRequest): Ruolo | undefined {
+  const tokenCasa = req.user?.idCasa ?? null;
+  const pathParams = req.params as Record<string, unknown> | undefined;
+  const pathCasa =
+    pathParams && typeof pathParams.idCasa === "string"
+      ? pathParams.idCasa
+      : undefined;
+
+  if (pathCasa === undefined) {
+    return req.user.ruoloCasa;
+  }
+
+  if (!tokenCasa) {
+    throw new ForbiddenError("L'utente non ha una casa selezionata nel token.");
+  }
+
+  if (tokenCasa !== pathCasa) {
+    throw new ForbiddenError("Accesso alla casa non autorizzato.");
+  }
+
+  return req.user.ruoloCasa;
+}
+
 export function requireRole(role: Ruolo) {
-  return (req: FastifyRequest) => {
-    checkRole(req.user?.ruoloCasa, role);
+  return async (req: FastifyRequest, rep: FastifyReply) => {
+    try {
+      const ruoloCasa = verifyCasa(req);
+      checkRole(ruoloCasa, role);
+    } catch (err) {
+      await sendErrorReply(rep, err);
+    }
   };
 }

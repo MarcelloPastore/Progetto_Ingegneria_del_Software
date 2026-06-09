@@ -28,6 +28,10 @@ const mocks = vi.hoisted(() => ({
     verify: vi.fn(),
     argon2id: 2,
   },
+  mail: {
+    sendVerificationEmail: vi.fn(),
+    sendPasswordResetEmail: vi.fn(),
+  },
 }));
 
 vi.mock("../../src/config/db", () => ({
@@ -36,6 +40,11 @@ vi.mock("../../src/config/db", () => ({
 
 vi.mock("argon2", () => ({
   default: mocks.argon2,
+}));
+
+vi.mock("../../src/utils/mail", () => ({
+  sendVerificationEmail: mocks.mail.sendVerificationEmail,
+  sendPasswordResetEmail: mocks.mail.sendPasswordResetEmail,
 }));
 
 import { AuthService } from "../../src/service/AuthService";
@@ -63,6 +72,7 @@ describe("AuthService", () => {
     expect(result).toEqual({ id: "u1", message: "Registrazione completata" });
     expect(mocks.argon2.hash).toHaveBeenCalledTimes(1);
     expect(mocks.prisma.utente.create).toHaveBeenCalledTimes(1);
+    expect(mocks.mail.sendVerificationEmail).toHaveBeenCalledTimes(1);
   });
 
   it("register throws DuplicateUserError when email already exists", async () => {
@@ -145,17 +155,24 @@ describe("AuthService", () => {
       email: "TeSt@Example.com",
     });
     expect(req.ok).toBe(true);
-    expect(req.codice).toMatch(/^\d{6}$/);
+    expect(req.expiresAt).toBeDefined();
+    expect(mocks.mail.sendPasswordResetEmail).toHaveBeenCalledTimes(1);
+    const sendCall = mocks.mail.sendPasswordResetEmail.mock.calls[0]?.[0];
+    expect(sendCall?.to).toBe("TeSt@Example.com");
+    expect(sendCall?.username).toBe("mario");
+    expect(sendCall?.resetCode).toMatch(/^\d{6}$/);
+
+    const resetCode = (sendCall?.resetCode as string) || "";
 
     const verify = await service.verifyPasswordResetCodeWithValidation({
       email: "test@example.com",
-      codice: req.codice,
+      codice: resetCode,
     });
     expect(verify.ok).toBe(true);
 
     const reset = await service.resetPasswordWithValidation({
       email: "TEST@example.com",
-      codice: req.codice,
+      codice: resetCode,
       nuovaPassword: "new-password-123",
     });
     expect(reset.ok).toBe(true);
@@ -184,20 +201,23 @@ describe("AuthService", () => {
     mocks.prisma.utente.update.mockResolvedValue({ id: "u1" });
 
     const service = new AuthService();
-    const req = await service.requestPasswordResetWithValidation({
+    await service.requestPasswordResetWithValidation({
       email: "mario@example.com",
     });
 
+    const sendCall = mocks.mail.sendPasswordResetEmail.mock.calls[0]?.[0];
+    const resetCode = (sendCall?.resetCode as string) || "";
+
     await service.resetPasswordWithValidation({
       email: "mario@example.com",
-      codice: req.codice,
+      codice: resetCode,
       nuovaPassword: "new-password-123",
     });
 
     await expect(
       service.resetPasswordWithValidation({
         email: "mario@example.com",
-        codice: req.codice,
+        codice: resetCode,
         nuovaPassword: "another-password-123",
       }),
     ).rejects.toBeInstanceOf(InvalidOrExpiredResetCodeError);

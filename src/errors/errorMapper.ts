@@ -10,13 +10,18 @@ import {
   InvalidTokenPayloadError,
   UserNotFoundError,
   InvalidOrExpiredResetCodeError,
+  EmailDeliveryError,
+  PasswordResetEmailDeliveryError,
+  InvalidEmailVerificationTokenError,
 } from "./appErrors";
+import { HttpError } from "./httpErrors";
 
 export type HttpErrorPayload = {
   statusCode: number;
   message: string;
   code: string;
   details?: Record<string, string[]>;
+  stack?: string;
 };
 
 const toValidationDetails = (issues: ZodError["issues"]) => {
@@ -32,7 +37,76 @@ const toValidationDetails = (issues: ZodError["issues"]) => {
   return Object.fromEntries(details);
 };
 
+function mapHttpError(error: HttpError): HttpErrorPayload {
+  const payload: HttpErrorPayload = {
+    statusCode: error.statusCode,
+    message: error.message,
+    code: error.code,
+  };
+
+  if (error.statusCode === 500 && error.stack) {
+    payload.stack = error.stack;
+  }
+
+  return payload;
+}
+
+function mapAuthError(error: unknown): HttpErrorPayload | null {
+  const authErrors = [
+    [DuplicateUserError, 409, "DUPLICATE_USER"],
+    [InvalidCredentialsError, 401, "INVALID_CREDENTIALS"],
+    [MissingAuthTokenError, 401, "MISSING_AUTH_TOKEN"],
+    [MalformedAuthorizationHeaderError, 401, "MALFORMED_AUTH_HEADER"],
+    [InvalidTokenPayloadError, 401, "INVALID_TOKEN_PAYLOAD"],
+    [AuthenticatedUserNotFoundError, 401, "AUTHENTICATED_USER_NOT_FOUND"],
+    [UserNotFoundError, 404, "USER_NOT_FOUND"],
+    [InvalidOrExpiredResetCodeError, 400, "INVALID_OR_EXPIRED_RESET_CODE"],
+    [EmailDeliveryError, 502, "EMAIL_DELIVERY_ERROR"],
+    [
+      PasswordResetEmailDeliveryError,
+      502,
+      "PASSWORD_RESET_EMAIL_DELIVERY_ERROR",
+    ],
+    [
+      InvalidEmailVerificationTokenError,
+      400,
+      "INVALID_EMAIL_VERIFICATION_TOKEN",
+    ],
+  ] as const;
+
+  for (const [ErrorClass, statusCode, code] of authErrors) {
+    if (error instanceof ErrorClass) {
+      return {
+        statusCode,
+        message: error.message,
+        code,
+      };
+    }
+  }
+
+  return null;
+}
+
+function mapPrismaError(error: unknown): HttpErrorPayload | null {
+  if (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2025"
+  ) {
+    return {
+      statusCode: 404,
+      message: "Risorsa non trovata",
+      code: "NOT_FOUND",
+    };
+  }
+
+  return null;
+}
+
 export function mapErrorToHttp(error: unknown): HttpErrorPayload {
+  if (error instanceof HttpError) {
+    return mapHttpError(error);
+  }
+
   if (error instanceof ZodError) {
     return {
       statusCode: 400,
@@ -58,78 +132,23 @@ export function mapErrorToHttp(error: unknown): HttpErrorPayload {
     };
   }
 
-  if (error instanceof DuplicateUserError) {
-    return {
-      statusCode: 409,
-      message: error.message,
-      code: "DUPLICATE_USER",
-    };
+  const authError = mapAuthError(error);
+  if (authError) {
+    return authError;
   }
 
-  if (error instanceof InvalidCredentialsError) {
-    return {
-      statusCode: 401,
-      message: error.message,
-      code: "INVALID_CREDENTIALS",
-    };
+  const prismaError = mapPrismaError(error);
+  if (prismaError) {
+    return prismaError;
   }
 
-  if (error instanceof MissingAuthTokenError) {
+  if (error instanceof Error && error.stack) {
     return {
-      statusCode: 401,
-      message: error.message,
-      code: "MISSING_AUTH_TOKEN",
+      statusCode: 500,
+      message: "Errore interno del server",
+      code: "INTERNAL_SERVER_ERROR",
+      stack: error.stack,
     };
-  }
-
-  if (error instanceof MalformedAuthorizationHeaderError) {
-    return {
-      statusCode: 401,
-      message: error.message,
-      code: "MALFORMED_AUTH_HEADER",
-    };
-  }
-
-  if (error instanceof InvalidTokenPayloadError) {
-    return {
-      statusCode: 401,
-      message: error.message,
-      code: "INVALID_TOKEN_PAYLOAD",
-    };
-  }
-
-  if (error instanceof AuthenticatedUserNotFoundError) {
-    return {
-      statusCode: 401,
-      message: error.message,
-      code: "AUTHENTICATED_USER_NOT_FOUND",
-    };
-  }
-
-  if (error instanceof UserNotFoundError) {
-    return {
-      statusCode: 404,
-      message: error.message,
-      code: "USER_NOT_FOUND",
-    };
-  }
-
-  if (error instanceof InvalidOrExpiredResetCodeError) {
-    return {
-      statusCode: 400,
-      message: error.message,
-      code: "INVALID_OR_EXPIRED_RESET_CODE",
-    };
-  }
-
-  if (error instanceof Prisma.PrismaClientKnownRequestError) {
-    if (error.code === "P2025") {
-      return {
-        statusCode: 404,
-        message: "Risorsa non trovata",
-        code: "NOT_FOUND",
-      };
-    }
   }
 
   return {

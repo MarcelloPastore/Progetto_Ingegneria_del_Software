@@ -6,13 +6,18 @@ import {
   CreaTurnoSchema,
   ModificaTurnoSchema,
   AssegnaTurnoSchema,
+  SaluteCasaDto,
 } from "../dto/TurnoDto";
 import { TurnoService } from "../service/TurnoService";
 import { CasaParams, TurnoParams } from "../types/params";
-import { mapErrorToHttp } from "../errors/errorMapper";
+import { sendErrorReply } from "../utils/errorReply";
 
 export class TurnoController {
-  constructor(private turniService: TurnoService) {}
+  constructor(private readonly turniService: TurnoService) {}
+
+  private handleFailure(reply: FastifyReply, error: unknown) {
+    return sendErrorReply(reply, error);
+  }
 
   /**
    * GET /case/:idCasa/turni
@@ -25,8 +30,7 @@ export class TurnoController {
       const turni = await this.turniService.getAllTurni(request.params.idCasa);
       return reply.status(200).send(turni);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
@@ -43,8 +47,25 @@ export class TurnoController {
       );
       return reply.status(200).send(turni);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
+    }
+  };
+
+  /**
+   * GET /case/:idCasa/turni/salute-casa
+   */
+  getGiorniDallUltimaPulizia = async (
+    request: FastifyRequest<{ Params: CasaParams }>,
+    reply: FastifyReply,
+  ) => {
+    try {
+      const result: SaluteCasaDto[] =
+        await this.turniService.getGiorniDallUltimaPulizia(
+          request.params.idCasa,
+        );
+      return reply.status(200).send(result);
+    } catch (error) {
+      return this.handleFailure(reply, error);
     }
   };
 
@@ -64,8 +85,7 @@ export class TurnoController {
       );
       return reply.status(201).send(result);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
@@ -83,8 +103,7 @@ export class TurnoController {
       );
       return reply.status(200).send(result);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
@@ -105,8 +124,7 @@ export class TurnoController {
       );
       return reply.status(200).send(result);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
@@ -125,8 +143,7 @@ export class TurnoController {
       );
       return reply.status(204).send();
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
@@ -145,8 +162,7 @@ export class TurnoController {
       );
       return reply.status(200).send(result);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
@@ -166,8 +182,7 @@ export class TurnoController {
       );
       return reply.status(200).send(result);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
@@ -185,8 +200,7 @@ export class TurnoController {
       );
       return reply.status(200).send(result);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
@@ -205,8 +219,7 @@ export class TurnoController {
       );
       return reply.status(200).send(result);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 }

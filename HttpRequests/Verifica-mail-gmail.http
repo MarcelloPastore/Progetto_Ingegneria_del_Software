@@ -1,0 +1,31 @@
+### Invio verifica usando Gmail SMTP (esempio)
+
+# 1) Configura il file .env (non committare credenziali):
+# Copia .env.example in .env e imposta i valori seguenti:
+#
+# MAIL_HOST=smtp.gmail.com
+# MAIL_PORT=587
+# MAIL_USER=mittente@gmail.com
+# MAIL_PASSWORD=YOUR_APP_PASSWORD_HERE
+# MAIL_FROM="Mittente Nome" <mittente@gmail.com>
+#
+# Dove:
+# - `mittente@gmail.com` è l'account Gmail che invia la mail (deve avere l'App Password creata nelle impostazioni Google)
+# - `YOUR_APP_PASSWORD_HERE` è l'App Password generata in Google Account > Sicurezza > Password per le app (richiede l'autenticazione a due fattori attiva)
+#
+# 2) Avvia i container con le nuove variabili (.env presente nella root del progetto):
+#
+# docker compose up --build
+#
+# 3) Esegui la richiesta di register (questa farà partire l'invio della mail di verifica dal mittente verso il destinatario):
+
+POST http://localhost:23109/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "email": "yucjb06043@minitts.net",
+  "password": "TestPass1a23!",
+  "username": "destinataraio_test",
+  "nome": "Destinaatario",
+  "cognome": "Tesat"
+}

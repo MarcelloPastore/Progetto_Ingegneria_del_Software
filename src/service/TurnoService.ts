@@ -4,6 +4,7 @@ import {
   AssegnaTurnoDto,
   TurnoListItemDto,
   TurnoResponseDto,
+  SaluteCasaDto,
 } from "../dto/TurnoDto";
 import { TurnoConverter } from "../dto/converter/TurnoConverter";
 import {
@@ -127,6 +128,22 @@ export class TurnoService {
       .filter((dto: TurnoResponseDto) => isToday(dto.dataProssimaPulizia));
   }
 
+  async getGiorniDallUltimaPulizia(idCasa: string): Promise<SaluteCasaDto[]> {
+    const turni = await turnoRepository.findTurniByCasa(idCasa);
+    const oggi = new Date();
+
+    return turni
+      .filter((t: TurnoConAssegnatario) => t.dataUltimaPulizia != null)
+      .map((t: TurnoConAssegnatario) => ({
+        id: t.id,
+        task: t.task,
+        giorniPassati: Math.floor(
+          (oggi.getTime() - t.dataUltimaPulizia!.getTime()) /
+            (1000 * 60 * 60 * 24),
+        ),
+      }));
+  }
+
   async getTurno(idCasa: string, idTurno: string): Promise<TurnoResponseDto> {
     const turno = await turnoRepository.findTurnoByIdOrThrow(idCasa, idTurno);
 
@@ -221,19 +238,40 @@ export class TurnoService {
       idTurno,
       idUtente,
     );
+
+    const membriIds = await casaRepository.getMembriCasaIds(idCasa);
+    const membriSet = new Set(membriIds);
     const ordine = turno.ordineRotazione ?? [];
-    const ordineLength = ordine.length;
-    const indiceCorrente = turno.indiceRotazioneCorrente ?? 0;
+
+    const nuoviMembri = membriIds.filter((id: string) => !ordine.includes(id));
+
+    let ordineAggiornato = [...ordine];
+    if (nuoviMembri.length > 0) {
+      const indiceAssegnatario = ordineAggiornato.indexOf(
+        turno.assegnatarioCorrente,
+      );
+      ordineAggiornato.splice(indiceAssegnatario, 0, ...nuoviMembri);
+    }
+
+    ordineAggiornato = ordineAggiornato.filter((id: string) =>
+      membriSet.has(id),
+    );
+
+    const ordineLength = ordineAggiornato.length;
+    const indiceCorrente = ordineAggiornato.indexOf(turno.assegnatarioCorrente);
 
     const indiceProssimo =
       ordineLength === 0 ? indiceCorrente : (indiceCorrente + 1) % ordineLength;
     const assegnatarioProssimo =
-      ordineLength === 0 ? turno.assegnatarioCorrente : ordine[indiceProssimo];
+      ordineLength === 0
+        ? turno.assegnatarioCorrente
+        : ordineAggiornato[indiceProssimo];
 
     const aggiornamento = await turnoRepository.updateTurno(idTurno, {
       dataUltimaPulizia: new Date(),
       indiceRotazioneCorrente: indiceProssimo,
       assegnatarioCorrente: assegnatarioProssimo,
+      ordineRotazione: ordineAggiornato,
     });
 
     return turnoConverter.toDto(aggiornamento);
