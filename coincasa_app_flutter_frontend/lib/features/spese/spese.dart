@@ -1,4 +1,5 @@
 export 'screens/elimina_spesa.dart';
+export 'screens/modifica_spesa_admin.dart';
 export 'screens/dettaglio_spesa_admin.dart';
 export 'screens/dettaglio_spesa_debitore.dart';
 export 'nessuna_spesa_registrata.dart';

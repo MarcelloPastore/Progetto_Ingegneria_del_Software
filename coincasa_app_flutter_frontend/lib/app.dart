@@ -52,6 +52,8 @@ class CoinCasaApp extends StatelessWidget {
           ModificheSpeseSuccessoScreen.routeName: (_) =>
               const ModificheSpeseSuccessoScreen(),
           EliminaSpesaScreen.routeName: (_) => const EliminaSpesaScreen(),
+          ModificaSpesaAdminScreen.routeName: (_) =>
+              const ModificaSpesaAdminScreen(),
           NessunaSpeseRegistrataScreen.routeName: (_) =>
               const NessunaSpeseRegistrataScreen(),
           InserisciSpesaScreen.routeName: (_) => const InserisciSpesaScreen(),

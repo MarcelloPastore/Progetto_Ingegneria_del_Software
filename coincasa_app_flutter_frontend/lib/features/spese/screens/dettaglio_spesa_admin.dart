@@ -12,7 +12,7 @@ import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
 import 'package:coincasa_app/features/spese/screens/elimina_spesa.dart';
 import 'package:coincasa_app/features/spese/screens/lista_spese_admin.dart';
-import 'package:coincasa_app/features/spese/screens/modifiche_spese_negata.dart';
+import 'package:coincasa_app/features/spese/screens/modifica_spesa_admin.dart';
 
 class DettaglioSpesaAdminScreen extends ConsumerStatefulWidget {
   const DettaglioSpesaAdminScreen({super.key});
@@ -163,6 +163,7 @@ class _DetailContent extends StatelessWidget {
         : data.spesa.importo / includedRows;
 
     final isCreator = data.spesa.isCreatedBy(data.currentUserId);
+    final hasAnyPaidQuota = _computeHasAnyPaidQuota(data);
 
     return Column(
       children: [
@@ -221,6 +222,10 @@ class _DetailContent extends StatelessWidget {
               fontSize: 18,
             ),
           ),
+          if (hasAnyPaidQuota) ...[
+            const SizedBox(height: AppSizes.p16),
+            const _LockedBanner(),
+          ],
           const SizedBox(height: AppSizes.p32),
           _SummaryCard(
             payerNames: payerNames.isEmpty ? const ['Nessuno'] : payerNames,
@@ -250,19 +255,38 @@ class _DetailContent extends StatelessWidget {
           deleteLabel: 'Elimina spesa',
           backLabel: 'Torna alle spese',
           isCreator: isCreator,
-          onModify: () => Navigator.of(context).pushNamed(
-            ModificheSpeseNegataScreen.routeName,
-            arguments: data.spesa.id,
-          ),
-          onDelete: () => Navigator.of(context).pushNamed(
-            EliminaSpesaScreen.routeName,
-            arguments: data.spesa.id,
-          ),
+          onModify: hasAnyPaidQuota
+              ? null
+              : () => Navigator.of(context).pushNamed(
+                    ModificaSpesaAdminScreen.routeName,
+                    arguments: data.spesa,
+                  ),
+          onDelete: hasAnyPaidQuota
+              ? null
+              : () => Navigator.of(context).pushNamed(
+                    EliminaSpesaScreen.routeName,
+                    arguments: data.spesa.id,
+                  ),
           onBack: () => Navigator.of(context)
               .pushReplacementNamed(ListaSpeseAdminScreen.routeName),
         ),
       ],
     );
+  }
+
+  bool _computeHasAnyPaidQuota(_SpesaDetailData data) {
+    if (data.quote.isNotEmpty) {
+      return data.quote.any((q) => q.pagata);
+    }
+    if (data.spesa.partecipanti.isNotEmpty) {
+      return data.spesa.partecipanti.any(
+        (p) =>
+            p['pagato'] == true ||
+            p['pagata'] == true ||
+            p['saldato'] == true,
+      );
+    }
+    return false;
   }
 
   List<_QuotaRowData> _buildRows(_SpesaDetailData data) {
@@ -301,6 +325,44 @@ class _DetailContent extends StatelessWidget {
     }
 
     return const [];
+  }
+}
+
+class _LockedBanner extends StatelessWidget {
+  const _LockedBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2A1800),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFFF9E45), width: 1.5),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(top: 1),
+            child: Icon(Icons.lock_rounded, color: Color(0xFFFF9E45), size: 20),
+          ),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Text(
+              'Questa spesa ha quote già pagate: modifica ed eliminazione bloccate.',
+              style: TextStyle(
+                color: Color(0xFFFFBC6B),
+                fontSize: 13,
+                fontFamily: 'Inter',
+                fontWeight: FontWeight.w600,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

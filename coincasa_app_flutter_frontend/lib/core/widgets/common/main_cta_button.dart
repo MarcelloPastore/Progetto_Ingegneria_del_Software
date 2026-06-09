@@ -83,6 +83,9 @@ class _DetailActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDisabled = onPressed == null;
+    final effectiveColor = isDisabled ? const Color(0xFF5A5570) : color;
+
     return SizedBox(
       height: height,
       width: double.infinity,
@@ -92,7 +95,9 @@ class _DetailActionButton extends StatelessWidget {
             begin: const Alignment(0.50, 0.00),
             end: const Alignment(0.50, 1.00),
             colors: [
-              Colors.white.withValues(alpha: 0.18),
+              isDisabled
+                  ? Colors.white.withValues(alpha: 0.04)
+                  : Colors.white.withValues(alpha: 0.18),
               Colors.white.withValues(alpha: 0.00),
             ],
           ),
@@ -100,7 +105,7 @@ class _DetailActionButton extends StatelessWidget {
             side: BorderSide(
               width: 2,
               strokeAlign: BorderSide.strokeAlignOutside,
-              color: color,
+              color: effectiveColor,
             ),
             borderRadius: _radius,
           ),
@@ -120,14 +125,23 @@ class _DetailActionButton extends StatelessWidget {
             padding: EdgeInsets.zero,
             shape: const RoundedRectangleBorder(borderRadius: _radius),
           ),
-          child: Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontSize: 15,
-              fontFamily: 'Inter',
-              fontWeight: FontWeight.w800,
-            ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (isDisabled) ...[
+                Icon(Icons.lock_outline_rounded, color: effectiveColor, size: 14),
+                const SizedBox(width: 5),
+              ],
+              Text(
+                label,
+                style: TextStyle(
+                  color: effectiveColor,
+                  fontSize: 15,
+                  fontFamily: 'Inter',
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
           ),
         ),
       ),

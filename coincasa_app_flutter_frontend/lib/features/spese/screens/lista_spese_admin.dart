@@ -45,6 +45,8 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
   /// Cache statica: sopravvive a pushReplacementNamed e autoDispose dei provider.
   static List<Spesa>? _cachedSpese;
   static Map<String, double>? _cachedSaldi;
+
+  _SpesaStatus? _activeFilter;
   @override
   void initState() {
     super.initState();
@@ -169,15 +171,21 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
       return const _EmptyExpensesContent();
     }
 
-    // Group spese by month
+    // Apply filter
+    final filtered = _activeFilter == null
+        ? spese
+        : spese
+            .where((s) => _computeSpesaStatus(s) == _activeFilter)
+            .toList();
+
+    // Group by month
     final speseGroupedByMonth = <DateTime, List<Spesa>>{};
-    for (final spesa in spese) {
+    for (final spesa in filtered) {
       final monthKey = DateTime(spesa.data.year, spesa.data.month);
       speseGroupedByMonth.putIfAbsent(monthKey, () => []);
       speseGroupedByMonth[monthKey]!.add(spesa);
     }
 
-    // Sort months in reverse order
     final sortedMonths = speseGroupedByMonth.keys.toList()
       ..sort((a, b) => b.compareTo(a));
 
@@ -204,42 +212,108 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
           const SizedBox(height: AppSizes.p24),
 
           // Monthly balance card
-          if (saldi != null)
-            _buildBalanceCard(saldi)
-          else
-            const SizedBox.shrink(),
-          const SizedBox(height: AppSizes.p32),
+          if (saldi != null) _buildBalanceCard(saldi) else const SizedBox.shrink(),
+          const SizedBox(height: AppSizes.p20),
 
-          // Spese list
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSizes.p22),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (
-                  int monthIndex = 0;
-                  monthIndex < sortedMonths.length;
-                  monthIndex++
-                ) ...[
-                  _buildMonthHeader(
-                    sortedMonths[monthIndex],
-                    isOpen: monthIndex == 0,
+          // Filter bar
+          _buildFilterBar(),
+          const SizedBox(height: AppSizes.p20),
+
+          // Spese list or empty-filter message
+          if (filtered.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSizes.p22, vertical: AppSizes.p32),
+              child: Center(
+                child: Text(
+                  'Nessuna spesa ${_filterLabel(_activeFilter!).toLowerCase()}.',
+                  style: const TextStyle(
+                    color: Color(0xFF908F8F),
+                    fontSize: 16,
+                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.w500,
                   ),
-                  const SizedBox(height: AppSizes.p16),
-                  for (final spesa
-                      in speseGroupedByMonth[sortedMonths[monthIndex]]!)
-                    _buildSpesaItem(context, spesa),
-                  if (monthIndex < sortedMonths.length - 1)
-                    const SizedBox(height: AppSizes.p24),
+                ),
+              ),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSizes.p22),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (int i = 0; i < sortedMonths.length; i++) ...[
+                    _buildMonthHeader(sortedMonths[i], isOpen: i == 0),
+                    const SizedBox(height: AppSizes.p16),
+                    for (final spesa in speseGroupedByMonth[sortedMonths[i]]!)
+                      _buildSpesaItem(context, spesa),
+                    if (i < sortedMonths.length - 1)
+                      const SizedBox(height: AppSizes.p24),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
           const SizedBox(height: AppSizes.p24),
         ],
       ),
     );
   }
+
+  Widget _buildFilterBar() {
+    return SizedBox(
+      height: 36,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: AppSizes.p22),
+        children: [
+          _FilterChip(
+            label: 'Tutte',
+            color: const Color(0xFF908F8F),
+            active: _activeFilter == null,
+            onTap: () => setState(() => _activeFilter = null),
+          ),
+          const SizedBox(width: 8),
+          _FilterChip(
+            label: _filterLabel(_SpesaStatus.pagata),
+            color: const Color(0xFF47CC5D),
+            active: _activeFilter == _SpesaStatus.pagata,
+            onTap: () => setState(() {
+              _activeFilter = _activeFilter == _SpesaStatus.pagata
+                  ? null
+                  : _SpesaStatus.pagata;
+            }),
+          ),
+          const SizedBox(width: 8),
+          _FilterChip(
+            label: _filterLabel(_SpesaStatus.incompleta),
+            color: const Color(0xFFFF9E45),
+            active: _activeFilter == _SpesaStatus.incompleta,
+            onTap: () => setState(() {
+              _activeFilter = _activeFilter == _SpesaStatus.incompleta
+                  ? null
+                  : _SpesaStatus.incompleta;
+            }),
+          ),
+          const SizedBox(width: 8),
+          _FilterChip(
+            label: _filterLabel(_SpesaStatus.nonPagata),
+            color: const Color(0xFFFF5252),
+            active: _activeFilter == _SpesaStatus.nonPagata,
+            onTap: () => setState(() {
+              _activeFilter = _activeFilter == _SpesaStatus.nonPagata
+                  ? null
+                  : _SpesaStatus.nonPagata;
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _filterLabel(_SpesaStatus status) => switch (status) {
+    _SpesaStatus.pagata     => 'Pagata',
+    _SpesaStatus.incompleta => 'Incompleta',
+    _SpesaStatus.nonPagata  => 'Non pagata',
+  };
 
   Widget _buildBottomActions(BuildContext context) {
     return Padding(
@@ -370,41 +444,30 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
   }
 
   Widget _buildSpesaItem(BuildContext context, Spesa spesa) {
-    final initials = _getInitials(spesa.descrizione);
-    final backgroundColor = _getAvatarColor(initials);
-    final isPagata = _isSpesaPagata(spesa);
+    final hasAnticipatore = _spesaHasAnticipatore(spesa.raw);
+    final anticipatoreNome = hasAnticipatore ? spesa.creatoreNome.trim() : '';
+    final avatarInitials = hasAnticipatore && anticipatoreNome.isNotEmpty
+        ? _nameInitials(anticipatoreNome)
+        : '';
+    final status = _computeSpesaStatus(spesa);
+    final firstNameAnticipatore = anticipatoreNome.split(RegExp(r'\s+')).first;
 
     return Opacity(
-      opacity: isPagata ? 0.4 : 1.0,
+      opacity: status == _SpesaStatus.pagata ? 0.55 : 1.0,
       child: Padding(
         padding: const EdgeInsets.only(bottom: AppSizes.p16),
         child: InkWell(
-          onTap: () => Navigator.of(
-            context,
-          ).pushNamed(DettaglioSpesaAdminScreen.routeName, arguments: spesa.id),
+          onTap: () => Navigator.of(context).pushNamed(
+            DettaglioSpesaAdminScreen.routeName,
+            arguments: spesa.id,
+          ),
           borderRadius: BorderRadius.circular(AppSizes.radius8),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: AppSizes.p6),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Container(
-                  width: 40,
-                  height: 37,
-                  decoration: ShapeDecoration(
-                    color: backgroundColor,
-                    shape: const OvalBorder(),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    initials,
-                    style: TextStyle(
-                      color: _getInitialsColor(initials),
-                      fontSize: 16,
-                      fontFamily: 'Inter',
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
+                _SpesaAvatar(initials: avatarInitials),
                 const SizedBox(width: AppSizes.p16),
                 Expanded(
                   child: Column(
@@ -419,23 +482,24 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(height: AppSizes.p4),
+                      const SizedBox(height: 3),
                       Text(
-                        isPagata
-                            ? '${_formatDate(spesa.data)} - pagata'
-                            : '${_formatDate(spesa.data)} - quote mancanti',
-                        style: TextStyle(
-                          color: isPagata
-                              ? const Color(0xFF47CC5D)
-                              : const Color(0xFF908F8F),
+                        hasAnticipatore && anticipatoreNome.isNotEmpty
+                            ? '${_formatDate(spesa.data)} · $firstNameAnticipatore ha anticipato'
+                            : _formatDate(spesa.data),
+                        style: const TextStyle(
+                          color: Color(0xFF908F8F),
                           fontSize: 12,
                           fontFamily: 'Inter',
                           fontWeight: FontWeight.w500,
                         ),
                       ),
+                      const SizedBox(height: 5),
+                      _SpesaStatusChip(status: status),
                     ],
                   ),
                 ),
+                const SizedBox(width: AppSizes.p8),
                 Text(
                   '€${spesa.importo.toStringAsFixed(2)}',
                   style: const TextStyle(
@@ -459,43 +523,72 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
     );
   }
 
-  /// Restituisce true se tutte le quote non escluse della spesa risultano pagate.
-  bool _isSpesaPagata(Spesa spesa) {
-    final partecipanti = spesa.partecipanti;
-    if (partecipanti.isEmpty) return false;
-    final nonEsclusi = partecipanti.where((p) => p['escluso'] != true).toList();
-    if (nonEsclusi.isEmpty) return false;
-    return nonEsclusi.every(
-      (p) => p['pagato'] == true || p['pagata'] == true || p['saldato'] == true,
-    );
-  }
+  _SpesaStatus _computeSpesaStatus(Spesa spesa) {
+    final nonEsclusi = spesa.partecipanti
+        .where((p) => p['escluso'] != true)
+        .toList();
+    if (nonEsclusi.isEmpty) return _SpesaStatus.nonPagata;
 
-  String _getInitials(String text) {
-    return text.isNotEmpty ? text[0].toUpperCase() : 'S';
-  }
+    bool isPaid(Map<String, dynamic> p) =>
+        p['pagato'] == true || p['pagata'] == true || p['saldato'] == true;
 
-  Color _getAvatarColor(String initials) {
-    // Simple color assignment based on initial
-    const colors = [
-      Color(0xFFEE7274), // Red-ish
-      Color(0xFF315173), // Blue-ish
-      Color(0xFF584036), // Brown-ish
-      Color(0xFF2D5E3F), // Green-ish
-    ];
+    if (nonEsclusi.every(isPaid)) return _SpesaStatus.pagata;
 
-    final index = initials.codeUnitAt(0) % colors.length;
-    return colors[index];
-  }
-
-  Color _getInitialsColor(String initials) {
-    if (initials == 'MR') {
-      return const Color(0xFF2CFF64);
-    } else if (initials == 'EM' || initials == 'E') {
-      return const Color(0xFF5ACEF8);
-    } else if (initials == 'GL') {
-      return Colors.white;
+    for (final p in nonEsclusi) {
+      if (_isCurrentUserPartecipante(p)) {
+        return isPaid(p) ? _SpesaStatus.incompleta : _SpesaStatus.nonPagata;
+      }
     }
-    return Colors.white;
+    return _SpesaStatus.nonPagata;
+  }
+
+  bool _isCurrentUserPartecipante(Map<String, dynamic> p) {
+    final userId = ApiProvider.client.currentUserId?.trim();
+    final userEmail = ApiProvider.client.currentUserEmail?.trim().toLowerCase();
+
+    final utente = p['utente'];
+    if (utente is Map) {
+      if (userId != null &&
+          (utente['id']?.toString() == userId ||
+              utente['utenteId']?.toString() == userId)) {
+        return true;
+      }
+      if (userEmail != null &&
+          utente['email']?.toString().toLowerCase() == userEmail) {
+        return true;
+      }
+    }
+    if (userId != null &&
+        (p['utenteId']?.toString() == userId ||
+            p['idUtente']?.toString() == userId)) {
+      return true;
+    }
+    if (userEmail != null && p['email']?.toString().toLowerCase() == userEmail) {
+      return true;
+    }
+    return false;
+  }
+
+  bool _spesaHasAnticipatore(Map<String, dynamic> raw) {
+    final anticipataDa = raw['anticipataDa'];
+    if (anticipataDa != null && anticipataDa.toString().trim().isNotEmpty) {
+      return true;
+    }
+    final pagatore = raw['pagatore'];
+    if (pagatore is Map && pagatore.isNotEmpty) return true;
+    if (pagatore is String && pagatore.trim().isNotEmpty) return true;
+    final pagatoreNome = raw['pagatoreNome'] ?? raw['pagatoDa'];
+    if (pagatoreNome != null && pagatoreNome.toString().trim().isNotEmpty) {
+      return true;
+    }
+    return false;
+  }
+
+  String _nameInitials(String name) {
+    final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    if (parts.isEmpty) return '';
+    if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
+    return '${parts.first.substring(0, 1)}${parts.last.substring(0, 1)}'.toUpperCase();
   }
 
   String _formatDate(DateTime date) {
@@ -536,6 +629,147 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
       'dic',
     ];
     return months[month - 1];
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Filter chip
+// ---------------------------------------------------------------------------
+
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({
+    required this.label,
+    required this.color,
+    required this.active,
+    required this.onTap,
+  });
+
+  final String label;
+  final Color color;
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
+        decoration: BoxDecoration(
+          color: active
+              ? color.withValues(alpha: 0.18)
+              : const Color(0xFF1E1A2D),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: active ? color : const Color(0xFF3A3555),
+            width: active ? 1.5 : 1,
+          ),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: TextStyle(
+            color: active ? color : const Color(0xFF908F8F),
+            fontSize: 13,
+            fontFamily: 'Inter',
+            fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Stato spesa — 3 livelli dal punto di vista del current user
+// ---------------------------------------------------------------------------
+
+enum _SpesaStatus { pagata, incompleta, nonPagata }
+
+class _SpesaAvatar extends StatelessWidget {
+  const _SpesaAvatar({required this.initials});
+
+  final String initials;
+
+  static const _colors = [
+    Color(0xFF17A832),
+    Color(0xFFEE7274),
+    Color(0xFF315173),
+    Color(0xFF584036),
+    Color(0xFF6A1B9A),
+    Color(0xFF2D5E3F),
+  ];
+
+  Color get _bgColor {
+    if (initials.isEmpty) return const Color(0xFF3A3850);
+    return _colors[initials.codeUnitAt(0) % _colors.length];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: ShapeDecoration(color: _bgColor, shape: const OvalBorder()),
+      alignment: Alignment.center,
+      child: initials.isEmpty
+          ? null
+          : Text(
+              initials,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+                fontFamily: 'Inter',
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+    );
+  }
+}
+
+class _SpesaStatusChip extends StatelessWidget {
+  const _SpesaStatusChip({required this.status});
+
+  final _SpesaStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, bg, fg) = switch (status) {
+      _SpesaStatus.pagata => (
+          'Pagata',
+          const Color(0xFF0A2D1A),
+          const Color(0xFF47CC5D),
+        ),
+      _SpesaStatus.incompleta => (
+          'Incompleta',
+          const Color(0xFF2E1800),
+          const Color(0xFFFF9E45),
+        ),
+      _SpesaStatus.nonPagata => (
+          'Non pagata',
+          const Color(0xFF2D0A0A),
+          const Color(0xFFFF5252),
+        ),
+    };
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(5),
+        border: Border.all(color: fg.withValues(alpha: 0.5), width: 1),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: fg,
+          fontSize: 11,
+          fontFamily: 'Inter',
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
   }
 }
 

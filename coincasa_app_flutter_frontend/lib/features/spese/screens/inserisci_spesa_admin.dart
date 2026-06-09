@@ -8,21 +8,23 @@ import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/utils/user_initials.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
-import 'package:coincasa_app/features/spese/screens/dettaglio_spesa_admin.dart';
+import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
+import 'package:coincasa_app/features/spese/screens/lista_spese_admin.dart';
+import 'package:coincasa_app/features/spese/screens/modifica_spesa_admin.dart';
+
+// ---------------------------------------------------------------------------
+// Providers
+// ---------------------------------------------------------------------------
 
 final speseCreateCasaProvider = FutureProvider.family<Casa?, String?>((
   ref,
   selectedCasaId,
 ) async {
   final caseUtente = await ApiProvider.casa.list();
-  if (caseUtente.isEmpty) {
-    return null;
-  }
+  if (caseUtente.isEmpty) return null;
   if (selectedCasaId != null && selectedCasaId.isNotEmpty) {
     for (final casa in caseUtente) {
-      if (casa.id == selectedCasaId) {
-        return casa;
-      }
+      if (casa.id == selectedCasaId) return casa;
     }
   }
   return caseUtente.first;
@@ -30,9 +32,7 @@ final speseCreateCasaProvider = FutureProvider.family<Casa?, String?>((
 
 final speseCreateInquiliniProvider =
     FutureProvider.family<List<Inquilino>, String?>((ref, casaId) {
-      if (casaId == null || casaId.isEmpty) {
-        return const [];
-      }
+      if (casaId == null || casaId.isEmpty) return const [];
       return ApiProvider.casa.listInquilini(casaId);
     });
 
@@ -41,6 +41,10 @@ final speseCreateFormProvider =
       _SpesaCreateFormController,
       _SpesaCreateFormState
     >((ref) => _SpesaCreateFormController());
+
+// ---------------------------------------------------------------------------
+// Screen — full page
+// ---------------------------------------------------------------------------
 
 class InserisciSpesaScreen extends ConsumerStatefulWidget {
   const InserisciSpesaScreen({super.key});
@@ -53,13 +57,13 @@ class InserisciSpesaScreen extends ConsumerStatefulWidget {
 }
 
 class _InserisciSpesaScreenState extends ConsumerState<InserisciSpesaScreen> {
-  final _importoController = TextEditingController();
-  final _descrizioneController = TextEditingController();
+  final _importoCtrl = TextEditingController();
+  final _descCtrl = TextEditingController();
 
   @override
   void dispose() {
-    _importoController.dispose();
-    _descrizioneController.dispose();
+    _importoCtrl.dispose();
+    _descCtrl.dispose();
     super.dispose();
   }
 
@@ -71,15 +75,11 @@ class _InserisciSpesaScreenState extends ConsumerState<InserisciSpesaScreen> {
     final casa = await ref.read(
       speseCreateCasaProvider(activeCasaController.selectedCasaId).future,
     );
-
-    if (!controller.validateBeforeSubmit()) {
-      return;
-    }
+    if (!controller.validateBeforeSubmit()) return;
     if (casa == null || casa.id.isEmpty) {
       controller.setSubmitError('Nessuna casa disponibile.');
       return;
     }
-
     controller.setSubmitting(true);
     try {
       final inquilini = await ref.read(
@@ -90,27 +90,40 @@ class _InserisciSpesaScreenState extends ConsumerState<InserisciSpesaScreen> {
         selectedIds: form.selectedInquiliniIds,
         currentUserId: currentUserId,
       );
-      final normalizedImporto = form.importo.replaceAll(',', '.');
       final payload = <String, dynamic>{
         'descrizione': form.descrizione.trim(),
-        'importo': double.parse(normalizedImporto),
+        'importo': double.parse(form.importo.replaceAll(',', '.')),
         'partecipanti': partecipanti,
+        'dataSpesa': _fmtDate(form.dataSpesa),
         'isRicorrente': form.spesaRicorrente,
         if (form.hoAnticipatoPerTutti && currentUserId != null)
           'anticipataDa': currentUserId,
         if (form.spesaRicorrente) ...{
-          'dataScadenza': DateTime.now().toIso8601String().split('T').first,
+          'dataScadenza': _fmtDate(form.dataSpesa),
           'cadenzaGiorni': _cadenzaGiorniFor(form.frequenza),
         },
       };
-      final nuovaSpesa = await ApiProvider.spese.create(casa.id, payload);
-
-      if (!mounted) {
-        return;
-      }
-      Navigator.of(context).pushReplacementNamed(
-        DettaglioSpesaAdminScreen.routeName,
-        arguments: nuovaSpesa.id,
+      await ApiProvider.spese.create(casa.id, payload);
+      if (!mounted) return;
+      final currentUserName = ApiProvider.client.currentUserName ?? '';
+      final importoNum = double.parse(form.importo.replaceAll(',', '.'));
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogCtx) => _SpesaAggiuntaDialog(
+          descrizione: form.descrizione.trim(),
+          importo: importoNum,
+          nPartecipanti: partecipanti.length,
+          haAnticipato: form.hoAnticipatoPerTutti,
+          anticipatoreNome: currentUserName.split(' ').first,
+          onTornaAlleSpese: () {
+            Navigator.of(dialogCtx).pop();
+            Navigator.of(context).pushNamedAndRemoveUntil(
+              ListaSpeseAdminScreen.routeName,
+              (_) => false,
+            );
+          },
+        ),
       );
     } catch (_) {
       controller.setSubmitError('Impossibile salvare la spesa. Riprova.');
@@ -133,141 +146,170 @@ class _InserisciSpesaScreenState extends ConsumerState<InserisciSpesaScreen> {
     final inquiliniAsync = casaAsync.when(
       data: (casa) => ref.watch(speseCreateInquiliniProvider(casa?.id)),
       loading: () => const AsyncValue<List<Inquilino>>.loading(),
-      error: (error, stackTrace) =>
-          AsyncValue<List<Inquilino>>.error(error, stackTrace),
+      error: (e, s) => AsyncValue<List<Inquilino>>.error(e, s),
     );
 
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       bottomNavigationBar: const HouseQuickNav(currentRoute: '/spese'),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(9, 8, 9, 13),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight:
-                  MediaQuery.sizeOf(context).height -
-                  MediaQuery.paddingOf(context).vertical -
-                  101,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'Inserisci spesa',
-                  style: AppTextStyles.screenTitleStrong.copyWith(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 17),
-                _ImportoField(
-                  controller: _importoController,
-                  hasError: form.showErrors && form.importo.isEmpty,
-                  onChanged: controller.setImporto,
-                ),
-                const SizedBox(height: 12),
-                _DescrizioneField(
-                  controller: _descrizioneController,
-                  onChanged: controller.setDescrizione,
-                ),
-                const SizedBox(height: 25),
-                inquiliniAsync.when(
-                  loading: () => const _DivisioneLoading(),
-                  error: (_, _) => _DivisioneSection(
-                    inquilini: const [],
-                    selectedIds: form.selectedInquiliniIds,
-                    currentUserId: null,
-                    showError:
-                        form.showErrors && form.selectedInquiliniIds.isEmpty,
-                    onSelected: controller.toggleInquilino,
-                  ),
-                  data: (inquilini) {
-                    final currentUserId = _resolveCurrentUserId(inquilini);
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (!mounted) {
-                        return;
-                      }
-                      controller.ensureSelected(currentUserId);
-                    });
-                    return _DivisioneSection(
-                      inquilini: inquilini,
-                      selectedIds: form.selectedInquiliniIds,
-                      currentUserId: currentUserId,
-                      showError:
-                          form.showErrors && form.selectedInquiliniIds.isEmpty,
-                      onSelected: controller.toggleInquilino,
-                    );
-                  },
-                ),
-                const SizedBox(height: 20),
-                _PaidForAllRow(
-                  value: form.hoAnticipatoPerTutti,
-                  onChanged: controller.setHoAnticipatoPerTutti,
-                ),
-                const SizedBox(height: 12),
-                if (isAdmin) ...[
-                  _RecurringRow(
-                    value: form.spesaRicorrente,
-                    onChanged: controller.setSpesaRicorrente,
-                  ),
-                  const SizedBox(height: 12),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Text(
-                      'Frequenza',
-                      style: AppTextStyles.screenTitleStrong.copyWith(
-                        color: form.spesaRicorrente
-                            ? AppColors.brandPrimary
-                            : const Color(0xFF6A5A86),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Breadcrumb
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).pop(),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.arrow_back_ios_new_rounded,
+                            color: AppColors.brandAccent,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Spese',
+                            style: AppTextStyles.screenTitleStrong.copyWith(
+                              color: AppColors.brandAccent,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: _FrequencyDropdown(
-                      value: form.frequenza,
-                      enabled: form.spesaRicorrente,
-                      onChanged: controller.setFrequenza,
+                    const SizedBox(height: 16),
+
+                    // Importo — shared widget
+                    SpesaFormImportoCard(
+                      controller: _importoCtrl,
+                      hasError: form.showErrors && !form.hasValidImporto,
+                      onChanged: controller.setImporto,
                     ),
-                  ),
-                ],
-                if (form.showMissingError) ...[
-                  const SizedBox(height: 24),
-                  const _ErrorLine(
-                    message: 'Dati mancanti: compila i campi necessari',
-                  ),
-                ],
-                SizedBox(height: form.showMissingError ? 20 : 24),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: _SaveButton(
-                    enabled: form.canSubmit,
-                    submitting: form.isSubmitting,
-                    onPressed: _submit,
-                  ),
+                    const SizedBox(height: 10),
+
+                    // Data + Descrizione — shared widgets
+                    Row(
+                      children: [
+                        SpesaFormDateField(
+                          value: form.dataSpesa,
+                          onChanged: controller.setDataSpesa,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: SpesaFormDescrizioneField(
+                            controller: _descCtrl,
+                            hasError: form.showErrors &&
+                                form.descrizione.trim().isEmpty,
+                            onChanged: controller.setDescrizione,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Dividi tra — shared widget
+                    inquiliniAsync.when(
+                      loading: () => const SpesaFormDivisioneLoading(),
+                      error: (_, _) => SpesaFormDivisioneSection(
+                        inquilini: const [],
+                        selectedIds: form.selectedInquiliniIds,
+                        lockedId: form.currentUserId,
+                        importo: form.importo,
+                        showError: form.showErrors &&
+                            form.selectedInquiliniIds.isEmpty,
+                        onSelected: controller.toggleInquilino,
+                      ),
+                      data: (inquilini) {
+                        final currentUserId = _resolveCurrentUserId(inquilini);
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (!mounted) return;
+                          controller.ensureSelected(currentUserId);
+                        });
+                        return SpesaFormDivisioneSection(
+                          inquilini: inquilini,
+                          selectedIds: form.selectedInquiliniIds,
+                          lockedId: currentUserId,
+                          importo: form.importo,
+                          showError: form.showErrors &&
+                              form.selectedInquiliniIds.isEmpty,
+                          onSelected: controller.toggleInquilino,
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Toggle panel — shared widgets
+                    SpesaFormTogglePanel(
+                      children: [
+                        SpesaFormPaidForAllRow(
+                          value: form.hoAnticipatoPerTutti,
+                          onChanged: controller.setHoAnticipatoPerTutti,
+                        ),
+                        const Divider(height: 1, color: Color(0xFF3A3555)),
+                        SpesaFormRecurringRow(
+                          value: form.spesaRicorrente,
+                          isAdmin: isAdmin,
+                          onChanged: isAdmin
+                              ? controller.setSpesaRicorrente
+                              : null,
+                        ),
+                      ],
+                    ),
+
+                    // Frequenza
+                    if (isAdmin && form.spesaRicorrente) ...[
+                      const SizedBox(height: 16),
+                      Text(
+                        'Frequenza',
+                        style: AppTextStyles.screenTitleStrong.copyWith(
+                          color: AppColors.brandPrimary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      SpesaFormFrequencyDropdown(
+                        value: form.frequenza,
+                        onChanged: controller.setFrequenza,
+                      ),
+                    ],
+
+                    if (form.showMissingError) ...[
+                      const SizedBox(height: 16),
+                      SpesaFormErrorLine(message: form.submitError),
+                    ],
+                    const SizedBox(height: 8),
+                  ],
                 ),
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: _CancelButton(
-                    enabled: !form.isSubmitting,
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
+
+            // CTA pinned — shared widget
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
+              child: SpesaFormConfermaButton(
+                label: 'Conferma e aggiungi',
+                enabled: form.canSubmit,
+                submitting: form.isSubmitting,
+                onPressed: _submit,
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Popup version — stile originale con TextEditingController
+// ---------------------------------------------------------------------------
 
 class InserisciSpesaPopupContent extends ConsumerStatefulWidget {
   const InserisciSpesaPopupContent({super.key});
@@ -298,15 +340,11 @@ class _InserisciSpesaPopupContentState
     final casa = await ref.read(
       speseCreateCasaProvider(activeCasaController.selectedCasaId).future,
     );
-
-    if (!controller.validateBeforeSubmit()) {
-      return;
-    }
+    if (!controller.validateBeforeSubmit()) return;
     if (casa == null || casa.id.isEmpty) {
       controller.setSubmitError('Nessuna casa disponibile.');
       return;
     }
-
     controller.setSubmitting(true);
     try {
       final inquilini = await ref.read(
@@ -317,35 +355,45 @@ class _InserisciSpesaPopupContentState
         selectedIds: form.selectedInquiliniIds,
         currentUserId: currentUserId,
       );
-      final normalizedImporto = form.importo.replaceAll(',', '.');
       final payload = <String, dynamic>{
         'descrizione': form.descrizione.trim(),
-        'importo': double.parse(normalizedImporto),
+        'importo': double.parse(form.importo.replaceAll(',', '.')),
         'partecipanti': partecipanti,
+        'dataSpesa': _fmtDate(form.dataSpesa),
         'isRicorrente': form.spesaRicorrente,
         if (form.hoAnticipatoPerTutti && currentUserId != null)
           'anticipataDa': currentUserId,
         if (form.spesaRicorrente) ...{
-          'dataScadenza': DateTime.now().toIso8601String().split('T').first,
+          'dataScadenza': _fmtDate(form.dataSpesa),
           'cadenzaGiorni': _cadenzaGiorniFor(form.frequenza),
         },
       };
-      final nuovaSpesa = await ApiProvider.spese.create(casa.id, payload);
-
-      if (!mounted) {
-        return;
-      }
-      navigator.pop();
-      navigator.pushNamed(
-        DettaglioSpesaAdminScreen.routeName,
-        arguments: nuovaSpesa.id,
+      await ApiProvider.spese.create(casa.id, payload);
+      if (!mounted) return;
+      final currentUserName = ApiProvider.client.currentUserName ?? '';
+      final importoNum = double.parse(form.importo.replaceAll(',', '.'));
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogCtx) => _SpesaAggiuntaDialog(
+          descrizione: form.descrizione.trim(),
+          importo: importoNum,
+          nPartecipanti: partecipanti.length,
+          haAnticipato: form.hoAnticipatoPerTutti,
+          anticipatoreNome: currentUserName.split(' ').first,
+          onTornaAlleSpese: () {
+            Navigator.of(dialogCtx).pop();
+            navigator.pushNamedAndRemoveUntil(
+              ListaSpeseAdminScreen.routeName,
+              (_) => false,
+            );
+          },
+        ),
       );
     } catch (_) {
       controller.setSubmitError('Impossibile salvare la spesa. Riprova.');
     } finally {
-      if (mounted) {
-        controller.setSubmitting(false);
-      }
+      if (mounted) controller.setSubmitting(false);
     }
   }
 
@@ -365,8 +413,7 @@ class _InserisciSpesaPopupContentState
     final inquiliniAsync = casaAsync.when(
       data: (casa) => ref.watch(speseCreateInquiliniProvider(casa?.id)),
       loading: () => const AsyncValue<List<Inquilino>>.loading(),
-      error: (error, stackTrace) =>
-          AsyncValue<List<Inquilino>>.error(error, stackTrace),
+      error: (e, s) => AsyncValue<List<Inquilino>>.error(e, s),
     );
 
     return Column(
@@ -381,20 +428,20 @@ class _InserisciSpesaPopupContentState
           ),
         ),
         const SizedBox(height: 10),
-        _ImportoField(
+        _PopupImportoField(
           controller: _importoController,
-          hasError: form.showErrors && form.importo.isEmpty,
+          hasError: form.showErrors && !form.hasValidImporto,
           onChanged: controller.setImporto,
         ),
         const SizedBox(height: 8),
-        _DescrizioneField(
+        _PopupDescrizioneField(
           controller: _descrizioneController,
           onChanged: controller.setDescrizione,
         ),
         const SizedBox(height: 20),
         inquiliniAsync.when(
           loading: () => const _DivisioneLoading(),
-          error: (_, _) => _DivisioneSection(
+          error: (_, _) => _PopupDivisioneSection(
             inquilini: const [],
             selectedIds: form.selectedInquiliniIds,
             currentUserId: null,
@@ -404,12 +451,10 @@ class _InserisciSpesaPopupContentState
           data: (inquilini) {
             final currentUserId = _resolveCurrentUserId(inquilini);
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (!mounted) {
-                return;
-              }
+              if (!mounted) return;
               controller.ensureSelected(currentUserId);
             });
-            return _DivisioneSection(
+            return _PopupDivisioneSection(
               inquilini: inquilini,
               selectedIds: form.selectedInquiliniIds,
               currentUserId: currentUserId,
@@ -419,25 +464,24 @@ class _InserisciSpesaPopupContentState
           },
         ),
         const SizedBox(height: 12),
-        _PaidForAllRow(
+        _PopupPaidForAllRow(
           value: form.hoAnticipatoPerTutti,
           onChanged: controller.setHoAnticipatoPerTutti,
         ),
         const SizedBox(height: 12),
-        if (isAdmin) ...[
-          _RecurringRow(
-            value: form.spesaRicorrente,
-            onChanged: controller.setSpesaRicorrente,
-          ),
+        _PopupRecurringRow(
+          value: form.spesaRicorrente,
+          isAdmin: isAdmin,
+          onChanged: isAdmin ? controller.setSpesaRicorrente : null,
+        ),
+        if (isAdmin && form.spesaRicorrente) ...[
           const SizedBox(height: 12),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Text(
               'Frequenza',
               style: AppTextStyles.screenTitleStrong.copyWith(
-                color: form.spesaRicorrente
-                    ? AppColors.brandPrimary
-                    : const Color(0xFF6A5A86),
+                color: AppColors.brandPrimary,
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
               ),
@@ -448,14 +492,13 @@ class _InserisciSpesaPopupContentState
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: _FrequencyDropdown(
               value: form.frequenza,
-              enabled: form.spesaRicorrente,
               onChanged: controller.setFrequenza,
             ),
           ),
         ],
         if (form.showMissingError) ...[
           const SizedBox(height: 14),
-          const _ErrorLine(message: 'Dati mancanti: compila i campi necessari'),
+          _ErrorLine(message: 'Dati mancanti: compila i campi necessari'),
         ],
         const SizedBox(height: 16),
         _PopupSaveButton(
@@ -468,9 +511,7 @@ class _InserisciSpesaPopupContentState
           padding: const EdgeInsets.symmetric(horizontal: 28),
           child: _CancelButton(
             enabled: !form.isSubmitting,
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
+            onPressed: () => Navigator.of(context).pop(),
           ),
         ),
       ],
@@ -478,252 +519,12 @@ class _InserisciSpesaPopupContentState
   }
 }
 
-// Form State Management
-class _SpesaCreateFormState {
-  _SpesaCreateFormState({
-    this.importo = '',
-    this.descrizione = '',
-    this.selectedInquiliniIds = const {},
-    this.currentUserId,
-    this.hoAnticipatoPerTutti = false,
-    this.spesaRicorrente = false,
-    this.frequenza = 'Mensile',
-    this.showErrors = false,
-    this.isSubmitting = false,
-    this.submitError = '',
-  });
+// ---------------------------------------------------------------------------
+// Popup-specific widgets (stile originale)
+// ---------------------------------------------------------------------------
 
-  final String importo;
-  final String descrizione;
-  final Set<String> selectedInquiliniIds;
-  final String? currentUserId;
-  final bool hoAnticipatoPerTutti;
-  final bool spesaRicorrente;
-  final String frequenza;
-  final bool showErrors;
-  final bool isSubmitting;
-  final String submitError;
-
-  bool get canSubmit =>
-      importo.trim().isNotEmpty &&
-      (double.tryParse(importo.trim().replaceAll(',', '.')) ?? 0) > 0 &&
-      descrizione.trim().isNotEmpty &&
-      selectedInquiliniIds.isNotEmpty &&
-      !isSubmitting;
-
-  bool get hasValidImporto =>
-      importo.trim().isNotEmpty &&
-      (double.tryParse(importo.trim().replaceAll(',', '.')) ?? 0) > 0;
-
-  bool get showMissingError => submitError.isNotEmpty && showErrors;
-}
-
-class _SpesaCreateFormController extends StateNotifier<_SpesaCreateFormState> {
-  _SpesaCreateFormController() : super(_SpesaCreateFormState());
-
-  void setImporto(String value) {
-    state = _SpesaCreateFormState(
-      importo: value,
-      descrizione: state.descrizione,
-      selectedInquiliniIds: state.selectedInquiliniIds,
-      currentUserId: state.currentUserId,
-      hoAnticipatoPerTutti: state.hoAnticipatoPerTutti,
-      spesaRicorrente: state.spesaRicorrente,
-      frequenza: state.frequenza,
-      showErrors: state.showErrors,
-    );
-  }
-
-  void setDescrizione(String value) {
-    state = _SpesaCreateFormState(
-      importo: state.importo,
-      descrizione: value,
-      selectedInquiliniIds: state.selectedInquiliniIds,
-      currentUserId: state.currentUserId,
-      hoAnticipatoPerTutti: state.hoAnticipatoPerTutti,
-      spesaRicorrente: state.spesaRicorrente,
-      frequenza: state.frequenza,
-      showErrors: state.showErrors,
-    );
-  }
-
-  void toggleInquilino(String inquilinoId) {
-    if (inquilinoId == state.currentUserId) {
-      return;
-    }
-    final newIds = {...state.selectedInquiliniIds};
-    if (newIds.contains(inquilinoId)) {
-      newIds.remove(inquilinoId);
-    } else {
-      newIds.add(inquilinoId);
-    }
-    state = _SpesaCreateFormState(
-      importo: state.importo,
-      descrizione: state.descrizione,
-      selectedInquiliniIds: newIds,
-      currentUserId: state.currentUserId,
-      hoAnticipatoPerTutti: state.hoAnticipatoPerTutti,
-      spesaRicorrente: state.spesaRicorrente,
-      frequenza: state.frequenza,
-      showErrors: state.showErrors,
-    );
-  }
-
-  void ensureSelected(String? inquilinoId) {
-    if (inquilinoId == null ||
-        inquilinoId.isEmpty ||
-        (state.selectedInquiliniIds.contains(inquilinoId) &&
-            state.currentUserId == inquilinoId)) {
-      return;
-    }
-    state = _SpesaCreateFormState(
-      importo: state.importo,
-      descrizione: state.descrizione,
-      selectedInquiliniIds: {...state.selectedInquiliniIds, inquilinoId},
-      currentUserId: inquilinoId,
-      hoAnticipatoPerTutti: state.hoAnticipatoPerTutti,
-      spesaRicorrente: state.spesaRicorrente,
-      frequenza: state.frequenza,
-      showErrors: state.showErrors,
-      isSubmitting: state.isSubmitting,
-      submitError: state.submitError,
-    );
-  }
-
-  void setHoAnticipatoPerTutti(bool value) {
-    state = _SpesaCreateFormState(
-      importo: state.importo,
-      descrizione: state.descrizione,
-      selectedInquiliniIds: state.selectedInquiliniIds,
-      currentUserId: state.currentUserId,
-      hoAnticipatoPerTutti: value,
-      spesaRicorrente: state.spesaRicorrente,
-      frequenza: state.frequenza,
-      showErrors: state.showErrors,
-    );
-  }
-
-  void setSpesaRicorrente(bool value) {
-    state = _SpesaCreateFormState(
-      importo: state.importo,
-      descrizione: state.descrizione,
-      selectedInquiliniIds: state.selectedInquiliniIds,
-      currentUserId: state.currentUserId,
-      hoAnticipatoPerTutti: state.hoAnticipatoPerTutti,
-      spesaRicorrente: value,
-      frequenza: state.frequenza,
-      showErrors: state.showErrors,
-    );
-  }
-
-  void setFrequenza(String value) {
-    state = _SpesaCreateFormState(
-      importo: state.importo,
-      descrizione: state.descrizione,
-      selectedInquiliniIds: state.selectedInquiliniIds,
-      currentUserId: state.currentUserId,
-      hoAnticipatoPerTutti: state.hoAnticipatoPerTutti,
-      spesaRicorrente: state.spesaRicorrente,
-      frequenza: value,
-      showErrors: state.showErrors,
-    );
-  }
-
-  bool validateBeforeSubmit() {
-    final hasValidImporto = state.hasValidImporto;
-    final hasDescrizione = state.descrizione.trim().isNotEmpty;
-    final hasInquilini = state.selectedInquiliniIds.isNotEmpty;
-
-    if (!hasValidImporto || !hasDescrizione || !hasInquilini) {
-      state = _SpesaCreateFormState(
-        importo: state.importo,
-        descrizione: state.descrizione,
-        selectedInquiliniIds: state.selectedInquiliniIds,
-        currentUserId: state.currentUserId,
-        hoAnticipatoPerTutti: state.hoAnticipatoPerTutti,
-        spesaRicorrente: state.spesaRicorrente,
-        frequenza: state.frequenza,
-        showErrors: true,
-      );
-      return false;
-    }
-    return true;
-  }
-
-  void setSubmitting(bool value) {
-    state = _SpesaCreateFormState(
-      importo: state.importo,
-      descrizione: state.descrizione,
-      selectedInquiliniIds: state.selectedInquiliniIds,
-      currentUserId: state.currentUserId,
-      hoAnticipatoPerTutti: state.hoAnticipatoPerTutti,
-      spesaRicorrente: state.spesaRicorrente,
-      frequenza: state.frequenza,
-      showErrors: state.showErrors,
-      isSubmitting: value,
-    );
-  }
-
-  void setSubmitError(String error) {
-    state = _SpesaCreateFormState(
-      importo: state.importo,
-      descrizione: state.descrizione,
-      selectedInquiliniIds: state.selectedInquiliniIds,
-      currentUserId: state.currentUserId,
-      hoAnticipatoPerTutti: state.hoAnticipatoPerTutti,
-      spesaRicorrente: state.spesaRicorrente,
-      frequenza: state.frequenza,
-      showErrors: true,
-      submitError: error,
-    );
-  }
-}
-
-String? _resolveCurrentUserId(List<Inquilino> inquilini) {
-  final userId = ApiProvider.client.currentUserId;
-  if (userId != null && userId.trim().isNotEmpty) {
-    return userId.trim();
-  }
-  final email = ApiProvider.client.currentUserEmail?.trim().toLowerCase();
-  final name = ApiProvider.client.currentUserName?.trim().toLowerCase();
-  for (final inquilino in inquilini) {
-    final values = [
-      inquilino.email,
-      inquilino.username,
-      inquilino.nome,
-      inquilino.nomeCompleto,
-    ].map((value) => value.trim().toLowerCase());
-    if ((email != null && values.contains(email)) ||
-        (name != null && values.contains(name))) {
-      return inquilino.id;
-    }
-  }
-  return inquilini.isNotEmpty ? inquilini.first.id : null;
-}
-
-List<String> _buildPartecipantiIds({
-  required Set<String> selectedIds,
-  required String? currentUserId,
-}) {
-  final partecipanti = <String>{...selectedIds};
-  if (currentUserId != null && currentUserId.isNotEmpty) {
-    partecipanti.add(currentUserId);
-  }
-  return partecipanti.toList();
-}
-
-int _cadenzaGiorniFor(String frequenza) {
-  return switch (frequenza) {
-    'Bimestrale' => 60,
-    'Trimestrale' => 90,
-    'Annuale' => 365,
-    _ => 30,
-  };
-}
-
-// UI Components
-class _ImportoField extends StatelessWidget {
-  const _ImportoField({
+class _PopupImportoField extends StatelessWidget {
+  const _PopupImportoField({
     required this.controller,
     required this.hasError,
     required this.onChanged,
@@ -781,8 +582,11 @@ class _ImportoField extends StatelessWidget {
   }
 }
 
-class _DescrizioneField extends StatelessWidget {
-  const _DescrizioneField({required this.controller, required this.onChanged});
+class _PopupDescrizioneField extends StatelessWidget {
+  const _PopupDescrizioneField({
+    required this.controller,
+    required this.onChanged,
+  });
 
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
@@ -825,20 +629,8 @@ class _DescrizioneField extends StatelessWidget {
   }
 }
 
-class _DivisioneLoading extends StatelessWidget {
-  const _DivisioneLoading();
-
-  @override
-  Widget build(BuildContext context) {
-    return const SizedBox(
-      height: 200,
-      child: Center(child: CircularProgressIndicator()),
-    );
-  }
-}
-
-class _DivisioneSection extends StatelessWidget {
-  const _DivisioneSection({
+class _PopupDivisioneSection extends StatelessWidget {
+  const _PopupDivisioneSection({
     required this.inquilini,
     required this.selectedIds,
     required this.currentUserId,
@@ -869,17 +661,16 @@ class _DivisioneSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        ...inquilini.asMap().entries.map((entry) {
-          final inquilino = entry.value;
-          final isSelected = selectedIds.contains(inquilino.id);
-          final isCurrentUser = inquilino.id == currentUserId;
+        ...inquilini.map((inq) {
+          final isSelected = selectedIds.contains(inq.id);
+          final isCurrentUser = inq.id == currentUserId;
           return Padding(
             padding: const EdgeInsets.only(bottom: 10),
-            child: _InquilinoCheckbox(
-              inquilino: inquilino,
+            child: _PopupInquilinoCheckbox(
+              inquilino: inq,
               isSelected: isSelected,
               isCurrentUser: isCurrentUser,
-              onChanged: () => onSelected(inquilino.id),
+              onChanged: () => onSelected(inq.id),
             ),
           );
         }),
@@ -892,8 +683,8 @@ class _DivisioneSection extends StatelessWidget {
   }
 }
 
-class _InquilinoCheckbox extends StatelessWidget {
-  const _InquilinoCheckbox({
+class _PopupInquilinoCheckbox extends StatelessWidget {
+  const _PopupInquilinoCheckbox({
     required this.inquilino,
     required this.isSelected,
     required this.isCurrentUser,
@@ -905,14 +696,14 @@ class _InquilinoCheckbox extends StatelessWidget {
   final bool isCurrentUser;
   final VoidCallback onChanged;
 
-  Color _getAvatarColor(String id) {
-    final colors = [
-      const Color(0xFF1B5E20),
-      const Color(0xFFE53935),
-      const Color(0xFF6D4C41),
-      const Color(0xFF1565C0),
+  Color _avatarColor(String id) {
+    const colors = [
+      Color(0xFF1B5E20),
+      Color(0xFFE53935),
+      Color(0xFF6D4C41),
+      Color(0xFF1565C0),
     ];
-    return colors[id.hashCode % colors.length];
+    return colors[id.hashCode.abs() % colors.length];
   }
 
   @override
@@ -929,12 +720,13 @@ class _InquilinoCheckbox extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: isCurrentUser ? null : onChanged,
+          borderRadius: BorderRadius.circular(AppSizes.radius8),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             child: Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: _getAvatarColor(inquilino.id),
+                  backgroundColor: _avatarColor(inquilino.id),
                   radius: 18,
                   child: Text(
                     resolveUserInitials(
@@ -951,11 +743,15 @@ class _InquilinoCheckbox extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    inquilino.nome,
+                    isCurrentUser
+                        ? '${inquilino.nome} (Tu)'
+                        : inquilino.nome,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: AppTextStyles.screenTitleStrong.copyWith(
-                      color: AppColors.textOnDark,
+                      color: isCurrentUser
+                          ? AppColors.textOnDark.withValues(alpha: 0.45)
+                          : AppColors.textOnDark,
                       fontSize: 14,
                     ),
                   ),
@@ -974,8 +770,8 @@ class _InquilinoCheckbox extends StatelessWidget {
   }
 }
 
-class _PaidForAllRow extends StatelessWidget {
-  const _PaidForAllRow({required this.value, required this.onChanged});
+class _PopupPaidForAllRow extends StatelessWidget {
+  const _PopupPaidForAllRow({required this.value, required this.onChanged});
 
   final bool value;
   final ValueChanged<bool> onChanged;
@@ -987,13 +783,25 @@ class _PaidForAllRow extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(
-              'Ho anticipato per tutti',
-              style: AppTextStyles.screenTitleStrong.copyWith(
-                color: const Color(0xFF3B3150),
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Ho anticipato per tutti',
+                  style: AppTextStyles.screenTitleStrong.copyWith(
+                    color: const Color(0xFF3B3150),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                Text(
+                  'Gli altri vedranno il debito verso di te',
+                  style: AppTextStyles.screenTitleStrong.copyWith(
+                    color: const Color(0xFF645A76),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
             ),
           ),
           Switch(
@@ -1007,63 +815,63 @@ class _PaidForAllRow extends StatelessWidget {
   }
 }
 
-class _ErrorLine extends StatelessWidget {
-  const _ErrorLine({required this.message});
+class _PopupRecurringRow extends StatelessWidget {
+  const _PopupRecurringRow({
+    required this.value,
+    required this.isAdmin,
+    required this.onChanged,
+  });
 
-  final String message;
+  final bool value;
+  final bool isAdmin;
+  final ValueChanged<bool>? onChanged;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         children: [
-          const Icon(Icons.warning, color: AppColors.statusNegative, size: 20),
-          const SizedBox(width: 8),
           Expanded(
-            child: Text(
-              message,
-              style: AppTextStyles.screenTitleStrong.copyWith(
-                color: AppColors.statusNegative,
-                fontSize: 13,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Spesa ricorrente',
+                  style: AppTextStyles.screenTitleStrong.copyWith(
+                    color: const Color(0xFF3B3150),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Ripete seguendo la data precedente',
+                  style: AppTextStyles.screenTitleStrong.copyWith(
+                    color: const Color(0xFF645A76),
+                    fontSize: 12,
+                  ),
+                ),
+                if (!isAdmin)
+                  const Text(
+                    '( solo HomeAdmin ) ⚠',
+                    style: TextStyle(
+                      color: AppColors.lockOrange,
+                      fontSize: 11,
+                      fontFamily: 'Inter',
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+              ],
             ),
           ),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeThumbColor: AppColors.textOnDark,
+            activeTrackColor: AppColors.brandPrimary,
+          ),
         ],
-      ),
-    );
-  }
-}
-
-class _SaveButton extends StatelessWidget {
-  const _SaveButton({
-    required this.enabled,
-    required this.submitting,
-    required this.onPressed,
-  });
-
-  final bool enabled;
-  final bool submitting;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton(
-      onPressed: enabled && !submitting ? onPressed : null,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: submitting
-            ? AppColors.textMuted
-            : AppColors.brandPrimary,
-        padding: const EdgeInsets.symmetric(vertical: 18),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-        disabledBackgroundColor: AppColors.textMuted,
-      ),
-      child: Text(
-        'Conferma e aggiungi',
-        style: AppTextStyles.screenTitleStrong.copyWith(
-          color: AppColors.textOnDark,
-          fontSize: 18,
-        ),
       ),
     );
   }
@@ -1085,14 +893,15 @@ class _PopupSaveButton extends StatelessWidget {
     return ElevatedButton(
       onPressed: enabled && !submitting ? onPressed : null,
       style: ElevatedButton.styleFrom(
-        backgroundColor: submitting
-            ? AppColors.textMuted
-            : const Color(0xFFA48DDA),
+        backgroundColor:
+            submitting ? AppColors.textMuted : const Color(0xFFA48DDA),
         disabledBackgroundColor: AppColors.textMuted,
         elevation: 4,
         shadowColor: Colors.black.withValues(alpha: 0.25),
         padding: const EdgeInsets.symmetric(vertical: 13),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
       ),
       child: Text(
         submitting ? 'Salvataggio...' : 'Aggiungi spesa',
@@ -1121,7 +930,9 @@ class _CancelButton extends StatelessWidget {
         foregroundColor: AppColors.errorStrong,
         side: const BorderSide(color: AppColors.errorStrong, width: 2),
         padding: const EdgeInsets.symmetric(vertical: 13),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+        ),
         disabledForegroundColor: AppColors.textMuted.withValues(alpha: 0.42),
       ),
       child: Text(
@@ -1135,8 +946,660 @@ class _CancelButton extends StatelessWidget {
   }
 }
 
-class _RecurringRow extends StatelessWidget {
-  const _RecurringRow({required this.value, required this.onChanged});
+// ---------------------------------------------------------------------------
+// Form State
+// ---------------------------------------------------------------------------
+
+class _SpesaCreateFormState {
+  _SpesaCreateFormState({
+    this.importo = '',
+    this.descrizione = '',
+    this.selectedInquiliniIds = const {},
+    this.currentUserId,
+    this.dataSpesa,
+    this.hoAnticipatoPerTutti = false,
+    this.spesaRicorrente = false,
+    this.frequenza = 'Mensile',
+    this.showErrors = false,
+    this.isSubmitting = false,
+    this.submitError = '',
+  });
+
+  final String importo;
+  final String descrizione;
+  final Set<String> selectedInquiliniIds;
+  final String? currentUserId;
+  final DateTime? dataSpesa;
+  final bool hoAnticipatoPerTutti;
+  final bool spesaRicorrente;
+  final String frequenza;
+  final bool showErrors;
+  final bool isSubmitting;
+  final String submitError;
+
+  DateTime get effectiveDate => dataSpesa ?? DateTime.now();
+
+  bool get hasValidImporto =>
+      importo.trim().isNotEmpty &&
+      (double.tryParse(importo.trim().replaceAll(',', '.')) ?? 0) > 0;
+
+  bool get canSubmit =>
+      hasValidImporto &&
+      descrizione.trim().isNotEmpty &&
+      selectedInquiliniIds.isNotEmpty &&
+      !isSubmitting;
+
+  bool get showMissingError => submitError.isNotEmpty && showErrors;
+
+  _SpesaCreateFormState copyWith({
+    String? importo,
+    String? descrizione,
+    Set<String>? selectedInquiliniIds,
+    String? currentUserId,
+    DateTime? dataSpesa,
+    bool? hoAnticipatoPerTutti,
+    bool? spesaRicorrente,
+    String? frequenza,
+    bool? showErrors,
+    bool? isSubmitting,
+    String? submitError,
+  }) {
+    return _SpesaCreateFormState(
+      importo: importo ?? this.importo,
+      descrizione: descrizione ?? this.descrizione,
+      selectedInquiliniIds: selectedInquiliniIds ?? this.selectedInquiliniIds,
+      currentUserId: currentUserId ?? this.currentUserId,
+      dataSpesa: dataSpesa ?? this.dataSpesa,
+      hoAnticipatoPerTutti: hoAnticipatoPerTutti ?? this.hoAnticipatoPerTutti,
+      spesaRicorrente: spesaRicorrente ?? this.spesaRicorrente,
+      frequenza: frequenza ?? this.frequenza,
+      showErrors: showErrors ?? this.showErrors,
+      isSubmitting: isSubmitting ?? this.isSubmitting,
+      submitError: submitError ?? this.submitError,
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Form Controller
+// ---------------------------------------------------------------------------
+
+class _SpesaCreateFormController
+    extends StateNotifier<_SpesaCreateFormState> {
+  _SpesaCreateFormController() : super(_SpesaCreateFormState());
+
+  void setImporto(String v) => state = state.copyWith(importo: v, submitError: '');
+  void setDescrizione(String v) => state = state.copyWith(descrizione: v, submitError: '');
+  void setDataSpesa(DateTime v) => state = state.copyWith(dataSpesa: v);
+  void setHoAnticipatoPerTutti(bool v) =>
+      state = state.copyWith(hoAnticipatoPerTutti: v);
+  void setSpesaRicorrente(bool v) =>
+      state = state.copyWith(spesaRicorrente: v);
+  void setFrequenza(String v) => state = state.copyWith(frequenza: v);
+
+  void toggleInquilino(String id) {
+    // L'utente corrente non può essere rimosso
+    if (id == state.currentUserId) return;
+    final ids = {...state.selectedInquiliniIds};
+    if (ids.contains(id)) {
+      ids.remove(id);
+    } else {
+      ids.add(id);
+    }
+    state = state.copyWith(selectedInquiliniIds: ids, submitError: '');
+  }
+
+  void ensureSelected(String? id) {
+    if (id == null || id.isEmpty) return;
+    if (state.selectedInquiliniIds.contains(id) &&
+        state.currentUserId == id) return;
+    state = state.copyWith(
+      selectedInquiliniIds: {...state.selectedInquiliniIds, id},
+      currentUserId: id,
+    );
+  }
+
+  bool validateBeforeSubmit() {
+    if (!state.hasValidImporto ||
+        state.descrizione.trim().isEmpty ||
+        state.selectedInquiliniIds.isEmpty) {
+      state = state.copyWith(
+        showErrors: true,
+        submitError: 'Dati mancanti: compila i campi necessari',
+      );
+      return false;
+    }
+    return true;
+  }
+
+  void setSubmitting(bool v) => state = state.copyWith(isSubmitting: v);
+  void setSubmitError(String e) =>
+      state = state.copyWith(submitError: e, showErrors: true, isSubmitting: false);
+}
+
+class _ImportoCard extends StatefulWidget {
+  const _ImportoCard({
+    required this.value,
+    required this.hasError,
+    required this.onChanged,
+    this.focusNode,
+  });
+
+  final String value;
+  final bool hasError;
+  final ValueChanged<String> onChanged;
+  final FocusNode? focusNode;
+
+  @override
+  State<_ImportoCard> createState() => _ImportoCardState();
+}
+
+class _ImportoCardState extends State<_ImportoCard> {
+  late final TextEditingController _ctrl;
+  late final FocusNode _focus;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController(text: widget.value);
+    _focus = widget.focusNode ?? FocusNode();
+  }
+
+  @override
+  void didUpdateWidget(_ImportoCard old) {
+    super.didUpdateWidget(old);
+    if (widget.value != _ctrl.text) {
+      _ctrl.text = widget.value;
+      _ctrl.selection =
+          TextSelection.collapsed(offset: _ctrl.text.length);
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    if (widget.focusNode == null) _focus.dispose();
+    super.dispose();
+  }
+
+  String get _displayAmount {
+    final raw = widget.value.trim().replaceAll(',', '.');
+    final n = double.tryParse(raw);
+    if (n == null || n == 0) return '€ 0,00';
+    return '€ ${n.toStringAsFixed(2).replaceAll('.', ',')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => _focus.requestFocus(),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceDarkElevated,
+          borderRadius: BorderRadius.circular(AppSizes.radius8),
+          border: Border.all(
+            color: widget.hasError
+                ? AppColors.statusNegative
+                : Colors.transparent,
+            width: 1.5,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Importo',
+              style: TextStyle(
+                color: AppColors.textOnDark.withValues(alpha: 0.55),
+                fontSize: 13,
+                fontFamily: 'Inter',
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    _displayAmount,
+                    style: AppTextStyles.screenTitleStrong.copyWith(
+                      color: AppColors.brandPrimary,
+                      fontSize: 32,
+                      fontWeight: FontWeight.w800,
+                    ),
+                    textAlign: TextAlign.right,
+                  ),
+                ),
+                // TextField invisibile per catturare l'input
+                SizedBox(
+                  width: 0,
+                  height: 0,
+                  child: TextField(
+                    controller: _ctrl,
+                    focusNode: _focus,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    onChanged: widget.onChanged,
+                    style: const TextStyle(fontSize: 1, color: Colors.transparent),
+                    decoration: const InputDecoration(border: InputBorder.none),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// UI — Data field
+// ---------------------------------------------------------------------------
+
+class _DateField extends StatelessWidget {
+  const _DateField({required this.value, required this.onChanged});
+
+  final DateTime? value;
+  final ValueChanged<DateTime> onChanged;
+
+  String get _label {
+    final d = value ?? DateTime.now();
+    return '${d.day.toString().padLeft(2, '0')}/'
+        '${d.month.toString().padLeft(2, '0')}/'
+        '${d.year}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () async {
+        final picked = await showDatePicker(
+          context: context,
+          initialDate: value ?? DateTime.now(),
+          firstDate: DateTime(2020),
+          lastDate: DateTime(2030),
+          builder: (ctx, child) => Theme(
+            data: Theme.of(ctx).copyWith(
+              colorScheme: const ColorScheme.dark(
+                primary: AppColors.brandPrimary,
+                surface: Color(0xFF1E1A30),
+              ),
+            ),
+            child: child!,
+          ),
+        );
+        if (picked != null) onChanged(picked);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceDarkElevated,
+          borderRadius: BorderRadius.circular(AppSizes.radius8),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.calendar_today_rounded,
+              color: AppColors.brandPrimary,
+              size: 16,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              _label,
+              style: AppTextStyles.screenTitleStrong.copyWith(
+                color: AppColors.textOnDark,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// UI — Descrizione field
+// ---------------------------------------------------------------------------
+
+class _DescrizioneField extends StatefulWidget {
+  const _DescrizioneField({
+    required this.value,
+    required this.hasError,
+    required this.onChanged,
+  });
+
+  final String value;
+  final bool hasError;
+  final ValueChanged<String> onChanged;
+
+  @override
+  State<_DescrizioneField> createState() => _DescrizioneFieldState();
+}
+
+class _DescrizioneFieldState extends State<_DescrizioneField> {
+  late final TextEditingController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController(text: widget.value);
+  }
+
+  @override
+  void didUpdateWidget(_DescrizioneField old) {
+    super.didUpdateWidget(old);
+    if (widget.value != _ctrl.text) {
+      _ctrl.text = widget.value;
+      _ctrl.selection =
+          TextSelection.collapsed(offset: _ctrl.text.length);
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: _ctrl,
+      onChanged: widget.onChanged,
+      style: AppTextStyles.screenTitleStrong.copyWith(
+        color: AppColors.textOnDark,
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+      ),
+      decoration: InputDecoration(
+        hintText: 'Descrizione spesa',
+        hintStyle: AppTextStyles.screenTitleStrong.copyWith(
+          color: AppColors.textOnDark.withValues(alpha: 0.45),
+          fontSize: 14,
+        ),
+        filled: true,
+        fillColor: AppColors.surfaceDarkElevated,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radius8),
+          borderSide: BorderSide(
+            color: widget.hasError
+                ? AppColors.statusNegative
+                : Colors.transparent,
+            width: 1.5,
+          ),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radius8),
+          borderSide: BorderSide(
+            color: widget.hasError
+                ? AppColors.statusNegative
+                : Colors.transparent,
+            width: 1.5,
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radius8),
+          borderSide:
+              const BorderSide(color: AppColors.brandAccent, width: 2),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 13,
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// UI — Divisione section
+// ---------------------------------------------------------------------------
+
+class _DivisioneLoading extends StatelessWidget {
+  const _DivisioneLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox(
+      height: 120,
+      child: Center(child: CircularProgressIndicator()),
+    );
+  }
+}
+
+class _DivisioneSection extends StatelessWidget {
+  const _DivisioneSection({
+    required this.inquilini,
+    required this.selectedIds,
+    required this.currentUserId,
+    required this.importo,
+    required this.showError,
+    required this.onSelected,
+  });
+
+  final List<Inquilino> inquilini;
+  final Set<String> selectedIds;
+  final String? currentUserId;
+  final String importo;
+  final bool showError;
+  final ValueChanged<String> onSelected;
+
+  double? get _quotaPerPerson {
+    if (selectedIds.isEmpty) return null;
+    final raw = importo.trim().replaceAll(',', '.');
+    final total = double.tryParse(raw);
+    if (total == null || total <= 0) return null;
+    return total / selectedIds.length;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final quota = _quotaPerPerson;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'DIVIDI TRA',
+          style: AppTextStyles.screenTitleStrong.copyWith(
+            color: const Color(0xFF7B5DC8),
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.6,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.surfaceDarkElevated,
+            borderRadius: BorderRadius.circular(AppSizes.radius8),
+            border: Border.all(
+              color: showError
+                  ? AppColors.statusNegative
+                  : Colors.transparent,
+              width: 1.5,
+            ),
+          ),
+          child: Column(
+            children: [
+              for (int i = 0; i < inquilini.length; i++) ...[
+                _InquilinoRow(
+                  inquilino: inquilini[i],
+                  isSelected: selectedIds.contains(inquilini[i].id),
+                  isCurrentUser: inquilini[i].id == currentUserId,
+                  quota: selectedIds.contains(inquilini[i].id)
+                      ? quota
+                      : null,
+                  onTap: () => onSelected(inquilini[i].id),
+                ),
+                if (i < inquilini.length - 1)
+                  const Divider(
+                    height: 1,
+                    indent: 14,
+                    endIndent: 14,
+                    color: Color(0xFF2E2A42),
+                  ),
+              ],
+            ],
+          ),
+        ),
+        if (showError) ...[
+          const SizedBox(height: 8),
+          const _ErrorLine(message: 'Seleziona almeno un coinquilino'),
+        ],
+      ],
+    );
+  }
+}
+
+class _InquilinoRow extends StatelessWidget {
+  const _InquilinoRow({
+    required this.inquilino,
+    required this.isSelected,
+    required this.isCurrentUser,
+    required this.quota,
+    required this.onTap,
+  });
+
+  final Inquilino inquilino;
+  final bool isSelected;
+  final bool isCurrentUser;
+  final double? quota;
+  final VoidCallback onTap;
+
+  Color _avatarColor(String id) {
+    const colors = [
+      Color(0xFF1B5E20),
+      Color(0xFFE53935),
+      Color(0xFF6D4C41),
+      Color(0xFF1565C0),
+      Color(0xFF6A1B9A),
+    ];
+    return colors[id.hashCode.abs() % colors.length];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final displayName = isCurrentUser
+        ? '${inquilino.nome} (Tu)'
+        : inquilino.nome;
+
+    return InkWell(
+      onTap: isCurrentUser ? null : onTap,
+      borderRadius: BorderRadius.circular(AppSizes.radius8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          children: [
+            // Avatar
+            CircleAvatar(
+              backgroundColor: _avatarColor(inquilino.id),
+              radius: 17,
+              child: Text(
+                resolveUserInitials(
+                  displayName: inquilino.nomeCompleto,
+                  email: inquilino.email,
+                  fallback: '?',
+                ),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Nome
+            Expanded(
+              child: Text(
+                displayName,
+                style: AppTextStyles.screenTitleStrong.copyWith(
+                  color: isCurrentUser
+                      ? AppColors.textOnDark.withValues(alpha: 0.45)
+                      : AppColors.textOnDark,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            // Quota amount
+            if (quota != null && isSelected) ...[
+              Text(
+                '€${quota!.toStringAsFixed(0)}',
+                style: AppTextStyles.screenTitleStrong.copyWith(
+                  color: AppColors.brandPrimary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(width: 8),
+            ] else if (!isCurrentUser) ...[
+              Text(
+                '−',
+                style: TextStyle(
+                  color: AppColors.textOnDark.withValues(alpha: 0.35),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+            // Checkbox
+            SizedBox(
+              width: 22,
+              height: 22,
+              child: Checkbox(
+                value: isSelected,
+                onChanged: isCurrentUser ? null : (_) => onTap(),
+                activeColor: AppColors.brandPrimary,
+                checkColor: Colors.white,
+                side: BorderSide(
+                  color: isCurrentUser
+                      ? AppColors.textOnDark.withValues(alpha: 0.2)
+                      : AppColors.textOnDark.withValues(alpha: 0.4),
+                  width: 1.5,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// UI — Toggle panel
+// ---------------------------------------------------------------------------
+
+class _TogglePanel extends StatelessWidget {
+  const _TogglePanel({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surfaceDarkElevated,
+        borderRadius: BorderRadius.circular(AppSizes.radius8),
+      ),
+      child: Column(children: children),
+    );
+  }
+}
+
+class _PaidForAllRow extends StatelessWidget {
+  const _PaidForAllRow({required this.value, required this.onChanged});
 
   final bool value;
   final ValueChanged<bool> onChanged;
@@ -1144,7 +1607,7 @@ class _RecurringRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
       child: Row(
         children: [
           Expanded(
@@ -1152,19 +1615,20 @@ class _RecurringRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Spesa ricorrente',
+                  'Ho anticipato per tutti',
                   style: AppTextStyles.screenTitleStrong.copyWith(
-                    color: const Color(0xFF3B3150),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
+                    color: AppColors.textOnDark,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
-                  'Ripete seguendo la data precedente',
-                  style: AppTextStyles.screenTitleStrong.copyWith(
-                    color: const Color(0xFF645A76),
+                  'Gli altri vedranno il debito verso di te',
+                  style: TextStyle(
+                    color: AppColors.textOnDark.withValues(alpha: 0.5),
                     fontSize: 12,
+                    fontFamily: 'Inter',
                   ),
                 ),
               ],
@@ -1173,8 +1637,10 @@ class _RecurringRow extends StatelessWidget {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeThumbColor: AppColors.textOnDark,
+            activeThumbColor: Colors.white,
             activeTrackColor: AppColors.brandPrimary,
+            inactiveThumbColor: Colors.white,
+            inactiveTrackColor: const Color(0xFF3A3555),
           ),
         ],
       ),
@@ -1182,85 +1648,446 @@ class _RecurringRow extends StatelessWidget {
   }
 }
 
+class _RecurringRow extends StatelessWidget {
+  const _RecurringRow({
+    required this.value,
+    required this.isAdmin,
+    required this.onChanged,
+  });
+
+  final bool value;
+  final bool isAdmin;
+  final ValueChanged<bool>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Opacity(
+      opacity: isAdmin ? 1.0 : 0.5,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Spesa ricorrente',
+                    style: AppTextStyles.screenTitleStrong.copyWith(
+                      color: AppColors.textOnDark,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 2,
+                    children: [
+                      Text(
+                        'Ripete seguendo la data precedente',
+                        style: TextStyle(
+                          color: AppColors.textOnDark.withValues(alpha: 0.5),
+                          fontSize: 12,
+                          fontFamily: 'Inter',
+                        ),
+                      ),
+                      if (!isAdmin)
+                        const Text(
+                          '( solo HomeAdmin ) ⚠',
+                          style: TextStyle(
+                            color: AppColors.lockOrange,
+                            fontSize: 11,
+                            fontFamily: 'Inter',
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Switch(
+              value: value,
+              onChanged: onChanged,
+              activeThumbColor: Colors.white,
+              activeTrackColor: AppColors.brandPrimary,
+              inactiveThumbColor: Colors.white,
+              inactiveTrackColor: const Color(0xFF3A3555),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// UI — Frequenza dropdown
+// ---------------------------------------------------------------------------
+
 class _FrequencyDropdown extends StatelessWidget {
   const _FrequencyDropdown({
     required this.value,
-    required this.enabled,
     required this.onChanged,
   });
 
   final String value;
-  final bool enabled;
   final ValueChanged<String> onChanged;
+
+  static const _options = [
+    'Mensile',
+    'Bimestrale',
+    'Trimestrale',
+    'Annuale',
+    'Personalizzata',
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final options = [
-      'Mensile',
-      'Bimestrale',
-      'Trimestrale',
-      'Annuale',
-      'Personalizzata',
-    ];
-    final selectedValue = options.contains(value) ? value : options.first;
-    final textStyle = AppTextStyles.screenTitleStrong.copyWith(
-      color: enabled
-          ? AppColors.textOnDark
-          : AppColors.textOnDark.withValues(alpha: 0.58),
-      fontSize: 14,
-    );
-
-    return Opacity(
-      opacity: enabled ? 1 : 0.72,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color: enabled
-              ? AppColors.surfaceDarkElevated
-              : AppColors.surfaceDarkElevated.withValues(alpha: 0.62),
-          borderRadius: BorderRadius.circular(AppSizes.radius8),
-          border: Border.all(color: Colors.transparent),
-        ),
-        child: DropdownButtonHideUnderline(
-          child: DropdownButton<String>(
-            value: selectedValue,
-            isExpanded: true,
-            items: options
-                .map(
-                  (opt) => DropdownMenuItem(
-                    value: opt,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 12.0),
-                      child: Text(
-                        opt,
-                        style: AppTextStyles.screenTitleStrong.copyWith(
-                          color: AppColors.textOnDark,
-                          fontSize: 14,
-                        ),
+    final selected = _options.contains(value) ? value : _options.first;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceDarkElevated,
+        borderRadius: BorderRadius.circular(AppSizes.radius8),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: selected,
+          isExpanded: true,
+          dropdownColor: AppColors.surfaceDarkElevated,
+          iconEnabledColor: AppColors.brandPrimary,
+          items: _options
+              .map(
+                (opt) => DropdownMenuItem(
+                  value: opt,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    child: Text(
+                      opt,
+                      style: AppTextStyles.screenTitleStrong.copyWith(
+                        color: AppColors.textOnDark,
+                        fontSize: 15,
                       ),
                     ),
                   ),
-                )
-                .toList(),
-            onChanged: enabled
-                ? (v) {
-                    if (v != null) onChanged(v);
-                  }
-                : null,
-            selectedItemBuilder: (context) => options
-                .map(
-                  (opt) => Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(opt, style: textStyle),
+                ),
+              )
+              .toList(),
+          selectedItemBuilder: (_) => _options
+              .map(
+                (opt) => Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    opt,
+                    style: AppTextStyles.screenTitleStrong.copyWith(
+                      color: AppColors.textOnDark,
+                      fontSize: 15,
+                    ),
                   ),
+                ),
+              )
+              .toList(),
+          onChanged: (v) {
+            if (v != null) onChanged(v);
+          },
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// UI — Error line
+// ---------------------------------------------------------------------------
+
+class _ErrorLine extends StatelessWidget {
+  const _ErrorLine({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const Icon(Icons.warning_rounded,
+            color: AppColors.statusNegative, size: 18),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            message,
+            style: AppTextStyles.screenTitleStrong.copyWith(
+              color: AppColors.statusNegative,
+              fontSize: 13,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// UI — Conferma button
+// ---------------------------------------------------------------------------
+
+class _ConfermaButton extends StatelessWidget {
+  const _ConfermaButton({
+    required this.enabled,
+    required this.submitting,
+    required this.onPressed,
+  });
+
+  final bool enabled;
+  final bool submitting;
+  final VoidCallback onPressed;
+
+  static const _radius = BorderRadius.all(Radius.circular(28));
+  static const _colorTop = Color(0xFF9B7FE8);
+  static const _colorMid = Color(0xFF7B5DC8);
+  static const _colorBot = Color(0xFF5C3FA8);
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 52,
+      width: double.infinity,
+      child: DecoratedBox(
+        decoration: ShapeDecoration(
+          gradient: enabled && !submitting
+              ? const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [_colorTop, _colorMid, _colorBot],
+                  stops: [0.0, 0.55, 1.0],
                 )
-                .toList(),
-            dropdownColor: AppColors.surfaceDarkElevated,
-            iconEnabledColor: AppColors.brandPrimary,
-            iconDisabledColor: AppColors.brandPrimary.withValues(alpha: 0.35),
+              : const LinearGradient(
+                  colors: [Color(0xFF4A4560), Color(0xFF3A3555)],
+                ),
+          shape: const RoundedRectangleBorder(borderRadius: _radius),
+          shadows: const [
+            BoxShadow(
+              color: Color(0x55000000),
+              blurRadius: 6,
+              offset: Offset(0, 3),
+            ),
+          ],
+        ),
+        child: OutlinedButton(
+          onPressed: enabled && !submitting ? onPressed : null,
+          style: OutlinedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            foregroundColor: Colors.transparent,
+            side: BorderSide.none,
+            padding: EdgeInsets.zero,
+            shape: const RoundedRectangleBorder(borderRadius: _radius),
+            elevation: 0,
+            shadowColor: Colors.transparent,
+          ),
+          child: Text(
+            submitting ? 'Salvataggio...' : 'Conferma e aggiungi',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontFamily: 'Inter',
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
       ),
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Confirmation banner dialog
+// ---------------------------------------------------------------------------
+
+class _SpesaAggiuntaDialog extends StatelessWidget {
+  const _SpesaAggiuntaDialog({
+    required this.descrizione,
+    required this.importo,
+    required this.nPartecipanti,
+    required this.haAnticipato,
+    required this.anticipatoreNome,
+    required this.onTornaAlleSpese,
+  });
+
+  final String descrizione;
+  final double importo;
+  final int nPartecipanti;
+  final bool haAnticipato;
+  final String anticipatoreNome;
+  final VoidCallback onTornaAlleSpese;
+
+  String _fmt(double v) =>
+      '€ ${v.toStringAsFixed(2).replaceAll('.', ',')}';
+
+  @override
+  Widget build(BuildContext context) {
+    final quota = nPartecipanti > 0 ? importo / nPartecipanti : importo;
+
+    return Dialog(
+      backgroundColor: const Color(0xFF1E1A2D),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 32, 24, 28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Checkmark
+            Container(
+              width: 72,
+              height: 72,
+              decoration: const BoxDecoration(
+                color: Color(0xFF1E1A2D),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.check_circle_rounded,
+                color: Color(0xFF4CAF50),
+                size: 72,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Spesa aggiunta!',
+              style: AppTextStyles.screenTitleStrong.copyWith(
+                color: AppColors.textOnDark,
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'La spesa "$descrizione" è stata aggiunta. I coinquilini sono stati notificati',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: AppColors.textOnDark.withValues(alpha: 0.65),
+                fontSize: 14,
+                fontFamily: 'Inter',
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 24),
+            // Summary card
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.surfaceDarkElevated,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  _SummaryRow(label: 'Totale', value: _fmt(importo)),
+                  const Divider(height: 1, color: Color(0xFF2E2A42)),
+                  _SummaryRow(
+                    label: 'Quota per persona',
+                    value: _fmt(quota),
+                  ),
+                  if (haAnticipato) ...[
+                    const Divider(height: 1, color: Color(0xFF2E2A42)),
+                    _SummaryRow(
+                      label: 'Ha pagato',
+                      value: anticipatoreNome.isNotEmpty
+                          ? anticipatoreNome
+                          : 'Tu',
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: MainCtaButton(
+                label: 'Torna alle spese',
+                onPressed: onTornaAlleSpese,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SummaryRow extends StatelessWidget {
+  const _SummaryRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: AppColors.textOnDark.withValues(alpha: 0.7),
+              fontSize: 15,
+              fontFamily: 'Inter',
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          Text(
+            value,
+            style: AppTextStyles.screenTitleStrong.copyWith(
+              color: AppColors.textOnDark,
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+String? _resolveCurrentUserId(List<Inquilino> inquilini) {
+  final userId = ApiProvider.client.currentUserId;
+  if (userId != null && userId.trim().isNotEmpty) return userId.trim();
+  final email = ApiProvider.client.currentUserEmail?.trim().toLowerCase();
+  final name = ApiProvider.client.currentUserName?.trim().toLowerCase();
+  for (final inquilino in inquilini) {
+    final values = [
+      inquilino.email,
+      inquilino.username,
+      inquilino.nome,
+      inquilino.nomeCompleto,
+    ].map((v) => v.trim().toLowerCase());
+    if ((email != null && values.contains(email)) ||
+        (name != null && values.contains(name))) {
+      return inquilino.id;
+    }
+  }
+  return inquilini.isNotEmpty ? inquilini.first.id : null;
+}
+
+List<String> _buildPartecipantiIds({
+  required Set<String> selectedIds,
+  required String? currentUserId,
+}) {
+  final set = <String>{...selectedIds};
+  if (currentUserId != null && currentUserId.isNotEmpty) set.add(currentUserId);
+  return set.toList();
+}
+
+int _cadenzaGiorniFor(String frequenza) => switch (frequenza) {
+  'Bimestrale' => 60,
+  'Trimestrale' => 90,
+  'Annuale' => 365,
+  _ => 30,
+};
+
+String _fmtDate(DateTime? d) =>
+    (d ?? DateTime.now()).toIso8601String().split('T').first;
