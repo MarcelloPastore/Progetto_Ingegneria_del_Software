@@ -236,6 +236,10 @@ class _DetailContent extends StatelessWidget {
             payerNames: payerNames.isEmpty ? const ['Nessuno'] : payerNames,
             quotaPerPersona: quotaPerPersona,
             anticipatoreNome: anticipatoreNome,
+            dataScadenza: data.spesa.dataScadenza,
+            isRicorrente: data.spesa.isRicorrente,
+            cadenzaMesi: data.spesa.raw['cadenzaMesi'] as int?,
+            cadenzaGiorni: data.spesa.raw['cadenzaGiorni'] as int?,
           ),
           const SizedBox(height: AppSizes.p32),
           Text(
@@ -429,16 +433,47 @@ class _SummaryCard extends StatelessWidget {
     required this.payerNames,
     required this.quotaPerPersona,
     this.anticipatoreNome,
+    this.dataScadenza,
+    this.isRicorrente = false,
+    this.cadenzaMesi,
+    this.cadenzaGiorni,
   });
 
   final List<String> payerNames;
   final double quotaPerPersona;
   final String? anticipatoreNome;
+  final DateTime? dataScadenza;
+  final bool isRicorrente;
+  final int? cadenzaMesi;
+  final int? cadenzaGiorni;
+
+  String get _frequenzaLabel {
+    if (cadenzaMesi != null) {
+      return switch (cadenzaMesi) {
+        1  => 'Mensile',
+        2  => 'Bimestrale',
+        3  => 'Trimestrale',
+        12 => 'Annuale',
+        _  => 'Ogni $cadenzaMesi mesi',
+      };
+    }
+    if (cadenzaGiorni != null) {
+      return switch (cadenzaGiorni) {
+        30  => 'Mensile',
+        60  => 'Bimestrale',
+        90  => 'Trimestrale',
+        365 => 'Annuale',
+        _   => 'Ogni $cadenzaGiorni giorni',
+      };
+    }
+    return 'Ricorrente';
+  }
 
   @override
   Widget build(BuildContext context) {
     final hasAnticipatore =
         anticipatoreNome != null && anticipatoreNome!.trim().isNotEmpty;
+    final hasScadenza = dataScadenza != null;
 
     return Container(
       decoration: BoxDecoration(
@@ -465,6 +500,22 @@ class _SummaryCard extends StatelessWidget {
             label: 'Quota per persone',
             value: _formatCurrency(quotaPerPersona),
           ),
+          if (hasScadenza) ...[
+            const Divider(color: Color(0xFF716E76), height: AppSizes.p18),
+            _SummaryRow(
+              label: 'Scadenza',
+              value: _formatLongDate(dataScadenza!),
+              valueColor: const Color(0xFFFFD31A),
+            ),
+          ],
+          if (isRicorrente) ...[
+            const Divider(color: Color(0xFF716E76), height: AppSizes.p18),
+            _SummaryRow(
+              label: 'Frequenza',
+              value: _frequenzaLabel,
+              valueColor: AppColors.brandAccent,
+            ),
+          ],
         ],
       ),
     );
@@ -472,10 +523,11 @@ class _SummaryCard extends StatelessWidget {
 }
 
 class _SummaryRow extends StatelessWidget {
-  const _SummaryRow({required this.label, required this.value});
+  const _SummaryRow({required this.label, required this.value, this.valueColor});
 
   final String label;
   final String value;
+  final Color? valueColor;
 
   @override
   Widget build(BuildContext context) {
@@ -496,7 +548,7 @@ class _SummaryRow extends StatelessWidget {
             value,
             textAlign: TextAlign.right,
             style: AppTextStyles.bodyStrong.copyWith(
-              color: AppColors.textOnDark,
+              color: valueColor ?? AppColors.textOnDark,
               fontSize: 18,
             ),
           ),

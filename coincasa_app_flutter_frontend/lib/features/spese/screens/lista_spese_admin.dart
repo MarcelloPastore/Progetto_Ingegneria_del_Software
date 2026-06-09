@@ -500,6 +500,28 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
                       ),
                       const SizedBox(height: 5),
                       _SpesaStatusChip(status: status),
+                      if (spesa.dataScadenza != null) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.schedule_rounded,
+                              size: 11,
+                              color: Color(0xFFFFD31A),
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              'Scade il ${_formatDate(spesa.dataScadenza!)}',
+                              style: const TextStyle(
+                                color: Color(0xFFFFD31A),
+                                fontSize: 11,
+                                fontFamily: 'Inter',
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),
