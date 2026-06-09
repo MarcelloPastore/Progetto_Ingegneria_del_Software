@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 
+import 'package:coincasa_app/core/api/api_provider.dart';
+import 'package:coincasa_app/core/models/inquilino.dart';
+import 'package:coincasa_app/core/models/casa.dart';
+import 'package:coincasa_app/core/state/active_casa.dart';
+
 import 'fab_sacdenza_creata.dart';
 
 class FabScadenzaPanel extends StatefulWidget {
@@ -19,6 +24,8 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
   bool _hasNameError = false;
   bool _hasDateError = false;
   bool _isCreated = false;
+  bool _isHomeAdmin = false;
+  bool _initialized = false;
 
   static const _primary = Color(0xFF5A2BBF);
   static const _danger = Color(0xFFFF1744);
@@ -40,6 +47,53 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
     _descrizioneController.dispose();
     _dataController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_initialized) return;
+    _initialized = true;
+    _loadCurrentRole();
+  }
+
+  Future<void> _loadCurrentRole() async {
+    try {
+      final activeCasaController = ActiveCasaScope.read(context);
+      final caseUtente = await ApiProvider.casa.list();
+      if (caseUtente.isEmpty) return;
+      final casa = activeCasaController.resolveCasa(caseUtente);
+      final inquilini = await ApiProvider.casa.listInquilini(casa.id);
+      final current = _resolveCurrentUser(inquilini);
+      if (!mounted) return;
+      setState(() => _isHomeAdmin = current?.isHomeAdmin == true);
+    } catch (_) {
+      // ignore errors and leave _isHomeAdmin = false
+    }
+  }
+
+  Inquilino? _resolveCurrentUser(List<Inquilino> inquilini) {
+    final userId = ApiProvider.client.currentUserId?.trim();
+    if (userId != null && userId.isNotEmpty) {
+      for (final inquilino in inquilini) {
+        if (inquilino.id == userId) return inquilino;
+      }
+    }
+    final email = ApiProvider.client.currentUserEmail?.trim().toLowerCase();
+    final name = ApiProvider.client.currentUserName?.trim().toLowerCase();
+    for (final inquilino in inquilini) {
+      final values = [
+        inquilino.email,
+        inquilino.username,
+        inquilino.nome,
+        inquilino.nomeCompleto,
+      ].map((v) => v.trim().toLowerCase());
+      if ((email != null && values.contains(email)) ||
+          (name != null && values.contains(name))) {
+        return inquilino;
+      }
+    }
+    return inquilini.isNotEmpty ? inquilini.first : null;
   }
 
   @override
@@ -115,20 +169,69 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
         const SizedBox(height: 8),
         _LabeledField(
           label: 'Frequenza',
-          child: _FrequencySelector(
-            selectedValue: _frequenza,
-            options: _frequencyOptions,
-            isExpanded: _showFrequencyOptions,
-            onToggle: () {
-              setState(() => _showFrequencyOptions = !_showFrequencyOptions);
-            },
-            onSelect: (value) {
-              setState(() {
-                _frequenza = value;
-                _showFrequencyOptions = false;
-              });
-            },
-          ),
+          child: _isHomeAdmin
+              ? _FrequencySelector(
+                  selectedValue: _frequenza,
+                  options: _frequencyOptions,
+                  isExpanded: _showFrequencyOptions,
+                  onToggle: () {
+                    setState(() => _showFrequencyOptions = !_showFrequencyOptions);
+                  },
+                  onSelect: (value) {
+                    setState(() {
+                      _frequenza = value;
+                      _showFrequencyOptions = false;
+                    });
+                  },
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Material(
+                      color: _FabColors.fieldColor,
+                      borderRadius: BorderRadius.circular(7),
+                      elevation: 4,
+                      shadowColor: Colors.black45,
+                      child: SizedBox(
+                        height: 41,
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 12, right: 4),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  _frequenza,
+                                  style: const TextStyle(
+                                    color: Color(0xFFBDB7CC),
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              Icon(
+                                Icons.keyboard_arrow_down,
+                                color: const Color(0xFF7A6F86),
+                                size: 26,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 6),
+                      child: Text(
+                        '( solo HomeAdmin ) ⚠',
+                        style: TextStyle(
+                          color: Colors.amber.shade700,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
         ),
         const SizedBox(height: 18),
         SizedBox(
