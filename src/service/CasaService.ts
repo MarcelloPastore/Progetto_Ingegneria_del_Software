@@ -157,6 +157,11 @@ export class CasaService {
   ): Promise<void> {
     await this.assertHomeAdmin(idCasa, idUtente);
 
+    const ownerIdCasa = await this.casaRepository.getCasaCreator(idCasa);
+    if (ownerIdCasa && idInquilino === ownerIdCasa) {
+      throw new ForbiddenError("Il proprietario della casa non può essere rimosso");
+    }
+
     const membro = await this.casaRepository.getMembroCasa(idCasa, idInquilino);
     if (!membro) {
       throw new NotFoundError("Inquilino non trovato");
@@ -173,6 +178,11 @@ export class CasaService {
     idUtente: string,
   ) {
     await this.assertHomeAdmin(idCasa, idUtente);
+
+    const ownerIdCasa = await this.casaRepository.getCasaCreator(idCasa);
+    if (ownerIdCasa && idInquilino === ownerIdCasa) {
+      throw new ForbiddenError("Il ruolo del proprietario della casa non può essere modificato");
+    }
 
     const membro = await this.casaRepository.getMembroCasa(idCasa, idInquilino);
     if (!membro) {
