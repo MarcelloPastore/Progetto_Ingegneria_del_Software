@@ -624,27 +624,40 @@ class SpesaFormDateField extends StatelessWidget {
     super.key,
     required this.value,
     required this.onChanged,
+    this.onCleared,
+    this.minDate,
   });
 
   final DateTime? value;
   final ValueChanged<DateTime> onChanged;
+  final VoidCallback? onCleared;
+  final DateTime? minDate;
 
-  String get _label {
-    final d = value ?? DateTime.now();
-    return '${d.day.toString().padLeft(2, '0')}/'
-        '${d.month.toString().padLeft(2, '0')}/'
-        '${d.year}';
-  }
+  static const _tooltip =
+      'Data entro cui la spesa deve essere pagata.\n'
+      'Es. bolletta elettrica da pagare entro il 15 luglio.';
+
+  String _fmtDate(DateTime d) =>
+      '${d.day.toString().padLeft(2, '0')}/'
+      '${d.month.toString().padLeft(2, '0')}/'
+      '${d.year}';
 
   @override
   Widget build(BuildContext context) {
+    final hasDate = value != null;
+
     return GestureDetector(
       onTap: () async {
+        final today = DateTime.now();
+        final effectiveMin = minDate ?? DateTime(2020);
+        final effectiveInitial = value != null
+            ? (value!.isBefore(effectiveMin) ? effectiveMin : value!)
+            : (today.isBefore(effectiveMin) ? effectiveMin : today);
         final picked = await showDatePicker(
           context: context,
-          initialDate: value ?? DateTime.now(),
-          firstDate: DateTime(2020),
-          lastDate: DateTime(2030),
+          initialDate: effectiveInitial,
+          firstDate: effectiveMin,
+          lastDate: DateTime(2035),
           builder: (ctx, child) => Theme(
             data: Theme.of(ctx).copyWith(
               colorScheme: const ColorScheme.dark(
@@ -658,11 +671,16 @@ class SpesaFormDateField extends StatelessWidget {
         if (picked != null) onChanged(picked);
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         decoration: BoxDecoration(
           color: AppColors.surfaceDarkElevated,
           borderRadius: BorderRadius.circular(AppSizes.radius8),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.28), width: 1.5),
+          border: Border.all(
+            color: hasDate
+                ? AppColors.brandPrimary.withValues(alpha: 0.6)
+                : Colors.white.withValues(alpha: 0.18),
+            width: 1.5,
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -670,15 +688,70 @@ class SpesaFormDateField extends StatelessWidget {
             const Icon(
               Icons.calendar_today_rounded,
               color: AppColors.brandPrimary,
-              size: 16,
+              size: 15,
             ),
-            const SizedBox(width: 6),
-            Text(
-              _label,
-              style: AppTextStyles.screenTitleStrong.copyWith(
-                color: AppColors.textOnDark,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
+            const SizedBox(width: 5),
+            if (hasDate) ...[
+              Text(
+                _fmtDate(value!),
+                style: AppTextStyles.screenTitleStrong.copyWith(
+                  color: AppColors.textOnDark,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              if (onCleared != null) ...[
+                const SizedBox(width: 4),
+                GestureDetector(
+                  onTap: onCleared,
+                  behavior: HitTestBehavior.opaque,
+                  child: Icon(
+                    Icons.close_rounded,
+                    size: 15,
+                    color: AppColors.textOnDark.withValues(alpha: 0.5),
+                  ),
+                ),
+              ],
+            ] else ...[
+              Text(
+                'Scadenza',
+                style: AppTextStyles.screenTitleStrong.copyWith(
+                  color: AppColors.textOnDark.withValues(alpha: 0.38),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '(opz.)',
+                style: AppTextStyles.screenTitleStrong.copyWith(
+                  color: AppColors.textOnDark.withValues(alpha: 0.25),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ],
+            const SizedBox(width: 4),
+            Tooltip(
+              message: _tooltip,
+              triggerMode: TooltipTriggerMode.tap,
+              preferBelow: false,
+              decoration: BoxDecoration(
+                color: const Color(0xFF2C2846),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFF4A4370), width: 1),
+              ),
+              textStyle: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontFamily: 'Inter',
+                height: 1.5,
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Icon(
+                Icons.info_outline_rounded,
+                size: 14,
+                color: AppColors.textOnDark.withValues(alpha: 0.35),
               ),
             ),
           ],

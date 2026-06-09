@@ -94,8 +94,8 @@ class _InserisciSpesaScreenState extends ConsumerState<InserisciSpesaScreen> {
         'descrizione': form.descrizione.trim(),
         'importo': double.parse(form.importo.replaceAll(',', '.')),
         'partecipanti': partecipanti,
-        'dataSpesa': _fmtDate(form.dataSpesa),
         'isRicorrente': form.spesaRicorrente,
+        if (form.dataSpesa != null) 'dataScadenza': _fmtDate(form.dataSpesa),
         if (form.hoAnticipatoPerTutti && currentUserId != null)
           'anticipataDa': currentUserId,
         if (form.spesaRicorrente) ...{
@@ -199,6 +199,8 @@ class _InserisciSpesaScreenState extends ConsumerState<InserisciSpesaScreen> {
                         SpesaFormDateField(
                           value: form.dataSpesa,
                           onChanged: controller.setDataSpesa,
+                          onCleared: () => controller.clearDataSpesa(),
+                          minDate: DateTime.now(),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
@@ -359,8 +361,8 @@ class _InserisciSpesaPopupContentState
         'descrizione': form.descrizione.trim(),
         'importo': double.parse(form.importo.replaceAll(',', '.')),
         'partecipanti': partecipanti,
-        'dataSpesa': _fmtDate(form.dataSpesa),
         'isRicorrente': form.spesaRicorrente,
+        if (form.dataSpesa != null) 'dataScadenza': _fmtDate(form.dataSpesa),
         if (form.hoAnticipatoPerTutti && currentUserId != null)
           'anticipataDa': currentUserId,
         if (form.spesaRicorrente) ...{
@@ -696,15 +698,7 @@ class _PopupInquilinoCheckbox extends StatelessWidget {
   final bool isCurrentUser;
   final VoidCallback onChanged;
 
-  Color _avatarColor(String id) {
-    const colors = [
-      Color(0xFF1B5E20),
-      Color(0xFFE53935),
-      Color(0xFF6D4C41),
-      Color(0xFF1565C0),
-    ];
-    return colors[id.hashCode.abs() % colors.length];
-  }
+  Color _avatarColor(String id) => userAvatarColorsForSeed(id).background;
 
   @override
   Widget build(BuildContext context) {
@@ -997,6 +991,7 @@ class _SpesaCreateFormState {
     Set<String>? selectedInquiliniIds,
     String? currentUserId,
     DateTime? dataSpesa,
+    bool clearDataSpesa = false,
     bool? hoAnticipatoPerTutti,
     bool? spesaRicorrente,
     String? frequenza,
@@ -1009,7 +1004,7 @@ class _SpesaCreateFormState {
       descrizione: descrizione ?? this.descrizione,
       selectedInquiliniIds: selectedInquiliniIds ?? this.selectedInquiliniIds,
       currentUserId: currentUserId ?? this.currentUserId,
-      dataSpesa: dataSpesa ?? this.dataSpesa,
+      dataSpesa: clearDataSpesa ? null : (dataSpesa ?? this.dataSpesa),
       hoAnticipatoPerTutti: hoAnticipatoPerTutti ?? this.hoAnticipatoPerTutti,
       spesaRicorrente: spesaRicorrente ?? this.spesaRicorrente,
       frequenza: frequenza ?? this.frequenza,
@@ -1031,6 +1026,7 @@ class _SpesaCreateFormController
   void setImporto(String v) => state = state.copyWith(importo: v, submitError: '');
   void setDescrizione(String v) => state = state.copyWith(descrizione: v, submitError: '');
   void setDataSpesa(DateTime v) => state = state.copyWith(dataSpesa: v);
+  void clearDataSpesa() => state = state.copyWith(clearDataSpesa: true);
   void setHoAnticipatoPerTutti(bool v) =>
       state = state.copyWith(hoAnticipatoPerTutti: v);
   void setSpesaRicorrente(bool v) =>
