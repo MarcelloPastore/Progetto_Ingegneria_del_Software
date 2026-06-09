@@ -8,6 +8,7 @@ import 'package:coincasa_app/core/models/quota.dart';
 import 'package:coincasa_app/core/models/spesa.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/utils/user_initials.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
 import 'package:coincasa_app/features/spese/screens/elimina_spesa.dart';
@@ -229,7 +230,7 @@ class _DetailContent extends StatelessWidget {
             const _LockedBanner(),
           ],
           const SizedBox(height: AppSizes.p24),
-          _CreatorAvatarRow(creatoreNome: data.spesa.creatoreNome),
+          _CreatorAvatarRow(creatoreNome: data.spesa.creatoreNome, creatoreId: data.spesa.creatoreId),
           const SizedBox(height: AppSizes.p24),
           _SummaryCard(
             payerNames: payerNames.isEmpty ? const ['Nessuno'] : payerNames,
@@ -308,6 +309,7 @@ class _DetailContent extends StatelessWidget {
           isExcluded: false,
           isCurrentUser: isCurrent,
           quotaId: quota.id,
+          userId: id,
         );
       }).toList();
     }
@@ -372,9 +374,10 @@ class _LockedBanner extends StatelessWidget {
 }
 
 class _CreatorAvatarRow extends StatelessWidget {
-  const _CreatorAvatarRow({required this.creatoreNome});
+  const _CreatorAvatarRow({required this.creatoreNome, this.creatoreId = ''});
 
   final String creatoreNome;
+  final String creatoreId;
 
   @override
   Widget build(BuildContext context) {
@@ -383,6 +386,7 @@ class _CreatorAvatarRow extends StatelessWidget {
     final firstName = nome.isNotEmpty
         ? nome.split(RegExp(r'\s+')).first
         : 'Coinquilino';
+    final seed = creatoreId.isNotEmpty ? creatoreId : initials;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -392,7 +396,7 @@ class _CreatorAvatarRow extends StatelessWidget {
           height: 46,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: _avatarColor(initials),
+            color: userAvatarColorsForSeed(seed).background,
           ),
           alignment: Alignment.center,
           child: Text(
@@ -580,9 +584,9 @@ class _QuoteStatusRow extends StatelessWidget {
           height: 45,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: _avatarColor(
-              row.initials,
-            ).withValues(alpha: muted ? 0.38 : 1),
+            color: userAvatarColorsForSeed(
+              row.userId.isNotEmpty ? row.userId : row.initials,
+            ).background.withValues(alpha: muted ? 0.38 : 1),
           ),
           alignment: Alignment.center,
           child: Text(
@@ -728,6 +732,7 @@ class _QuotaRowData {
     required this.isExcluded,
     this.isCurrentUser = false,
     this.quotaId,
+    this.userId = '',
   });
 
   final String name;
@@ -736,6 +741,7 @@ class _QuotaRowData {
   final bool isExcluded;
   final bool isCurrentUser;
   final String? quotaId;
+  final String userId;
 }
 
 String _nameForQuota(Quota quota, List<Inquilino> inquilini) {
@@ -831,17 +837,6 @@ String _initials(String name) {
   }
   return '${parts.first.substring(0, 1)}${parts.last.substring(0, 1)}'
       .toUpperCase();
-}
-
-Color _avatarColor(String initials) {
-  const colors = [
-    Color(0xFF17A832),
-    Color(0xFFEE7274),
-    Color(0xFF315173),
-    Color(0xFF584036),
-    Color(0xFF2D5E3F),
-  ];
-  return colors[initials.codeUnitAt(0) % colors.length];
 }
 
 bool _spesaHasAnticipatore(Map<String, dynamic> raw) {

@@ -197,7 +197,7 @@ class StatusBadge extends StatelessWidget {
   final String text;
   final Color color;
 
-  const StatusBadge({Key? key, required this.text, required this.color}) : super(key: key);
+  const StatusBadge({super.key, required this.text, required this.color});
 
   @override
   Widget build(BuildContext context) {

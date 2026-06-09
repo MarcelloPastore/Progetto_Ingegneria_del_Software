@@ -69,30 +69,33 @@ class UserAvatarColors {
   final Color foreground;
 }
 
+// 12 palette colors (Material 700) — visually distinct, all legible with white text
+const List<Color> _avatarPalette = [
+  Color(0xFF1976D2), // Blue 700
+  Color(0xFF388E3C), // Green 700
+  Color(0xFFC2185B), // Pink 700
+  Color(0xFF00796B), // Teal 700
+  Color(0xFF512DA8), // Deep Purple 700
+  Color(0xFFD32F2F), // Red 700
+  Color(0xFF0097A7), // Cyan 700
+  Color(0xFF303F9F), // Indigo 700
+  Color(0xFF5D4037), // Brown 700
+  Color(0xFFF57C00), // Orange 700
+  Color(0xFF455A64), // Blue Grey 700
+  Color(0xFF558B2F), // Light Green 800
+];
+
 UserAvatarColors userAvatarColorsForSeed(String? seed) {
   final normalized = seed?.trim() ?? '';
   if (normalized.isEmpty) {
     return const UserAvatarColors(
-      background: Color(0xFF3F33B8),
+      background: Color(0xFF303F9F),
       foreground: Colors.white,
     );
   }
 
   final hash = normalized.hashCode & 0x7fffffff;
-  final hue = (hash % 360).toDouble();
-  final background = HSLColor.fromAHSL(
-    1,
-    hue,
-    0.58,
-    0.35 + ((hash >> 8) % 8) * 0.01,
-  ).toColor();
-  final foregroundHue = (hue + 42) % 360;
-  final foreground = HSLColor.fromAHSL(
-    1,
-    foregroundHue.toDouble(),
-    0.78,
-    0.86,
-  ).toColor();
+  final background = _avatarPalette[hash % _avatarPalette.length];
 
-  return UserAvatarColors(background: background, foreground: foreground);
+  return UserAvatarColors(background: background, foreground: Colors.white);
 }

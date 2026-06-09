@@ -8,6 +8,7 @@ import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/spesa.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/utils/user_initials.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
 import 'package:coincasa_app/features/spese/screens/dettaglio_spesa_admin.dart';
@@ -449,11 +450,10 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
 
   Widget _buildSpesaItem(BuildContext context, Spesa spesa) {
     final hasAnticipatore = _spesaHasAnticipatore(spesa.raw);
-    final anticipatoreNome = hasAnticipatore ? spesa.creatoreNome.trim() : '';
-    final avatarInitials = hasAnticipatore && anticipatoreNome.isNotEmpty
-        ? _nameInitials(anticipatoreNome)
-        : '';
+    final creatoreNome = spesa.creatoreNome.trim();
+    final avatarInitials = creatoreNome.isNotEmpty ? _nameInitials(creatoreNome) : '';
     final status = _computeSpesaStatus(spesa);
+    final anticipatoreNome = hasAnticipatore ? creatoreNome : '';
     final firstNameAnticipatore = anticipatoreNome.split(RegExp(r'\s+')).first;
 
     return Opacity(
@@ -471,7 +471,7 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                _SpesaAvatar(initials: avatarInitials),
+                _SpesaAvatar(initials: avatarInitials, userId: spesa.creatoreId),
                 const SizedBox(width: AppSizes.p16),
                 Expanded(
                   child: Column(
@@ -692,30 +692,22 @@ class _FilterChip extends StatelessWidget {
 enum _SpesaStatus { pagata, incompleta, nonPagata }
 
 class _SpesaAvatar extends StatelessWidget {
-  const _SpesaAvatar({required this.initials});
+  const _SpesaAvatar({required this.initials, this.userId = ''});
 
   final String initials;
-
-  static const _colors = [
-    Color(0xFF17A832),
-    Color(0xFFEE7274),
-    Color(0xFF315173),
-    Color(0xFF584036),
-    Color(0xFF6A1B9A),
-    Color(0xFF2D5E3F),
-  ];
-
-  Color get _bgColor {
-    if (initials.isEmpty) return const Color(0xFF3A3850);
-    return _colors[initials.codeUnitAt(0) % _colors.length];
-  }
+  final String userId;
 
   @override
   Widget build(BuildContext context) {
+    final seed = userId.isNotEmpty ? userId : initials;
+    final bgColor = seed.isNotEmpty
+        ? userAvatarColorsForSeed(seed).background
+        : const Color(0xFF3A3850);
+
     return Container(
       width: 40,
       height: 40,
-      decoration: ShapeDecoration(color: _bgColor, shape: const OvalBorder()),
+      decoration: ShapeDecoration(color: bgColor, shape: const OvalBorder()),
       alignment: Alignment.center,
       child: initials.isEmpty
           ? null

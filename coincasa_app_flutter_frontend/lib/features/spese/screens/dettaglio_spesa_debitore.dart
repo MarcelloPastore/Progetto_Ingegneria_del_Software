@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/casa.dart';
+import 'package:coincasa_app/core/utils/user_initials.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/models/quota.dart';
 import 'package:coincasa_app/core/models/spesa.dart';
@@ -379,7 +380,7 @@ class _QuoteTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 2),
       child: Row(
         children: [
-          _Avatar(initials: row.initials, excluded: row.excluded),
+          _Avatar(initials: row.initials, excluded: row.excluded, userId: row.userId),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -474,19 +475,21 @@ class _QuoteTile extends StatelessWidget {
 }
 
 class _Avatar extends StatelessWidget {
-  const _Avatar({required this.initials, required this.excluded});
+  const _Avatar({required this.initials, required this.excluded, this.userId = ''});
 
   final String initials;
   final bool excluded;
+  final String userId;
 
   @override
   Widget build(BuildContext context) {
+    final seed = userId.isNotEmpty ? userId : initials;
     return Container(
       width: 35,
       height: 35,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: excluded ? const Color(0xFF4A342E) : _avatarColor(initials),
+        color: excluded ? const Color(0xFF4A342E) : userAvatarColorsForSeed(seed).background,
         shape: BoxShape.circle,
       ),
       child: Text(
@@ -578,6 +581,7 @@ class _QuoteRow {
     required this.isCurrentUser,
     required this.excluded,
     this.quotaId,
+    this.userId = '',
   });
 
   final String name;
@@ -587,6 +591,7 @@ class _QuoteRow {
   final bool isCurrentUser;
   final bool excluded;
   final String? quotaId;
+  final String userId;
 }
 
 List<_QuoteRow> _quoteRows(_DebtorDetailData data) {
@@ -611,6 +616,7 @@ List<_QuoteRow> _quoteRows(_DebtorDetailData data) {
         isCurrentUser: isCurrent,
         excluded: false,
         quotaId: quota.id,
+        userId: id,
       ),
     );
   }
@@ -628,6 +634,7 @@ List<_QuoteRow> _quoteRows(_DebtorDetailData data) {
         statusColor: const Color(0xFF8D8797),
         isCurrentUser: false,
         excluded: true,
+        userId: inquilino.id,
       ),
     );
   }
@@ -742,13 +749,3 @@ String _initials(String name) {
       .toUpperCase();
 }
 
-Color _avatarColor(String initials) {
-  const colors = [
-    Color(0xFF17A832),
-    Color(0xFFEE7274),
-    Color(0xFF315173),
-    Color(0xFF584036),
-    Color(0xFF2D5E3F),
-  ];
-  return colors[initials.hashCode.abs() % colors.length];
-}

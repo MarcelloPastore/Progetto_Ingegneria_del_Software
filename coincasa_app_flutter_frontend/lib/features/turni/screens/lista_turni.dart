@@ -592,7 +592,7 @@ class _TurniCalendarCardState extends State<_TurniCalendarCard> {
       if (turno.assegnatarioId.isEmpty) continue;
       final turnoDate = turno.dataProssimaPulizia;
       if (turnoDate != null && _isSameDate(turnoDate, date)) {
-        colors.add(_colorForAssignee(turno.assegnatarioNome));
+        colors.add(userAvatarColorsForSeed(turno.assegnatarioId).background);
         if (colors.length == 4) break;
       }
     }
@@ -600,35 +600,20 @@ class _TurniCalendarCardState extends State<_TurniCalendarCard> {
   }
 
   static List<_CalendarLegendItem> _legendItems(List<Turno> turni) {
-    final items = <String, Color>{};
+    final items = <String, _CalendarLegendItem>{};
     for (final turno in turni) {
-      if (turno.assegnatarioId.isEmpty) {
-        continue;
-      }
+      if (turno.assegnatarioId.isEmpty) continue;
+      if (items.containsKey(turno.assegnatarioId)) continue;
       final label = resolveUserInitials(displayName: turno.assegnatarioNome);
-      if (label != '?' && label != '??' && !items.containsKey(label)) {
-        items[label] = _colorForAssignee(turno.assegnatarioNome);
+      if (label != '?' && label != '??') {
+        items[turno.assegnatarioId] = _CalendarLegendItem(
+          label: label,
+          color: userAvatarColorsForSeed(turno.assegnatarioId).background,
+        );
       }
-      if (items.length == 3) {
-        break;
-      }
+      if (items.length == 3) break;
     }
-    return items.entries
-        .map(
-          (entry) => _CalendarLegendItem(label: entry.key, color: entry.value),
-        )
-        .toList(growable: false);
-  }
-
-  static Color _colorForAssignee(String name) {
-    final colors = const [
-      Color(0xFF20F545),
-      Color(0xFFFF941F),
-      Color(0xFFD25BFF),
-      Color(0xFF4FC3F7),
-    ];
-    final hash = name.codeUnits.fold<int>(0, (sum, code) => sum + code);
-    return colors[hash % colors.length];
+    return items.values.toList(growable: false);
   }
 }
 
