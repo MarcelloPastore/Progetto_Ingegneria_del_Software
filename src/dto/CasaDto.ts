@@ -48,4 +48,5 @@ export type InquilinoCasaDto = {
   email: string;
   ruolo: Ruolo;
   dataIngresso: string;
+  isOwner: boolean;
 };

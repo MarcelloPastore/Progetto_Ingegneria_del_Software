@@ -69,8 +69,11 @@ export class CasaService {
   async getInquilini(idCasa: string, idUtente: string) {
     await this.assertMembroCasa(idCasa, idUtente);
 
-    const membri = await this.casaRepository.getMembriCasa(idCasa);
-    return membri.map((membro) => this.toInquilinoDto(membro));
+    const [membri, ownerIdCasa] = await Promise.all([
+      this.casaRepository.getMembriCasa(idCasa),
+      this.casaRepository.getCasaCreator(idCasa),
+    ]);
+    return membri.map((membro) => this.toInquilinoDto(membro, ownerIdCasa));
   }
 
   async getInquilino(idCasa: string, idInquilino: string, idUtente: string) {
@@ -237,19 +240,22 @@ export class CasaService {
     return provided === inviteLink || provided === expectedCode;
   }
 
-  private toInquilinoDto(membro: {
-    id: string;
-    idUtente: string;
-    ruolo: Ruolo;
-    dataIngresso: Date;
-    utenteRel: {
+  private toInquilinoDto(
+    membro: {
       id: string;
-      username: string;
-      nome: string;
-      cognome: string;
-      email: string;
-    };
-  }): InquilinoCasaDto {
+      idUtente: string;
+      ruolo: Ruolo;
+      dataIngresso: Date;
+      utenteRel: {
+        id: string;
+        username: string;
+        nome: string;
+        cognome: string;
+        email: string;
+      };
+    },
+    ownerIdCasa: string | null = null,
+  ): InquilinoCasaDto {
     return {
       id: membro.utenteRel.id,
       idUtente: membro.idUtente,
@@ -259,6 +265,7 @@ export class CasaService {
       email: membro.utenteRel.email,
       ruolo: membro.ruolo,
       dataIngresso: membro.dataIngresso.toISOString(),
+      isOwner: ownerIdCasa !== null && membro.idUtente === ownerIdCasa,
     };
   }
 }

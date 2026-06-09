@@ -27,6 +27,7 @@ export class CasaRepository {
     citta: true,
     tipoCasa: true,
     inviteLink: true,
+    creator: true,
   };
 
   async createCasa(data: CreaCasaDto, idUtente: string, inviteLink: string) {
@@ -126,6 +127,14 @@ export class CasaRepository {
       where: { idUtente_idCasa: { idUtente, idCasa } },
       select: membroSelect,
     });
+  }
+
+  async getCasaCreator(idCasa: string): Promise<string | null> {
+    const casa = await prisma.casa.findUnique({
+      where: { id: idCasa },
+      select: { creator: true },
+    });
+    return casa?.creator ?? null;
   }
 
   async getMembriCasa(idCasa: string) {
