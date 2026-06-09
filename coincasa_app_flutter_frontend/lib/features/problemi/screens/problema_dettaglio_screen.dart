@@ -5,6 +5,8 @@ import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/problema.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
+import 'package:coincasa_app/core/state/active_casa.dart';
 
 class ProblemaDettaglioScreen extends StatefulWidget {
   const ProblemaDettaglioScreen({super.key});
@@ -326,6 +328,67 @@ class _ProblemaDettaglioScreenState extends State<ProblemaDettaglioScreen> {
     return null;
   }
 
+  bool get _isCreator {
+    final problema = _problema;
+    if (problema == null) return false;
+
+    final currentId = ApiProvider.client.currentUserId?.trim();
+    final rawCreatorId = _firstString([
+      problema.raw['creatoreId'],
+      problema.raw['autoreId'],
+      problema.raw['segnalatoDaId'],
+      problema.raw['createdBy'],
+      problema.raw['created_by'],
+    ]);
+    if (currentId != null &&
+        currentId.isNotEmpty &&
+        rawCreatorId != null &&
+        rawCreatorId.isNotEmpty) {
+      return currentId == rawCreatorId;
+    }
+
+    // Fallback: confronto per nome/email
+    final currentName =
+        ApiProvider.client.currentUserName?.trim().toLowerCase();
+    final rawCreatorName = _firstString([
+      problema.raw['segnalatoDa'],
+      problema.raw['autore'],
+      problema.raw['createdByName'],
+      problema.raw['segnalato_da'],
+    ])?.trim().toLowerCase();
+    if (currentName != null &&
+        currentName.isNotEmpty &&
+        rawCreatorName != null) {
+      return currentName == rawCreatorName;
+    }
+    return false;
+  }
+
+  bool _isDeletingProblema = false;
+
+  Future<void> _handleDeleteProblema() async {
+    final problema = _problema;
+    if (problema == null || _isDeletingProblema) return;
+
+    setState(() => _isDeletingProblema = true);
+    try {
+      final caseUtente = await ApiProvider.casa.list();
+      if (caseUtente.isEmpty || !mounted) return;
+      final casaId = ActiveCasaScope.read(context).selectedCasaId ??
+          caseUtente.first.id;
+      await ApiProvider.problemi.delete(casaId, problema.id);
+      if (mounted) Navigator.of(context).pop();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Impossibile eliminare il problema.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isDeletingProblema = false);
+    }
+  }
+
   void _togglePriorityMenu() {
     if (_priorityOverlay != null) {
       _hidePriorityMenu();
@@ -421,13 +484,16 @@ class _ProblemaDettaglioScreenState extends State<ProblemaDettaglioScreen> {
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
             onTap: _hidePriorityMenu,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(
-                AppSizes.p16,
-                AppSizes.p8,
-                AppSizes.p16,
-                AppSizes.p20,
-              ),
+            child: Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSizes.p16,
+                      AppSizes.p8,
+                      AppSizes.p16,
+                      AppSizes.p16,
+                    ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -563,13 +629,29 @@ class _ProblemaDettaglioScreenState extends State<ProblemaDettaglioScreen> {
                       'Marcatura come risolto ancora non collegata.',
                     ),
                   ),
-                ],
-              ),
+                ], // inner Column.children
+              ), // inner Column
+            ), // SingleChildScrollView
+          ), // Expanded
+          DetailActionsBar(
+            modifyLabel: 'Modifica problema',
+            deleteLabel: 'Elimina problema',
+            backLabel: 'Torna ai problemi',
+            isCreator: _isCreator,
+            onModify: () => Navigator.of(context).pushNamed(
+              '/problemi/segnala',
+              arguments: _problema,
             ),
+            onDelete: _isDeletingProblema ? null : _handleDeleteProblema,
+            onBack: () =>
+                Navigator.of(context).pushReplacementNamed('/problemi'),
           ),
-        ),
-      ),
-    );
+        ], // outer Column.children
+      ), // outer Column = GestureDetector child
+    ), // GestureDetector
+  ), // SafeArea
+), // Scaffold
+);
   }
 
   String _resolveDescription(Problema problema) {

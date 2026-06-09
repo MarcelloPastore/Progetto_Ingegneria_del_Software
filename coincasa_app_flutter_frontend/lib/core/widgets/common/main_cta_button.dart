@@ -1,5 +1,140 @@
 import 'package:flutter/material.dart';
 
+// ---------------------------------------------------------------------------
+// Shared action bar for detail screens (Modifica / Elimina / Torna)
+// ---------------------------------------------------------------------------
+
+/// Barra azioni fissa in fondo alle schermate di dettaglio.
+///
+/// Mostra la riga [Modifica | Elimina] solo se [isCreator] è true.
+/// "Torna" è sempre visibile come [MainCtaButton].
+class DetailActionsBar extends StatelessWidget {
+  const DetailActionsBar({
+    super.key,
+    required this.modifyLabel,
+    required this.deleteLabel,
+    required this.backLabel,
+    required this.onBack,
+    this.onModify,
+    this.onDelete,
+    this.isCreator = false,
+  });
+
+  final String modifyLabel;
+  final String deleteLabel;
+  final String backLabel;
+  final VoidCallback? onBack;
+  final VoidCallback? onModify;
+  final VoidCallback? onDelete;
+  final bool isCreator;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isCreator) ...[
+            Row(
+              children: [
+                Expanded(
+                  child: _DetailActionButton(
+                    label: modifyLabel,
+                    color: MainCtaColors.problemi, // viola
+                    onPressed: onModify,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _DetailActionButton(
+                    label: deleteLabel,
+                    color: MainCtaColors.scadenze, // rosso
+                    onPressed: onDelete,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+          ],
+          MainCtaButton(label: backLabel, onPressed: onBack),
+        ],
+      ),
+    );
+  }
+}
+
+/// Bottone azione dettaglio (Modifica / Elimina) — stile "Paga Quota":
+/// shimmer bianco + bordo colorato esterno + testo colorato, senza freccia.
+class _DetailActionButton extends StatelessWidget {
+  const _DetailActionButton({
+    required this.label,
+    required this.color,
+    required this.onPressed,
+    this.height = 48,
+  });
+
+  final String label;
+  final Color color;
+  final VoidCallback? onPressed;
+  final double height;
+
+  static const _radius = BorderRadius.all(Radius.circular(12));
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: height,
+      width: double.infinity,
+      child: DecoratedBox(
+        decoration: ShapeDecoration(
+          gradient: LinearGradient(
+            begin: const Alignment(0.50, 0.00),
+            end: const Alignment(0.50, 1.00),
+            colors: [
+              Colors.white.withValues(alpha: 0.18),
+              Colors.white.withValues(alpha: 0.00),
+            ],
+          ),
+          shape: RoundedRectangleBorder(
+            side: BorderSide(
+              width: 2,
+              strokeAlign: BorderSide.strokeAlignOutside,
+              color: color,
+            ),
+            borderRadius: _radius,
+          ),
+          shadows: const [
+            BoxShadow(
+              color: Color(0x3F000000),
+              blurRadius: 4,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: OutlinedButton(
+          onPressed: onPressed,
+          style: OutlinedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            side: BorderSide.none,
+            padding: EdgeInsets.zero,
+            shape: const RoundedRectangleBorder(borderRadius: _radius),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 15,
+              fontFamily: 'Inter',
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // Blu usato da tutti i pulsanti CTA primari — colore unico, no color coding.
 const _ctaBase   = Color(0xFF2B5CE6);
 const _ctaTop    = Color(0xFF5A7EEE); // lerp white ~28%

@@ -7,6 +7,7 @@ import 'package:coincasa_app/core/models/turno.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
 import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 import 'package:coincasa_app/features/turni/screens/assegna_a_me.dart';
 import 'package:coincasa_app/features/turni/screens/turno_create_screen.dart';
@@ -316,123 +317,132 @@ class _DettaglioTurnoAdminScreenState
                       }
                     },
                     behavior: HitTestBehavior.translucent,
-                    child: Stack(
+                    child: Column(
                       children: [
-                        SingleChildScrollView(
-                          padding: const EdgeInsets.fromLTRB(
-                            AppSizes.p14,
-                            AppSizes.p8,
-                            AppSizes.p14,
-                            AppSizes.p20,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                        Expanded(
+                          child: Stack(
                             children: [
-                              Opacity(
-                                opacity: _confirmDelete ? 0.42 : 1,
+                              SingleChildScrollView(
+                                padding: const EdgeInsets.fromLTRB(
+                                  AppSizes.p14,
+                                  AppSizes.p8,
+                                  AppSizes.p14,
+                                  AppSizes.p16,
+                                ),
                                 child: Column(
                                   crossAxisAlignment:
                                       CrossAxisAlignment.stretch,
                                   children: [
-                                    _DetailHeader(
-                                      onBack: () => Navigator.of(context).pop(),
-                                    ),
-                                    const SizedBox(height: AppSizes.p24),
-                                    _TurnoSummaryCard(turno: data?.turno),
-                                    const SizedBox(height: AppSizes.p24),
-                                    _ResponsibleCard(
-                                      turno: data?.turno,
-                                      inquilini: data?.inquilini ?? const [],
-                                    ),
-                                    const SizedBox(height: AppSizes.p48),
-                                    Text(
-                                      'Vuoi occupartene tu?',
-                                      style: AppTextStyles.bodyStrong.copyWith(
-                                        color: AppColors.textMutedLight,
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    const SizedBox(height: AppSizes.p18),
-                                    _PrimaryActionButton(
-                                      label: isLoading
-                                          ? 'Caricamento...'
-                                          : 'Assegna a me',
-                                      onPressed:
-                                          _isSubmitting ||
-                                              data == null ||
-                                              (data
-                                                      .turno
-                                                      .assegnatarioId
-                                                      .isNotEmpty &&
-                                                  data.turno.assegnatarioId ==
-                                                      ApiProvider
-                                                          .client
-                                                          .currentUserId)
-                                          ? null
-                                          : () => _handleAssignMe(data),
-                                    ),
-                                    if (assignees.isNotEmpty) ...[
-                                      const SizedBox(height: AppSizes.p10),
-                                      _AssigneeSelector(
-                                        assignees: assignees,
-                                        selectedAssigneeId: selectedAssigneeId,
-                                        selectedAssigneeLabel:
-                                            _selectedAssigneeLabel(assignees),
-                                        expanded: _assigneeMenuOpen,
-                                        isSubmitting: _isSubmitting,
-                                        onToggle: () {
-                                          setState(() {
-                                            _assigneeMenuOpen =
-                                                !_assigneeMenuOpen;
-                                          });
-                                        },
-                                        onSelected: (value) {
-                                          if (data != null) {
-                                            _handleAssigneeSelected(
-                                              data,
-                                              value,
-                                            );
-                                          }
-                                        },
-                                      ),
-                                    ],
-                                    const SizedBox(height: AppSizes.p8),
-                                    const SizedBox(height: AppSizes.p28),
-                                    if (canEditTurno) ...[
-                                      _EditTurnoButton(
-                                        onPressed: _isSubmitting || data == null
-                                            ? null
-                                            : () => Navigator.of(context)
-                                                  .pushNamed(
-                                                    TurnoCreateScreen.routeName,
-                                                    arguments: data.turno.id,
+                                    Opacity(
+                                      opacity: _confirmDelete ? 0.42 : 1,
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.stretch,
+                                        children: [
+                                          _DetailHeader(
+                                            onBack: () =>
+                                                Navigator.of(context).pop(),
+                                          ),
+                                          const SizedBox(height: AppSizes.p24),
+                                          _TurnoSummaryCard(turno: data?.turno),
+                                          const SizedBox(height: AppSizes.p24),
+                                          _ResponsibleCard(
+                                            turno: data?.turno,
+                                            inquilini:
+                                                data?.inquilini ?? const [],
+                                          ),
+                                          const SizedBox(height: AppSizes.p48),
+                                          Text(
+                                            'Vuoi occupartene tu?',
+                                            style: AppTextStyles.bodyStrong
+                                                .copyWith(
+                                                  color:
+                                                      AppColors.textMutedLight,
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                          ),
+                                          const SizedBox(height: AppSizes.p18),
+                                          _PrimaryActionButton(
+                                            label: isLoading
+                                                ? 'Caricamento...'
+                                                : 'Assegna a me',
+                                            onPressed:
+                                                _isSubmitting ||
+                                                    data == null ||
+                                                    (data
+                                                            .turno
+                                                            .assegnatarioId
+                                                            .isNotEmpty &&
+                                                        data.turno
+                                                                .assegnatarioId ==
+                                                            ApiProvider
+                                                                .client
+                                                                .currentUserId)
+                                                ? null
+                                                : () => _handleAssignMe(data),
+                                          ),
+                                          if (assignees.isNotEmpty) ...[
+                                            const SizedBox(height: AppSizes.p10),
+                                            _AssigneeSelector(
+                                              assignees: assignees,
+                                              selectedAssigneeId:
+                                                  selectedAssigneeId,
+                                              selectedAssigneeLabel:
+                                                  _selectedAssigneeLabel(
+                                                    assignees,
                                                   ),
+                                              expanded: _assigneeMenuOpen,
+                                              isSubmitting: _isSubmitting,
+                                              onToggle: () {
+                                                setState(() {
+                                                  _assigneeMenuOpen =
+                                                      !_assigneeMenuOpen;
+                                                });
+                                              },
+                                              onSelected: (value) {
+                                                if (data != null) {
+                                                  _handleAssigneeSelected(
+                                                    data,
+                                                    value,
+                                                  );
+                                                }
+                                              },
+                                            ),
+                                          ],
+                                        ],
                                       ),
-                                      const SizedBox(height: AppSizes.p12),
-                                      _DeleteTurnoButton(
-                                        confirmMode: _confirmDelete,
-                                        onPressed: _isSubmitting
-                                            ? null
-                                            : _handleDelete,
-                                      ),
-                                    ] else ...[
-                                      const SizedBox(height: AppSizes.p90),
-                                    ],
+                                    ),
                                   ],
                                 ),
                               ),
-                              const SizedBox(height: AppSizes.p40),
+                              if (_confirmDelete)
+                                Positioned(
+                                  left: AppSizes.p20,
+                                  right: AppSizes.p20,
+                                  top: 300,
+                                  child: const _DeleteWarningCard(),
+                                ),
                             ],
                           ),
                         ),
-                        if (_confirmDelete)
-                          Positioned(
-                            left: AppSizes.p20,
-                            right: AppSizes.p20,
-                            top: 300,
-                            child: const _DeleteWarningCard(),
-                          ),
+                        DetailActionsBar(
+                          modifyLabel: 'Modifica turno',
+                          deleteLabel: _confirmDelete
+                              ? 'Conferma eliminazione'
+                              : 'Elimina turno',
+                          backLabel: 'Torna ai turni',
+                          isCreator: canEditTurno,
+                          onModify: _isSubmitting || data == null
+                              ? null
+                              : () => Navigator.of(context).pushNamed(
+                                  TurnoCreateScreen.routeName,
+                                  arguments: data.turno.id,
+                                ),
+                          onDelete: _isSubmitting ? null : _handleDelete,
+                          onBack: () => Navigator.of(context)
+                              .pushReplacementNamed('/turni'),
+                        ),
                       ],
                     ),
                   ),

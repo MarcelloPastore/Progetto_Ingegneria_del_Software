@@ -423,7 +423,7 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
                       Text(
                         isPagata
                             ? '${_formatDate(spesa.data)} - pagata'
-                            : '${_formatDate(spesa.data)} - da pagare',
+                            : '${_formatDate(spesa.data)} - quote mancanti',
                         style: TextStyle(
                           color: isPagata
                               ? const Color(0xFF47CC5D)

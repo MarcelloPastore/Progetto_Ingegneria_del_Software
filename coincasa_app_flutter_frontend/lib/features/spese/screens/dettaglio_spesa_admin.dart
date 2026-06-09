@@ -9,6 +9,7 @@ import 'package:coincasa_app/core/models/spesa.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
 import 'package:coincasa_app/features/spese/screens/elimina_spesa.dart';
 import 'package:coincasa_app/features/spese/screens/lista_spese_admin.dart';
 import 'package:coincasa_app/features/spese/screens/modifiche_spese_negata.dart';
@@ -161,16 +162,21 @@ class _DetailContent extends StatelessWidget {
         ? data.spesa.importo
         : data.spesa.importo / includedRows;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(
-        AppSizes.p25,
-        AppSizes.p24,
-        AppSizes.p25,
-        AppSizes.p32,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+    final isCreator = data.spesa.isCreatedBy(data.currentUserId);
+
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(
+              AppSizes.p25,
+              AppSizes.p24,
+              AppSizes.p25,
+              AppSizes.p16,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
           Row(
             children: [
               IconButton(
@@ -235,59 +241,27 @@ class _DetailContent extends StatelessWidget {
             isPaying: isPaying,
             onPayQuota: onPayQuota,
           ),
-          const SizedBox(height: AppSizes.p56),
-          Row(
-            children: [
-              Expanded(
-                child: _OutlinedActionButton(
-                  label: 'Modifica spesa',
-                  color: AppColors.brandAccent,
-                  onPressed: () => Navigator.of(context).pushNamed(
-                    ModificheSpeseNegataScreen.routeName,
-                    arguments: data.spesa.id,
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppSizes.p16),
-              Expanded(
-                child: _OutlinedActionButton(
-                  label: 'Elimina spesa',
-                  color: const Color(0xFFF14A4A),
-                  onPressed: () => Navigator.of(context).pushNamed(
-                    EliminaSpesaScreen.routeName,
-                    arguments: data.spesa.id,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSizes.p18),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () => Navigator.of(
-                context,
-              ).pushReplacementNamed(ListaSpeseAdminScreen.routeName),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0B45BA),
-                padding: const EdgeInsets.symmetric(vertical: AppSizes.p16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppSizes.radius15),
-                ),
-              ),
-              child: const Text(
-                'Torna alle spese',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 23,
-                  fontFamily: 'Inter',
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-          ),
         ],
       ),
+    ),
+        ),
+        DetailActionsBar(
+          modifyLabel: 'Modifica spesa',
+          deleteLabel: 'Elimina spesa',
+          backLabel: 'Torna alle spese',
+          isCreator: isCreator,
+          onModify: () => Navigator.of(context).pushNamed(
+            ModificheSpeseNegataScreen.routeName,
+            arguments: data.spesa.id,
+          ),
+          onDelete: () => Navigator.of(context).pushNamed(
+            EliminaSpesaScreen.routeName,
+            arguments: data.spesa.id,
+          ),
+          onBack: () => Navigator.of(context)
+              .pushReplacementNamed(ListaSpeseAdminScreen.routeName),
+        ),
+      ],
     );
   }
 
