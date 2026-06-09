@@ -62,12 +62,6 @@ import {
   ModificaScadenzaDto,
   ScadenzaResponseDto,
 } from "../dto/ScadenzaDto";
-import {
-  ModificaUsernameDto,
-  ModificaEmailDto,
-  ModificaPasswordDto,
-  UserProfileDto,
-} from "../dto/AccountDto";
 
 /* eslint-enable @typescript-eslint/no-unused-vars */
 
@@ -194,6 +188,15 @@ export function authRoutes(app: FastifyInstance) {
     "/auth/verifica-email",
     {
       config: { rateLimit: { max: 10, timeWindow: "5 minutes" } },
+    },
+    authController.verificaEmail,
+  );
+
+  // Supporta il click diretto dal link email (querystring token+email)
+  app.get(
+    "/auth/verifica-email",
+    {
+      config: { rateLimit: { max: 20, timeWindow: "5 minutes" } },
     },
     authController.verificaEmail,
   );
@@ -379,7 +382,7 @@ export function casaRoutes(app: FastifyInstance) {
    * @see {@link AssegnatarioInfoDto}
    *
    * @version 1.0.0
-   * @author MLorenzo Tedino
+   * @author Lorenzo Tedino
    */
   app.put<{ Params: InquilinoParams; Body: ModificaRuoloDto }>(
     "/case/:idCasa/inquilini/:idInquilino/ruolo",
@@ -1153,22 +1156,6 @@ export function accountRoutes(app: FastifyInstance) {
   app.patch<{ Body: ModificaEmailDto }>(
       "/account/email",
       accountController.modificaEmail,
-  );
-
-  /!**
-   * @api  ModificaPassword
-   * @route PATCH /account/password
-   *
-   * @summary Modifica la password dell'utente autenticato. Invalida le altre sessioni.
-   *
-   * @see {@link ModificaPasswordDto}
-   *
-   * @version 1.0.0
-   * @author Lorenzo Tedino
-   *!/
-  app.patch<{ Body: ModificaPasswordDto }>(
-      "/account/password",
-      accountController.modificaPassword,
   );
 
   /!**

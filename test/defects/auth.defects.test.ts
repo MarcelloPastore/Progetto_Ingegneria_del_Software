@@ -9,7 +9,6 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
-  InvalidOrExpiredResetCodeError,
   UserNotFoundError,
 } from "../../src/errors/appErrors";
 
@@ -25,6 +24,10 @@ const mocks = vi.hoisted(() => ({
     verify: vi.fn(),
     argon2id: 2,
   },
+  mail: {
+    sendVerificationEmail: vi.fn(),
+    sendPasswordResetEmail: vi.fn(),
+  },
 }));
 
 vi.mock("../../src/config/db", () => ({
@@ -35,11 +38,18 @@ vi.mock("argon2", () => ({
   default: mocks.argon2,
 }));
 
+vi.mock("../../src/utils/mail", () => ({
+  sendVerificationEmail: mocks.mail.sendVerificationEmail,
+  sendPasswordResetEmail: mocks.mail.sendPasswordResetEmail,
+}));
+
 import { AuthService } from "../../src/service/AuthService";
 
 describe("AuthService - defects", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.mail.sendVerificationEmail.mockResolvedValue(undefined);
+    mocks.mail.sendPasswordResetEmail.mockResolvedValue(undefined);
   });
 
   it("verifyPasswordResetCodeWithValidation throws if user does not exist", async () => {
@@ -54,7 +64,8 @@ describe("AuthService - defects", () => {
     ).rejects.toBeInstanceOf(UserNotFoundError);
   });
 
-  it("verifyPasswordResetCodeWithValidation throws for wrong code", async () => {
+
+  it("requestPasswordResetWithValidation throws if the mail provider fails", async () => {
     mocks.prisma.utente.findUnique.mockResolvedValue({
       id: "u1",
       email: "mario@example.com",
@@ -64,18 +75,14 @@ describe("AuthService - defects", () => {
       cognome: "Rossi",
     });
 
-    const service = new AuthService();
-
-    const req = await service.requestPasswordResetWithValidation({
-      email: "mario@example.com",
-    });
+    const failingMailer = vi.fn().mockRejectedValue(new Error("SMTP down"));
+    const service = new AuthService({ sendPasswordResetMail: failingMailer });
 
     await expect(
-      service.verifyPasswordResetCodeWithValidation({
+      service.requestPasswordResetWithValidation({
         email: "mario@example.com",
-        codice: req.codice === "000000" ? "111111" : "000000",
       }),
-    ).rejects.toBeInstanceOf(InvalidOrExpiredResetCodeError);
+    ).rejects.toThrow("Impossibile inviare l'email di recupero password");
   });
 });
 
