@@ -147,9 +147,11 @@ export class CasaService {
 
     const ownerIdCasa = await casaRepository.getCasaCreator(idCasa);
     if (ownerIdCasa && idInquilino === ownerIdCasa) {
-      throw new ForbiddenError("Il proprietario della casa non può essere rimosso");
+      throw new ForbiddenError(
+        "Il proprietario della casa non può essere rimosso",
+      );
     }
-    
+
     await casaRepository.removeMembroCasa(idCasa, idInquilino);
   }
 
@@ -163,7 +165,9 @@ export class CasaService {
 
     const ownerIdCasa = await casaRepository.getCasaCreator(idCasa);
     if (ownerIdCasa && idInquilino === ownerIdCasa) {
-      throw new ForbiddenError("Il ruolo del proprietario della casa non può essere modificato");
+      throw new ForbiddenError(
+        "Il ruolo del proprietario della casa non può essere modificato",
+      );
     }
 
     const membro = await casaRepository.updateMembroCasaRole(
