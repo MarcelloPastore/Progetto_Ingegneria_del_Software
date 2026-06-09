@@ -108,6 +108,24 @@ class _ListaCoinquiliniScreenState extends State<ListaCoinquiliniScreen> {
     }
   }
 
+  Future<void> _retrocedi(Inquilino inquilino) async {
+    try {
+      await ApiProvider.casa.updateRuolo(widget.casaId, inquilino.id, {
+        'ruolo': 'Inquilino',
+      });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${inquilino.nomeCompleto} retrocesso a membro.')),
+      );
+      _reload();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Retrocessione non riuscita.')),
+      );
+    }
+  }
+
   Future<void> _rimuovi(Inquilino inquilino) async {
     try {
       await ApiProvider.casa.removeInquilino(widget.casaId, inquilino.id);
@@ -160,6 +178,8 @@ class _ListaCoinquiliniScreenState extends State<ListaCoinquiliniScreen> {
             }
 
             final coinquilini = snapshot.data ?? const [];
+            final currentUser = _resolveCurrentInquilino(coinquilini);
+            final isAdmin = currentUser?.isHomeAdmin ?? false;
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -204,25 +224,32 @@ class _ListaCoinquiliniScreenState extends State<ListaCoinquiliniScreen> {
                         ),
                         itemBuilder: (context, index) {
                           final coinquilino = coinquilini[index];
+                          final isSelf = coinquilino.id == currentUser?.id;
+                          // L'owner non può mai essere retrocesso o rimosso.
+                          // I pulsanti sono visibili solo a un admin, su membri non-owner e diversi da sé.
+                          final showActions =
+                              isAdmin && !coinquilino.isOwner && !isSelf;
                           return _CoinquilinoTile(
                             coinquilino: coinquilino,
+                            showActions: showActions,
                             onPromuovi: coinquilino.isHomeAdmin
                                 ? null
                                 : () => _promuovi(coinquilino),
-                            onRimuovi: coinquilino.isHomeAdmin
-                                ? null
-                                : () {
-                                    showEliminaCoinquilinoDialog(
-                                      context,
-                                      nomeCoinquilino: coinquilino.nomeCompleto,
-                                      iniziali: resolveUserInitials(
-                                        name: coinquilino.nome,
-                                        surname: coinquilino.cognome,
-                                        displayName: coinquilino.nomeCompleto,
-                                      ),
-                                      onRimuovi: () => _rimuovi(coinquilino),
-                                    );
-                                  },
+                            onRetrocedi: coinquilino.isHomeAdmin
+                                ? () => _retrocedi(coinquilino)
+                                : null,
+                            onRimuovi: () {
+                              showEliminaCoinquilinoDialog(
+                                context,
+                                nomeCoinquilino: coinquilino.nomeCompleto,
+                                iniziali: resolveUserInitials(
+                                  name: coinquilino.nome,
+                                  surname: coinquilino.cognome,
+                                  displayName: coinquilino.nomeCompleto,
+                                ),
+                                onRimuovi: () => _rimuovi(coinquilino),
+                              );
+                            },
                           );
                         },
                       ),
@@ -324,12 +351,16 @@ class _ErrorState extends StatelessWidget {
 class _CoinquilinoTile extends StatelessWidget {
   const _CoinquilinoTile({
     required this.coinquilino,
+    required this.showActions,
     this.onPromuovi,
+    this.onRetrocedi,
     this.onRimuovi,
   });
 
   final Inquilino coinquilino;
+  final bool showActions;
   final VoidCallback? onPromuovi;
+  final VoidCallback? onRetrocedi;
   final VoidCallback? onRimuovi;
 
   String get _roleLabel => coinquilino.isHomeAdmin ? 'Admin' : 'Membro';
@@ -419,15 +450,22 @@ class _CoinquilinoTile extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 20),
-          if (!coinquilino.isHomeAdmin)
+          if (showActions)
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                _ActionChip(
-                  label: 'Promuovi',
-                  color: const Color(0xFF6D5FFF),
-                  onTap: onPromuovi,
-                ),
+                if (onPromuovi != null)
+                  _ActionChip(
+                    label: 'Promuovi',
+                    color: const Color(0xFF6D5FFF),
+                    onTap: onPromuovi,
+                  ),
+                if (onRetrocedi != null)
+                  _ActionChip(
+                    label: 'Retrocedi',
+                    color: const Color(0xFFE08A00),
+                    onTap: onRetrocedi,
+                  ),
                 const SizedBox(height: 8),
                 _ActionChip(
                   label: 'Rimuovi',

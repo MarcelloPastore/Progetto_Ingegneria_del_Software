@@ -6,6 +6,7 @@ class Inquilino {
     this.cognome = '',
     this.username = '',
     this.ruolo = '',
+    this.isOwner = false,
     this.dataIngresso,
   });
 
@@ -15,6 +16,7 @@ class Inquilino {
   final String cognome;
   final String username;
   final String ruolo;
+  final bool isOwner;
   final DateTime? dataIngresso;
 
   String get nomeCompleto {
@@ -33,6 +35,7 @@ class Inquilino {
     final emailValue = json['email'] ?? json['mail'];
     final ruoloValue = json['ruolo'] ?? json['role'];
     final dataIngressoValue = json['dataIngresso'] ?? json['joinedAt'];
+    final isOwnerValue = json['isOwner'] ?? false;
 
     return Inquilino(
       id: idValue?.toString() ?? '',
@@ -41,6 +44,7 @@ class Inquilino {
       cognome: cognomeValue?.toString() ?? '',
       username: usernameValue?.toString() ?? '',
       ruolo: ruoloValue?.toString() ?? '',
+      isOwner: isOwnerValue == true,
       dataIngresso: dataIngressoValue == null
           ? null
           : DateTime.tryParse(dataIngressoValue.toString()),
@@ -55,6 +59,7 @@ class Inquilino {
       'username': username,
       'email': email,
       'ruolo': ruolo,
+      'isOwner': isOwner,
       'dataIngresso': dataIngresso?.toIso8601String(),
     };
   }
