@@ -1052,7 +1052,9 @@ class _SpesaCreateFormController
   void ensureSelected(String? id) {
     if (id == null || id.isEmpty) return;
     if (state.selectedInquiliniIds.contains(id) &&
-        state.currentUserId == id) return;
+        state.currentUserId == id) {
+      return;
+    }
     state = state.copyWith(
       selectedInquiliniIds: {...state.selectedInquiliniIds, id},
       currentUserId: id,
@@ -1082,13 +1084,11 @@ class _ImportoCard extends StatefulWidget {
     required this.value,
     required this.hasError,
     required this.onChanged,
-    this.focusNode,
   });
 
   final String value;
   final bool hasError;
   final ValueChanged<String> onChanged;
-  final FocusNode? focusNode;
 
   @override
   State<_ImportoCard> createState() => _ImportoCardState();
@@ -1102,7 +1102,7 @@ class _ImportoCardState extends State<_ImportoCard> {
   void initState() {
     super.initState();
     _ctrl = TextEditingController(text: widget.value);
-    _focus = widget.focusNode ?? FocusNode();
+    _focus = FocusNode();
   }
 
   @override
@@ -1118,7 +1118,7 @@ class _ImportoCardState extends State<_ImportoCard> {
   @override
   void dispose() {
     _ctrl.dispose();
-    if (widget.focusNode == null) _focus.dispose();
+    _focus.dispose();
     super.dispose();
   }
 
@@ -1187,74 +1187,6 @@ class _ImportoCardState extends State<_ImportoCard> {
                   ),
                 ),
               ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// UI — Data field
-// ---------------------------------------------------------------------------
-
-class _DateField extends StatelessWidget {
-  const _DateField({required this.value, required this.onChanged});
-
-  final DateTime? value;
-  final ValueChanged<DateTime> onChanged;
-
-  String get _label {
-    final d = value ?? DateTime.now();
-    return '${d.day.toString().padLeft(2, '0')}/'
-        '${d.month.toString().padLeft(2, '0')}/'
-        '${d.year}';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () async {
-        final picked = await showDatePicker(
-          context: context,
-          initialDate: value ?? DateTime.now(),
-          firstDate: DateTime(2020),
-          lastDate: DateTime(2030),
-          builder: (ctx, child) => Theme(
-            data: Theme.of(ctx).copyWith(
-              colorScheme: const ColorScheme.dark(
-                primary: AppColors.brandPrimary,
-                surface: Color(0xFF1E1A30),
-              ),
-            ),
-            child: child!,
-          ),
-        );
-        if (picked != null) onChanged(picked);
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceDarkElevated,
-          borderRadius: BorderRadius.circular(AppSizes.radius8),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.calendar_today_rounded,
-              color: AppColors.brandPrimary,
-              size: 16,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              _label,
-              style: AppTextStyles.screenTitleStrong.copyWith(
-                color: AppColors.textOnDark,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
             ),
           ],
         ),
@@ -1373,355 +1305,6 @@ class _DivisioneLoading extends StatelessWidget {
   }
 }
 
-class _DivisioneSection extends StatelessWidget {
-  const _DivisioneSection({
-    required this.inquilini,
-    required this.selectedIds,
-    required this.currentUserId,
-    required this.importo,
-    required this.showError,
-    required this.onSelected,
-  });
-
-  final List<Inquilino> inquilini;
-  final Set<String> selectedIds;
-  final String? currentUserId;
-  final String importo;
-  final bool showError;
-  final ValueChanged<String> onSelected;
-
-  double? get _quotaPerPerson {
-    if (selectedIds.isEmpty) return null;
-    final raw = importo.trim().replaceAll(',', '.');
-    final total = double.tryParse(raw);
-    if (total == null || total <= 0) return null;
-    return total / selectedIds.length;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final quota = _quotaPerPerson;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          'DIVIDI TRA',
-          style: AppTextStyles.screenTitleStrong.copyWith(
-            color: const Color(0xFF7B5DC8),
-            fontSize: 13,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0.6,
-          ),
-        ),
-        const SizedBox(height: 10),
-        Container(
-          decoration: BoxDecoration(
-            color: AppColors.surfaceDarkElevated,
-            borderRadius: BorderRadius.circular(AppSizes.radius8),
-            border: Border.all(
-              color: showError
-                  ? AppColors.statusNegative
-                  : Colors.transparent,
-              width: 1.5,
-            ),
-          ),
-          child: Column(
-            children: [
-              for (int i = 0; i < inquilini.length; i++) ...[
-                _InquilinoRow(
-                  inquilino: inquilini[i],
-                  isSelected: selectedIds.contains(inquilini[i].id),
-                  isCurrentUser: inquilini[i].id == currentUserId,
-                  quota: selectedIds.contains(inquilini[i].id)
-                      ? quota
-                      : null,
-                  onTap: () => onSelected(inquilini[i].id),
-                ),
-                if (i < inquilini.length - 1)
-                  const Divider(
-                    height: 1,
-                    indent: 14,
-                    endIndent: 14,
-                    color: Color(0xFF2E2A42),
-                  ),
-              ],
-            ],
-          ),
-        ),
-        if (showError) ...[
-          const SizedBox(height: 8),
-          const _ErrorLine(message: 'Seleziona almeno un coinquilino'),
-        ],
-      ],
-    );
-  }
-}
-
-class _InquilinoRow extends StatelessWidget {
-  const _InquilinoRow({
-    required this.inquilino,
-    required this.isSelected,
-    required this.isCurrentUser,
-    required this.quota,
-    required this.onTap,
-  });
-
-  final Inquilino inquilino;
-  final bool isSelected;
-  final bool isCurrentUser;
-  final double? quota;
-  final VoidCallback onTap;
-
-  Color _avatarColor(String id) {
-    const colors = [
-      Color(0xFF1B5E20),
-      Color(0xFFE53935),
-      Color(0xFF6D4C41),
-      Color(0xFF1565C0),
-      Color(0xFF6A1B9A),
-    ];
-    return colors[id.hashCode.abs() % colors.length];
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final displayName = isCurrentUser
-        ? '${inquilino.nome} (Tu)'
-        : inquilino.nome;
-
-    return InkWell(
-      onTap: isCurrentUser ? null : onTap,
-      borderRadius: BorderRadius.circular(AppSizes.radius8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        child: Row(
-          children: [
-            // Avatar
-            CircleAvatar(
-              backgroundColor: _avatarColor(inquilino.id),
-              radius: 17,
-              child: Text(
-                resolveUserInitials(
-                  displayName: inquilino.nomeCompleto,
-                  email: inquilino.email,
-                  fallback: '?',
-                ),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            // Nome
-            Expanded(
-              child: Text(
-                displayName,
-                style: AppTextStyles.screenTitleStrong.copyWith(
-                  color: isCurrentUser
-                      ? AppColors.textOnDark.withValues(alpha: 0.45)
-                      : AppColors.textOnDark,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            // Quota amount
-            if (quota != null && isSelected) ...[
-              Text(
-                '€${quota!.toStringAsFixed(0)}',
-                style: AppTextStyles.screenTitleStrong.copyWith(
-                  color: AppColors.brandPrimary,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(width: 8),
-            ] else if (!isCurrentUser) ...[
-              Text(
-                '−',
-                style: TextStyle(
-                  color: AppColors.textOnDark.withValues(alpha: 0.35),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(width: 8),
-            ],
-            // Checkbox
-            SizedBox(
-              width: 22,
-              height: 22,
-              child: Checkbox(
-                value: isSelected,
-                onChanged: isCurrentUser ? null : (_) => onTap(),
-                activeColor: AppColors.brandPrimary,
-                checkColor: Colors.white,
-                side: BorderSide(
-                  color: isCurrentUser
-                      ? AppColors.textOnDark.withValues(alpha: 0.2)
-                      : AppColors.textOnDark.withValues(alpha: 0.4),
-                  width: 1.5,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// UI — Toggle panel
-// ---------------------------------------------------------------------------
-
-class _TogglePanel extends StatelessWidget {
-  const _TogglePanel({required this.children});
-
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDarkElevated,
-        borderRadius: BorderRadius.circular(AppSizes.radius8),
-      ),
-      child: Column(children: children),
-    );
-  }
-}
-
-class _PaidForAllRow extends StatelessWidget {
-  const _PaidForAllRow({required this.value, required this.onChanged});
-
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Ho anticipato per tutti',
-                  style: AppTextStyles.screenTitleStrong.copyWith(
-                    color: AppColors.textOnDark,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Gli altri vedranno il debito verso di te',
-                  style: TextStyle(
-                    color: AppColors.textOnDark.withValues(alpha: 0.5),
-                    fontSize: 12,
-                    fontFamily: 'Inter',
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-            activeThumbColor: Colors.white,
-            activeTrackColor: AppColors.brandPrimary,
-            inactiveThumbColor: Colors.white,
-            inactiveTrackColor: const Color(0xFF3A3555),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RecurringRow extends StatelessWidget {
-  const _RecurringRow({
-    required this.value,
-    required this.isAdmin,
-    required this.onChanged,
-  });
-
-  final bool value;
-  final bool isAdmin;
-  final ValueChanged<bool>? onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Opacity(
-      opacity: isAdmin ? 1.0 : 0.5,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Spesa ricorrente',
-                    style: AppTextStyles.screenTitleStrong.copyWith(
-                      color: AppColors.textOnDark,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 2,
-                    children: [
-                      Text(
-                        'Ripete seguendo la data precedente',
-                        style: TextStyle(
-                          color: AppColors.textOnDark.withValues(alpha: 0.5),
-                          fontSize: 12,
-                          fontFamily: 'Inter',
-                        ),
-                      ),
-                      if (!isAdmin)
-                        const Text(
-                          '( solo HomeAdmin ) ⚠',
-                          style: TextStyle(
-                            color: AppColors.lockOrange,
-                            fontSize: 11,
-                            fontFamily: 'Inter',
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            Switch(
-              value: value,
-              onChanged: onChanged,
-              activeThumbColor: Colors.white,
-              activeTrackColor: AppColors.brandPrimary,
-              inactiveThumbColor: Colors.white,
-              inactiveTrackColor: const Color(0xFF3A3555),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 // ---------------------------------------------------------------------------
 // UI — Frequenza dropdown
 // ---------------------------------------------------------------------------
@@ -1824,78 +1407,6 @@ class _ErrorLine extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// UI — Conferma button
-// ---------------------------------------------------------------------------
-
-class _ConfermaButton extends StatelessWidget {
-  const _ConfermaButton({
-    required this.enabled,
-    required this.submitting,
-    required this.onPressed,
-  });
-
-  final bool enabled;
-  final bool submitting;
-  final VoidCallback onPressed;
-
-  static const _radius = BorderRadius.all(Radius.circular(28));
-  static const _colorTop = Color(0xFF9B7FE8);
-  static const _colorMid = Color(0xFF7B5DC8);
-  static const _colorBot = Color(0xFF5C3FA8);
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 52,
-      width: double.infinity,
-      child: DecoratedBox(
-        decoration: ShapeDecoration(
-          gradient: enabled && !submitting
-              ? const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [_colorTop, _colorMid, _colorBot],
-                  stops: [0.0, 0.55, 1.0],
-                )
-              : const LinearGradient(
-                  colors: [Color(0xFF4A4560), Color(0xFF3A3555)],
-                ),
-          shape: const RoundedRectangleBorder(borderRadius: _radius),
-          shadows: const [
-            BoxShadow(
-              color: Color(0x55000000),
-              blurRadius: 6,
-              offset: Offset(0, 3),
-            ),
-          ],
-        ),
-        child: OutlinedButton(
-          onPressed: enabled && !submitting ? onPressed : null,
-          style: OutlinedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            foregroundColor: Colors.transparent,
-            side: BorderSide.none,
-            padding: EdgeInsets.zero,
-            shape: const RoundedRectangleBorder(borderRadius: _radius),
-            elevation: 0,
-            shadowColor: Colors.transparent,
-          ),
-          child: Text(
-            submitting ? 'Salvataggio...' : 'Conferma e aggiungi',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontFamily: 'Inter',
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

@@ -78,8 +78,9 @@ class _ModificaSpesaAdminScreenState
     final currentUserId = _resolveCurrentUserId(inquilini);
     controller.initFromSpesa(spesa, currentUserId, casa);
 
-    _importoCtrl.text = controller.state.importo;
-    _descCtrl.text = controller.state.descrizione;
+    final formState = ref.read(modificaSpesaFormProvider);
+    _importoCtrl.text = formState.importo;
+    _descCtrl.text = formState.descrizione;
   }
 
   Future<void> _submit() async {
@@ -578,7 +579,7 @@ class _SpesaFormImportoCardState extends State<SpesaFormImportoCard> {
                   alignment: Alignment.centerRight,
                   child: ValueListenableBuilder(
                     valueListenable: widget.controller,
-                    builder: (_, __, ___) => Text(
+                    builder: (_, a, b) => Text(
                       _displayAmount,
                       style: AppTextStyles.screenTitleStrong.copyWith(
                         color: AppColors.brandPrimary,

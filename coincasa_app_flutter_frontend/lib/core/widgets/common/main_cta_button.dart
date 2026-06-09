@@ -71,13 +71,11 @@ class _DetailActionButton extends StatelessWidget {
     required this.label,
     required this.color,
     required this.onPressed,
-    this.height = 48,
   });
 
   final String label;
   final Color color;
   final VoidCallback? onPressed;
-  final double height;
 
   static const _radius = BorderRadius.all(Radius.circular(12));
 
@@ -87,7 +85,7 @@ class _DetailActionButton extends StatelessWidget {
     final effectiveColor = isDisabled ? const Color(0xFF5A5570) : color;
 
     return SizedBox(
-      height: height,
+      height: 48,
       width: double.infinity,
       child: DecoratedBox(
         decoration: ShapeDecoration(

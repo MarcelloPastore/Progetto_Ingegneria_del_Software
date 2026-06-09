@@ -436,10 +436,6 @@ class _SummaryCard extends StatelessWidget {
     final hasAnticipatore =
         anticipatoreNome != null && anticipatoreNome!.trim().isNotEmpty;
 
-    final firstNamesOnly = payerNames.map((name) {
-      return name.trim().split(RegExp(r'\s+')).first;
-    }).toList();
-
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF1E1A2D),
@@ -684,42 +680,6 @@ class _QuoteStatusRow extends StatelessWidget {
             ),
           ),
       ],
-    );
-  }
-}
-
-class _OutlinedActionButton extends StatelessWidget {
-  const _OutlinedActionButton({
-    required this.label,
-    required this.color,
-    required this.onPressed,
-  });
-
-  final String label;
-  final Color color;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return OutlinedButton(
-      onPressed: onPressed,
-      style: OutlinedButton.styleFrom(
-        backgroundColor: const Color(0xFF151127),
-        side: BorderSide(color: color, width: 2),
-        padding: const EdgeInsets.symmetric(vertical: AppSizes.p17),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSizes.radius16),
-        ),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontSize: 17,
-          fontFamily: 'Inter',
-          fontWeight: FontWeight.w800,
-        ),
-      ),
     );
   }
 }
