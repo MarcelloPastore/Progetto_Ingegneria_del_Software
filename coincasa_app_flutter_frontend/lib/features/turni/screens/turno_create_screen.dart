@@ -424,21 +424,7 @@ class _TurnoCreateScreenState extends ConsumerState<TurnoCreateScreen> {
   }
 
   static List<Inquilino> _assigneeChoices(List<Inquilino> inquilini) {
-    final valid = inquilini.where((item) => item.id.isNotEmpty).toList();
-    if (valid.isNotEmpty) {
-      return valid;
-    }
-    return const [
-      Inquilino(
-        id: 'preview-fp',
-        nome: 'Francesco',
-        cognome: 'Piras',
-        email: '',
-      ),
-      Inquilino(id: 'preview-mr', nome: 'Mario', cognome: 'Rossi', email: ''),
-      Inquilino(id: 'preview-al', nome: 'Anna', cognome: 'Lombardi', email: ''),
-      Inquilino(id: 'preview-gl', nome: 'Giulia', cognome: 'Lodi', email: ''),
-    ];
+    return inquilini.where((item) => item.id.isNotEmpty).toList();
   }
 }
 
@@ -690,6 +676,10 @@ class _AssigneeSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (inquilini.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     final fallbackId = currentUserId?.trim().isNotEmpty == true
         ? currentUserId!.trim()
         : (inquilini.isNotEmpty ? inquilini.first.id : 'unknown-user-id');
@@ -942,12 +932,7 @@ class _AssigneeChip extends StatelessWidget {
   }
 
   static Color _textColor(String label) {
-    return switch (label) {
-      'FP' => AppColors.statusPositive,
-      'MR' => AppColors.statusWarning,
-      'GL' => Colors.cyanAccent,
-      _ => AppColors.turniDropdownSelectedText,
-    };
+    return AppColors.textOnDark;
   }
 }
 
