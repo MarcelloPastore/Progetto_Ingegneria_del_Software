@@ -6,6 +6,7 @@ import 'package:coincasa_app/app.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/casa.dart';
+import 'package:coincasa_app/core/models/spesa.dart';
 import 'package:coincasa_app/core/models/turno.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
@@ -133,6 +134,7 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
     ]);
     final turni = await turniFuture;
     final turniOggi = await turniOggiFuture;
+    final spese = await ApiProvider.spese.list(casa.id);
     final houseHealthBadges = _buildHouseHealthBadges(turni);
 
     return _DashboardData(
@@ -144,6 +146,7 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
       debito: amounts[2],
       turni: turni,
       turniOggi: turniOggi,
+      spese: spese,
       houseHealthBadges: houseHealthBadges,
     );
   }
@@ -314,6 +317,7 @@ class _DashboardData {
     this.debito,
     this.turni = const [],
     this.turniOggi = const [],
+    this.spese = const [],
     this.houseHealthBadges = const [],
   });
 
@@ -325,6 +329,7 @@ class _DashboardData {
   final double? debito;
   final List<Turno> turni;
   final List<Turno> turniOggi;
+  final List<Spesa> spese;
   final List<HouseHealthBadgeData> houseHealthBadges;
 }
 
@@ -1210,6 +1215,7 @@ class _EmptyCalendarSection extends StatelessWidget {
                           future: dashboardDataFuture,
                           builder: (context, snapshot) {
                             final turni = snapshot.data?.turni ?? const [];
+                            final spese = snapshot.data?.spese ?? const [];
                             final days = _buildGridDays(month);
 
                             return GridView.builder(
@@ -1227,7 +1233,7 @@ class _EmptyCalendarSection extends StatelessWidget {
                                 final date = days[index];
                                 final inMonth = date.month == month.month;
                                 final markers = inMonth
-                                    ? _markersForDate(date, turni)
+                                    ? _markersForDate(date, turni, spese)
                                     : const <Color>[];
 
                                 return _DashboardCalendarDay(
@@ -1278,7 +1284,11 @@ class _EmptyCalendarSection extends StatelessWidget {
     return List.generate(42, (index) => start.add(Duration(days: index)));
   }
 
-  static List<Color> _markersForDate(DateTime date, List<Turno> turni) {
+  static List<Color> _markersForDate(
+    DateTime date,
+    List<Turno> turni,
+    List<Spesa> spese,
+  ) {
     final colors = <Color>[];
     for (final turno in turni) {
       final turnoDate = turno.dataProssimaPulizia;
@@ -1288,6 +1298,18 @@ class _EmptyCalendarSection extends StatelessWidget {
           turnoDate.day == date.day) {
         colors.add(AppColors.statusInfo);
         if (colors.length == 4) break;
+      }
+    }
+    for (final spesa in spese) {
+      final scadenza = spesa.dataScadenza;
+      if (scadenza != null &&
+          scadenza.year == date.year &&
+          scadenza.month == date.month &&
+          scadenza.day == date.day) {
+        if (!colors.contains(AppColors.keyYellow)) {
+          colors.add(AppColors.keyYellow);
+        }
+        break;
       }
     }
     return colors;
