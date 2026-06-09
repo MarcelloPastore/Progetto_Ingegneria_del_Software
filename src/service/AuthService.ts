@@ -16,17 +16,36 @@ import {
   UserNotFoundError,
   InvalidOrExpiredResetCodeError,
   EmailDeliveryError,
+  PasswordResetEmailDeliveryError,
   InvalidEmailVerificationTokenError,
 } from "../errors/appErrors";
 import type { VerificationMailInput } from "../utils/mail";
-import { sendVerificationEmail } from "../utils/mail";
+import {
+  sendVerificationEmail,
+  sendPasswordResetEmail,
+  type PasswordResetMailInput,
+} from "../utils/mail";
+
+type AuthServiceMailers = {
+  sendVerificationMail?: (input: VerificationMailInput) => Promise<void>;
+  sendPasswordResetMail?: (input: PasswordResetMailInput) => Promise<void>;
+};
 
 export class AuthService {
-  constructor(
-    private readonly sendVerificationMail: (
-      input: VerificationMailInput,
-    ) => Promise<void> = sendVerificationEmail,
-  ) {}
+  private readonly sendVerificationMail: (
+    input: VerificationMailInput,
+  ) => Promise<void>;
+
+  private readonly sendPasswordResetMail: (
+    input: PasswordResetMailInput,
+  ) => Promise<void>;
+
+  constructor(mailers: AuthServiceMailers = {}) {
+    this.sendVerificationMail =
+      mailers.sendVerificationMail ?? sendVerificationEmail;
+    this.sendPasswordResetMail =
+      mailers.sendPasswordResetMail ?? sendPasswordResetEmail;
+  }
 
   private readonly resetCodes = new Map<
     string,
@@ -211,7 +230,7 @@ export class AuthService {
 
   async requestPasswordResetWithValidation(
     data: unknown,
-  ): Promise<{ ok: boolean; date: string; expiresAt: string; codice: string }> {
+  ): Promise<{ ok: boolean; date: string; expiresAt: string }> {
     const validation = RequestPasswordResetSchema.safeParse(data);
     if (!validation.success) {
       throw validation.error;
@@ -233,11 +252,22 @@ export class AuthService {
       expiresAtMs: expiresAt.getTime(),
     });
 
+    try {
+      await this.sendPasswordResetMail({
+        to: user.email,
+        username: user.username,
+        resetCode: codice,
+        expiresAt: expiresAt.toISOString(),
+      });
+    } catch {
+      this.resetCodes.delete(this.emailKey(user.email));
+      throw new PasswordResetEmailDeliveryError();
+    }
+
     return {
       ok: true,
       date: new Date().toISOString(),
       expiresAt: expiresAt.toISOString(),
-      codice,
     };
   }
 

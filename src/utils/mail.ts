@@ -18,6 +18,7 @@ type TransportOptions = {
 
 type MailTransporter = {
   sendMail(payload: MailPayload): Promise<unknown>;
+  verify?: () => Promise<unknown>;
 };
 
 type NodemailerModule = {
@@ -28,6 +29,13 @@ export type VerificationMailInput = {
   to: string;
   username: string;
   verificationToken: string;
+};
+
+export type PasswordResetMailInput = {
+  to: string;
+  username: string;
+  resetCode: string;
+  expiresAt: string;
 };
 
 let transporter: MailTransporter | null = null;
@@ -69,17 +77,32 @@ async function getTransporter(): Promise<MailTransporter> {
 
     transporter = nodemailerModule.createTransport(transportOptions);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (transporter as any).verify();
-      // eslint-disable-next-line no-console
-      console.log("Mail transporter verified: able to connect to SMTP host");
+      await transporter.verify?.();
     } catch (err) {
-      console.error("Mail transporter verification failed:", err);
+      console.error("[MAIL] Transporter verification failed:", err);
       throw err;
     }
   }
 
   return transporter;
+}
+
+function formatMailFrom(env: {
+  MAIL_FROM: string;
+  MAIL_FROM_NAME?: string;
+  MAIL_FROM_EMAIL?: string;
+}): string {
+  let mailFrom = env.MAIL_FROM;
+
+  if (env.MAIL_FROM_EMAIL) {
+    if (env.MAIL_FROM_NAME) {
+      mailFrom = `${env.MAIL_FROM_NAME} <${env.MAIL_FROM_EMAIL}>`;
+    } else {
+      mailFrom = env.MAIL_FROM_EMAIL;
+    }
+  }
+
+  return mailFrom;
 }
 
 export async function sendVerificationEmail({
@@ -96,38 +119,81 @@ export async function sendVerificationEmail({
   verificationUrl.searchParams.set("token", verificationToken);
   verificationUrl.searchParams.set("email", to);
 
-  let mailFrom = env.MAIL_FROM;
-
-  if (env.MAIL_FROM_EMAIL) {
-    if (env.MAIL_FROM_NAME) {
-      mailFrom = `${env.MAIL_FROM_NAME} <${env.MAIL_FROM_EMAIL}>`;
-    } else {
-      mailFrom = env.MAIL_FROM_EMAIL;
-    }
+  try {
+    await (
+      await getTransporter()
+    ).sendMail({
+      from: formatMailFrom(env),
+      to,
+      subject: "Verifica la tua email - CoinCasa",
+      text: [
+        `Ciao ${username},`,
+        "",
+        "grazie per esserti registrato su CoinCasa.",
+        `Per verificare la tua email clicca su questo link: ${verificationUrl.toString()}`,
+        "",
+        "Se non hai richiesto questa registrazione puoi ignorare questa email.",
+      ].join("\n"),
+      html: `
+        <p>Ciao <strong>${username}</strong>,</p>
+        <p>Grazie per esserti registrato su CoinCasa.</p>
+        <p>
+          Per verificare la tua email clicca qui:
+          <a href="${verificationUrl.toString()}">Verifica email</a>
+        </p>
+        <p>Se non hai richiesto questa registrazione puoi ignorare questa email.</p>
+      `,
+    });
+  } catch (err) {
+    console.error("Failed to send verification email:", err);
+    throw err;
   }
+}
 
-  await (
-    await getTransporter()
-  ).sendMail({
-    from: mailFrom,
-    to,
-    subject: "Verifica la tua email - CoinCasa",
-    text: [
-      `Ciao ${username},`,
-      "",
-      "grazie per esserti registrato su CoinCasa.",
-      `Per verificare la tua email apri questo link: ${verificationUrl.toString()}`,
-      "",
-      "Se non hai richiesto questa registrazione puoi ignorare questa email.",
-    ].join("\n"),
-    html: `
-      <p>Ciao <strong>${username}</strong>,</p>
-      <p>Grazie per esserti registrato su CoinCasa.</p>
-      <p>
-        Per verificare la tua email clicca qui:
-        <a href="${verificationUrl.toString()}">Verifica email</a>
-      </p>
-      <p>Se non hai richiesto questa registrazione puoi ignorare questa email.</p>
-    `,
-  });
+export async function sendPasswordResetEmail({
+  to,
+  username,
+  resetCode,
+  expiresAt,
+}: PasswordResetMailInput): Promise<void> {
+  const { env } = await import("../config/env");
+
+  const expiresAtDate = new Date(expiresAt);
+  const formattedExpiry = Number.isNaN(expiresAtDate.getTime())
+    ? expiresAt
+    : expiresAtDate.toLocaleString("it-IT", {
+        dateStyle: "short",
+        timeStyle: "short",
+      });
+
+  try {
+    await (
+      await getTransporter()
+    ).sendMail({
+      from: formatMailFrom(env),
+      to,
+      subject: "Codice di recupero password - CoinCasa",
+      text: [
+        `Ciao ${username},`,
+        "",
+        "hai richiesto il recupero della password su CoinCasa.",
+        `Il tuo codice di recupero è: ${resetCode}`,
+        `Scade il: ${formattedExpiry}`,
+        "",
+        "Se non hai richiesto tu questa email puoi ignorarla.",
+      ].join("\n"),
+      html: `
+        <p>Ciao <strong>${username}</strong>,</p>
+        <p>Hai richiesto il recupero della password su CoinCasa.</p>
+        <p style="font-size: 1.2rem; font-weight: 700; letter-spacing: 0.15em;">
+          ${resetCode}
+        </p>
+        <p>Il codice scade il <strong>${formattedExpiry}</strong>.</p>
+        <p>Se non hai richiesto tu questa email puoi ignorarla.</p>
+      `,
+    });
+  } catch (err) {
+    console.error("Failed to send password reset email:", err);
+    throw err;
+  }
 }

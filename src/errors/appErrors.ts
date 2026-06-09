@@ -61,6 +61,13 @@ export class EmailDeliveryError extends Error {
   }
 }
 
+export class PasswordResetEmailDeliveryError extends Error {
+  constructor() {
+    super("Impossibile inviare l'email di recupero password");
+    this.name = "PasswordResetEmailDeliveryError";
+  }
+}
+
 export class InvalidEmailVerificationTokenError extends Error {
   constructor() {
     super("Token di verifica email non valido o scaduto");
