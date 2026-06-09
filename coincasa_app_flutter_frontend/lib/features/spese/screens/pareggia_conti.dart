@@ -44,7 +44,8 @@ class _PareggiaContiScreenState extends ConsumerState<PareggiaContiScreen> {
 
     for (final inquilino in inquilini) {
       final isMe = _isCurrentUser(inquilino);
-      double amount = 0;
+      double credito = 0;
+      double debito = 0;
       if (!isMe) {
         final results = await Future.wait<double>([
           ApiProvider.spese
@@ -54,27 +55,26 @@ class _PareggiaContiScreenState extends ConsumerState<PareggiaContiScreen> {
               .getDebitoVerso(casa.id, inquilino.id)
               .catchError((_) => 0.0),
         ]);
-        // amount > 0 → questa persona mi deve soldi
-        // amount < 0 → devo soldi a questa persona
-        amount = results[0] - results[1];
+        credito = results[0]; // questa persona mi deve soldi
+        debito = results[1];  // devo soldi a questa persona
       }
       balances.add(
         _BalanceRow(
           id: inquilino.id,
           name: _displayName(inquilino),
           initials: _initials(_displayName(inquilino)),
-          amount: amount,
+          credito: credito,
+          debito: debito,
           isCurrentUser: isMe,
         ),
       );
     }
 
-    // Calcola il saldo aggregato dell'utente corrente:
-    // somma di tutti i saldi bilaterali (negativo = devo soldi in totale)
-    final aggregateBalance =
+    // Saldo aggregato dell'utente corrente: somma di tutti i saldi netti
+    final aggregateSaldo =
         balances.where((r) => !r.isCurrentUser).fold<double>(
           0,
-          (sum, r) => sum + r.amount,
+          (sum, r) => sum + r.saldo,
         );
     final idx = balances.indexWhere((r) => r.isCurrentUser);
     if (idx != -1) {
@@ -83,7 +83,8 @@ class _PareggiaContiScreenState extends ConsumerState<PareggiaContiScreen> {
         id: me.id,
         name: me.name,
         initials: me.initials,
-        amount: aggregateBalance,
+        credito: aggregateSaldo > 0 ? aggregateSaldo : 0,
+        debito: aggregateSaldo < 0 ? aggregateSaldo.abs() : 0,
         isCurrentUser: true,
       );
     }
@@ -101,7 +102,7 @@ class _PareggiaContiScreenState extends ConsumerState<PareggiaContiScreen> {
     final currentUserInitials = currentUserRow?.initials ?? 'T';
 
     final transfers = balances
-        .where((r) => !r.isCurrentUser && r.amount < -0.01)
+        .where((r) => !r.isCurrentUser && r.debito > r.credito + 0.01)
         .map(
           (r) => _TransferRow(
             creditorId: r.id,
@@ -109,7 +110,7 @@ class _PareggiaContiScreenState extends ConsumerState<PareggiaContiScreen> {
             creditorInitials: r.initials,
             debtorName: currentUserName,
             debtorInitials: currentUserInitials,
-            amount: r.amount.abs(),
+            amount: r.debito,
           ),
         )
         .toList();
@@ -359,53 +360,125 @@ class _BalanceTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color amountColor;
-    final String amountText;
+    final Color saldoColor;
+    final String saldoText;
 
     if (row.isCurrentUser) {
-      // L'utente corrente è sempre il debitore in questa schermata:
-      // mostra solo il segno "−" senza cifre per evitare confusione.
-      amountColor = const Color(0xFF918D9A);
-      amountText = '−';
-    } else if (row.amount > 0.01) {
-      amountColor = const Color(0xFF5DFF71);
-      amountText = '+€${_fmt(row.amount)}';
-    } else if (row.amount < -0.01) {
-      amountColor = const Color(0xFFFF6767);
-      amountText = '-€${_fmt(row.amount.abs())}';
+      saldoColor = const Color(0xFF918D9A);
+      saldoText = '−';
+    } else if (row.saldo > 0.01) {
+      saldoColor = const Color(0xFF5DFF71);
+      saldoText = '+€${_fmt(row.saldo)}';
+    } else if (row.saldo < -0.01) {
+      saldoColor = const Color(0xFFFF6767);
+      saldoText = '-€${_fmt(row.saldo.abs())}';
     } else {
-      amountColor = const Color(0xFF918D9A);
-      amountText = '±€0';
+      saldoColor = const Color(0xFF918D9A);
+      saldoText = '±€0';
     }
 
     final displayName = row.isCurrentUser ? '${row.name} (Tu)' : row.name;
+    final showBreakdown =
+        !row.isCurrentUser && row.credito > 0.01 && row.debito > 0.01;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _Avatar(initials: row.initials),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              displayName,
-              style: AppTextStyles.bodyStrong.copyWith(
-                color: const Color(0xFFDDDAE8),
-                fontSize: 17,
+          Row(
+            children: [
+              _Avatar(initials: row.initials),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  displayName,
+                  style: AppTextStyles.bodyStrong.copyWith(
+                    color: const Color(0xFFDDDAE8),
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Text(
+                saldoText,
+                style: TextStyle(
+                  color: saldoColor,
+                  fontSize: 19,
+                  fontFamily: 'Inter',
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+          if (showBreakdown) ...[
+            const SizedBox(height: 6),
+            Padding(
+              padding: const EdgeInsets.only(left: 50),
+              child: Row(
+                children: [
+                  _BreakdownChip(
+                    label: 'Mi deve',
+                    value: '€${_fmt(row.credito)}',
+                    color: const Color(0xFF3DCC55),
+                  ),
+                  const SizedBox(width: 8),
+                  _BreakdownChip(
+                    label: 'Devo',
+                    value: '€${_fmt(row.debito)}',
+                    color: const Color(0xFFFF6767),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _BreakdownChip extends StatelessWidget {
+  const _BreakdownChip({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.30), width: 1),
+      ),
+      child: RichText(
+        text: TextSpan(
+          style: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+          children: [
+            TextSpan(
+              text: '$label ',
+              style: TextStyle(color: color.withValues(alpha: 0.70)),
+            ),
+            TextSpan(
+              text: value,
+              style: TextStyle(
+                color: color,
                 fontWeight: FontWeight.w700,
               ),
             ),
-          ),
-          Text(
-            amountText,
-            style: TextStyle(
-              color: amountColor,
-              fontSize: 19,
-              fontFamily: 'Inter',
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -679,15 +752,19 @@ class _BalanceRow {
     required this.id,
     required this.name,
     required this.initials,
-    required this.amount,
+    required this.credito,
+    required this.debito,
     required this.isCurrentUser,
   });
 
   final String id;
   final String name;
   final String initials;
-  final double amount;
+  final double credito; // questa persona mi deve
+  final double debito;  // devo a questa persona
   final bool isCurrentUser;
+
+  double get saldo => credito - debito; // positivo = mi deve, negativo = devo io
 }
 
 class _TransferRow {
