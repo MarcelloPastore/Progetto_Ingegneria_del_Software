@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'dettaglio_scadenza_admin.dart';
@@ -27,21 +28,39 @@ class ListaScadenze extends StatelessWidget {
 			ScadenzaItem('Revisione Caldaia', 'Rata mensile', '20/06/2026', '25 gg', const Color(0xFF79FF31)),
 		];
 
+		final nomeCasa = ActiveCasaScope.read(context).selectedCasa?.nome ?? '';
+
 		return Scaffold(
-			backgroundColor: const Color(0xFF09051F),
+			backgroundColor: AppColors.darkBackground,
 			body: SafeArea(
 				child: Padding(
 					padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
 					child: Column(
 						children: [
-							const SizedBox(height: 8),
-							Text(
-								'Scadenze',
-								textAlign: TextAlign.center,
-								style: AppTextStyles.screenTitleStrong.copyWith(
-									color: AppColors.brandAccent,
-									fontSize: 40,
-									fontWeight: FontWeight.w800,
+							const SizedBox(height: 32),
+							Center(
+								child: Column(
+									children: [
+										Text(
+											nomeCasa,
+											style: const TextStyle(
+												color: Color(0xFF8C8CA0),
+												fontSize: 14,
+												fontFamily: 'Inter',
+												fontWeight: FontWeight.w600,
+											),
+										),
+										const SizedBox(height: 4),
+										Text(
+											'Scadenze',
+											textAlign: TextAlign.center,
+											style: AppTextStyles.screenTitleStrong.copyWith(
+												color: AppColors.brandAccent,
+												fontSize: 40,
+												fontWeight: FontWeight.w800,
+											),
+										),
+									],
 								),
 							),
 							const SizedBox(height: 16),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:coincasa_app/core/models/problema.dart';
+import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
@@ -87,53 +88,34 @@ class _ProblemiHomeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(
-          AppSizes.p20,
-          AppSizes.p20,
-          AppSizes.p20,
-          AppSizes.p12,
-        ),
+    final nomeCasa =
+        ActiveCasaScope.read(context).selectedCasa?.nome ?? '';
+
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSizes.p42, bottom: AppSizes.p12),
+      child: Center(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Casa Verdi',
-              style: AppTextStyles.screenTitle.copyWith(
-                color: AppColors.textOnDark,
-                fontSize: 26,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: AppSizes.p4),
-            Text(
-              'Problemi domestici',
-              style: AppTextStyles.label.copyWith(
-                color: AppColors.brandAccent,
-                fontSize: 15,
+              nomeCasa,
+              style: const TextStyle(
+                color: Color(0xFF8C8CA0),
+                fontSize: 14,
+                fontFamily: 'Inter',
                 fontWeight: FontWeight.w600,
               ),
             ),
+            const SizedBox(height: 4),
+            Text(
+              'Problemi',
+              textAlign: TextAlign.center,
+              style: AppTextStyles.screenTitleStrong.copyWith(
+                color: AppColors.brandAccent,
+                fontSize: 40,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
           ],
-        ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSizes.p20,
-        AppSizes.p20,
-        AppSizes.p20,
-        AppSizes.p12,
-      ),
-      child: Text(
-        'Problemi',
-        textAlign: TextAlign.center,
-        style: AppTextStyles.screenTitle.copyWith(
-          color: AppColors.brandAccent,
-          fontSize: 32,
-          fontWeight: FontWeight.w800,
         ),
       ),
     );

@@ -154,20 +154,39 @@ class _ListaTurniScreenState extends ConsumerState<ListaTurniScreen>
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(
                     AppSizes.p16,
-                    AppSizes.p10,
+                    0,
                     AppSizes.p16,
                     AppSizes.p24,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text(
-                        'Turni',
-                        textAlign: TextAlign.center,
-                        style: AppTextStyles.screenTitleStrong.copyWith(
-                          color: AppColors.brandAccent,
-                          fontSize: 40,
-                          fontWeight: FontWeight.w800,
+                      Padding(
+                        padding: const EdgeInsets.only(top: AppSizes.p42),
+                        child: Center(
+                          child: Column(
+                            children: [
+                              Text(
+                                ActiveCasaScope.read(context).selectedCasa?.nome ?? '',
+                                style: const TextStyle(
+                                  color: Color(0xFF8C8CA0),
+                                  fontSize: 14,
+                                  fontFamily: 'Inter',
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Turni',
+                                textAlign: TextAlign.center,
+                                style: AppTextStyles.screenTitleStrong.copyWith(
+                                  color: AppColors.brandAccent,
+                                  fontSize: 40,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                       const SizedBox(height: AppSizes.p14),

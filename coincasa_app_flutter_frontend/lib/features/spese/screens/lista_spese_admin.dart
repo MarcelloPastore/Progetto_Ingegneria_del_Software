@@ -203,14 +203,28 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
           Padding(
             padding: const EdgeInsets.only(top: AppSizes.p42),
             child: Center(
-              child: Text(
-                'Spese',
-                textAlign: TextAlign.center,
-                style: AppTextStyles.screenTitleStrong.copyWith(
-                  color: AppColors.brandAccent,
-                  fontSize: 40,
-                  fontWeight: FontWeight.w800,
-                ),
+              child: Column(
+                children: [
+                  Text(
+                    ActiveCasaScope.read(context).selectedCasa?.nome ?? '',
+                    style: const TextStyle(
+                      color: Color(0xFF8C8CA0),
+                      fontSize: 14,
+                      fontFamily: 'Inter',
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Spese',
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.screenTitleStrong.copyWith(
+                      color: AppColors.brandAccent,
+                      fontSize: 40,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
