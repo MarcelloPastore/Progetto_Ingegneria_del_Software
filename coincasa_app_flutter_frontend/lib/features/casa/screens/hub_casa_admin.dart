@@ -109,6 +109,7 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
         name: current.nome,
         surname: current.cognome,
         displayName: current.nomeCompleto,
+        username: current.username,
       );
     }
 
@@ -169,7 +170,11 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
           IconButton(onPressed: _reload, icon: const Icon(Icons.refresh)),
           Padding(
             padding: const EdgeInsets.only(right: 16),
-            child: _CurrentUserAvatar(future: _future),
+            child: InkWell(
+              onTap: () => Navigator.of(context).pushNamed('/account'),
+              customBorder: const CircleBorder(),
+              child: _CurrentUserAvatar(future: _future),
+            ),
           ),
         ],
       ),
@@ -240,9 +245,7 @@ class _CurrentUserAvatar extends StatelessWidget {
         return UserAvatar(
           radius: 18,
           userId: current?.id ?? _me.currentUserAvatarSeed,
-          firstName: current?.nome ?? _me.currentUserFirstName,
-          lastName: current?.cognome ?? _me.currentUserLastName,
-          fullName: current?.nomeCompleto ?? _me.currentUserDisplayName,
+          username: current?.username ?? _me.currentUserUsername,
         );
       },
     );

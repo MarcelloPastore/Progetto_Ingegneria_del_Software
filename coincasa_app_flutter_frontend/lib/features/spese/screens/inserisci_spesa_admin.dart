@@ -724,8 +724,9 @@ class _PopupInquilinoCheckbox extends StatelessWidget {
                   radius: 18,
                   child: Text(
                     resolveUserInitials(
-                      displayName: inquilino.nomeCompleto,
-                      email: inquilino.email,
+                      displayName: inquilino.username.isNotEmpty
+                          ? inquilino.username
+                          : inquilino.email,
                       fallback: '?',
                     ),
                     style: const TextStyle(
@@ -738,8 +739,8 @@ class _PopupInquilinoCheckbox extends StatelessWidget {
                 Expanded(
                   child: Text(
                     isCurrentUser
-                        ? '${inquilino.nome} (Tu)'
-                        : inquilino.nome,
+                        ? '${inquilino.username} (Tu)'
+                        : inquilino.username,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: AppTextStyles.screenTitleStrong.copyWith(

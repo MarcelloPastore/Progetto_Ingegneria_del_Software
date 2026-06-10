@@ -64,9 +64,7 @@ class _CondividiCodiceScreenState extends State<CondividiCodiceScreen> {
             child: UserAvatar(
               radius: 18,
               userId: ApiProvider.client.currentUserAvatarSeed,
-              firstName: ApiProvider.client.currentUserFirstName,
-              lastName: ApiProvider.client.currentUserLastName,
-              fullName: ApiProvider.client.currentUserDisplayName,
+              username: ApiProvider.client.currentUserUsername,
             ),
           ),
         ],

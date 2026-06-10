@@ -13,6 +13,7 @@ class CasaWelcomeScreen extends StatefulWidget {
     super.key,
     required this.email,
     this.userId,
+    this.username,
     this.firstName,
     this.lastName,
     this.displayName,
@@ -20,6 +21,7 @@ class CasaWelcomeScreen extends StatefulWidget {
 
   final String email;
   final String? userId;
+  final String? username;
   final String? firstName;
   final String? lastName;
   final String? displayName;
@@ -39,9 +41,26 @@ class _CasaWelcomeScreenState extends State<CasaWelcomeScreen> {
   }
 
   Future<void> _loadUserName() async {
+    final normalizedUsername = widget.username?.trim() ?? '';
     final normalizedName = widget.firstName?.trim() ?? '';
     final normalizedSurname = widget.lastName?.trim() ?? '';
     final normalizedDisplayName = widget.displayName?.trim() ?? '';
+
+    if (normalizedUsername.isNotEmpty) {
+      if (!mounted) return;
+      setState(() {
+        _userName = normalizedUsername;
+        _isLoading = false;
+      });
+      ApiProvider.client.setCurrentUserIdentity(
+        id: widget.userId,
+        username: normalizedUsername,
+        name: normalizedName,
+        surname: normalizedSurname,
+        displayName: normalizedDisplayName.isNotEmpty ? normalizedDisplayName : null,
+      );
+      return;
+    }
 
     if (normalizedName.isNotEmpty || normalizedSurname.isNotEmpty) {
       if (!mounted) return;

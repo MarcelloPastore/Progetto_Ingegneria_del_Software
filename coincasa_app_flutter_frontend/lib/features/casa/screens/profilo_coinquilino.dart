@@ -25,8 +25,15 @@ class ProfiloCoinquilinoScreen extends StatelessWidget {
           'Dettaglio coinquilino',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
         ),
-        actions: const [
-          Padding(padding: EdgeInsets.only(right: 10), child: _UserAvatar()),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 10),
+            child: InkWell(
+              onTap: () => Navigator.of(context).pushNamed('/account'),
+              customBorder: const CircleBorder(),
+              child: const _UserAvatar(),
+            ),
+          ),
         ],
       ),
       body: SafeArea(
@@ -65,9 +72,7 @@ class _UserAvatar extends StatelessWidget {
     return UserAvatar(
       radius: 18,
       userId: ApiProvider.client.currentUserAvatarSeed,
-      firstName: ApiProvider.client.currentUserFirstName,
-      lastName: ApiProvider.client.currentUserLastName,
-      fullName: ApiProvider.client.currentUserDisplayName,
+      username: ApiProvider.client.currentUserUsername,
       showPresenceDot: true,
     );
   }
@@ -94,10 +99,10 @@ class _ProfileCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          const UserAvatar(radius: 39, fullName: 'Francesco Verdi'),
+          const UserAvatar(radius: 39, username: 'f.verdi'),
           const SizedBox(height: 6),
           const Text(
-            'Francesco Verdi',
+            'f.verdi',
             style: TextStyle(
               color: Colors.white,
               fontSize: 18,

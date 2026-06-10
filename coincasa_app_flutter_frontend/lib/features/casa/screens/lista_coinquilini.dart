@@ -75,6 +75,7 @@ class _ListaCoinquiliniScreenState extends State<ListaCoinquiliniScreen> {
         name: current.nome,
         surname: current.cognome,
         displayName: current.nomeCompleto,
+        username: current.username,
       );
     }
     return coinquilini;
@@ -95,7 +96,7 @@ class _ListaCoinquiliniScreenState extends State<ListaCoinquiliniScreen> {
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${inquilino.nomeCompleto} promosso ad admin.')),
+        SnackBar(content: Text('${inquilino.username} promosso ad admin.')),
       );
       _reload();
     } catch (_) {
@@ -115,7 +116,7 @@ class _ListaCoinquiliniScreenState extends State<ListaCoinquiliniScreen> {
       });
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${inquilino.nomeCompleto} retrocesso a membro.')),
+        SnackBar(content: Text('${inquilino.username} retrocesso a membro.')),
       );
       _reload();
     } catch (_) {
@@ -133,7 +134,7 @@ class _ListaCoinquiliniScreenState extends State<ListaCoinquiliniScreen> {
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${inquilino.nomeCompleto} rimosso.')),
+        SnackBar(content: Text('${inquilino.username} rimosso.')),
       );
       _reload();
     } catch (_) {
@@ -241,11 +242,9 @@ class _ListaCoinquiliniScreenState extends State<ListaCoinquiliniScreen> {
                             onRimuovi: () {
                               showEliminaCoinquilinoDialog(
                                 context,
-                                nomeCoinquilino: coinquilino.nomeCompleto,
+                                nomeCoinquilino: coinquilino.username,
                                 iniziali: resolveUserInitials(
-                                  name: coinquilino.nome,
-                                  surname: coinquilino.cognome,
-                                  displayName: coinquilino.nomeCompleto,
+                                  displayName: coinquilino.username,
                                 ),
                                 onRimuovi: () => _rimuovi(coinquilino),
                               );
@@ -317,9 +316,7 @@ class _CurrentUserAvatar extends StatelessWidget {
         return UserAvatar(
           radius: 20,
           userId: current?.id ?? _me.currentUserAvatarSeed,
-          firstName: current?.nome ?? _me.currentUserFirstName,
-          lastName: current?.cognome ?? _me.currentUserLastName,
-          fullName: current?.nomeCompleto ?? _me.currentUserDisplayName,
+          username: current?.username ?? _me.currentUserUsername,
         );
       },
     );
@@ -385,9 +382,7 @@ class _CoinquilinoTile extends StatelessWidget {
           UserAvatar(
             radius: 28,
             userId: coinquilino.id,
-            firstName: coinquilino.nome,
-            lastName: coinquilino.cognome,
-            fullName: coinquilino.nomeCompleto,
+            username: coinquilino.username,
             borderColor: coinquilino.isHomeAdmin
                 ? const Color.fromARGB(255, 125, 86, 209)
                 : null,
@@ -399,15 +394,28 @@ class _CoinquilinoTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  coinquilino.nomeCompleto,
+                  coinquilino.username,
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                   ),
-                  maxLines: 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
+                if (coinquilino.nomeCompleto != coinquilino.username &&
+                    coinquilino.nomeCompleto.trim().isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    coinquilino.nomeCompleto,
+                    style: const TextStyle(
+                      color: Color(0xFFB8B8D5),
+                      fontSize: 13,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
                 const SizedBox(height: 6),
                 Text.rich(
                   TextSpan(

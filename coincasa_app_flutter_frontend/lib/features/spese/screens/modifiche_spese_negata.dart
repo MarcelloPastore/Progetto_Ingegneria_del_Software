@@ -635,9 +635,7 @@ class _RoommateRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final name = inquilino.nomeCompleto.isEmpty
-        ? inquilino.nome
-        : inquilino.nomeCompleto;
+    final name = inquilino.username.isNotEmpty ? inquilino.username : inquilino.email;
     final initials = _initials(name);
     return InkWell(
       onTap: onTap,
@@ -982,9 +980,7 @@ String _quotaName(Quota quota, List<Inquilino> inquilini) {
   if (id.isNotEmpty) {
     for (final inquilino in inquilini) {
       if (inquilino.id == id) {
-        return inquilino.nomeCompleto.isEmpty
-            ? inquilino.nome
-            : inquilino.nomeCompleto;
+        return inquilino.username.isNotEmpty ? inquilino.username : inquilino.email;
       }
     }
   }

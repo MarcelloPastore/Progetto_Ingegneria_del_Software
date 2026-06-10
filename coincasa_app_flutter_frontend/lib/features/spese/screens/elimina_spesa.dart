@@ -675,16 +675,14 @@ String _quotaName(Quota quota, List<Inquilino> inquilini) {
   if (id != null) {
     for (final inquilino in inquilini) {
       if (inquilino.id == id.toString()) {
-        return inquilino.nomeCompleto.isEmpty
-            ? inquilino.nome
-            : inquilino.nomeCompleto;
+        return inquilino.username.isNotEmpty ? inquilino.username : inquilino.email;
       }
     }
   }
-  return quota.raw['nome']?.toString() ??
-      (quota.raw['utente'] is Map
+  return (quota.raw['utente'] is Map
           ? quota.raw['utente']['username']?.toString()
           : null) ??
+      quota.raw['username']?.toString() ??
       '';
 }
 

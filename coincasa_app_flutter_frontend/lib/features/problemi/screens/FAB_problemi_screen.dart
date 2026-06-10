@@ -631,9 +631,7 @@ class _ProblemiHeader extends StatelessWidget {
         UserAvatar(
           radius: 23,
           userId: ApiProvider.client.currentUserAvatarSeed,
-          firstName: ApiProvider.client.currentUserFirstName,
-          lastName: ApiProvider.client.currentUserLastName,
-          fullName: ApiProvider.client.currentUserDisplayName,
+          username: ApiProvider.client.currentUserUsername,
           borderColor: AppColors.primaryBorder,
           borderWidth: 1.5,
         ),

@@ -58,14 +58,10 @@ final _turniInquiliniProvider = FutureProvider.family<List<Inquilino>, String?>(
 );
 
 String _assigneeDisplayName(Inquilino inquilino) {
-  final nome = inquilino.nome.trim();
-  if (nome.isNotEmpty) {
-    return nome.split(RegExp(r'\s+')).first;
-  }
+  final username = inquilino.username.trim();
+  if (username.isNotEmpty) return username;
   final email = inquilino.email.trim();
-  if (email.isNotEmpty) {
-    return email.split('@').first;
-  }
+  if (email.isNotEmpty) return email.split('@').first;
   return 'coinquilino';
 }
 

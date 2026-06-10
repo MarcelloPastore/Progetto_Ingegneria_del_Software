@@ -4,6 +4,7 @@ import 'core/state/active_casa.dart';
 import 'core/theme/app_theme.dart';
 import 'core/widgets/common/no_connection_screen.dart';
 import 'features/auth/auth.dart';
+import 'features/auth/screens/gestione_account_screen.dart';
 import 'features/casa/casa.dart';
 import 'features/dashboard/dashboard.dart';
 import 'features/problemi/problemi.dart';
@@ -76,6 +77,7 @@ class CoinCasaApp extends StatelessWidget {
           ProblemaDettaglioScreen.routeName: (_) =>
               const ProblemaDettaglioScreen(),
           '/casa': (_) => const ListaCaseScreen(),
+          GestioneAccountScreen.routeName: (_) => const GestioneAccountScreen(),
         },
       ),
     );

@@ -30,6 +30,7 @@ class ApiClient {
   String? _currentUserFirstName;
   String? _currentUserLastName;
   String? _currentUserAvatarSeed;
+  String? _currentUserUsername;
 
   void setAuthToken(String? token) {
     _authToken = token;
@@ -41,6 +42,7 @@ class ApiClient {
     String? name,
     String? surname,
     String? displayName,
+    String? username,
   }) {
     if (id != null) {
       final normalized = id.trim();
@@ -58,6 +60,10 @@ class ApiClient {
     if (surname != null) {
       final normalized = surname.trim();
       _currentUserLastName = normalized.isEmpty ? null : normalized;
+    }
+    if (username != null) {
+      final normalized = username.trim();
+      _currentUserUsername = normalized.isEmpty ? null : normalized;
     }
 
     final fullName = [
@@ -87,6 +93,7 @@ class ApiClient {
   String? get currentUserFirstName => _currentUserFirstName;
   String? get currentUserLastName => _currentUserLastName;
   String? get currentUserAvatarSeed => _currentUserAvatarSeed;
+  String? get currentUserUsername => _currentUserUsername;
 
   Uri buildUri(String path, [Map<String, String>? queryParameters]) {
     final merged = _mergePath(baseUrl, path);

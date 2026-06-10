@@ -698,17 +698,14 @@ String _nameForQuota(Quota quota, List<Inquilino> inquilini) {
     return _displayName(inquilino);
   }
   final raw = quota.raw;
-  return raw['nome']?.toString() ??
-      raw['name']?.toString() ??
-      raw['username']?.toString() ??
+  return raw['username']?.toString() ??
       (raw['utente'] is Map ? raw['utente']['username']?.toString() : null) ??
       'Coinquilino';
 }
 
 String _displayName(Inquilino inquilino) {
-  final fullName = inquilino.nomeCompleto.trim();
-  if (fullName.isNotEmpty) return fullName;
-  if (inquilino.username.trim().isNotEmpty) return inquilino.username.trim();
+  final username = inquilino.username.trim();
+  if (username.isNotEmpty) return username;
   return inquilino.email.trim().isEmpty ? 'Coinquilino' : inquilino.email;
 }
 

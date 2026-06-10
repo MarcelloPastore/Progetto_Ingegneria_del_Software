@@ -1051,7 +1051,7 @@ class _TurnoCard extends StatelessWidget {
                     UserAvatar(
                       radius: AppSizes.p23,
                       userId: userId?.isNotEmpty == true ? userId : null,
-                      fullName:
+                      username:
                           displayName.trim().isNotEmpty ? displayName : null,
                       fallback: '?',
                     ),

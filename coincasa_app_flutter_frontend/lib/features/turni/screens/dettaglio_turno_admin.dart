@@ -13,18 +13,10 @@ import 'package:coincasa_app/features/turni/screens/assegna_a_me.dart';
 import 'package:coincasa_app/features/turni/screens/turno_create_screen.dart';
 
 String _assigneeDisplayName(Inquilino inquilino) {
-  final nome = inquilino.nomeCompleto.trim();
-  if (nome.isNotEmpty) {
-    return nome.split(RegExp(r'\s+')).first;
-  }
-  final email = inquilino.email.trim();
-  if (email.isNotEmpty) {
-    return email.split('@').first;
-  }
   final username = inquilino.username.trim();
-  if (username.isNotEmpty) {
-    return username;
-  }
+  if (username.isNotEmpty) return username;
+  final email = inquilino.email.trim();
+  if (email.isNotEmpty) return email.split('@').first;
   return 'coinquilino';
 }
 
@@ -575,10 +567,7 @@ class _ResponsibleCard extends StatelessWidget {
               UserAvatar(
                 radius: 20,
                 userId: current?.id,
-                firstName: current?.nome,
-                lastName: current?.cognome,
-                fullName:
-                    current?.nomeCompleto ?? (label == '?' ? null : label),
+                username: current?.username ?? (label == '?' ? null : label),
                 fallback: '?',
               ),
               const SizedBox(width: AppSizes.p10),

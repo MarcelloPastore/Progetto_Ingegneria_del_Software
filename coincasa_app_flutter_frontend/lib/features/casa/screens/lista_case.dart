@@ -226,9 +226,7 @@ class _CurrentUserAvatar extends StatelessWidget {
         return UserAvatar(
           radius: 26,
           userId: _me.currentUserAvatarSeed,
-          firstName: _me.currentUserFirstName,
-          lastName: _me.currentUserLastName,
-          fullName: _me.currentUserDisplayName,
+          username: _me.currentUserUsername,
         );
       },
     );

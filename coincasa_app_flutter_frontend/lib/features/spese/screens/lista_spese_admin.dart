@@ -454,7 +454,6 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
     final avatarInitials = creatoreNome.isNotEmpty ? _nameInitials(creatoreNome) : '';
     final status = _computeSpesaStatus(spesa);
     final anticipatoreNome = hasAnticipatore ? creatoreNome : '';
-    final firstNameAnticipatore = anticipatoreNome.split(RegExp(r'\s+')).first;
 
     return Opacity(
       opacity: status == _SpesaStatus.pagata ? 0.55 : 1.0,
@@ -489,7 +488,7 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
                       const SizedBox(height: 3),
                       Text(
                         hasAnticipatore && anticipatoreNome.isNotEmpty
-                            ? '${_formatDate(spesa.data)} · $firstNameAnticipatore ha anticipato'
+                            ? '${_formatDate(spesa.data)} · $anticipatoreNome ha anticipato'
                             : _formatDate(spesa.data),
                         style: const TextStyle(
                           color: Color(0xFF908F8F),

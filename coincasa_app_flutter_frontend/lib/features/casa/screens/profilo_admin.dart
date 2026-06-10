@@ -26,8 +26,15 @@ class ProfiloAdminScreen extends StatelessWidget {
           'Dettaglio Profilo',
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
         ),
-        actions: const [
-          Padding(padding: EdgeInsets.only(right: 10), child: _UserAvatar()),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 10),
+            child: InkWell(
+              onTap: () => Navigator.of(context).pushNamed('/account'),
+              customBorder: const CircleBorder(),
+              child: const _UserAvatar(),
+            ),
+          ),
         ],
       ),
       body: SafeArea(
@@ -64,9 +71,7 @@ class _UserAvatar extends StatelessWidget {
     return UserAvatar(
       radius: 18,
       userId: ApiProvider.client.currentUserAvatarSeed,
-      firstName: ApiProvider.client.currentUserFirstName,
-      lastName: ApiProvider.client.currentUserLastName,
-      fullName: ApiProvider.client.currentUserDisplayName,
+      username: ApiProvider.client.currentUserUsername,
       showPresenceDot: true,
     );
   }
@@ -77,13 +82,9 @@ class _AdminProfileCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final name = [
-      ApiProvider.client.currentUserFirstName,
-      ApiProvider.client.currentUserLastName,
-    ].where((part) => part != null && part.trim().isNotEmpty).join(' ').trim();
-    final displayName = name.isNotEmpty
-        ? name
-        : (ApiProvider.client.currentUserDisplayName ?? 'Utente');
+    final displayName = ApiProvider.client.currentUserUsername
+        ?? ApiProvider.client.currentUserDisplayName
+        ?? 'Utente';
     final email = ApiProvider.client.currentUserEmail ?? '';
 
     return Container(
@@ -105,9 +106,7 @@ class _AdminProfileCard extends StatelessWidget {
           UserAvatar(
             radius: 45,
             userId: ApiProvider.client.currentUserAvatarSeed,
-            firstName: ApiProvider.client.currentUserFirstName,
-            lastName: ApiProvider.client.currentUserLastName,
-            fullName: displayName,
+            username: ApiProvider.client.currentUserUsername,
           ),
           const SizedBox(height: 10),
           Text(

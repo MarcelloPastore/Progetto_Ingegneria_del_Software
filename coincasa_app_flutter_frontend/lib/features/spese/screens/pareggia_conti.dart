@@ -790,9 +790,8 @@ class _TransferRow {
 // ---------------------------------------------------------------------------
 
 String _displayName(Inquilino inquilino) {
-  final name = inquilino.nomeCompleto.trim();
-  if (name.isNotEmpty) return name;
-  if (inquilino.username.trim().isNotEmpty) return inquilino.username.trim();
+  final username = inquilino.username.trim();
+  if (username.isNotEmpty) return username;
   return inquilino.email.trim().isEmpty ? 'Coinquilino' : inquilino.email;
 }
 

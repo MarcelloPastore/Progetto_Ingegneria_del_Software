@@ -347,9 +347,7 @@ class _CurrentUserAvatar extends StatelessWidget {
         return UserAvatar(
           radius: radius,
           userId: _me.currentUserAvatarSeed,
-          firstName: _me.currentUserFirstName,
-          lastName: _me.currentUserLastName,
-          fullName: _me.currentUserDisplayName,
+          username: _me.currentUserUsername,
         );
       },
     );
@@ -379,13 +377,8 @@ class _EmptyDashboardHeader extends StatelessWidget {
     return Row(
       children: [
         InkWell(
-          onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Gestione account non ancora implementata.'),
-              ),
-            );
-          },
+          onTap: () => Navigator.of(context).pushNamed('/account'),
+          customBorder: const CircleBorder(),
           child: _CurrentUserAvatar(
             future: dashboardDataFuture,
             radius: AppSizes.p23,
@@ -938,7 +931,7 @@ class _TodayTurnSectionState extends State<_TodayTurnSection> {
           UserAvatar(
             radius: 24,
             userId: turno.assegnatarioId,
-            fullName: turno.assegnatarioNome,
+            username: turno.assegnatarioNome.isNotEmpty ? turno.assegnatarioNome : null,
             fallback: '?',
           ),
           const SizedBox(width: AppSizes.p14),

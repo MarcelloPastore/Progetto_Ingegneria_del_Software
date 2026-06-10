@@ -1007,16 +1007,9 @@ List<String> _buildPartecipantiIds({
 }
 
 String _displayName(Inquilino inquilino) {
-  final fullName = inquilino.nomeCompleto.trim();
-  if (fullName.isNotEmpty) {
-    return fullName;
-  }
-  if (inquilino.username.trim().isNotEmpty) {
-    return inquilino.username.trim();
-  }
-  if (inquilino.email.trim().isNotEmpty) {
-    return inquilino.email.trim();
-  }
+  final username = inquilino.username.trim();
+  if (username.isNotEmpty) return username;
+  if (inquilino.email.trim().isNotEmpty) return inquilino.email.trim();
   return 'Coinquilino';
 }
 

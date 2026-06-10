@@ -950,7 +950,7 @@ class SpesaFormInquilinoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label = isLocked ? '${inquilino.nome} (Tu)' : inquilino.nome;
+    final label = isLocked ? '${inquilino.username} (Tu)' : inquilino.username;
 
     return InkWell(
       onTap: isLocked ? null : onTap,
@@ -964,8 +964,9 @@ class SpesaFormInquilinoRow extends StatelessWidget {
               radius: 17,
               child: Text(
                 resolveUserInitials(
-                  displayName: inquilino.nomeCompleto,
-                  email: inquilino.email,
+                  displayName: inquilino.username.isNotEmpty
+                      ? inquilino.username
+                      : inquilino.email,
                   fallback: '?',
                 ),
                 style: const TextStyle(

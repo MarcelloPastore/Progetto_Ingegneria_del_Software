@@ -387,9 +387,6 @@ class _CreatorAvatarRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final nome = creatoreNome.trim();
     final initials = nome.isNotEmpty ? _initials(nome) : 'C';
-    final firstName = nome.isNotEmpty
-        ? nome.split(RegExp(r'\s+')).first
-        : 'Coinquilino';
     final seed = creatoreId.isNotEmpty ? creatoreId : initials;
 
     return Row(
@@ -415,7 +412,7 @@ class _CreatorAvatarRow extends StatelessWidget {
         ),
         const SizedBox(width: AppSizes.p12),
         Text(
-          '$firstName ha creato questa spesa',
+          '${nome.isNotEmpty ? nome : 'Coinquilino'} ha creato questa spesa',
           style: const TextStyle(
             color: Color(0xFFAFAEAE),
             fontSize: 15,
@@ -802,9 +799,7 @@ String _nameForQuota(Quota quota, List<Inquilino> inquilini) {
     return _displayName(inquilino);
   }
   final raw = quota.raw;
-  return raw['nome']?.toString() ??
-      raw['name']?.toString() ??
-      raw['username']?.toString() ??
+  return raw['username']?.toString() ??
       (raw['utente'] is Map ? raw['utente']['username']?.toString() : null) ??
       'Coinquilino';
 }
@@ -832,9 +827,8 @@ String _quotaUserId(Quota quota) {
 }
 
 String _displayName(Inquilino inquilino) {
-  final fullName = inquilino.nomeCompleto.trim();
-  if (fullName.isNotEmpty) return fullName;
-  if (inquilino.username.trim().isNotEmpty) return inquilino.username.trim();
+  final username = inquilino.username.trim();
+  if (username.isNotEmpty) return username;
   return inquilino.email.trim().isEmpty ? 'Coinquilino' : inquilino.email;
 }
 
@@ -859,19 +853,10 @@ Inquilino? _resolveCurrentUser(List<Inquilino> inquilini) {
 String _nameForPartecipante(Map<String, dynamic> partecipante) {
   final utente = partecipante['utente'];
   if (utente is Map) {
-    final nome =
-        utente['nome'] ??
-        utente['name'] ??
-        utente['username'] ??
-        utente['email'];
-    if (nome != null && nome.toString().trim().isNotEmpty) {
-      return nome.toString();
-    }
+    final username = utente['username']?.toString();
+    if (username != null && username.trim().isNotEmpty) return username;
   }
-  return partecipante['nome']?.toString() ??
-      partecipante['name']?.toString() ??
-      partecipante['username']?.toString() ??
-      'Coinquilino';
+  return partecipante['username']?.toString() ?? 'Coinquilino';
 }
 
 String _initials(String name) {

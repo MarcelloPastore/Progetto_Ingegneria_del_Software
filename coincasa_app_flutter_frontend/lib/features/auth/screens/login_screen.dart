@@ -87,6 +87,7 @@ class _LoginScreenState extends State<LoginScreen> {
         name: loginResult.user.nome,
         surname: loginResult.user.cognome,
         displayName: loginResult.user.displayName,
+        username: loginResult.user.username,
       );
 
       // Verifica se l'utente ha almeno una casa
@@ -111,6 +112,7 @@ class _LoginScreenState extends State<LoginScreen> {
             builder: (context) => CasaWelcomeScreen(
               email: email,
               userId: loginResult.user.id,
+              username: loginResult.user.username,
               firstName: loginResult.user.nome,
               lastName: loginResult.user.cognome,
               displayName: loginResult.user.displayName,

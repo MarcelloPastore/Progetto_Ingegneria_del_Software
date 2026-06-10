@@ -6,9 +6,11 @@ class UserAvatar extends StatelessWidget {
   const UserAvatar({
     super.key,
     this.userId,
+    this.username,
     this.firstName,
     this.lastName,
     this.fullName,
+    this.displayName,
     this.radius = 18,
     this.fallback = '??',
     this.showPresenceDot = false,
@@ -18,9 +20,12 @@ class UserAvatar extends StatelessWidget {
   });
 
   final String? userId;
+  /// Username is the primary display identifier; takes priority over name fields.
+  final String? username;
   final String? firstName;
   final String? lastName;
   final String? fullName;
+  final String? displayName;
   final double radius;
   final String fallback;
   final bool showPresenceDot;
@@ -32,18 +37,25 @@ class UserAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final seed = [
       userId?.trim() ?? '',
+      username?.trim() ?? '',
       firstName?.trim() ?? '',
       lastName?.trim() ?? '',
       fullName?.trim() ?? '',
+      displayName?.trim() ?? '',
     ].firstWhere((part) => part.isNotEmpty, orElse: () => '');
 
     final colors = userAvatarColorsForSeed(seed);
-    final initials = resolveUserInitials(
-      name: firstName,
-      surname: lastName,
-      displayName: fullName,
-      fallback: fallback,
-    );
+
+    // Username is the preferred source for initials; fall back to name fields.
+    final resolvedUsername = username?.trim() ?? '';
+    final initials = resolvedUsername.isNotEmpty
+        ? initialsFromText(resolvedUsername)
+        : resolveUserInitials(
+            name: firstName,
+            surname: lastName,
+            displayName: fullName ?? displayName,
+            fallback: fallback,
+          );
 
     Widget avatar = CircleAvatar(
       radius: radius,

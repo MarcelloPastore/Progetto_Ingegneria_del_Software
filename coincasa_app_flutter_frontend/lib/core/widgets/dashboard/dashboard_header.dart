@@ -14,9 +14,7 @@ class DashboardHeader extends StatelessWidget {
         UserAvatar(
           radius: AppSizes.p22,
           userId: ApiProvider.client.currentUserAvatarSeed,
-          firstName: ApiProvider.client.currentUserFirstName,
-          lastName: ApiProvider.client.currentUserLastName,
-          fullName: ApiProvider.client.currentUserDisplayName,
+          username: ApiProvider.client.currentUserUsername,
         ),
         const SizedBox(width: AppSizes.p14),
         Expanded(

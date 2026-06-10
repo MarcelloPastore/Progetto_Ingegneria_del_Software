@@ -162,9 +162,9 @@ class Spesa {
         json['pagatore'];
     if (creator is Map<String, dynamic>) {
       final name =
+          creator['username'] ??
           creator['nome'] ??
           creator['name'] ??
-          creator['username'] ??
           creator['email'];
       return name?.toString() ?? '';
     }
