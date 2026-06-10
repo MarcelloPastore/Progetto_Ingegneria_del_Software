@@ -9,9 +9,9 @@ import 'package:coincasa_app/core/models/spesa.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/utils/user_initials.dart';
+import 'package:coincasa_app/core/widgets/common/delete_confirm_dialog.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
-import 'package:coincasa_app/features/spese/screens/elimina_spesa.dart';
 import 'package:coincasa_app/features/spese/screens/lista_spese_admin.dart';
 import 'package:coincasa_app/features/spese/screens/modifica_spesa_admin.dart';
 
@@ -273,9 +273,17 @@ class _DetailContent extends StatelessWidget {
                   ),
           onDelete: hasAnyPaidQuota
               ? null
-              : () => Navigator.of(context).pushNamed(
-                    EliminaSpesaScreen.routeName,
-                    arguments: data.spesa.id,
+              : () => showDeleteConfirmDialog(
+                    context: context,
+                    title: 'Eliminare la spesa?',
+                    description:
+                        '${data.spesa.descrizione} — '
+                        '€${data.spesa.importo.toStringAsFixed(2)} '
+                        'verrà rimossa definitivamente dalla lista.',
+                    onConfirm: () =>
+                        ApiProvider.spese.delete(data.casa.id, data.spesa.id),
+                    onSuccess: () => Navigator.of(context)
+                        .pushReplacementNamed(ListaSpeseAdminScreen.routeName),
                   ),
           onBack: () => Navigator.of(context)
               .pushReplacementNamed(ListaSpeseAdminScreen.routeName),

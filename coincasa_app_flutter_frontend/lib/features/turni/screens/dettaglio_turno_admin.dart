@@ -7,6 +7,7 @@ import 'package:coincasa_app/core/models/turno.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/utils/user_initials.dart';
+import 'package:coincasa_app/core/widgets/common/delete_confirm_dialog.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
 import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
@@ -118,7 +119,6 @@ class _DettaglioTurnoAdminScreenState
     extends ConsumerState<DettaglioTurnoAdminScreen> {
   bool _initialized = false;
   late Future<_TurnoDetailData?> _detailFuture;
-  bool _confirmDelete = false;
   bool _isSubmitting = false;
   bool _assigneeMenuOpen = false;
   String? _selectedAssigneeId;
@@ -231,39 +231,23 @@ class _DettaglioTurnoAdminScreenState
   }
 
   Future<void> _handleDelete() async {
-    if (!_confirmDelete) {
-      setState(() => _confirmDelete = true);
-      return;
-    }
-
     final data = await _detailFuture;
-    if (!mounted) {
-      return;
-    }
-    if (data == null) {
-      Navigator.of(context).pushReplacementNamed(TurnoRimossoScreen.routeName);
-      return;
-    }
+    if (!mounted || data == null) return;
 
-    setState(() => _isSubmitting = true);
-    try {
-      await ApiProvider.turni.delete(data.casaId, data.turno.id);
-      if (mounted) {
-        Navigator.of(
-          context,
-        ).pushReplacementNamed(TurnoRimossoScreen.routeName);
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(() {
-          _confirmDelete = false;
-          _isSubmitting = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Impossibile eliminare il turno.')),
-        );
-      }
-    }
+    final turno = data.turno;
+    await showDeleteConfirmDialog(
+      context: context,
+      title: 'Eliminare il turno?',
+      description:
+          '${turno.titolo} verrà rimosso definitivamente. '
+          'Le occorrenze future saranno aggiornate.',
+      onConfirm: () => ApiProvider.turni.delete(data.casaId, turno.id),
+      onSuccess: () {
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed(TurnoRimossoScreen.routeName);
+        }
+      },
+    );
   }
 
   String? _defaultAssigneeId(List<Inquilino> assignees) {
@@ -310,116 +294,103 @@ class _DettaglioTurnoAdminScreenState
                     color: AppColors.brandAccent,
                   ),
                 )
-              : Stack(
-                  children: [
-                    SafeArea(
-                      child: Column(
-                        children: [
-                          Expanded(
-                            child: SingleChildScrollView(
-                              padding: const EdgeInsets.fromLTRB(
-                                AppSizes.p14,
-                                AppSizes.p8,
-                                AppSizes.p14,
-                                AppSizes.p16,
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  _DetailHeader(
-                                    onBack: () => Navigator.of(context).pop(),
-                                  ),
-                                  const SizedBox(height: AppSizes.p24),
-                                  _TurnoSummaryCard(turno: data?.turno),
-                                  const SizedBox(height: AppSizes.p24),
-                                  _ResponsibleCard(
-                                    turno: data?.turno,
-                                    inquilini: data?.inquilini ?? const [],
-                                  ),
-                                  if (data != null) ...[
-                                    const SizedBox(height: AppSizes.p24),
-                                    _CreatorRow(
-                                      creatoreNome: _resolveCreatoreNome(data),
-                                      creatoreId: data.turno.creatoreId,
-                                    ),
-                                  ],
-                                  const SizedBox(height: AppSizes.p48),
-                                  Text(
-                                    'Vuoi occupartene tu?',
-                                    style: AppTextStyles.bodyStrong.copyWith(
-                                      color: AppColors.textMutedLight,
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const SizedBox(height: AppSizes.p18),
-                                  _PrimaryActionButton(
-                                    label: isLoading
-                                        ? 'Caricamento...'
-                                        : 'Assegna a me',
-                                    onPressed: _isSubmitting ||
-                                            data == null ||
-                                            (data.turno.assegnatarioId
-                                                    .isNotEmpty &&
-                                                data.turno.assegnatarioId ==
-                                                    ApiProvider
-                                                        .client.currentUserId)
-                                        ? null
-                                        : () => _handleAssignMe(data),
-                                  ),
-                                  if (assignees.isNotEmpty) ...[
-                                    const SizedBox(height: AppSizes.p10),
-                                    _AssigneeSelector(
-                                      assignees: assignees,
-                                      selectedAssigneeId: selectedAssigneeId,
-                                      selectedAssigneeLabel:
-                                          _selectedAssigneeLabel(assignees),
-                                      expanded: _assigneeMenuOpen,
-                                      isSubmitting: _isSubmitting,
-                                      onToggle: () {
-                                        setState(
-                                          () => _assigneeMenuOpen =
-                                              !_assigneeMenuOpen,
-                                        );
-                                      },
-                                      onSelected: (value) {
-                                        if (data != null) {
-                                          _handleAssigneeSelected(data, value);
-                                        }
-                                      },
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
+              : SafeArea(
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.fromLTRB(
+                            AppSizes.p14,
+                            AppSizes.p8,
+                            AppSizes.p14,
+                            AppSizes.p16,
                           ),
-                          DetailActionsBar(
-                            modifyLabel: 'Modifica turno',
-                            deleteLabel: 'Elimina turno',
-                            backLabel: 'Torna ai turni',
-                            isCreator: canEditTurno,
-                            onModify: _isSubmitting || data == null
-                                ? null
-                                : () => Navigator.of(context).pushNamed(
-                                      TurnoCreateScreen.routeName,
-                                      arguments: data.turno.id,
-                                    ),
-                            onDelete:
-                                _isSubmitting ? null : _handleDelete,
-                            onBack: () => Navigator.of(context)
-                                .pushReplacementNamed('/turni'),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _DetailHeader(
+                                onBack: () => Navigator.of(context).pop(),
+                              ),
+                              const SizedBox(height: AppSizes.p24),
+                              _TurnoSummaryCard(turno: data?.turno),
+                              const SizedBox(height: AppSizes.p24),
+                              _ResponsibleCard(
+                                turno: data?.turno,
+                                inquilini: data?.inquilini ?? const [],
+                              ),
+                              if (data != null) ...[
+                                const SizedBox(height: AppSizes.p24),
+                                _CreatorRow(
+                                  creatoreNome: _resolveCreatoreNome(data),
+                                  creatoreId: data.turno.creatoreId,
+                                ),
+                              ],
+                              const SizedBox(height: AppSizes.p48),
+                              Text(
+                                'Vuoi occupartene tu?',
+                                style: AppTextStyles.bodyStrong.copyWith(
+                                  color: AppColors.textMutedLight,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: AppSizes.p18),
+                              _PrimaryActionButton(
+                                label: isLoading
+                                    ? 'Caricamento...'
+                                    : 'Assegna a me',
+                                onPressed: _isSubmitting ||
+                                        data == null ||
+                                        (data.turno.assegnatarioId.isNotEmpty &&
+                                            data.turno.assegnatarioId ==
+                                                ApiProvider
+                                                    .client.currentUserId)
+                                    ? null
+                                    : () => _handleAssignMe(data),
+                              ),
+                              if (assignees.isNotEmpty) ...[
+                                const SizedBox(height: AppSizes.p10),
+                                _AssigneeSelector(
+                                  assignees: assignees,
+                                  selectedAssigneeId: selectedAssigneeId,
+                                  selectedAssigneeLabel:
+                                      _selectedAssigneeLabel(assignees),
+                                  expanded: _assigneeMenuOpen,
+                                  isSubmitting: _isSubmitting,
+                                  onToggle: () {
+                                    setState(
+                                      () => _assigneeMenuOpen =
+                                          !_assigneeMenuOpen,
+                                    );
+                                  },
+                                  onSelected: (value) {
+                                    if (data != null) {
+                                      _handleAssigneeSelected(data, value);
+                                    }
+                                  },
+                                ),
+                              ],
+                            ],
                           ),
-                        ],
+                        ),
                       ),
-                    ),
-                    if (_confirmDelete)
-                      _DeleteConfirmOverlay(
-                        isSubmitting: _isSubmitting,
-                        onConfirm: _handleDelete,
-                        onCancel: () =>
-                            setState(() => _confirmDelete = false),
+                      DetailActionsBar(
+                        modifyLabel: 'Modifica turno',
+                        deleteLabel: 'Elimina turno',
+                        backLabel: 'Torna ai turni',
+                        isCreator: canEditTurno,
+                        onModify: _isSubmitting || data == null
+                            ? null
+                            : () => Navigator.of(context).pushNamed(
+                                  TurnoCreateScreen.routeName,
+                                  arguments: data.turno.id,
+                                ),
+                        onDelete: _isSubmitting ? null : _handleDelete,
+                        onBack: () =>
+                            Navigator.of(context).pushReplacementNamed('/turni'),
                       ),
-                  ],
+                    ],
+                  ),
                 ),
         );
       },
@@ -908,157 +879,7 @@ class _CreatorRow extends StatelessWidget {
   }
 }
 
-class _DeleteConfirmOverlay extends StatelessWidget {
-  const _DeleteConfirmOverlay({
-    required this.isSubmitting,
-    required this.onConfirm,
-    required this.onCancel,
-  });
 
-  final bool isSubmitting;
-  final VoidCallback onConfirm;
-  final VoidCallback onCancel;
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned.fill(
-      child: Container(
-        color: Colors.black.withValues(alpha: 0.72),
-        child: SafeArea(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSizes.p20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const _DeleteWarningCard(),
-                  const SizedBox(height: AppSizes.p28),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: isSubmitting ? null : onCancel,
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.brandPrimary,
-                            side: const BorderSide(
-                              color: AppColors.brandPrimary,
-                              width: 2,
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                              vertical: AppSizes.p14,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(13),
-                            ),
-                          ),
-                          child: Text(
-                            'Annulla',
-                            style: AppTextStyles.buttonCompact.copyWith(
-                              color: AppColors.brandPrimary,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: AppSizes.p12),
-                      Expanded(
-                        child: FilledButton(
-                          onPressed: isSubmitting ? null : onConfirm,
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.errorStrong,
-                            disabledBackgroundColor:
-                                AppColors.errorStrong.withValues(alpha: 0.4),
-                            foregroundColor: AppColors.textOnDark,
-                            padding: const EdgeInsets.symmetric(
-                              vertical: AppSizes.p14,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(13),
-                            ),
-                          ),
-                          child: isSubmitting
-                              ? const SizedBox(
-                                  width: 22,
-                                  height: 22,
-                                  child: CircularProgressIndicator(
-                                    color: AppColors.textOnDark,
-                                    strokeWidth: 2.4,
-                                  ),
-                                )
-                              : Text(
-                                  'Conferma',
-                                  style: AppTextStyles.buttonCompact.copyWith(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _DeleteWarningCard extends StatelessWidget {
-  const _DeleteWarningCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF5A2F0D),
-        borderRadius: BorderRadius.circular(AppSizes.radius8),
-        border: Border.all(color: AppColors.warning, width: 2),
-      ),
-      padding: const EdgeInsets.fromLTRB(
-        AppSizes.p14,
-        AppSizes.p20,
-        AppSizes.p14,
-        AppSizes.p24,
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.error_rounded, color: AppColors.warning, size: 23),
-              const SizedBox(width: AppSizes.p8),
-              Text(
-                'Rimozione turno',
-                style: AppTextStyles.screenTitleStrong.copyWith(
-                  color: const Color(0xFFFFD58A),
-                  fontSize: 23,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSizes.p24),
-          Text(
-            "Stai per eliminare questo turno.\n"
-            "L'azione non può essere annullata.\n"
-            "Se procedi, verranno aggiornate\n"
-            "anche le occorrenze future.",
-            textAlign: TextAlign.center,
-            style: AppTextStyles.bodyStrong.copyWith(
-              color: const Color(0xFFFFE1A5),
-              fontSize: 20,
-              height: 1.1,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class TurnoRimossoScreen extends StatelessWidget {
   const TurnoRimossoScreen({super.key});
