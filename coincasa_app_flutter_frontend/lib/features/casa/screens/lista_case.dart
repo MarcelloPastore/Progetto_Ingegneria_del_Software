@@ -207,7 +207,11 @@ class _Header extends StatelessWidget {
             ],
           ),
         ),
-        _CurrentUserAvatar(future: future),
+        InkWell(
+          onTap: () => Navigator.of(context).pushNamed('/account'),
+          customBorder: const CircleBorder(),
+          child: _CurrentUserAvatar(future: future),
+        ),
       ],
     );
   }
