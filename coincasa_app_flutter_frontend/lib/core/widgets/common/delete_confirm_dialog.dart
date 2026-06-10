@@ -26,7 +26,7 @@ Future<void> showDeleteConfirmDialog({
         ),
       );
     },
-    pageBuilder: (context, _, __) => _DeleteConfirmDialog(
+    pageBuilder: (context, _, _) => _DeleteConfirmDialog(
       title: title,
       description: description,
       onConfirm: onConfirm,

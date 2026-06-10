@@ -1,8 +1,10 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 import 'package:coincasa_app/app.dart';
 import 'package:coincasa_app/core/widgets/common/no_connection_screen.dart';
+import 'package:coincasa_app/core/widgets/common/no_internet_dialog.dart';
 
 import '../config/env.dart';
 
@@ -201,7 +203,11 @@ class ApiClient {
           throw ArgumentError('Unsupported method: $method');
       }
     } catch (e) {
-      _handleConnectionError();
+      if (e is SocketException) {
+        NoInternetDialog.show();
+      } else {
+        _handleConnectionError();
+      }
       rethrow;
     }
 
