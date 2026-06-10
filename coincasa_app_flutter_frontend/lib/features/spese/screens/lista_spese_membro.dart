@@ -316,21 +316,12 @@ class _ExpenseTile extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      spesa.descrizione.isEmpty ? 'Spesa' : spesa.descrizione,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontFamily: 'Inter',
-                        fontWeight: FontWeight.w800,
-                      ),
+                    _TitleWithDate(
+                      title: spesa.descrizione.isEmpty ? 'Spesa' : spesa.descrizione,
+                      date: '${spesa.data.day} ${_monthShort(spesa.data.month)}',
                     ),
                     Text(
-                      isPagata
-                          ? '${spesa.data.day} ${_monthShort(spesa.data.month)} - pagata'
-                          : '${spesa.data.day} ${_monthShort(spesa.data.month)} - $creator ha pagato',
+                      isPagata ? 'Pagata' : '$creator ha pagato',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -550,4 +541,65 @@ String _monthShort(int month) {
     'dic',
   ];
   return months[month - 1];
+}
+
+class _TitleWithDate extends StatelessWidget {
+  const _TitleWithDate({required this.title, required this.date});
+
+  final String title;
+  final String date;
+
+  static const _titleStyle = TextStyle(
+    color: Colors.white,
+    fontSize: 15,
+    fontFamily: 'Inter',
+    fontWeight: FontWeight.w800,
+  );
+  static const _dateStyle = TextStyle(
+    color: Color(0xFF908F8F),
+    fontSize: 11,
+    fontFamily: 'Inter',
+    fontWeight: FontWeight.w400,
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    if (date.isEmpty) {
+      return Text(title, style: _titleStyle, maxLines: 1, overflow: TextOverflow.ellipsis);
+    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final titlePainter = TextPainter(
+          text: TextSpan(text: title, style: _titleStyle),
+          textDirection: TextDirection.ltr,
+          maxLines: 1,
+        )..layout(maxWidth: double.infinity);
+
+        final datePainter = TextPainter(
+          text: TextSpan(text: '  $date', style: _dateStyle),
+          textDirection: TextDirection.ltr,
+          maxLines: 1,
+        )..layout(maxWidth: double.infinity);
+
+        final showDate = titlePainter.width + datePainter.width <= constraints.maxWidth;
+
+        return Row(
+          children: [
+            Flexible(
+              child: Text(
+                title,
+                style: _titleStyle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (showDate) ...[
+              const SizedBox(width: 6),
+              Text(date, style: _dateStyle),
+            ],
+          ],
+        );
+      },
+    );
+  }
 }

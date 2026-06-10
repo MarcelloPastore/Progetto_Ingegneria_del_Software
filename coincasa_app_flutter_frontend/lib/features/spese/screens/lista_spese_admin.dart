@@ -490,27 +490,22 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        spesa.descrizione,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontFamily: 'Inter',
-                          fontWeight: FontWeight.w600,
-                        ),
+                      _TitleWithDate(
+                        title: spesa.descrizione,
+                        date: _formatDate(spesa.data),
                       ),
-                      const SizedBox(height: 3),
-                      Text(
-                        hasAnticipatore && anticipatoreNome.isNotEmpty
-                            ? '${_formatDate(spesa.data)} · $anticipatoreNome ha anticipato'
-                            : _formatDate(spesa.data),
-                        style: const TextStyle(
-                          color: Color(0xFF908F8F),
-                          fontSize: 12,
-                          fontFamily: 'Inter',
-                          fontWeight: FontWeight.w500,
+                      if (hasAnticipatore && anticipatoreNome.isNotEmpty) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          '$anticipatoreNome ha anticipato',
+                          style: const TextStyle(
+                            color: Color(0xFF908F8F),
+                            fontSize: 12,
+                            fontFamily: 'Inter',
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                      ),
+                      ],
                       const SizedBox(height: 5),
                       _SpesaStatusChip(status: status),
                       if (spesa.dataScadenza != null) ...[
@@ -954,6 +949,67 @@ class _EmptyExpensesContent extends StatelessWidget {
               ),
             ],
           ),
+        );
+      },
+    );
+  }
+}
+
+class _TitleWithDate extends StatelessWidget {
+  const _TitleWithDate({required this.title, required this.date});
+
+  final String title;
+  final String date;
+
+  static const _titleStyle = TextStyle(
+    color: Colors.white,
+    fontSize: 16,
+    fontFamily: 'Inter',
+    fontWeight: FontWeight.w600,
+  );
+  static const _dateStyle = TextStyle(
+    color: Color(0xFF908F8F),
+    fontSize: 11,
+    fontFamily: 'Inter',
+    fontWeight: FontWeight.w400,
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    if (date.isEmpty) {
+      return Text(title, style: _titleStyle, maxLines: 1, overflow: TextOverflow.ellipsis);
+    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final titlePainter = TextPainter(
+          text: TextSpan(text: title, style: _titleStyle),
+          textDirection: TextDirection.ltr,
+          maxLines: 1,
+        )..layout(maxWidth: double.infinity);
+
+        final datePainter = TextPainter(
+          text: TextSpan(text: '  $date', style: _dateStyle),
+          textDirection: TextDirection.ltr,
+          maxLines: 1,
+        )..layout(maxWidth: double.infinity);
+
+        final showDate = titlePainter.width + datePainter.width <= constraints.maxWidth;
+
+        return Row(
+          children: [
+            Flexible(
+              child: Text(
+                title,
+                style: _titleStyle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (showDate) ...[
+              const SizedBox(width: 6),
+              Text(date, style: _dateStyle),
+            ],
+          ],
         );
       },
     );
