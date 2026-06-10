@@ -7,6 +7,7 @@ import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/models/turno.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/utils/user_initials.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/features/turni/screens/turno_salvato_con_successo.dart';
 
@@ -733,7 +734,7 @@ class _AssigneeSection extends StatelessWidget {
                   padding: const EdgeInsets.only(right: 10),
                   child: _AssigneeChip(
                     label: label,
-                    color: _chipColor(index),
+                    color: userAvatarColorsForSeed(inquilino.id).background,
                     selected: selected,
                     showError: showError,
                     onTap: () => onSelected(inquilino.id),
@@ -748,29 +749,16 @@ class _AssigneeSection extends StatelessWidget {
   }
 
   static String _initials(Inquilino inquilino) {
-    final source = inquilino.nomeCompleto.trim().isNotEmpty
-        ? inquilino.nomeCompleto
-        : inquilino.email.split('@').first;
-    final parts = source.trim().split(RegExp(r'\s+'));
-    if (parts.length >= 2) {
-      return '${parts.first[0]}${parts[1][0]}'.toUpperCase();
+    final username = inquilino.username.trim();
+    if (username.isNotEmpty) {
+      return initialsFromText(username);
     }
-    if (source.isEmpty) {
-      return '?';
-    }
-    return source.length >= 2
-        ? source.substring(0, 2).toUpperCase()
-        : source.toUpperCase();
-  }
-
-  static Color _chipColor(int index) {
-    final colors = const [
-      AppColors.statusSuccess,
-      AppColors.turniAssigneeSurface,
-      Color(0xFF6E3B7C),
-      Color(0xFF347A88),
-    ];
-    return colors[index % colors.length];
+    return resolveUserInitials(
+      name: inquilino.nome,
+      surname: inquilino.cognome,
+      displayName: inquilino.nomeCompleto,
+      fallback: '?',
+    );
   }
 }
 
