@@ -409,7 +409,7 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
                     Expanded(
                       child: _BalanceMetric(
                         label: 'Totale mese',
-                        value: '€${saldo.toStringAsFixed(0)}',
+                        value: '€${saldo.toStringAsFixed(2)}',
                         valueColor: const Color(0xFFE1E1E1),
                       ),
                     ),
@@ -421,7 +421,7 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
                     Expanded(
                       child: _BalanceMetric(
                         label: 'Devi ricevere',
-                        value: '€${credito.toStringAsFixed(0)}',
+                        value: '€${credito.toStringAsFixed(2)}',
                         valueColor: const Color(0xFF47CC5D),
                       ),
                     ),
@@ -433,7 +433,7 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
                     Expanded(
                       child: _BalanceMetric(
                         label: 'Devi pagare',
-                        value: '€${debito.toStringAsFixed(0)}',
+                        value: '€${debito.toStringAsFixed(2)}',
                         valueColor: const Color(0xFFF14A4A),
                       ),
                     ),

@@ -374,7 +374,7 @@ class _BalanceTile extends StatelessWidget {
       saldoText = '-€${_fmt(row.saldo.abs())}';
     } else {
       saldoColor = const Color(0xFF918D9A);
-      saldoText = '±€0';
+      saldoText = '±€0.00';
     }
 
     final displayName = row.isCurrentUser ? '${row.name} (Tu)' : row.name;
@@ -825,4 +825,4 @@ Color _avatarColor(String initials) {
   return colors[initials.codeUnitAt(0) % colors.length];
 }
 
-String _fmt(double value) => value.toStringAsFixed(0);
+String _fmt(double value) => value.toStringAsFixed(2);

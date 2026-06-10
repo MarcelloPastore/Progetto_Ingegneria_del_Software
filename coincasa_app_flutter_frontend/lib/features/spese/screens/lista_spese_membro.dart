@@ -478,7 +478,7 @@ Map<DateTime, List<Spesa>> _groupByMonth(List<Spesa> spese) {
 }
 
 String _formatCurrency(double value) {
-  return '€${value.toStringAsFixed(0)}';
+  return '€${value.toStringAsFixed(2)}';
 }
 
 String _initials(String name) {
