@@ -7,6 +7,8 @@ interface TurnoForDto {
   rotazioneAttiva: boolean;
   assegnatarioCorrente?: string | null;
   assegnatarioCorrenteRel?: { id: string; username: string } | null;
+  idCreatore?: string | null;
+  idCreatoreRel?: { id: string; username: string } | null;
   ordineRotazione?: string[] | null;
   indiceRotazioneCorrente?: number | null;
   dataUltimaPulizia?: Date | null;
@@ -35,6 +37,7 @@ export class TurnoConverter {
     const riferimento: Date = turno.dataUltimaPulizia ?? turno.dataCreazione;
     const dataProssima = calcolaProssimaData(riferimento, cadenzaGiorni);
     const assegnatarioRel = turno.assegnatarioCorrenteRel;
+    const creatoreRel = turno.idCreatoreRel;
 
     return {
       id: turno.id,
@@ -44,6 +47,10 @@ export class TurnoConverter {
       assegnatario: {
         id: assegnatarioRel?.id ?? turno.assegnatarioCorrente ?? "",
         username: assegnatarioRel?.username ?? "",
+      },
+      creatore: {
+        id: creatoreRel?.id ?? turno.idCreatore ?? "",
+        username: creatoreRel?.username ?? "",
       },
       ordineRotazione,
       indiceRotazioneCorrente: indiceRotazione,
