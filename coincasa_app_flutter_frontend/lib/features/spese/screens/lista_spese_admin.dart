@@ -573,7 +573,7 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
         return isPaid(p) ? _SpesaStatus.incompleta : _SpesaStatus.nonPagata;
       }
     }
-    return _SpesaStatus.nonPagata;
+    return _SpesaStatus.incompleta;
   }
 
   bool _isCurrentUserPartecipante(Map<String, dynamic> p) {
