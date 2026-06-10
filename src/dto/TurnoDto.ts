@@ -36,6 +36,7 @@ export const TurnoResponseSchema = z.object({
   cadenzaGiorni: z.number().int(),
   rotazioneAttiva: z.boolean(),
   assegnatario: AssegnatarioInfoSchema,
+  creatore: AssegnatarioInfoSchema,
   ordineRotazione: z.string().array(),
   indiceRotazioneCorrente: z.number().int(),
   dataUltimaPulizia: isoDateTimeString.nullable(),
