@@ -13,8 +13,8 @@ class DetailActionsBar extends StatelessWidget {
     super.key,
     required this.modifyLabel,
     required this.deleteLabel,
-    required this.backLabel,
-    required this.onBack,
+    this.backLabel,
+    this.onBack,
     this.onModify,
     this.onDelete,
     this.isCreator = false,
@@ -22,7 +22,7 @@ class DetailActionsBar extends StatelessWidget {
 
   final String modifyLabel;
   final String deleteLabel;
-  final String backLabel;
+  final String? backLabel;
   final VoidCallback? onBack;
   final VoidCallback? onModify;
   final VoidCallback? onDelete;
@@ -30,12 +30,19 @@ class DetailActionsBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasBack = backLabel != null && onBack != null;
+    final showActions = isCreator;
+
+    if (!hasBack && !showActions) {
+      return const SizedBox.shrink();
+    }
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (isCreator) ...[
+          if (showActions) ...[
             Row(
               children: [
                 Expanded(
@@ -55,9 +62,9 @@ class DetailActionsBar extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            if (hasBack) const SizedBox(height: 10),
           ],
-          MainCtaButton(label: backLabel, onPressed: onBack),
+          if (hasBack) MainCtaButton(label: backLabel!, onPressed: onBack),
         ],
       ),
     );

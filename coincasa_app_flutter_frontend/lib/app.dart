@@ -34,7 +34,32 @@ class CoinCasaApp extends StatelessWidget {
         theme: AppTheme.lightTheme,
         navigatorKey: navigatorKey,
         navigatorObservers: [appRouteObserver],
-        home: const LoginScreen(),
+        // home: const LoginScreen(),
+        initialRoute: '/',
+        onGenerateRoute: (settings) {
+          // Gestione della root per il debug immediato della schermata dettaglio
+          if (settings.name == '/') {
+            return MaterialPageRoute(
+              builder: (_) => const ProblemaDettaglioScreen(),
+              settings: const RouteSettings(
+                name: ProblemaDettaglioScreen.routeName,
+                arguments: {
+                  'id': '1',
+                  'titolo': 'Lavatrice non funziona',
+                  'priorita': 'Urgente',
+                  'descrizione':
+                      'La lavatrice si blocca a metà ciclo e non scarica l\'acqua correttamente.',
+                  'segnalatoDa': 'Luigi Ragni',
+                  'dataSegnalazione': '2023-10-27T10:00:00Z',
+                  'assegnatarioNome': 'Francesco Paola',
+                  'stato': 'Assegnato',
+                  'creatoreId': 'mock-user-id',
+                },
+              ),
+            );
+          }
+          return null; // Lascia che 'routes' gestisca le altre rotte nominate
+        },
         routes: {
           NoConnectionScreen.routeName: (_) => const NoConnectionScreen(),
           '/login': (_) => const LoginScreen(),
@@ -76,6 +101,8 @@ class CoinCasaApp extends StatelessWidget {
           SegnalaProblemaScreen.routeName: (_) => const SegnalaProblemaScreen(),
           ProblemaDettaglioScreen.routeName: (_) =>
               const ProblemaDettaglioScreen(),
+          DeassegnazioneSuccessoScreen.routeName: (_) =>
+              const DeassegnazioneSuccessoScreen(),
           '/casa': (_) => const ListaCaseScreen(),
           GestioneAccountScreen.routeName: (_) => const GestioneAccountScreen(),
         },

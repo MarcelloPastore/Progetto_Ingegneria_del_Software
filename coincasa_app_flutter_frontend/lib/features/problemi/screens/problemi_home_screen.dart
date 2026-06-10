@@ -13,7 +13,7 @@ import 'package:coincasa_app/features/problemi/screens/segnala_problema_screen.d
 // Mock data — sostituire con API call quando il backend è pronto
 // ---------------------------------------------------------------------------
 
-const List<Problema> _mockProblemi = [
+List<Problema> mockProblemi = [
   Problema(
     id: '1',
     titolo: 'Lavatrice non funziona',
@@ -41,7 +41,7 @@ class ProblemiHomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const problemi = _mockProblemi;
+    final problemi = mockProblemi;
     final isEmpty = problemi.isEmpty;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
