@@ -105,8 +105,8 @@ class _ModificaSpesaAdminScreenState
         'descrizione': form.descrizione.trim(),
         'importo': double.parse(form.importo.replaceAll(',', '.')),
         'partecipanti': partecipanti,
-        'dataSpesa': _fmtDate(form.dataSpesa),
         'isRicorrente': form.spesaRicorrente,
+        if (form.dataSpesa != null) 'dataScadenza': _fmtDate(form.dataSpesa),
         if (form.hoAnticipatoPerTutti && currentUserId != null)
           'anticipataDa': currentUserId,
         if (form.spesaRicorrente) ...{
@@ -194,6 +194,7 @@ class _ModificaSpesaAdminScreenState
                               SpesaFormDateField(
                                 value: form.dataSpesa,
                                 onChanged: ctrl.setDataSpesa,
+                                onCleared: ctrl.clearDataSpesa,
                               ),
                               const SizedBox(width: 8),
                               Expanded(
@@ -281,12 +282,19 @@ class _ModificaSpesaAdminScreenState
 
             // CTA pinned
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
               child: SpesaFormConfermaButton(
                 label: 'Salva modifiche',
                 enabled: form.canSubmit,
                 submitting: form.isSubmitting,
                 onPressed: _submit,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+              child: _AnnullaButton(
+                enabled: !form.isSubmitting,
+                onPressed: () => Navigator.of(context).pop(),
               ),
             ),
           ],
@@ -363,6 +371,7 @@ class SpesaEditFormState {
     Set<String>? selectedInquiliniIds,
     String? creatoreId,
     DateTime? dataSpesa,
+    bool clearDataSpesa = false,
     bool? hoAnticipatoPerTutti,
     bool? spesaRicorrente,
     String? frequenza,
@@ -378,7 +387,7 @@ class SpesaEditFormState {
       descrizione: descrizione ?? this.descrizione,
       selectedInquiliniIds: selectedInquiliniIds ?? this.selectedInquiliniIds,
       creatoreId: creatoreId ?? this.creatoreId,
-      dataSpesa: dataSpesa ?? this.dataSpesa,
+      dataSpesa: clearDataSpesa ? null : (dataSpesa ?? this.dataSpesa),
       hoAnticipatoPerTutti: hoAnticipatoPerTutti ?? this.hoAnticipatoPerTutti,
       spesaRicorrente: spesaRicorrente ?? this.spesaRicorrente,
       frequenza: frequenza ?? this.frequenza,
@@ -434,7 +443,7 @@ class SpesaEditFormController extends StateNotifier<SpesaEditFormState> {
     state = state.copyWith(
       importo: importoStr,
       descrizione: spesa.descrizione,
-      dataSpesa: spesa.data,
+      dataSpesa: spesa.dataScadenza,
       selectedInquiliniIds: selectedIds,
       creatoreId: creatoreId,
       hoAnticipatoPerTutti: hoAnticipato,
@@ -451,6 +460,7 @@ class SpesaEditFormController extends StateNotifier<SpesaEditFormState> {
   void setDescrizione(String v) =>
       state = state.copyWith(descrizione: v, submitError: '');
   void setDataSpesa(DateTime v) => state = state.copyWith(dataSpesa: v);
+  void clearDataSpesa() => state = state.copyWith(clearDataSpesa: true);
   void setHoAnticipatoPerTutti(bool v) =>
       state = state.copyWith(hoAnticipatoPerTutti: v);
   void setSpesaRicorrente(bool v) =>
@@ -1373,6 +1383,45 @@ class SpesaFormConfermaButton extends StatelessWidget {
               fontFamily: 'Inter',
               fontWeight: FontWeight.w700,
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Annulla button
+// ---------------------------------------------------------------------------
+
+class _AnnullaButton extends StatelessWidget {
+  const _AnnullaButton({required this.enabled, required this.onPressed});
+
+  final bool enabled;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 44,
+      width: double.infinity,
+      child: OutlinedButton(
+        onPressed: enabled ? onPressed : null,
+        style: OutlinedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          foregroundColor: AppColors.statusNegative,
+          side: const BorderSide(color: AppColors.statusNegative, width: 1.5),
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(22)),
+          ),
+          disabledForegroundColor: AppColors.statusNegative.withValues(alpha: 0.4),
+        ),
+        child: const Text(
+          'Annulla',
+          style: TextStyle(
+            fontSize: 16,
+            fontFamily: 'Inter',
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),

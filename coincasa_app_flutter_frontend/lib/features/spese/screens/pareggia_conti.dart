@@ -502,7 +502,7 @@ class _TransfersCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (transfers.isEmpty) {
-      return const _EmptyCard(message: 'I conti sono già pareggiati 🎉');
+      return const _EmptyCard(message: 'I debiti sono in pari 🎉');
     }
     return _Panel(
       child: Column(
