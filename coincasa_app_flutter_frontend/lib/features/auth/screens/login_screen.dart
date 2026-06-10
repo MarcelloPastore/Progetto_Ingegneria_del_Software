@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:coincasa_app/core/api/api_client.dart';
 import 'package:coincasa_app/core/api/api_provider.dart';
+import 'package:coincasa_app/core/services/session_manager.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/auth/auth_widgets.dart';
 import 'package:coincasa_app/features/casa/screens/casa_welcome_screen.dart';
@@ -88,6 +89,14 @@ class _LoginScreenState extends State<LoginScreen> {
         surname: loginResult.user.cognome,
         displayName: loginResult.user.displayName,
         username: loginResult.user.username,
+      );
+      await SessionManager.save(
+        token: loginResult.token,
+        userId: loginResult.user.id,
+        email: email,
+        username: loginResult.user.username,
+        nome: loginResult.user.nome,
+        cognome: loginResult.user.cognome,
       );
 
       // Verifica se l'utente ha almeno una casa

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'core/services/session_manager.dart';
 import 'core/state/active_casa.dart';
 import 'core/theme/app_theme.dart';
 import 'core/widgets/common/no_connection_screen.dart';
@@ -34,32 +35,7 @@ class CoinCasaApp extends StatelessWidget {
         theme: AppTheme.lightTheme,
         navigatorKey: navigatorKey,
         navigatorObservers: [appRouteObserver],
-        // home: const LoginScreen(),
-        initialRoute: '/',
-        onGenerateRoute: (settings) {
-          // Gestione della root per il debug immediato della schermata dettaglio
-          if (settings.name == '/') {
-            return MaterialPageRoute(
-              builder: (_) => const ProblemaDettaglioScreen(),
-              settings: const RouteSettings(
-                name: ProblemaDettaglioScreen.routeName,
-                arguments: {
-                  'id': '1',
-                  'titolo': 'Lavatrice non funziona',
-                  'priorita': 'Urgente',
-                  'descrizione':
-                      'La lavatrice si blocca a metà ciclo e non scarica l\'acqua correttamente.',
-                  'segnalatoDa': 'Luigi Ragni',
-                  'dataSegnalazione': '2023-10-27T10:00:00Z',
-                  'assegnatarioNome': 'Francesco Paola',
-                  'stato': 'Assegnato',
-                  'creatoreId': 'mock-user-id',
-                },
-              ),
-            );
-          }
-          return null; // Lascia che 'routes' gestisca le altre rotte nominate
-        },
+        home: const _AppStartupScreen(),
         routes: {
           NoConnectionScreen.routeName: (_) => const NoConnectionScreen(),
           '/login': (_) => const LoginScreen(),
@@ -107,6 +83,39 @@ class CoinCasaApp extends StatelessWidget {
           GestioneAccountScreen.routeName: (_) => const GestioneAccountScreen(),
         },
       ),
+    );
+  }
+}
+
+class _AppStartupScreen extends StatefulWidget {
+  const _AppStartupScreen();
+
+  @override
+  State<_AppStartupScreen> createState() => _AppStartupScreenState();
+}
+
+class _AppStartupScreenState extends State<_AppStartupScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _init();
+  }
+
+  Future<void> _init() async {
+    final hasSession = await SessionManager.restore();
+    if (!mounted) return;
+
+    if (hasSession) {
+      Navigator.pushReplacementNamed(context, '/dashboard');
+    } else {
+      Navigator.pushReplacementNamed(context, '/login');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: Color(0xFF100D22),
     );
   }
 }

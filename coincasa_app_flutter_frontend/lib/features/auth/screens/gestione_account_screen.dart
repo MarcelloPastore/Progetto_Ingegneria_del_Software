@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
+import 'package:coincasa_app/core/services/session_manager.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 
@@ -169,7 +170,7 @@ class GestioneAccountScreen extends StatelessWidget {
   }
 
   void _handleLogout(BuildContext context) {
-    ApiProvider.client.setAuthToken(null);
+    SessionManager.clear();
     Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
   }
 }
