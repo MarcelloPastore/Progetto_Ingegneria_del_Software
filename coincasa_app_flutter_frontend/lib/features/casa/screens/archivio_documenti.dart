@@ -51,9 +51,9 @@ class _ArchivioDocumentiScreenState extends State<ArchivioDocumentiScreen> {
                       IconButton(
                         onPressed: () => Navigator.of(context).pop(),
                         icon: const Icon(
-                          Icons.arrow_back,
-                          color: AppColors.brandPrimary,
-                          size: 28,
+                          Icons.arrow_back_ios_new,
+                          color: Colors.white,
+                          size: 20,
                         ),
                       ),
                       const Expanded(

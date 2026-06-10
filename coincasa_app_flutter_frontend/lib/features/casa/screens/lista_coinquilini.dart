@@ -154,11 +154,15 @@ class _ListaCoinquiliniScreenState extends State<ListaCoinquiliniScreen> {
       appBar: AppBar(
         elevation: 0,
         backgroundColor: AppColors.brandPrimary,
+        foregroundColor: Colors.white,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new),
+          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
           onPressed: Navigator.of(context).pop,
         ),
-        title: const Text('Lista coinquilini'),
+        title: const Text(
+          'Lista coinquilini',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+        ),
         actions: [
           IconButton(onPressed: _reload, icon: const Icon(Icons.refresh)),
           Padding(

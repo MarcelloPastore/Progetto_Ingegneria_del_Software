@@ -104,7 +104,7 @@ class _ModificaCasaScreenState extends State<ModificaCasaScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
           onPressed: Navigator.of(context).pop,
         ),
         title: const Text(

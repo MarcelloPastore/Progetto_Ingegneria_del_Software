@@ -33,10 +33,11 @@ class GestioneAccountScreen extends StatelessWidget {
                 child: IconButton(
                   icon: const Icon(
                     Icons.arrow_back_ios_new,
-                    color: AppColors.brandAccent,
+                    color: Colors.white,
                     size: 20,
                   ),
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: () => Navigator.of(context)
+                      .pushReplacementNamed('/dashboard'),
                 ),
               ),
             ),

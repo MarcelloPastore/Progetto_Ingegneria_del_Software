@@ -68,9 +68,9 @@ class _Header extends StatelessWidget {
               alignment: Alignment.centerLeft,
               onPressed: Navigator.of(context).pop,
               icon: const Icon(
-                Icons.arrow_back,
-                color: AppColors.brandAccent,
-                size: 28,
+                Icons.arrow_back_ios_new,
+                color: Colors.white,
+                size: 20,
               ),
             ),
           ),

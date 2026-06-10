@@ -177,11 +177,12 @@ class _Header extends StatelessWidget {
           child: IconButton(
             padding: EdgeInsets.zero,
             alignment: Alignment.centerLeft,
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () =>
+                Navigator.of(context).pushReplacementNamed('/dashboard'),
             icon: const Icon(
-              Icons.arrow_back,
-              color: AppColors.brandPrimary,
-              size: 28,
+              Icons.arrow_back_ios_new,
+              color: Colors.white,
+              size: 20,
             ),
           ),
         ),

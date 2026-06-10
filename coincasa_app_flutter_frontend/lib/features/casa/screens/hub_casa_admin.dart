@@ -162,6 +162,13 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
         elevation: 0,
         backgroundColor: AppColors.brandPrimary,
         centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new,
+              color: Colors.white, size: 20),
+          onPressed: () => Navigator.of(context).pushReplacement(
+            MaterialPageRoute<void>(builder: (_) => const ListaCaseScreen()),
+          ),
+        ),
         title: const Text(
           'Hub Casa',
           style: TextStyle(fontWeight: FontWeight.w700, color: Colors.white),
