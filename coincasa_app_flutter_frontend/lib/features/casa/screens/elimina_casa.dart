@@ -1,17 +1,22 @@
 import 'package:flutter/material.dart';
 
-Future<bool?> showEliminaCasaDialog(BuildContext context, {String? nomeCasa}) {
+Future<bool?> showEliminaCasaDialog(
+  BuildContext context, {
+  String? nomeCasa,
+  int speseCount = 0,
+}) {
   return showDialog<bool>(
     context: context,
     barrierColor: const Color(0x99000000),
-    builder: (_) => EliminaCasaDialog(nomeCasa: nomeCasa),
+    builder: (_) => EliminaCasaDialog(nomeCasa: nomeCasa, speseCount: speseCount),
   );
 }
 
 class EliminaCasaDialog extends StatelessWidget {
-  const EliminaCasaDialog({super.key, this.nomeCasa});
+  const EliminaCasaDialog({super.key, this.nomeCasa, this.speseCount = 0});
 
   final String? nomeCasa;
+  final int speseCount;
 
   @override
   Widget build(BuildContext context) {
@@ -20,16 +25,19 @@ class EliminaCasaDialog extends StatelessWidget {
       backgroundColor: Colors.transparent,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 390),
-        child: SingleChildScrollView(child: _DeleteCard(nomeCasa: nomeCasa)),
+        child: SingleChildScrollView(
+        child: _DeleteCard(nomeCasa: nomeCasa, speseCount: speseCount),
+      ),
       ),
     );
   }
 }
 
 class _DeleteCard extends StatelessWidget {
-  const _DeleteCard({this.nomeCasa});
+  const _DeleteCard({this.nomeCasa, this.speseCount = 0});
 
   final String? nomeCasa;
+  final int speseCount;
 
   @override
   Widget build(BuildContext context) {
@@ -66,7 +74,7 @@ class _DeleteCard extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           const Text(
-            'Questa azione e irreversibile. Verranno eliminati tutti i dati: spese, turni, scadenze, problemi e documenti. Tutti i coinquilini perderanno accesso.',
+            'Questa azione è irreversibile. Verranno eliminati tutti i dati: spese, turni, scadenze, problemi e documenti. Tutti i coinquilini perderanno accesso.',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Color(0xFFDAD6E7),
@@ -75,8 +83,10 @@ class _DeleteCard extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 18),
-          const _WarningBox(),
+          if (speseCount > 0) ...[
+            const SizedBox(height: 18),
+            _WarningBox(speseCount: speseCount),
+          ],
           const SizedBox(height: 20),
           _DeleteButton(
             onPressed: () {
@@ -123,10 +133,16 @@ class _TrashBadge extends StatelessWidget {
 }
 
 class _WarningBox extends StatelessWidget {
-  const _WarningBox();
+  const _WarningBox({required this.speseCount});
+
+  final int speseCount;
 
   @override
   Widget build(BuildContext context) {
+    final label = speseCount == 1
+        ? 'Questa casa ha 1 spesa pendente non saldata. Non potrà più essere recuperata.'
+        : 'Questa casa ha $speseCount spese pendenti non saldate. Non potranno più essere recuperate.';
+
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
       decoration: BoxDecoration(
@@ -136,13 +152,13 @@ class _WarningBox extends StatelessWidget {
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
-        children: const [
-          Icon(Icons.warning_amber_rounded, color: Color(0xFFFFC94D), size: 42),
-          SizedBox(width: 12),
+        children: [
+          const Icon(Icons.warning_amber_rounded, color: Color(0xFFFFC94D), size: 42),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'Hai 2 quote pendenti non saldate. Eliminando la casa non potranno piu essere recuperate.',
-              style: TextStyle(
+              label,
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 16,
                 height: 1.2,
