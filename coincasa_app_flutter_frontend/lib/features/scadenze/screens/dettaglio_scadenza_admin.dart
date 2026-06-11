@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
+import 'scadenza_form_screen.dart';
+
 class DettaglioScadenzaAdminScreen extends StatelessWidget {
   final String titolo;
   final String descrizione;
@@ -27,28 +30,12 @@ class DettaglioScadenzaAdminScreen extends StatelessWidget {
   String _formatDate(DateTime dt) {
     final d = dt.day.toString().padLeft(2, '0');
     final m = dt.month.toString().padLeft(2, '0');
-    final y = dt.year.toString();
-    return '$d/$m/$y';
+    return '$d/$m/${dt.year}';
   }
-
-  TextStyle get _labelStyle => const TextStyle(
-        color: Color(0xFFC9C9C9),
-        fontSize: 18,
-        fontFamily: 'Inter',
-        fontWeight: FontWeight.w500,
-      );
-
-  TextStyle get _valueStyle => const TextStyle(
-        color: Colors.white,
-        fontSize: 16,
-        fontFamily: 'Inter',
-        fontWeight: FontWeight.w500,
-      );
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    final data = dataScadenza ?? DateTime(2026, 6, 11);
+    final data = dataScadenza ?? DateTime(2026, 6, 25);
 
     return Scaffold(
       backgroundColor: const Color(0xFF151127),
@@ -60,7 +47,7 @@ class DettaglioScadenzaAdminScreen extends StatelessWidget {
           onPressed: () => Navigator.of(context).maybePop(),
         ),
         title: const Text(
-          'Dettaglio Scadenza',
+          'Dettaglio scadenza',
           style: TextStyle(
             color: Color(0xFFAC86FF),
             fontSize: 20,
@@ -70,111 +57,129 @@ class DettaglioScadenzaAdminScreen extends StatelessWidget {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Card(
-              color: const Color(0xFF37325A),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              elevation: 4,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(titolo, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 8),
-                    Text(descrizione, style: const TextStyle(color: Color(0xFFC9C9C9), fontSize: 16)),
-                    const SizedBox(height: 16),
-
-                    // Row: Data scadenza + badge
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Data scadenza', style: _labelStyle),
-                            const SizedBox(height: 6),
-                            Text(_formatDate(data), style: const TextStyle(color: Color(0xFFFF860E), fontSize: 16, fontWeight: FontWeight.w700)),
-                          ],
-                        ),
-                        StatusBadge(text: stato, color: const Color(0xFFFF860E)),
-                      ],
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    _infoRow('Frequenza', frequenza),
-                    const SizedBox(height: 8),
-                    if (isAdmin) ...[
-                      _infoRow('Ricorrente', ricorrente ? 'Sì (365 gg)' : 'No'),
-                      const SizedBox(height: 8),
-                    ],
-                    _infoRow('Creata da', creatoDa),
-                    const SizedBox(height: 8),
-                    _infoRow('Visibile a', visibileA),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Buttons
-            Center(
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(
-                    width: width * 0.8,
-                    height: 50,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF5228AD),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                      ),
-                      onPressed: () {
-                        // TODO: naviga alla schermata di modifica
-                      },
-                      child: const Text('Modifica', style: TextStyle(fontSize: 22, color: Colors.white, fontWeight: FontWeight.w500)),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: width * 0.8,
-                    height: 50,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFAD2828),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                        elevation: 4,
-                      ),
-                      onPressed: () async {
-                        final confirm = await showDialog<bool>(
-                          context: context,
-                          builder: (ctx) => AlertDialog(
-                            title: const Text('Conferma eliminazione'),
-                            content: const Text('Sei sicuro di voler eliminare questa scadenza?'),
-                            actions: [
-                              TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Annulla')),
-                              TextButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Elimina')),
+                  Card(
+                    color: const Color(0xFF37325A),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                    elevation: 4,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            titolo,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            descrizione,
+                            style: const TextStyle(
+                              color: Color(0xFFC9C9C9),
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Data scadenza',
+                                    style: TextStyle(
+                                      color: Color(0xFFC9C9C9),
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    _formatDate(data),
+                                    style: const TextStyle(
+                                      color: Color(0xFFFF860E),
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              StatusBadge(
+                                text: stato,
+                                color: const Color(0xFFFF860E),
+                              ),
                             ],
                           ),
-                        );
-                        if (confirm == true) {
-                          // TODO: chiamare API di eliminazione
-                        }
-                      },
-                      child: const Text('Elimina', style: TextStyle(fontSize: 22, color: Colors.white, fontWeight: FontWeight.w500)),
+                          const SizedBox(height: 12),
+                          _infoRow('Frequenza', frequenza),
+                          if (isAdmin) ...[
+                            const SizedBox(height: 8),
+                            _infoRow('Ricorrente', ricorrente ? 'Sì' : 'No'),
+                          ],
+                          const SizedBox(height: 8),
+                          _infoRow('Creata da', creatoDa),
+                          const SizedBox(height: 8),
+                          _infoRow('Visibile a', visibileA),
+                        ],
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+          DetailActionsBar(
+            modifyLabel: 'Modifica scadenza',
+            deleteLabel: 'Elimina scadenza',
+            backLabel: 'Torna alle scadenze',
+            isCreator: isAdmin,
+            onModify: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => ScadenzaFormScreen.modifica(
+                nome: titolo,
+                descrizione: descrizione,
+                data: dataScadenza,
+                frequenza: frequenza,
+              ),
+            )),
+            onDelete: () async {
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Conferma eliminazione'),
+                  content: const Text(
+                      'Sei sicuro di voler eliminare questa scadenza?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(false),
+                      child: const Text('Annulla'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(true),
+                      child: const Text('Elimina'),
+                    ),
+                  ],
+                ),
+              );
+              if (confirm == true && context.mounted) {
+                Navigator.of(context).maybePop();
+              }
+            },
+            onBack: () => Navigator.of(context).maybePop(),
+          ),
+        ],
       ),
     );
   }
@@ -183,10 +188,25 @@ class DettaglioScadenzaAdminScreen extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: _labelStyle),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Color(0xFFC9C9C9),
+            fontSize: 18,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
         const SizedBox(width: 16),
         Expanded(
-          child: Text(value, style: _valueStyle, textAlign: TextAlign.right),
+          child: Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.right,
+          ),
         ),
       ],
     );
@@ -209,7 +229,11 @@ class StatusBadge extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+          fontSize: 14,
+        ),
       ),
     );
   }
