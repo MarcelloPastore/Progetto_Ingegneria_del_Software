@@ -6,17 +6,16 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 COPY package.json package-lock.json ./
+COPY prisma ./prisma
 
 RUN --mount=type=cache,target=/root/.npm --mount=type=cache,target=/root/.cache npm ci
 
-RUN npx prisma generate
+RUN MONGODB_URI="mongodb://localhost:27017/placeholder" npx prisma generate
 
 COPY tsconfig.json index.ts prisma.config.ts eslint.config.ts vitest.config.ts ./
 COPY src ./src
 
 RUN npm run build
-
-RUN MONGODB_URI="mongodb://localhost:27017/placeholder" npx prisma generate
 
 RUN npm prune --omit=dev
 

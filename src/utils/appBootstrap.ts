@@ -11,6 +11,7 @@ import {
   turniRoutes,
   scadenzeRoutes,
   problemiRoutes,
+  accountRoutes,
 } from "../config/routes";
 
 type InfrastructureOptions = {
@@ -59,4 +60,5 @@ export async function registerApiRoutes(
   await app.register(scadenzeRoutes, { prefix });
   await app.register(speseRoutes, { prefix });
   await app.register(problemiRoutes, { prefix });
+  await app.register(accountRoutes, { prefix });
 }

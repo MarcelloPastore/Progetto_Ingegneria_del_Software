@@ -1,18 +1,4 @@
-/**
- * LOGIC TESTS — AuthService
- *
- * Qui testiamo la logica dell'autenticazione isolandola dal DB e dalle librerie crypto.
- *
- * Nota: AuthService usa Prisma direttamente (`src/config/db`) e argon2.
- * Nei test mockiamo entrambe le dipendenze.
- */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import {
-  DuplicateUserError,
-  InvalidCredentialsError,
-  UserNotFoundError,
-  InvalidOrExpiredResetCodeError,
-} from "../../src/errors/appErrors";
 
 const mocks = vi.hoisted(() => ({
   prisma: {
@@ -21,6 +7,7 @@ const mocks = vi.hoisted(() => ({
       findFirst: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
+      delete: vi.fn(),
     },
   },
   argon2: {
@@ -48,6 +35,7 @@ vi.mock("../../src/utils/mail", () => ({
 }));
 
 import { AuthService } from "../../src/service/AuthService";
+import { DatabaseCleanupError, DuplicateUserError, EmailDeliveryError, InvalidCredentialsError, InvalidOrExpiredResetCodeError, UserNotFoundError } from "../../src/errors/appErrors";
 
 describe("AuthService", () => {
   beforeEach(() => {
@@ -221,6 +209,48 @@ describe("AuthService", () => {
         nuovaPassword: "another-password-123",
       }),
     ).rejects.toBeInstanceOf(InvalidOrExpiredResetCodeError);
+  });
+
+  it("registerWithValidation deletes user if sendVerificationMail fails", async () => {
+    mocks.prisma.utente.findUnique.mockResolvedValue(null);
+    mocks.prisma.utente.findFirst.mockResolvedValue(null);
+    mocks.argon2.hash.mockResolvedValue("hashed");
+    mocks.prisma.utente.create.mockResolvedValue({ id: "u1", email: "mario@example.com", username: "mario" });
+    mocks.mail.sendVerificationEmail.mockRejectedValue(new Error("SMTP fail"));
+    mocks.prisma.utente.delete.mockResolvedValue({ id: "u1" });
+
+    const service = new AuthService();
+    await expect(
+      service.registerWithValidation({
+        email: "mario.rossi@example.com",
+        username: "mario",
+        password: "super-secure-123",
+        nome: "Mario",
+        cognome: "Rossi",
+      }),
+    ).rejects.toBeInstanceOf(EmailDeliveryError);
+
+    expect(mocks.prisma.utente.delete).toHaveBeenCalledWith({ where: { id: "u1" } });
+  });
+
+  it("registerWithValidation throws DatabaseCleanupError if database delete fails during cleanup", async () => {
+    mocks.prisma.utente.findUnique.mockResolvedValue(null);
+    mocks.prisma.utente.findFirst.mockResolvedValue(null);
+    mocks.argon2.hash.mockResolvedValue("hashed");
+    mocks.prisma.utente.create.mockResolvedValue({ id: "u1", email: "mario@example.com", username: "mario" });
+    mocks.mail.sendVerificationEmail.mockRejectedValue(new Error("SMTP fail"));
+    mocks.prisma.utente.delete.mockRejectedValue(new Error("DB delete fail"));
+
+    const service = new AuthService();
+    await expect(
+      service.registerWithValidation({
+        email: "mario.rossi@example.com",
+        username: "mario",
+        password: "super-secure-123",
+        nome: "Mario",
+        cognome: "Rossi",
+      }),
+    ).rejects.toBeInstanceOf(DatabaseCleanupError);
   });
 });
 
