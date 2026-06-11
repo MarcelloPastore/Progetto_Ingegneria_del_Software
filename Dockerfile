@@ -1,6 +1,8 @@
 FROM node:24.16.0-trixie-slim AS build
 WORKDIR /app
 
+ARG MONGODB_URI=mongodb://localhost:27017/placeholder
+
 RUN apt-get update \
   && apt-get install -y --no-install-recommends python3 make g++ ca-certificates \
   && rm -rf /var/lib/apt/lists/*
@@ -10,9 +12,13 @@ COPY prisma ./prisma
 
 RUN --mount=type=cache,target=/root/.npm --mount=type=cache,target=/root/.cache npm ci
 
-RUN MONGODB_URI="mongodb://localhost:27017/placeholder" npx prisma generate
 
-COPY tsconfig.json index.ts prisma.config.ts eslint.config.ts vitest.config.ts ./
+COPY prisma.config.ts ./
+COPY prisma ./prisma
+
+RUN MONGODB_URI=${MONGODB_URI} npx prisma generate
+
+COPY tsconfig.json index.ts eslint.config.ts vitest.config.ts ./
 COPY src ./src
 
 RUN npm run build

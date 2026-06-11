@@ -1,4 +1,8 @@
 name: Release Server
+
+permissions:
+  contents: write
+  packages: write 
 on:
   push:
     tags:
@@ -34,7 +38,6 @@ jobs:
 
   docker:
     runs-on: ubuntu-latest
-    needs: [lint, hadolint]
     steps:
       - uses: actions/checkout@v4
 
