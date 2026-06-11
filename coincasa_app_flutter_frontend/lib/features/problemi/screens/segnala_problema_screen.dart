@@ -588,7 +588,7 @@ class _PriorityChip extends StatelessWidget {
                 softWrap: false,
                 overflow: TextOverflow.ellipsis,
                 style: AppTextStyles.screenTitleStrong.copyWith(
-                  color: contentColor,
+                  color: AppColors.textOnDark,
                   fontSize: 15,
                   fontWeight: FontWeight.w800,
                 ),

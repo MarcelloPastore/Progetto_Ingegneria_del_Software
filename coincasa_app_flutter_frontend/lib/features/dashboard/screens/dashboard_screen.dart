@@ -13,6 +13,7 @@ import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/dashboard/house_health_section.dart';
+import 'package:coincasa_app/core/widgets/dashboard/open_problems_section.dart';
 import 'package:coincasa_app/features/icone_fab.dart';
 
 // Riferimento globale per il file all'utente corrente per facilitare l'accesso alle variabili di sessione
@@ -257,7 +258,7 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
                       routeName: '/scadenze',
                     ),
                     const SizedBox(height: AppSizes.p28),
-                    const _EmptyProblemsSection(),
+                    const OpenProblemsSection(),
                     const SizedBox(height: AppSizes.p28),
                     _TodayTurnSection(
                       dashboardDataFuture: _dashboardDataFuture,

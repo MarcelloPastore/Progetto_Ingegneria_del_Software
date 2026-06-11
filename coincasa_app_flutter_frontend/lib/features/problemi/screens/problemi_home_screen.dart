@@ -19,14 +19,28 @@ List<Problema> mockProblemi = [
     titolo: 'Lavatrice non funziona',
     stato: 'Assegnato',
     priorita: 'Urgente',
-    raw: {'assegnatarioNome': 'Francesco Paola'},
+    raw: {
+      'assegnatarioNome': 'Francesco Paola',
+      'descrizione': 'Smette di centrifugare a metà ciclo. Bisogna chiamare il tecnico del costruttore.',
+      'segnalatoDa': 'Marco Rossi',
+      'segnalatoData': '18 apr',
+      'segnalatoOre': '09:15',
+      'assegnatoData': '18 apr',
+      'assegnatoOre': '11:32',
+      'assegnatoNota': 'FP ha accettato',
+    },
   ),
   Problema(
     id: '2',
     titolo: 'Caldaia rotta',
     stato: 'Segnalato',
     priorita: 'Media',
-    raw: {},
+    raw: {
+      'descrizione': 'Non esce più l\'acqua calda, penso sia la caldaia. Già segnalato al proprietario.',
+      'segnalatoDa': 'Luca Bianchi',
+      'segnalatoData': '20 apr',
+      'segnalatoOre': '08:45',
+    },
   ),
 ];
 
