@@ -480,6 +480,7 @@ describe("TurnoService - Boundary and Edge Cases", () => {
         assegnatarioCorrente: "u3",
       });
       mocks.updateTurno.mockResolvedValue(baseTurno);
+      mocks.getMembriCasaIds.mockResolvedValue(["u1", "u2", "u3"]);
 
       const service = new TurnoService();
 
@@ -501,6 +502,7 @@ describe("TurnoService - Boundary and Edge Cases", () => {
         assegnatarioCorrente: "u2",
       });
       mocks.updateTurno.mockResolvedValue(baseTurno);
+      mocks.getMembriCasaIds.mockResolvedValue(["u1", "u2"]);
 
       const service = new TurnoService();
 
@@ -523,6 +525,7 @@ describe("TurnoService - Boundary and Edge Cases", () => {
         assegnatarioCorrente: "u1",
       });
       mocks.updateTurno.mockResolvedValue(baseTurno);
+      mocks.getMembriCasaIds.mockResolvedValue(["u1"]);
 
       const service = new TurnoService();
 
@@ -548,6 +551,7 @@ describe("TurnoService - Boundary and Edge Cases", () => {
         assegnatarioCorrente: "u26",
       });
       mocks.updateTurno.mockResolvedValue(baseTurno);
+      mocks.getMembriCasaIds.mockResolvedValue(members);
 
       const service = new TurnoService();
 

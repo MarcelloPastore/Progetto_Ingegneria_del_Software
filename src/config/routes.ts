@@ -10,12 +10,14 @@ import { SpesaController } from "../controller/SpesaController";
 import { ProblemaController } from "../controller/ProblemaController";
 import { TurnoController } from "../controller/TurnoController";
 import { ScadenzaController } from "../controller/ScadenzaController";
+import { AccountController } from "../controller/AccountController";
 
 import { CasaService } from "../service/CasaService";
 import { SpesaService } from "../service/SpesaService";
 import { ProblemaService } from "../service/ProblemaService";
 import { TurnoService } from "../service/TurnoService";
 import { ScadenzaService } from "../service/ScadenzaService";
+import { AccountService } from "../service/AccountService";
 
 /* eslint-disable @typescript-eslint/no-unused-vars -- usati nella documentazione */
 import {
@@ -62,6 +64,11 @@ import {
   ModificaScadenzaDto,
   ScadenzaResponseDto,
 } from "../dto/ScadenzaDto";
+import {
+  ModificaUsernameDto,
+  ModificaEmailDto,
+  UserProfileDto,
+} from "../dto/AccountDto";
 
 /* eslint-enable @typescript-eslint/no-unused-vars */
 
@@ -1104,13 +1111,12 @@ export function scadenzeRoutes(app: FastifyInstance) {
 // Controller: AccountController
 // Boundary: AccountScreens
 
-/*
 export function accountRoutes(app: FastifyInstance) {
   const accountService = new AccountService();
   const accountController = new AccountController(accountService);
   app.addHook("onRequest", authMiddleware);
 
-  /!**
+  /**
    * @api  GetProfilo
    * @route GET /account
    *
@@ -1120,13 +1126,11 @@ export function accountRoutes(app: FastifyInstance) {
    *
    * @version 1.0.0
    * @author Lorenzo Tedino
-   *!/
-  app.get(
-      "/account",
-      accountController.getProfilo,
-  );
+   */
 
-  /!**
+  app.get("/account", accountController.getProfilo);
+
+  /**
    * @api  ModificaUsername
    * @route PATCH /account/username
    *
@@ -1136,13 +1140,13 @@ export function accountRoutes(app: FastifyInstance) {
    *
    * @version 1.0.0
    * @author Lorenzo Tedino
-   *!/
+   */
   app.patch<{ Body: ModificaUsernameDto }>(
-      "/account/username",
-      accountController.modificaUsername,
+    "/account/username",
+    accountController.modificaUsername,
   );
 
-  /!**
+  /**
    * @api  ModificaEmail
    * @route PATCH /account/email
    *
@@ -1152,13 +1156,13 @@ export function accountRoutes(app: FastifyInstance) {
    *
    * @version 1.0.0
    * @author Lorenzo Tedino
-   *!/
+   */
   app.patch<{ Body: ModificaEmailDto }>(
-      "/account/email",
-      accountController.modificaEmail,
+    "/account/email",
+    accountController.modificaEmail,
   );
 
-  /!**
+  /**
    * @api  EliminaAccount
    * @route DELETE /account
    *
@@ -1166,9 +1170,6 @@ export function accountRoutes(app: FastifyInstance) {
    *
    * @version 1.0.0
    * @author Lorenzo Tedino
-   *!/
-  app.delete(
-      "/account",
-      accountController.eliminaAccount,
-  );
-}*/
+   */
+  app.delete("/account", accountController.eliminaAccount);
+}

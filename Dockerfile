@@ -8,6 +8,7 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 COPY package.json package-lock.json ./
+COPY prisma ./prisma
 
 RUN --mount=type=cache,target=/root/.npm --mount=type=cache,target=/root/.cache npm ci
 
@@ -21,8 +22,6 @@ COPY tsconfig.json index.ts eslint.config.ts vitest.config.ts ./
 COPY src ./src
 
 RUN npm run build
-
-
 
 RUN npm prune --omit=dev
 

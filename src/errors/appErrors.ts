@@ -1,6 +1,6 @@
 export class DuplicateUserError extends Error {
-  constructor() {
-    super("L'utente esiste già");
+  constructor(message = "L'utente esiste già") {
+    super(message);
     this.name = "DuplicateUserError";
   }
 }
@@ -72,5 +72,12 @@ export class InvalidEmailVerificationTokenError extends Error {
   constructor() {
     super("Token di verifica email non valido o scaduto");
     this.name = "InvalidEmailVerificationTokenError";
+  }
+}
+
+export class DatabaseCleanupError extends Error {
+  constructor() {
+    super("Impossibile eliminare l'utente");
+    this.name = "DatabaseCleanupError";
   }
 }
