@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
-import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 
 class ModificaCasaScreen extends StatefulWidget {
   final String casaId;
@@ -32,14 +33,21 @@ class _ModificaCasaScreenState extends State<ModificaCasaScreen> {
   bool _showValidationError = false;
   bool _isSaving = false;
 
-  static const _backgroundColor = Color(0xFF0B0828);
-  static const _cardColor = Color(0xFF151138);
-  static const _fieldColor = Color(0xFF12102B);
+  static const double _inputRadius = 18;
+
+  static final TextStyle _sectionLabelStyle = AppTextStyles
+      .dashboardSectionTitle
+      .copyWith(color: AppColors.textOnDark, fontSize: 12);
+  static final TextStyle _inputTextStyle =
+      AppTextStyles.inputCompact.copyWith(fontSize: 15);
+  static final TextStyle _hintTextStyle = AppTextStyles.bodyMuted
+      .copyWith(color: AppColors.textMutedDark, fontSize: 15);
+  static final TextStyle _buttonTextStyle =
+      AppTextStyles.buttonCompact.copyWith(fontSize: 16);
 
   @override
   void initState() {
     super.initState();
-    // Pre-compila i campi con i dati esistenti
     _nameController = TextEditingController(text: widget.name);
     _cityController = TextEditingController(text: widget.city);
     _addressController = TextEditingController(text: widget.address);
@@ -54,283 +62,287 @@ class _ModificaCasaScreenState extends State<ModificaCasaScreen> {
     super.dispose();
   }
 
-  bool get _isFormValid {
-    return _nameController.text.trim().length > 3 &&
-        (_selectedType?.isNotEmpty ?? false);
-  }
+  bool get _isFormValid =>
+      _nameController.text.trim().length > 3 &&
+      (_selectedType?.isNotEmpty ?? false);
 
   Future<void> _handleSave() async {
     final isValid = _formKey.currentState?.validate() ?? false;
-    setState(() {
-      _showValidationError = !isValid;
-    });
+    setState(() => _showValidationError = !isValid);
+    if (!isValid) return;
 
-    if (isValid) {
-      setState(() {
-        _isSaving = true;
+    setState(() => _isSaving = true);
+    try {
+      await ApiProvider.casa.update(widget.casaId, {
+        'nome': _nameController.text.trim(),
+        'citta': _cityController.text.trim(),
+        'indirizzo': _addressController.text.trim(),
+        'tipoCasa': _selectedType ?? '',
       });
-
-      try {
-        await ApiProvider.casa.update(widget.casaId, {
-          'nome': _nameController.text.trim(),
-          'citta': _cityController.text.trim(),
-          'indirizzo': _addressController.text.trim(),
-          'tipoCasa': _selectedType ?? '',
-        });
-        if (!mounted) {
-          return;
-        }
-        Navigator.of(context).pop(true);
-      } catch (_) {
-        if (!mounted) {
-          return;
-        }
-        setState(() {
-          _isSaving = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Modifica casa non riuscita.')),
-        );
-      }
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Modifica casa non riuscita.')),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _backgroundColor,
-      bottomNavigationBar: const HouseQuickNav(currentRoute: '/dashboard'),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
-          onPressed: Navigator.of(context).pop,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: AppColors.darkBackground,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          foregroundColor: AppColors.textOnDark,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new_rounded),
+            onPressed: Navigator.of(context).pop,
+          ),
+          title: const Text('Modifica', style: AppTextStyles.screenTitle),
+          centerTitle: true,
         ),
-        title: const Text(
-          'Modifica informazioni\ndella casa',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-        ),
-        centerTitle: true,
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── Immagine casa ──────────────────────────────────────────
-              Container(
-                width: double.infinity,
-                height: 180,
-                decoration: BoxDecoration(
-                  color: _cardColor,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFF3B3A5E), width: 1),
-                ),
-                clipBehavior: Clip.hardEdge,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Color(0xFF21154C), Color(0xFF0F0A27)],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                        ),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSizes.p20,
+              vertical: AppSizes.p8,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── Errore validazione ───────────────────────────────────
+                if (_showValidationError)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSizes.p16,
+                      vertical: AppSizes.p16,
+                    ),
+                    margin: const EdgeInsets.only(bottom: AppSizes.p20),
+                    decoration: BoxDecoration(
+                      color: AppColors.errorContainerDark,
+                      borderRadius: BorderRadius.circular(_inputRadius),
+                      border: Border.all(
+                        color: AppColors.errorStrong,
+                        width: 1.3,
                       ),
                     ),
-                    Image.asset(
-                      'assets/Icons/appartamenti-moderni-lusso 1.png',
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          const Center(
-                            child: Icon(
-                              Icons.home_outlined,
-                              color: Color(0xFF3B3A5E),
-                              size: 64,
-                            ),
-                          ),
+                    child: const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Campi non validi', style: AppTextStyles.error),
+                        SizedBox(height: 8),
+                        Text(
+                          'Inserisci un nome valido con più di 3 lettere e seleziona il tipo di abitazione per proseguire',
+                          style: AppTextStyles.errorCompact,
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
+                  ),
 
-              // ── Form ───────────────────────────────────────────────────
-              if (_showValidationError)
+                // ── Immagine casa ────────────────────────────────────────
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 16,
-                  ),
-                  margin: const EdgeInsets.only(bottom: 20),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2B102D),
-                    borderRadius: BorderRadius.circular(18),
+                    color: AppColors.surfaceDark,
+                    borderRadius: BorderRadius.circular(AppSizes.radius24),
                     border: Border.all(
-                      color: const Color(0xFFFF5A7D),
-                      width: 1.3,
+                      color: AppColors.brandAccent,
+                      width: 1.5,
                     ),
                   ),
-                  child: const Column(
+                  clipBehavior: Clip.hardEdge,
+                  child: SizedBox(
+                    height: 230,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Container(
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [Color(0xFF21154C), Color(0xFF0F0A27)],
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                            ),
+                          ),
+                        ),
+                        Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSizes.p16,
+                              vertical: AppSizes.p12,
+                            ),
+                            child: Image.asset(
+                              'assets/Icons/appartamenti-moderni-lusso 1.png',
+                              width: double.infinity,
+                              height: double.infinity,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+                        // ── Banner modifica ────────────────────────────
+                        Positioned(
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 9),
+                            color: AppColors.brandPrimary.withValues(alpha: 0.88),
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.edit_rounded,
+                                  color: Colors.white,
+                                  size: 14,
+                                ),
+                                SizedBox(width: 6),
+                                Text(
+                                  'Stai modificando le informazioni',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSizes.p24),
+
+                // ── Form ─────────────────────────────────────────────────
+                Form(
+                  key: _formKey,
+                  autovalidateMode: _showValidationError
+                      ? AutovalidateMode.onUserInteraction
+                      : AutovalidateMode.disabled,
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Campi non validi',
-                        style: TextStyle(
-                          color: Color(0xFFFF5A7D),
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
+                      Text('NOME DELLA CASA *', style: _sectionLabelStyle),
+                      const SizedBox(height: AppSizes.p8),
+                      _buildTextField(
+                        controller: _nameController,
+                        hintText: 'es. Casa Rossi',
+                        onChanged: (_) {
+                          if (_showValidationError) setState(() {});
+                        },
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Inserisci il nome della casa';
+                          }
+                          if (value.trim().length <= 3) {
+                            return 'Il nome deve contenere più di 3 lettere';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: AppSizes.p16),
+
+                      Text('CITTÀ (opzionale)', style: _sectionLabelStyle),
+                      const SizedBox(height: AppSizes.p8),
+                      _buildTextField(
+                        controller: _cityController,
+                        hintText: 'es. Roma',
+                      ),
+                      const SizedBox(height: AppSizes.p16),
+
+                      Text('INDIRIZZO (opzionale)', style: _sectionLabelStyle),
+                      const SizedBox(height: AppSizes.p8),
+                      _buildTextField(
+                        controller: _addressController,
+                        hintText: 'es. Via del Corso, 12',
+                      ),
+                      const SizedBox(height: AppSizes.p16),
+
+                      Text('TIPO DI ABITAZIONE *', style: _sectionLabelStyle),
+                      const SizedBox(height: AppSizes.p8),
+                      DropdownButtonFormField<String>(
+                        initialValue: _selectedType,
+                        decoration: _inputDecoration(hintText: 'Seleziona tipo'),
+                        dropdownColor: AppColors.inputFillDark,
+                        borderRadius: BorderRadius.circular(AppSizes.radius16),
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'Appartamento condiviso',
+                            child: Text('Appartamento condiviso'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'Studentato/Residenza',
+                            child: Text('Studentato/Residenza'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'Casa indipendente condivisa',
+                            child: Text('Casa indipendente condivisa'),
+                          ),
+                        ],
+                        icon: const Icon(
+                          Icons.keyboard_arrow_down,
+                          color: AppColors.textOnDark,
+                        ),
+                        style: _inputTextStyle,
+                        onChanged: (value) => setState(() {
+                          _selectedType = value;
+                          if (_showValidationError) {}
+                        }),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Seleziona il tipo di abitazione';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: AppSizes.p28),
+
+                      // ── Step dots ──────────────────────────────────────
+                      Center(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            _buildStepDot(active: true),
+                            const SizedBox(width: AppSizes.p8),
+                            _buildStepDot(active: false),
+                            const SizedBox(width: AppSizes.p8),
+                            _buildStepDot(active: false),
+                          ],
                         ),
                       ),
-                      SizedBox(height: 8),
-                      Text(
-                        'Inserisci un nome valido con più di 3 lettere e seleziona il tipo di abitazione per proseguire',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
+                      const SizedBox(height: AppSizes.p24),
+
+                      FilledButton(
+                        onPressed: _isSaving ? null : _handleSave,
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size.fromHeight(AppSizes.p56),
+                          backgroundColor: _isFormValid
+                              ? AppColors.brandPrimary
+                              : AppColors.brandPrimary.withValues(alpha: 0.8),
+                          foregroundColor: AppColors.textOnDark,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(_inputRadius),
+                          ),
+                        ),
+                        child: Text(
+                          _isSaving ? 'Salvataggio...' : 'Salva modifiche',
+                          style: _buttonTextStyle,
                         ),
                       ),
+                      const SizedBox(height: AppSizes.p24),
                     ],
                   ),
                 ),
-
-              Form(
-                key: _formKey,
-                autovalidateMode: _showValidationError
-                    ? AutovalidateMode.onUserInteraction
-                    : AutovalidateMode.disabled,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Nome
-                    const _FieldLabel(text: 'NOME DELLA CASA', required: true),
-                    const SizedBox(height: 8),
-                    _buildTextField(
-                      controller: _nameController,
-                      hintText: 'es. Casa Rossi',
-                      onChanged: (_) {
-                        if (_showValidationError) setState(() {});
-                      },
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Inserisci il nome della casa';
-                        }
-                        if (value.trim().length <= 3) {
-                          return 'Il nome deve contenere più di 3 lettere';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Città
-                    const _FieldLabel(text: 'CITTÀ (opzionale)'),
-                    const SizedBox(height: 8),
-                    _buildTextField(
-                      controller: _cityController,
-                      hintText: 'es. Roma',
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Indirizzo
-                    const _FieldLabel(text: 'INDIRIZZO (opzionale)'),
-                    const SizedBox(height: 8),
-                    _buildTextField(
-                      controller: _addressController,
-                      hintText: 'es. Via del Corso, 12',
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Tipo abitazione
-                    const _FieldLabel(
-                      text: 'TIPO DI ABITAZIONE',
-                      required: true,
-                    ),
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      initialValue: _selectedType,
-                      decoration: _inputDecoration(hintText: 'Seleziona tipo'),
-                      dropdownColor: _fieldColor,
-                      borderRadius: BorderRadius.circular(16),
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'Appartamento condiviso',
-                          child: Text('Appartamento condiviso'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'Studentato/Residenza',
-                          child: Text('Studentato/Residenza'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'Casa indipendente condivisa',
-                          child: Text('Casa indipendente condivisa'),
-                        ),
-                      ],
-                      icon: const Icon(
-                        Icons.keyboard_arrow_down,
-                        color: Colors.white,
-                      ),
-                      style: const TextStyle(color: Colors.white, fontSize: 15),
-                      onChanged: (value) => setState(() {
-                        _selectedType = value;
-                        if (_showValidationError) {}
-                      }),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Seleziona il tipo di abitazione';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 28),
-
-                    // Step dots
-                    Center(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _buildStepDot(active: true),
-                          const SizedBox(width: 8),
-                          _buildStepDot(active: false),
-                          const SizedBox(width: 8),
-                          _buildStepDot(active: false),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Bottone Salva modifiche
-                    FilledButton(
-                      onPressed: _isSaving ? null : _handleSave,
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size.fromHeight(56),
-                        backgroundColor: _isFormValid
-                            ? AppColors.brandPrimary
-                            : AppColors.brandPrimary.withValues(alpha: 0.8),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                      ),
-                      child: Text(
-                        _isSaving ? 'Salvataggio...' : 'Salva modifiche',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -347,7 +359,7 @@ class _ModificaCasaScreenState extends State<ModificaCasaScreen> {
       controller: controller,
       validator: validator,
       onChanged: onChanged,
-      style: const TextStyle(color: Colors.white, fontSize: 15),
+      style: _inputTextStyle,
       decoration: _inputDecoration(hintText: hintText),
     );
   }
@@ -355,77 +367,48 @@ class _ModificaCasaScreenState extends State<ModificaCasaScreen> {
   InputDecoration _inputDecoration({required String hintText}) {
     return InputDecoration(
       filled: true,
-      fillColor: _fieldColor,
+      fillColor: AppColors.inputFillDark,
       hintText: hintText,
-      hintStyle: const TextStyle(color: Color(0xFF6E6B8F)),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
-      errorStyle: const TextStyle(color: Color(0xFFFF5A7D), fontSize: 12),
+      hintStyle: _hintTextStyle,
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.p18,
+        vertical: AppSizes.p18,
+      ),
+      errorStyle: AppTextStyles.fieldError.copyWith(
+        color: AppColors.errorStrong,
+        fontSize: 12,
+      ),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(color: Color(0xFF3B3A5E)),
+        borderRadius: BorderRadius.circular(_inputRadius),
+        borderSide: const BorderSide(color: AppColors.dividerDark),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(color: Color(0xFF3B3A5E)),
+        borderRadius: BorderRadius.circular(_inputRadius),
+        borderSide: const BorderSide(color: AppColors.dividerDark),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(_inputRadius),
         borderSide: const BorderSide(color: AppColors.brandPrimary, width: 1.8),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(color: Color(0xFFFF5A7D), width: 1.8),
+        borderRadius: BorderRadius.circular(_inputRadius),
+        borderSide: const BorderSide(color: AppColors.error, width: 1.8),
       ),
       focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(color: Color(0xFFFF5A7D), width: 1.8),
+        borderRadius: BorderRadius.circular(_inputRadius),
+        borderSide: const BorderSide(color: AppColors.errorStrong, width: 1.8),
       ),
     );
   }
 
   Widget _buildStepDot({required bool active}) {
     return Container(
-      width: active ? 24 : 12,
-      height: 12,
+      width: AppSizes.p12,
+      height: AppSizes.p12,
       decoration: BoxDecoration(
-        color: active ? AppColors.brandPrimary : const Color(0xFF4B4A78),
-        borderRadius: BorderRadius.circular(6),
+        color: active ? AppColors.brandPrimary : AppColors.dividerOnDark,
+        borderRadius: BorderRadius.circular(AppSizes.p6),
       ),
-    );
-  }
-}
-
-// ── Label campo con asterisco opzionale ──────────────────────────────────────
-class _FieldLabel extends StatelessWidget {
-  final String text;
-  final bool required;
-
-  const _FieldLabel({required this.text, this.required = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Text(
-          text,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        if (required) ...[
-          const SizedBox(width: 4),
-          const Text(
-            '*',
-            style: TextStyle(
-              color: Color(0xFFFF5A7D),
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ],
     );
   }
 }
