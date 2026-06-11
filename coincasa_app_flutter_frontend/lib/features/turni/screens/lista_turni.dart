@@ -1202,7 +1202,7 @@ class _InsertTurnoButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MainCtaButton(
-      label: 'Inserisci turno',
+      label: 'Inserisci nuovo turno',
       onPressed: onPressed,
     );
   }

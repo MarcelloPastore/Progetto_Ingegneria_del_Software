@@ -349,7 +349,7 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
           ),
           const SizedBox(height: 10),
           MainCtaButton(
-            label: 'Inserisci una nuova spesa',
+            label: 'Inserisci nuova spesa',
             onPressed: () => Navigator.of(
               context,
             ).pushNamed(InserisciSpesaScreen.routeName),

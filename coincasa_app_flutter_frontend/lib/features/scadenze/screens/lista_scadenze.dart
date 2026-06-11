@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
 import 'dettaglio_scadenza_admin.dart';
 
 class ScadenzaItem {
@@ -74,23 +75,16 @@ class ListaScadenze extends StatelessWidget {
 										const Text('PROSSIME', style: TextStyle(color: Color(0xFFD8D5D5), fontWeight: FontWeight.w700)),
 										const SizedBox(height: 8),
 										...prossime.map((s) => _buildCard(context, s, borderColorForBadge(s.badgeColor))),
-										const SizedBox(height: 20),
-										SizedBox(
-											width: double.infinity,
-											height: 48,
-											child: ElevatedButton(
-												onPressed: () {
-													// TODO: collegare la navigazione per aggiungere una scadenza
-												},
-												style: ElevatedButton.styleFrom(
-													backgroundColor: const Color(0xFF5228AD),
-													shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-												),
-												child: const Text('Aggiungi scadenza', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-											),
-										),
-										const SizedBox(height: 24),
 									],
+								),
+							),
+							Padding(
+								padding: const EdgeInsets.fromLTRB(0, 8, 0, 14),
+								child: MainCtaButton(
+									label: 'Inserisci nuova scadenza',
+									onPressed: () {
+										// TODO: collegare la navigazione per aggiungere una scadenza
+									},
 								),
 							),
 						],
