@@ -5,7 +5,9 @@ import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/problema.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
 import 'package:coincasa_app/features/problemi/screens/deassegnazione_successo_screen.dart';
+import 'package:coincasa_app/features/problemi/screens/modifica_problema_screen.dart';
 import 'package:coincasa_app/features/problemi/screens/problemi_home_screen.dart';
 
 // ---------------------------------------------------------------------------
@@ -123,9 +125,17 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
     final currentName =
         ApiProvider.client.currentUserName?.trim().toLowerCase();
     final assigneeName = _responsabileNome?.trim().toLowerCase();
-    return currentName != null &&
-        currentName.isNotEmpty &&
-        assigneeName == currentName;
+    if (currentName != null && currentName.isNotEmpty && assigneeName == currentName) {
+      return true;
+    }
+    // Fallback mock: nessun utente autenticato → se il problema è assegnato
+    // l'utente corrente è considerato l'assegnatario per permettere le azioni.
+    if ((currentId == null || currentId.isEmpty) &&
+        (currentName == null || currentName.isEmpty) &&
+        !_isSegnalato) {
+      return true;
+    }
+    return false;
   }
 
   String? get _responsabileNome {
@@ -252,6 +262,17 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
     }
   }
 
+  Future<void> _handleElimina() async {
+    if (_isProcessing) return;
+    setState(() => _isProcessing = true);
+    await Future.delayed(const Duration(milliseconds: 500));
+    mockProblemi.removeWhere((p) => p.id == widget.problema.id);
+    if (mounted) {
+      setState(() => _isProcessing = false);
+      Navigator.of(context).pushReplacementNamed('/problemi');
+    }
+  }
+
   Future<void> _handleRisolto() async {
     if (_isProcessing) return;
     setState(() => _isProcessing = true);
@@ -286,7 +307,7 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
       barrierLabel: 'Chiudi',
       barrierColor: Colors.black.withValues(alpha: 0.62),
       transitionDuration: const Duration(milliseconds: 220),
-      pageBuilder: (ctx, _, __) => Center(
+      pageBuilder: (ctx, a1, a2) => Center(
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 24),
           padding: const EdgeInsets.all(24),
@@ -380,6 +401,21 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
     );
   }
 
+  bool get _isCreator {
+    final currentId = ApiProvider.client.currentUserId?.trim();
+    final rawCreatorId = _firstString([
+      widget.problema.raw['creatoreId'],
+      widget.problema.raw['autoreId'],
+      widget.problema.raw['segnalatoDaId'],
+      widget.problema.raw['createdBy'],
+    ]);
+    if (currentId != null && currentId.isNotEmpty && rawCreatorId == currentId) {
+      return true;
+    }
+    // fallback: mock sempre true per demo
+    return true;
+  }
+
   // ── Build ─────────────────────────────────────────────────────────────────
 
   @override
@@ -399,13 +435,19 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
                     AppSizes.p20,
                     AppSizes.p4,
                     AppSizes.p20,
-                    AppSizes.p24,
+                    AppSizes.p8,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       _buildTitleRow(),
                       const SizedBox(height: AppSizes.p20),
+                      // Priorità e azione contestuale in cima
+                      _buildPrioritaSection(),
+                      const SizedBox(height: AppSizes.p16),
+                      _buildContextualActionButton(),
+                      const SizedBox(height: AppSizes.p24),
+                      // Cards informative
                       if (!_isSegnalato && _responsabileNome != null) ...[
                         _buildResponsabileCard(),
                         const SizedBox(height: AppSizes.p14),
@@ -417,13 +459,29 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
                         const SizedBox(height: AppSizes.p14),
                       ],
                       _buildStoricoCard(),
-                      const SizedBox(height: AppSizes.p20),
-                      _buildPrioritaSection(),
-                      const SizedBox(height: AppSizes.p28),
-                      _buildActionButtons(),
+                      const SizedBox(height: AppSizes.p8),
                     ],
                   ),
                 ),
+              ),
+              // Barra azioni fissa in fondo
+              DetailActionsBar(
+                modifyLabel: 'Modifica problema',
+                deleteLabel: 'Elimina problema',
+                backLabel: 'Torna ai problemi',
+                isCreator: _isCreator,
+                onModify: () => Navigator.of(context).pushNamed(
+                  ModificaProblemaScreen.routeName,
+                  arguments: widget.problema,
+                ),
+                onDelete: () => _showConfirmDialog(
+                  title: 'Elimina problema',
+                  body: '"${widget.problema.titolo}" verrà rimosso definitivamente. Tutti i coinquilini verranno avvisati.',
+                  accentColor: const Color(0xFFFF3B44),
+                  confirmLabel: 'Elimina',
+                  onConfirm: _handleElimina,
+                ),
+                onBack: () => Navigator.of(context).maybePop(),
               ),
             ],
           ),
@@ -632,26 +690,18 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
     );
   }
 
-  // ── Action buttons ────────────────────────────────────────────────────────
+  // ── Azione contestuale (stato-dipendente) ─────────────────────────────────
 
-  Widget _buildActionButtons() {
+  Widget _buildContextualActionButton() {
     if (_isSegnalato) {
-      return Column(children: [
-        _ActionButton(
-          label: 'Assegna a me',
-          gradient: const LinearGradient(
-            colors: [Color(0xFF4CAF50), Color(0xFF2E7D32)],
-          ),
-          isLoading: _isProcessing,
-          onPressed: _handleAssignMe,
+      return _ActionButton(
+        label: 'Assegna a me',
+        gradient: const LinearGradient(
+          colors: [Color(0xFF4CAF50), Color(0xFF2E7D32)],
         ),
-        const SizedBox(height: AppSizes.p12),
-        _OutlineButton(
-          label: 'Torna alla lista',
-          color: AppColors.brandAccent,
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
-      ]);
+        isLoading: _isProcessing,
+        onPressed: _handleAssignMe,
+      );
     }
 
     if (_isCurrentUserAssignee) {
@@ -672,7 +722,7 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
                     onConfirm: _handleRisolto,
                   ),
         ),
-        const SizedBox(height: AppSizes.p12),
+        const SizedBox(height: AppSizes.p10),
         _ActionButton(
           label: 'Rinuncia al problema',
           color: const Color(0xFFBE2C2C),
@@ -688,12 +738,7 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
       ]);
     }
 
-    // Assegnato ad altro utente
-    return _OutlineButton(
-      label: 'Torna alla lista',
-      color: AppColors.brandAccent,
-      onPressed: () => Navigator.of(context).maybePop(),
-    );
+    return const SizedBox.shrink();
   }
 }
 
@@ -1015,42 +1060,6 @@ class _ActionButton extends StatelessWidget {
   }
 }
 
-class _OutlineButton extends StatelessWidget {
-  const _OutlineButton({required this.label, required this.color, required this.onPressed});
-  final String label;
-  final Color color;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 54,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(AppSizes.radius15),
-          onTap: onPressed,
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppSizes.radius15),
-              border: Border.all(color: color.withValues(alpha: 0.65), width: 2),
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              label,
-              style: AppTextStyles.button.copyWith(
-                color: color,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class _HistoryEvent {
   const _HistoryEvent({
@@ -1063,22 +1072,3 @@ class _HistoryEvent {
   final String timestamp;
 }
 
-// Keep DetailActionsBar for backward compatibility
-class DetailActionsBar extends StatelessWidget {
-  const DetailActionsBar({
-    super.key,
-    required this.modifyLabel,
-    required this.deleteLabel,
-    required this.isCreator,
-    required this.onModify,
-    required this.onDelete,
-  });
-  final String modifyLabel;
-  final String deleteLabel;
-  final bool isCreator;
-  final VoidCallback onModify;
-  final VoidCallback onDelete;
-
-  @override
-  Widget build(BuildContext context) => const SizedBox.shrink();
-}

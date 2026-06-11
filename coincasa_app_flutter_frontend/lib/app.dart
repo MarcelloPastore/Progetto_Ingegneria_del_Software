@@ -85,6 +85,8 @@ class CoinCasaApp extends StatelessWidget {
               const ProblemaDettaglioScreen(),
           DeassegnazioneSuccessoScreen.routeName: (_) =>
               const DeassegnazioneSuccessoScreen(),
+          ModificaProblemaScreen.routeName: (_) => const ModificaProblemaScreen(),
+          EliminaProblemaScreen.routeName: (_) => const EliminaProblemaScreen(),
           '/casa': (_) => const ListaCaseScreen(),
           GestioneAccountScreen.routeName: (_) => const GestioneAccountScreen(),
           EliminaAccountSuccessScreen.routeName: (_) =>

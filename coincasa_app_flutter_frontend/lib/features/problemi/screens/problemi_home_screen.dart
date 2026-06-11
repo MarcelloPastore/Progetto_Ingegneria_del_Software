@@ -55,7 +55,9 @@ class ProblemiHomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final problemi = mockProblemi;
+    final problemi = mockProblemi
+        .where((p) => !p.stato.toLowerCase().contains('risolt'))
+        .toList();
     final isEmpty = problemi.isEmpty;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
