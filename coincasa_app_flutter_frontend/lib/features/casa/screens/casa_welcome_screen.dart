@@ -134,7 +134,25 @@ class _CasaWelcomeScreenState extends State<CasaWelcomeScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        SizedBox(height: constraints.maxHeight * 0.03),
+                        // ── Avatar → Gestione account ────────────────────
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: InkWell(
+                            onTap: () =>
+                                Navigator.of(context).pushNamed('/account'),
+                            customBorder: const CircleBorder(),
+                            child: const CircleAvatar(
+                              radius: 20,
+                              backgroundColor: Color(0xFF1D254E),
+                              child: Icon(
+                                Icons.person_rounded,
+                                color: AppColors.textOnDark,
+                                size: 22,
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: constraints.maxHeight * 0.02),
                         Image.asset(
                           _houseIllustration,
                           width: 235,
