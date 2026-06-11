@@ -7,6 +7,7 @@ import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 import 'package:coincasa_app/features/casa/screens/compilazione_form_crea_casa.dart';
+import 'package:coincasa_app/features/casa/screens/entra_con_codice_invito_screen.dart';
 import 'package:coincasa_app/features/casa/screens/hub_casa_admin.dart';
 
 // Riferimento globale per il file all'utente corrente per facilitare l'accesso alle variabili di sessione
@@ -119,6 +120,20 @@ class _ListaCaseScreenState extends State<ListaCaseScreen> {
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 15, vertical: 16),
+                      child: _OrDivider(),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 15),
+                      child: _InviteLinkButton(
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const EntraConCodiceInvitoScreen(),
                           ),
                         ),
                       ),
@@ -327,6 +342,77 @@ class _HouseCard extends StatelessWidget {
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
                   ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _OrDivider extends StatelessWidget {
+  const _OrDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Row(
+      children: [
+        Expanded(
+          child: Divider(color: AppColors.inputBorderDark, thickness: 1),
+        ),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 11),
+          child: Text(
+            'oppure',
+            style: TextStyle(
+              color: AppColors.textMutedLight,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Divider(color: AppColors.inputBorderDark, thickness: 1),
+        ),
+      ],
+    );
+  }
+}
+
+class _InviteLinkButton extends StatelessWidget {
+  const _InviteLinkButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: double.infinity,
+          height: 50,
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.brandAccent, width: 2),
+          ),
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.vpn_key, color: AppColors.keyYellow, size: 22),
+              SizedBox(width: 12),
+              Text(
+                'Entra con link invito',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ],
