@@ -301,7 +301,7 @@ class _ListaScadenzeState extends State<ListaScadenze> {
       case ScadenzaTipo.turno:
         Navigator.of(context).pushNamed(
           DettaglioTurnoAdminScreen.routeName,
-          arguments: s.turno,
+          arguments: s.turno!.id,
         );
       case ScadenzaTipo.spesa:
         Navigator.of(context).pushNamed(
