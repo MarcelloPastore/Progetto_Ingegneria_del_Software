@@ -21,7 +21,8 @@ List<Problema> mockProblemi = [
     priorita: 'Urgente',
     raw: {
       'assegnatarioNome': 'Francesco Paola',
-      'descrizione': 'Smette di centrifugare a metà ciclo. Bisogna chiamare il tecnico del costruttore.',
+      'descrizione':
+          'Smette di centrifugare a metà ciclo. Bisogna chiamare il tecnico del costruttore.',
       'segnalatoDa': 'Marco Rossi',
       'segnalatoData': '18 apr',
       'segnalatoOre': '09:15',
@@ -36,7 +37,8 @@ List<Problema> mockProblemi = [
     stato: 'Segnalato',
     priorita: 'Media',
     raw: {
-      'descrizione': 'Non esce più l\'acqua calda, penso sia la caldaia. Già segnalato al proprietario.',
+      'descrizione':
+          'Non esce più l\'acqua calda, penso sia la caldaia. Già segnalato al proprietario.',
       'segnalatoDa': 'Luca Bianchi',
       'segnalatoData': '20 apr',
       'segnalatoOre': '08:45',
@@ -104,8 +106,7 @@ class _ProblemiHomeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final nomeCasa =
-        ActiveCasaScope.read(context).selectedCasa?.nome ?? '';
+    final nomeCasa = ActiveCasaScope.read(context).selectedCasa?.nome ?? '';
 
     return Padding(
       padding: const EdgeInsets.only(top: AppSizes.p42, bottom: AppSizes.p12),
@@ -116,7 +117,7 @@ class _ProblemiHomeHeader extends StatelessWidget {
               nomeCasa,
               style: const TextStyle(
                 color: Color(0xFF8C8CA0),
-                fontSize: 14,
+                fontSize: 20,
                 fontFamily: 'Inter',
                 fontWeight: FontWeight.w600,
               ),
@@ -255,7 +256,7 @@ class _ProblemaCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyles.screenTitleStrong.copyWith(
                         color: AppColors.textOnDark,
-                        fontSize: 16,
+                        fontSize: 18,
                         fontWeight: FontWeight.w700,
                         height: 1.25,
                       ),
@@ -273,7 +274,7 @@ class _ProblemaCard extends StatelessWidget {
                           : 'Nessuno assegnato',
                       style: AppTextStyles.bodyMuted.copyWith(
                         color: AppColors.textMutedDark,
-                        fontSize: 13,
+                        fontSize: 14,
                       ),
                     ),
                   ],
@@ -332,7 +333,7 @@ class _ProblemaAvatar extends StatelessWidget {
           initials,
           style: TextStyle(
             color: hasName ? AppColors.brandAccent : AppColors.textMutedDark,
-            fontSize: 16,
+            fontSize: 18,
             fontWeight: FontWeight.w800,
             height: 1,
           ),
@@ -374,7 +375,7 @@ class _PrioritaChip extends StatelessWidget {
         config.label,
         style: TextStyle(
           color: config.foreground,
-          fontSize: 12,
+          fontSize: 15,
           fontWeight: FontWeight.w800,
           height: 1.2,
         ),
@@ -443,7 +444,7 @@ class _StatoBadge extends StatelessWidget {
         config.label,
         style: TextStyle(
           color: config.foreground,
-          fontSize: 12,
+          fontSize: 15,
           fontWeight: FontWeight.w700,
           height: 1.2,
         ),
@@ -502,10 +503,7 @@ class _SegnalaButton extends StatelessWidget {
         AppSizes.p20,
         AppSizes.p16,
       ),
-      child: MainCtaButton(
-        label: 'Segnala problema',
-        onPressed: onPressed,
-      ),
+      child: MainCtaButton(label: 'Segnala problema', onPressed: onPressed),
     );
   }
 }

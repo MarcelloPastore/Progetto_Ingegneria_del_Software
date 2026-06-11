@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
@@ -126,174 +127,179 @@ class _GestioneAccountScreenState extends State<GestioneAccountScreen> {
     final email = client.currentUserEmail ?? 'email@esempio.com';
     final username = client.currentUserUsername ?? displayName;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF100D22),
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // ── Back arrow ───────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.only(left: 8, top: 4),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: IconButton(
-                  icon: const Icon(
-                    Icons.arrow_back_ios_new,
-                    color: Colors.white,
-                    size: 20,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: const Color(0xFF100D22),
+        body: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // ── Back arrow ───────────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.only(left: 8, top: 4),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.arrow_back_ios_new,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    onPressed: () {
+                      if (_isEditingUsername) {
+                        _cancelEditUsername();
+                      } else if (_isEditingEmail) {
+                        _cancelEditEmail();
+                      } else {
+                        Navigator.of(
+                          context,
+                        ).pushReplacementNamed('/dashboard');
+                      }
+                    },
                   ),
-                  onPressed: () {
-                    if (_isEditingUsername) {
-                      _cancelEditUsername();
-                    } else if (_isEditingEmail) {
-                      _cancelEditEmail();
-                    } else {
-                      Navigator.of(context).pushReplacementNamed('/dashboard');
-                    }
-                  },
                 ),
               ),
-            ),
 
-            // ── Scrollable content ───────────────────────────────────────
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 4, 24, 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    UserAvatar(
-                      radius: 42,
-                      userId: client.currentUserAvatarSeed,
-                      username: username,
-                    ),
-                    const SizedBox(height: 14),
-                    Text(
-                      '$displayName',
-                      style: GoogleFonts.inter(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.w600,
+              // ── Scrollable content ───────────────────────────────────────
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 4, 24, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      UserAvatar(
+                        radius: 42,
+                        userId: client.currentUserAvatarSeed,
+                        username: username,
                       ),
-                    ),
-                    const SizedBox(height: 24),
+                      const SizedBox(height: 14),
+                      Text(
+                        '$displayName',
+                        style: GoogleFonts.inter(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
 
-                    if (_isEditingUsername)
-                      _FieldEditPanel(
-                        fieldLabel: 'Nome Utente',
-                        currentValue: username,
-                        controller: _newUsernameController,
-                        error: _usernameError,
-                        hint: 'Nuovo username',
-                      )
-                    else if (_isEditingEmail)
-                      _FieldEditPanel(
-                        fieldLabel: 'Email',
-                        currentValue: email,
-                        controller: _newEmailController,
-                        error: _emailError,
-                        hint: 'nuova@email.com',
-                        keyboardType: TextInputType.emailAddress,
-                      )
-                    else ...[
-                      // ── Sezione label ────────────────────────────────
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          'DATI ACCOUNT',
-                          style: GoogleFonts.inter(
-                            color: const Color(0xFFB6B6D2),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            letterSpacing: 0.5,
+                      if (_isEditingUsername)
+                        _FieldEditPanel(
+                          fieldLabel: 'Nome Utente',
+                          currentValue: username,
+                          controller: _newUsernameController,
+                          error: _usernameError,
+                          hint: 'Nuovo username',
+                        )
+                      else if (_isEditingEmail)
+                        _FieldEditPanel(
+                          fieldLabel: 'Email',
+                          currentValue: email,
+                          controller: _newEmailController,
+                          error: _emailError,
+                          hint: 'nuova@email.com',
+                          keyboardType: TextInputType.emailAddress,
+                        )
+                      else ...[
+                        // ── Sezione label ────────────────────────────────
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'DATI ACCOUNT',
+                            style: GoogleFonts.inter(
+                              color: const Color(0xFFB6B6D2),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: 0.5,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 10),
+                        const SizedBox(height: 10),
 
-                      // ── Card dati ────────────────────────────────────
-                      Container(
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF141A3A),
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        child: Column(
-                          children: [
-                            _AccountRow(
-                              label: 'Nome utente',
-                              value: displayName,
-                              onModifica: _startEditUsername,
-                            ),
-                            const _AccountDivider(),
-                            _AccountRow(
-                              label: 'Email',
-                              value: email,
-                              onModifica: _startEditEmail,
-                            ),
-                            const _AccountDivider(),
-                            _AccountRow(
-                              label: 'Password',
-                              value: '••••••••',
-                              onModifica: () => Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      const ModificaPasswordScreen(),
+                        // ── Card dati ────────────────────────────────────
+                        Container(
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF141A3A),
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          child: Column(
+                            children: [
+                              _AccountRow(
+                                label: 'Nome utente',
+                                value: displayName,
+                                onModifica: _startEditUsername,
+                              ),
+                              const _AccountDivider(),
+                              _AccountRow(
+                                label: 'Email',
+                                value: email,
+                                onModifica: _startEditEmail,
+                              ),
+                              const _AccountDivider(),
+                              _AccountRow(
+                                label: 'Password',
+                                value: '••••••••',
+                                onModifica: () => Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        const ModificaPasswordScreen(),
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 20),
+                        const SizedBox(height: 20),
 
-                      // ── Logout ───────────────────────────────────────
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: _LogoutButton(
-                          onPressed: () => _handleLogout(context),
+                        // ── Logout ───────────────────────────────────────
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: _LogoutButton(
+                            onPressed: () => _handleLogout(context),
+                          ),
                         ),
-                      ),
+                      ],
+
+                      const SizedBox(height: 80),
                     ],
+                  ),
+                ),
+              ),
 
-                    const SizedBox(height: 80),
-                  ],
+              // ── Pulsanti fondo (cambiano in base alla modalità) ──────────
+              if (_isEditingUsername) ...[
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 10),
+                  child: _ConfermaButton(
+                    onPressed: () => _confirmEditUsername(username),
+                  ),
                 ),
-              ),
-            ),
-
-            // ── Pulsanti fondo (cambiano in base alla modalità) ──────────
-            if (_isEditingUsername) ...[
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 10),
-                child: _ConfermaButton(
-                  onPressed: () => _confirmEditUsername(username),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(52, 0, 52, 24),
+                  child: _AnnullaEditButton(onPressed: _cancelEditUsername),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(52, 0, 52, 24),
-                child: _AnnullaEditButton(onPressed: _cancelEditUsername),
-              ),
-            ] else if (_isEditingEmail) ...[
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 10),
-                child: _ConfermaButton(
-                  onPressed: () => _confirmEditEmail(email),
+              ] else if (_isEditingEmail) ...[
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 10),
+                  child: _ConfermaButton(
+                    onPressed: () => _confirmEditEmail(email),
+                  ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(52, 0, 52, 24),
-                child: _AnnullaEditButton(onPressed: _cancelEditEmail),
-              ),
-            ] else
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                child: _EliminaAccountButton(
-                  onPressed: () => _showEliminaDialog(context),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(52, 0, 52, 24),
+                  child: _AnnullaEditButton(onPressed: _cancelEditEmail),
                 ),
-              ),
-          ],
+              ] else
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                  child: _EliminaAccountButton(
+                    onPressed: () => _showEliminaDialog(context),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -617,9 +623,9 @@ class _LogoutButton extends StatelessWidget {
 
   static const _radius = BorderRadius.all(Radius.circular(12));
   static const _borderColor = AppColors.brandAccent;
-  static const _fillTop = Color(0xFF7B4FD4);
+  static const _fillTop = Color(0xFF6F4DBB);
   static const _fillBase = AppColors.brandPrimary;
-  static const _fillBottom = Color(0xFF3A1F8A);
+  static const _fillBottom = Color(0xFF5228AD);
 
   @override
   Widget build(BuildContext context) {
@@ -631,11 +637,11 @@ class _LogoutButton extends StatelessWidget {
             begin: const Alignment(0.50, 0.00),
             end: const Alignment(0.50, 1.00),
             colors: [
-              Color.lerp(_fillTop, Colors.white, 0.18)!,
+              Color.lerp(_fillTop, _fillBase, 0.15)!,
               _fillBase,
               _fillBottom,
             ],
-            stops: const [0.0, 0.60, 1.0],
+            stops: const [0.0, 0.5, 1.0],
           ),
           shape: const RoundedRectangleBorder(
             side: BorderSide(

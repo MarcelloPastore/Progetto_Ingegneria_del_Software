@@ -12,11 +12,11 @@ class ScadenzaFormScreen extends StatefulWidget {
   final String initialFrequenza;
 
   const ScadenzaFormScreen.nuova({super.key})
-      : isEditing = false,
-        initialNome = '',
-        initialDescrizione = '',
-        initialData = null,
-        initialFrequenza = 'Non ripetere';
+    : isEditing = false,
+      initialNome = '',
+      initialDescrizione = '',
+      initialData = null,
+      initialFrequenza = 'Non ripetere';
 
   const ScadenzaFormScreen.modifica({
     super.key,
@@ -24,11 +24,11 @@ class ScadenzaFormScreen extends StatefulWidget {
     required String descrizione,
     required DateTime? data,
     required String frequenza,
-  })  : isEditing = true,
-        initialNome = nome,
-        initialDescrizione = descrizione,
-        initialData = data,
-        initialFrequenza = frequenza;
+  }) : isEditing = true,
+       initialNome = nome,
+       initialDescrizione = descrizione,
+       initialData = data,
+       initialFrequenza = frequenza;
 
   @override
   State<ScadenzaFormScreen> createState() => _ScadenzaFormScreenState();
@@ -57,7 +57,7 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
     'Settimanale',
     'Mensile',
     'Annuale',
-    'Custom',
+    //'Custom',
   ];
 
   bool get _hasErrors => _hasNameError || _hasDateError;
@@ -66,7 +66,9 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
   void initState() {
     super.initState();
     _nomeController = TextEditingController(text: widget.initialNome);
-    _descrizioneController = TextEditingController(text: widget.initialDescrizione);
+    _descrizioneController = TextEditingController(
+      text: widget.initialDescrizione,
+    );
     _dataController = TextEditingController(
       text: widget.initialData != null ? _formatDate(widget.initialData!) : '',
     );
@@ -224,7 +226,8 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
                       accent: _accent,
                       dropdownColor: _dropdownColor,
                       onToggle: () => setState(
-                          () => _showFrequencyOptions = !_showFrequencyOptions),
+                        () => _showFrequencyOptions = !_showFrequencyOptions,
+                      ),
                       onSelect: (value) => setState(() {
                         _frequenza = value;
                         _showFrequencyOptions = false;
@@ -352,7 +355,8 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
     final year = int.tryParse(parts[2]);
     if (day == null || month == null || year == null) return null;
     final date = DateTime(year, month, day);
-    if (date.day != day || date.month != month || date.year != year) return null;
+    if (date.day != day || date.month != month || date.year != year)
+      return null;
     return date;
   }
 
@@ -418,7 +422,10 @@ class _FrequencySelector extends StatelessWidget {
                   IconButton(
                     onPressed: onToggle,
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                    constraints: const BoxConstraints(
+                      minWidth: 40,
+                      minHeight: 40,
+                    ),
                     icon: Icon(
                       isExpanded
                           ? Icons.keyboard_arrow_up
@@ -462,9 +469,10 @@ class _FrequencySelector extends StatelessWidget {
                         color: selected
                             ? const Color(0xFFC493FF)
                             : const Color(0xFFD4D0DF),
-                        fontSize: 13,
-                        fontWeight:
-                            selected ? FontWeight.w700 : FontWeight.w600,
+                        fontSize: 16,
+                        fontWeight: selected
+                            ? FontWeight.w700
+                            : FontWeight.w600,
                       ),
                     ),
                   ),

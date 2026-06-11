@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:coincasa_app/core/services/session_manager.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
@@ -57,8 +58,8 @@ class _ModificaPasswordScreenState extends State<ModificaPasswordScreen> {
     }
     if (nuova.length < 8) {
       setState(
-        () => _errorMessage =
-            'La nuova password deve avere almeno 8 caratteri.',
+        () =>
+            _errorMessage = 'La nuova password deve avere almeno 8 caratteri.',
       );
       return;
     }
@@ -76,111 +77,117 @@ class _ModificaPasswordScreenState extends State<ModificaPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.darkBackground,
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // ── Contenuto scrollabile ────────────────────────────────────
-            Expanded(
-              child: SingleChildScrollView(
-                padding: AppSizes.pageHorizontal,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: AppSizes.p14),
-                    AuthBackHeader(
-                      title: 'Gestione account',
-                      onBack: () => Navigator.of(context).pop(),
-                    ),
-                    const SizedBox(height: AppSizes.p35),
-                    const Center(
-                      child: AuthRecoveryBadge(icon: AuthRecoveryBadgeIcon.lock),
-                    ),
-                    const SizedBox(height: AppSizes.p42),
-                    const Text(
-                      'Imposta nuova password',
-                      style: AppTextStyles.strongTitle,
-                    ),
-                    const SizedBox(height: AppSizes.p10),
-                    const Text(
-                      'Scegli una nuova password per il tuo\naccount.',
-                      style: AppTextStyles.body,
-                    ),
-                    const SizedBox(height: AppSizes.p32),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: AppColors.darkBackground,
+        body: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // ── Contenuto scrollabile ────────────────────────────────────
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: AppSizes.pageHorizontal,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: AppSizes.p14),
+                      AuthBackHeader(
+                        title: 'Gestione account',
+                        onBack: () => Navigator.of(context).pop(),
+                      ),
+                      const SizedBox(height: AppSizes.p35),
+                      const Center(
+                        child: AuthRecoveryBadge(
+                          icon: AuthRecoveryBadgeIcon.lock,
+                        ),
+                      ),
+                      const SizedBox(height: AppSizes.p42),
+                      const Text(
+                        'Imposta nuova password',
+                        style: AppTextStyles.strongTitle,
+                      ),
+                      const SizedBox(height: AppSizes.p10),
+                      const Text(
+                        'Scegli una nuova password per il tuo\naccount.',
+                        style: AppTextStyles.body,
+                      ),
+                      const SizedBox(height: AppSizes.p32),
 
-                    if (_errorMessage != null) ...[
-                      AuthErrorBanner(message: _errorMessage!),
-                      const SizedBox(height: AppSizes.p28),
+                      if (_errorMessage != null) ...[
+                        AuthErrorBanner(message: _errorMessage!),
+                        const SizedBox(height: AppSizes.p28),
+                      ],
+
+                      AuthField(
+                        label: 'Vecchia password',
+                        hint: '••••••••',
+                        obscureText: _obscureVecchia,
+                        labelBottomSpacing: 0,
+                        controller: _vecchiaController,
+                        hasError: _errorMessage != null,
+                        suffixIcon: AuthPasswordToggle(
+                          compact: true,
+                          obscured: _obscureVecchia,
+                          onTap: () => setState(
+                            () => _obscureVecchia = !_obscureVecchia,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppSizes.p8),
+                      AuthField(
+                        label: 'Nuova password',
+                        hint: '••••••••',
+                        obscureText: _obscureNuova,
+                        labelBottomSpacing: 0,
+                        controller: _nuovaController,
+                        hasError: _errorMessage != null,
+                        suffixIcon: AuthPasswordToggle(
+                          compact: true,
+                          obscured: _obscureNuova,
+                          onTap: () =>
+                              setState(() => _obscureNuova = !_obscureNuova),
+                        ),
+                      ),
+                      const SizedBox(height: AppSizes.p8),
+                      AuthField(
+                        label: 'Conferma nuova password',
+                        hint: '••••••••',
+                        obscureText: _obscureConferma,
+                        labelBottomSpacing: 0,
+                        controller: _confermaController,
+                        hasError: _errorMessage != null,
+                        suffixIcon: AuthPasswordToggle(
+                          compact: true,
+                          obscured: _obscureConferma,
+                          onTap: () => setState(
+                            () => _obscureConferma = !_obscureConferma,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 80),
                     ],
-
-                    AuthField(
-                      label: 'Vecchia password',
-                      hint: '••••••••',
-                      obscureText: _obscureVecchia,
-                      labelBottomSpacing: 0,
-                      controller: _vecchiaController,
-                      hasError: _errorMessage != null,
-                      suffixIcon: AuthPasswordToggle(
-                        compact: true,
-                        obscured: _obscureVecchia,
-                        onTap: () => setState(
-                          () => _obscureVecchia = !_obscureVecchia,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: AppSizes.p8),
-                    AuthField(
-                      label: 'Nuova password',
-                      hint: '••••••••',
-                      obscureText: _obscureNuova,
-                      labelBottomSpacing: 0,
-                      controller: _nuovaController,
-                      hasError: _errorMessage != null,
-                      suffixIcon: AuthPasswordToggle(
-                        compact: true,
-                        obscured: _obscureNuova,
-                        onTap: () => setState(
-                          () => _obscureNuova = !_obscureNuova,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: AppSizes.p8),
-                    AuthField(
-                      label: 'Conferma nuova password',
-                      hint: '••••••••',
-                      obscureText: _obscureConferma,
-                      labelBottomSpacing: 0,
-                      controller: _confermaController,
-                      hasError: _errorMessage != null,
-                      suffixIcon: AuthPasswordToggle(
-                        compact: true,
-                        obscured: _obscureConferma,
-                        onTap: () => setState(
-                          () => _obscureConferma = !_obscureConferma,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 80),
-                  ],
+                  ),
                 ),
               ),
-            ),
 
-            // ── Pulsanti fissi in fondo ──────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 10),
-              child: AuthPrimaryButton(
-                text: _isSaving ? 'Salvataggio…' : 'Salva nuova password',
-                onPressed: _isSaving ? null : _salva,
+              // ── Pulsanti fissi in fondo ──────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 10),
+                child: AuthPrimaryButton(
+                  text: _isSaving ? 'Salvataggio…' : 'Salva nuova password',
+                  onPressed: _isSaving ? null : _salva,
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(52, 0, 52, 24),
-              child: _AnnullaButton(onPressed: () => Navigator.of(context).pop()),
-            ),
-          ],
+              Padding(
+                padding: const EdgeInsets.fromLTRB(52, 0, 52, 24),
+                child: _AnnullaButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

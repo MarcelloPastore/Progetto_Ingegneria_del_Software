@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/spesa.dart';
@@ -15,8 +16,8 @@ import 'scadenza_form_screen.dart';
 // ---------------------------------------------------------------------------
 // Color coding — identico al calendario in dashboard
 // ---------------------------------------------------------------------------
-const _colorTurno    = Color(0xFF3E80FF);
-const _colorSpesa    = Color(0xFFFFD31A);
+const _colorTurno = Color(0xFF3E80FF);
+const _colorSpesa = Color(0xFFFFD31A);
 const _colorScadenza = Color(0xFFF75C6C);
 
 enum ScadenzaTipo { turno, spesa, scadenza }
@@ -37,25 +38,25 @@ class ScadenzaItem {
     this.spesa,
   });
 
-  final String       title;
-  final String       subtitle;
-  final String       date;
-  final String       badgeText;
+  final String title;
+  final String subtitle;
+  final String date;
+  final String badgeText;
   final ScadenzaTipo tipo;
-  final DateTime     sortDate;
-  final String       frequenza;
-  final Turno?       turno;
-  final Spesa?       spesa;
+  final DateTime sortDate;
+  final String frequenza;
+  final Turno? turno;
+  final Spesa? spesa;
 
   Color get sideColor => switch (tipo) {
-    ScadenzaTipo.turno    => _colorTurno,
-    ScadenzaTipo.spesa    => _colorSpesa,
+    ScadenzaTipo.turno => _colorTurno,
+    ScadenzaTipo.spesa => _colorSpesa,
     ScadenzaTipo.scadenza => _colorScadenza,
   };
 
   String get tipoLabel => switch (tipo) {
-    ScadenzaTipo.turno    => 'Turno',
-    ScadenzaTipo.spesa    => 'Spesa',
+    ScadenzaTipo.turno => 'Turno',
+    ScadenzaTipo.spesa => 'Spesa',
     ScadenzaTipo.scadenza => 'Scadenza',
   };
 }
@@ -111,56 +112,58 @@ class _ListaScadenzeState extends State<ListaScadenze> {
         .toList();
 
     final mockScadenza = ScadenzaItem(
-      title:     'Revisione caldaia',
-      subtitle:  'Revisione annuale obbligatoria',
-      date:      _fmt(DateTime.now().add(const Duration(days: 14))),
+      title: 'Revisione caldaia',
+      subtitle: 'Revisione annuale obbligatoria',
+      date: _fmt(DateTime.now().add(const Duration(days: 14))),
       badgeText: _badge(DateTime.now().add(const Duration(days: 14))),
-      tipo:      ScadenzaTipo.scadenza,
-      sortDate:  DateTime.now().add(const Duration(days: 14)),
+      tipo: ScadenzaTipo.scadenza,
+      sortDate: DateTime.now().add(const Duration(days: 14)),
       frequenza: 'Annuale',
     );
 
     final items = <ScadenzaItem>[
-      for (final t in turni)
-        _turnoToItem(t),
-      for (final s in spese)
-        _spesaToItem(s),
+      for (final t in turni) _turnoToItem(t),
+      for (final s in spese) _spesaToItem(s),
       mockScadenza,
     ]..sort((a, b) => a.sortDate.compareTo(b.sortDate));
 
     final today = _normDate(DateTime.now());
     return _ScadenzeData(
-      inScadenza: items.where((i) => !_normDate(i.sortDate).isAfter(today)).toList(),
-      prossime:   items.where((i) =>  _normDate(i.sortDate).isAfter(today)).toList(),
+      inScadenza: items
+          .where((i) => !_normDate(i.sortDate).isAfter(today))
+          .toList(),
+      prossime: items
+          .where((i) => _normDate(i.sortDate).isAfter(today))
+          .toList(),
     );
   }
 
   ScadenzaItem _turnoToItem(Turno t) {
     final date = t.dataProssimaPulizia!;
     return ScadenzaItem(
-      title:     t.titolo,
-      subtitle:  t.assegnatarioNome.isNotEmpty
-                     ? 'Assegnato a ${t.assegnatarioNome}'
-                     : 'Nessun assegnatario',
-      date:      _fmt(date),
+      title: t.titolo,
+      subtitle: t.assegnatarioNome.isNotEmpty
+          ? 'Assegnato a ${t.assegnatarioNome}'
+          : 'Nessun assegnatario',
+      date: _fmt(date),
       badgeText: _badge(date),
-      tipo:      ScadenzaTipo.turno,
-      sortDate:  date,
-      turno:     t,
+      tipo: ScadenzaTipo.turno,
+      sortDate: date,
+      turno: t,
     );
   }
 
   ScadenzaItem _spesaToItem(Spesa s) {
     final date = s.dataScadenza!;
     return ScadenzaItem(
-      title:     s.descrizione,
-      subtitle:  '€ ${s.importo.toStringAsFixed(2)}',
-      date:      _fmt(date),
+      title: s.descrizione,
+      subtitle: '€ ${s.importo.toStringAsFixed(2)}',
+      date: _fmt(date),
       badgeText: _badge(date),
-      tipo:      ScadenzaTipo.spesa,
-      sortDate:  date,
+      tipo: ScadenzaTipo.spesa,
+      sortDate: date,
       frequenza: s.isRicorrente ? 'Ricorrente' : 'Non ripetere',
-      spesa:     s,
+      spesa: s,
     );
   }
 
@@ -180,119 +183,135 @@ class _ListaScadenzeState extends State<ListaScadenze> {
   Widget build(BuildContext context) {
     final nomeCasa = ActiveCasaScope.read(context).selectedCasa?.nome ?? '';
 
-    return Scaffold(
-      backgroundColor: AppColors.darkBackground,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Column(
-            children: [
-              const SizedBox(height: 32),
-              Center(
-                child: Column(
-                  children: [
-                    Text(
-                      nomeCasa,
-                      style: const TextStyle(
-                        color: Color(0xFF8C8CA0),
-                        fontSize: 14,
-                        fontFamily: 'Inter',
-                        fontWeight: FontWeight.w600,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: AppColors.darkBackground,
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Column(
+              children: [
+                const SizedBox(height: 32),
+                Center(
+                  child: Column(
+                    children: [
+                      Text(
+                        nomeCasa,
+                        style: const TextStyle(
+                          color: Color(0xFF8C8CA0),
+                          fontSize: 14,
+                          fontFamily: 'Inter',
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Scadenze',
-                      textAlign: TextAlign.center,
-                      style: AppTextStyles.screenTitleStrong.copyWith(
-                        color: AppColors.brandAccent,
-                        fontSize: 40,
-                        fontWeight: FontWeight.w800,
+                      const SizedBox(height: 4),
+                      Text(
+                        'Scadenze',
+                        textAlign: TextAlign.center,
+                        style: AppTextStyles.screenTitleStrong.copyWith(
+                          color: AppColors.brandAccent,
+                          fontSize: 40,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              const _Legend(),
-              const SizedBox(height: 12),
-              Expanded(
-                child: FutureBuilder<_ScadenzeData>(
-                  future: _future,
-                  builder: (context, snap) {
-                    if (snap.connectionState != ConnectionState.done) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    if (snap.hasError) {
-                      return Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
+                const SizedBox(height: 8),
+                const _Legend(),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: FutureBuilder<_ScadenzeData>(
+                    future: _future,
+                    builder: (context, snap) {
+                      if (snap.connectionState != ConnectionState.done) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (snap.hasError) {
+                        return Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.error_outline,
+                                color: Color(0xFFF75C6C),
+                                size: 48,
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Errore nel caricamento',
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              TextButton(
+                                onPressed: _refresh,
+                                child: const Text('Riprova'),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+
+                      final data = snap.data!;
+                      if (data.inScadenza.isEmpty && data.prossime.isEmpty) {
+                        return const _EmptyState();
+                      }
+
+                      return RefreshIndicator(
+                        onRefresh: () async => _refresh(),
+                        child: ListView(
                           children: [
-                            const Icon(Icons.error_outline, color: Color(0xFFF75C6C), size: 48),
-                            const SizedBox(height: 12),
-                            Text(
-                              'Errore nel caricamento',
-                              style: const TextStyle(color: Colors.white70, fontSize: 16),
-                            ),
-                            const SizedBox(height: 12),
-                            TextButton(
-                              onPressed: _refresh,
-                              child: const Text('Riprova'),
-                            ),
+                            if (data.inScadenza.isNotEmpty) ...[
+                              const _SectionHeader(label: 'IN SCADENZA'),
+                              const SizedBox(height: 8),
+                              ...data.inScadenza.map(
+                                (s) => _ScadenzaCard(
+                                  item: s,
+                                  onTap: () => _navigate(s),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                            ],
+                            if (data.prossime.isNotEmpty) ...[
+                              const _SectionHeader(label: 'PROSSIME'),
+                              const SizedBox(height: 8),
+                              ...data.prossime.map(
+                                (s) => _ScadenzaCard(
+                                  item: s,
+                                  onTap: () => _navigate(s),
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       );
-                    }
-
-                    final data = snap.data!;
-                    if (data.inScadenza.isEmpty && data.prossime.isEmpty) {
-                      return const _EmptyState();
-                    }
-
-                    return RefreshIndicator(
-                      onRefresh: () async => _refresh(),
-                      child: ListView(
-                        children: [
-                          if (data.inScadenza.isNotEmpty) ...[
-                            const _SectionHeader(label: 'IN SCADENZA'),
-                            const SizedBox(height: 8),
-                            ...data.inScadenza.map((s) => _ScadenzaCard(
-                              item: s,
-                              onTap: () => _navigate(s),
-                            )),
-                            const SizedBox(height: 12),
-                          ],
-                          if (data.prossime.isNotEmpty) ...[
-                            const _SectionHeader(label: 'PROSSIME'),
-                            const SizedBox(height: 8),
-                            ...data.prossime.map((s) => _ScadenzaCard(
-                              item: s,
-                              onTap: () => _navigate(s),
-                            )),
-                          ],
-                        ],
-                      ),
-                    );
-                  },
+                    },
+                  ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(0, 8, 0, 14),
-                child: MainCtaButton(
-                  label: 'Inserisci nuova scadenza',
-                  onPressed: () async {
-                    await Navigator.of(context).push(MaterialPageRoute(
-                      builder: (_) => const ScadenzaFormScreen.nuova(),
-                    ));
-                    _refresh();
-                  },
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(0, 8, 0, 14),
+                  child: MainCtaButton(
+                    label: 'Inserisci nuova scadenza',
+                    onPressed: () async {
+                      await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const ScadenzaFormScreen.nuova(),
+                        ),
+                      );
+                      _refresh();
+                    },
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
+        bottomNavigationBar: const HouseQuickNav(currentRoute: '/scadenze'),
       ),
-      bottomNavigationBar: const HouseQuickNav(currentRoute: '/scadenze'),
     );
   }
 
@@ -304,21 +323,22 @@ class _ListaScadenzeState extends State<ListaScadenze> {
           arguments: s.turno!.id,
         );
       case ScadenzaTipo.spesa:
-        Navigator.of(context).pushNamed(
-          DettaglioSpesaAdminScreen.routeName,
-          arguments: s.spesa,
-        );
+        Navigator.of(
+          context,
+        ).pushNamed(DettaglioSpesaAdminScreen.routeName, arguments: s.spesa);
       case ScadenzaTipo.scadenza:
-        Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) => DettaglioScadenzaAdminScreen(
-            titolo:       s.title,
-            descrizione:  s.subtitle,
-            dataScadenza: s.sortDate,
-            stato:        s.badgeText,
-            frequenza:    s.frequenza,
-            isAdmin:      true,
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => DettaglioScadenzaAdminScreen(
+              titolo: s.title,
+              descrizione: s.subtitle,
+              dataScadenza: s.sortDate,
+              stato: s.badgeText,
+              frequenza: s.frequenza,
+              isAdmin: true,
+            ),
           ),
-        ));
+        );
     }
   }
 
@@ -332,12 +352,12 @@ class _ListaScadenzeState extends State<ListaScadenze> {
 
   static String _badge(DateTime date) {
     final today = _normDate(DateTime.now());
-    final norm  = _normDate(date);
-    final diff  = norm.difference(today).inDays;
-    if (diff == 0)  return 'Oggi';
+    final norm = _normDate(date);
+    final diff = norm.difference(today).inDays;
+    if (diff == 0) return 'Oggi';
     if (diff == -1) return 'Ieri';
-    if (diff < 0)   return '${-diff} gg fa';
-    if (diff == 1)  return 'Domani';
+    if (diff < 0) return '${-diff} gg fa';
+    if (diff == 1) return 'Domani';
     return '$diff gg';
   }
 }
@@ -381,7 +401,11 @@ class _ScadenzaCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(10),
           border: Border(left: BorderSide(width: 6, color: s.sideColor)),
           boxShadow: const [
-            BoxShadow(color: Color(0x3F000000), blurRadius: 4, offset: Offset(0, 4)),
+            BoxShadow(
+              color: Color(0x3F000000),
+              blurRadius: 4,
+              offset: Offset(0, 4),
+            ),
           ],
         ),
         child: Padding(
@@ -427,7 +451,10 @@ class _ScadenzaCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: s.sideColor.withValues(alpha: 0.85),
                       borderRadius: BorderRadius.circular(6),
@@ -445,11 +472,16 @@ class _ScadenzaCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: s.sideColor.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: s.sideColor.withValues(alpha: 0.4)),
+                      border: Border.all(
+                        color: s.sideColor.withValues(alpha: 0.4),
+                      ),
                     ),
                     child: Text(
                       s.tipoLabel,
@@ -483,7 +515,11 @@ class _EmptyState extends StatelessWidget {
           SizedBox(height: 16),
           Text(
             'Nessuna scadenza',
-            style: TextStyle(color: Colors.white70, fontSize: 18, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           SizedBox(height: 8),
           Text(
@@ -505,9 +541,9 @@ class _Legend extends StatelessWidget {
     return const Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        _LegendDot(color: _colorTurno,    label: 'Turni'),
+        _LegendDot(color: _colorTurno, label: 'Turni'),
         SizedBox(width: 16),
-        _LegendDot(color: _colorSpesa,    label: 'Spese'),
+        _LegendDot(color: _colorSpesa, label: 'Spese'),
         SizedBox(width: 16),
         _LegendDot(color: _colorScadenza, label: 'Scadenze'),
       ],
@@ -517,7 +553,7 @@ class _Legend extends StatelessWidget {
 
 class _LegendDot extends StatelessWidget {
   const _LegendDot({required this.color, required this.label});
-  final Color  color;
+  final Color color;
   final String label;
 
   @override
@@ -525,7 +561,8 @@ class _LegendDot extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 10, height: 10,
+          width: 10,
+          height: 10,
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 5),
@@ -533,7 +570,7 @@ class _LegendDot extends StatelessWidget {
           label,
           style: const TextStyle(
             color: Color(0xFFB0AACC),
-            fontSize: 12,
+            fontSize: 14,
             fontWeight: FontWeight.w600,
           ),
         ),

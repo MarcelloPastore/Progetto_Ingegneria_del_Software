@@ -409,7 +409,7 @@ class _ProblemaDettaglioSheetState extends State<_ProblemaDettaglioSheet> {
         const SizedBox(height: 12),
         _AvailabilityButton(
           label: 'Non posso, passa ad altri',
-          icon: Icons.support_agent_rounded,
+          icon: Icons.people_alt_outlined,
           color: const Color(0xFF2D293B),
           onTap: () => Navigator.of(context).pop(),
         ),
