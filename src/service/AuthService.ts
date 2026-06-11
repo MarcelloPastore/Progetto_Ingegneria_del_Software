@@ -18,6 +18,7 @@ import {
   EmailDeliveryError,
   PasswordResetEmailDeliveryError,
   InvalidEmailVerificationTokenError,
+  DatabaseCleanupError,
 } from "../errors/appErrors";
 import type { VerificationMailInput } from "../utils/mail";
 import {
@@ -68,7 +69,7 @@ export class AuthService {
     try {
       await prisma.utente.delete({ where: { id: userId } });
     } catch {
-      // Se la cleanup fallisce, lasciamo propagare l'errore SMTP originale.
+      throw new DatabaseCleanupError();
     }
   }
 
@@ -139,7 +140,7 @@ export class AuthService {
     });
 
     if (existingByEmail) {
-      throw new DuplicateUserError();
+      throw new DuplicateUserError("L'email è già in uso.");
     }
 
     const existingByUsername = await prisma.utente.findFirst({
@@ -147,7 +148,7 @@ export class AuthService {
     });
 
     if (existingByUsername) {
-      throw new DuplicateUserError();
+      throw new DuplicateUserError("L'email è già in uso.");
     }
 
     const hashedPassword = await argon2.hash(data.password, {
