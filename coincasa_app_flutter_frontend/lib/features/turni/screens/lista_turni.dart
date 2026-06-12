@@ -167,10 +167,13 @@ class _ListaTurniScreenState extends ConsumerState<ListaTurniScreen>
                           child: Column(
                             children: [
                               Text(
-                                ActiveCasaScope.read(context).selectedCasa?.nome ?? '',
+                                ActiveCasaScope.read(
+                                      context,
+                                    ).selectedCasa?.nome ??
+                                    '',
                                 style: const TextStyle(
                                   color: Color(0xFF8C8CA0),
-                                  fontSize: 14,
+                                  fontSize: 20,
                                   fontFamily: 'Inter',
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -202,10 +205,12 @@ class _ListaTurniScreenState extends ConsumerState<ListaTurniScreen>
                       const SizedBox(height: AppSizes.p35),
                       Builder(
                         builder: (context) {
-                          final effectiveTurni = turniAsync.maybeWhen(
-                            data: (t) => t,
-                            orElse: () => null,
-                          ) ?? _cachedTurni;
+                          final effectiveTurni =
+                              turniAsync.maybeWhen(
+                                data: (t) => t,
+                                orElse: () => null,
+                              ) ??
+                              _cachedTurni;
 
                           if (effectiveTurni != null) {
                             if (effectiveTurni.isEmpty) {
@@ -214,10 +219,11 @@ class _ListaTurniScreenState extends ConsumerState<ListaTurniScreen>
                                 children: [
                                   Text(
                                     'Turni assegnati',
-                                    style: AppTextStyles.screenTitleStrong.copyWith(
-                                      fontSize: 26,
-                                      fontWeight: FontWeight.w800,
-                                    ),
+                                    style: AppTextStyles.screenTitleStrong
+                                        .copyWith(
+                                          fontSize: 26,
+                                          fontWeight: FontWeight.w800,
+                                        ),
                                   ),
                                   const SizedBox(height: AppSizes.p8),
                                   const _TurniStatePanel(
@@ -229,39 +235,52 @@ class _ListaTurniScreenState extends ConsumerState<ListaTurniScreen>
                             }
 
                             final now = DateTime.now();
-                            final today = DateTime(now.year, now.month, now.day);
+                            final today = DateTime(
+                              now.year,
+                              now.month,
+                              now.day,
+                            );
 
-                            final turniScaduti = effectiveTurni.where((t) {
-                              if (t.completato) return false;
-                              final date = t.dataProssimaPulizia;
-                              if (date == null) return false;
-                              final dateOnly = DateTime(date.year, date.month, date.day);
-                              return dateOnly.isBefore(today) || dateOnly.isAtSameMomentAs(today);
-                            }).toList()
-                              ..sort((a, b) {
-                                final aDate = a.dataProssimaPulizia;
-                                final bDate = b.dataProssimaPulizia;
-                                if (aDate == null && bDate == null) return 0;
-                                if (aDate == null) return 1;
-                                if (bDate == null) return -1;
-                                return aDate.compareTo(bDate);
-                              });
+                            final turniScaduti =
+                                effectiveTurni.where((t) {
+                                  if (t.completato) return false;
+                                  final date = t.dataProssimaPulizia;
+                                  if (date == null) return false;
+                                  final dateOnly = DateTime(
+                                    date.year,
+                                    date.month,
+                                    date.day,
+                                  );
+                                  return dateOnly.isBefore(today) ||
+                                      dateOnly.isAtSameMomentAs(today);
+                                }).toList()..sort((a, b) {
+                                  final aDate = a.dataProssimaPulizia;
+                                  final bDate = b.dataProssimaPulizia;
+                                  if (aDate == null && bDate == null) return 0;
+                                  if (aDate == null) return 1;
+                                  if (bDate == null) return -1;
+                                  return aDate.compareTo(bDate);
+                                });
 
-                            final turniAssegnati = effectiveTurni.where((t) {
-                              if (t.completato) return false;
-                              final date = t.dataProssimaPulizia;
-                              if (date == null) return true;
-                              final dateOnly = DateTime(date.year, date.month, date.day);
-                              return dateOnly.isAfter(today);
-                            }).toList()
-                              ..sort((a, b) {
-                                final aDate = a.dataProssimaPulizia;
-                                final bDate = b.dataProssimaPulizia;
-                                if (aDate == null && bDate == null) return 0;
-                                if (aDate == null) return 1;
-                                if (bDate == null) return -1;
-                                return aDate.compareTo(bDate);
-                              });
+                            final turniAssegnati =
+                                effectiveTurni.where((t) {
+                                  if (t.completato) return false;
+                                  final date = t.dataProssimaPulizia;
+                                  if (date == null) return true;
+                                  final dateOnly = DateTime(
+                                    date.year,
+                                    date.month,
+                                    date.day,
+                                  );
+                                  return dateOnly.isAfter(today);
+                                }).toList()..sort((a, b) {
+                                  final aDate = a.dataProssimaPulizia;
+                                  final bDate = b.dataProssimaPulizia;
+                                  if (aDate == null && bDate == null) return 0;
+                                  if (aDate == null) return 1;
+                                  if (bDate == null) return -1;
+                                  return aDate.compareTo(bDate);
+                                });
 
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -269,11 +288,12 @@ class _ListaTurniScreenState extends ConsumerState<ListaTurniScreen>
                                 if (turniScaduti.isNotEmpty) ...[
                                   Text(
                                     'Turni scaduti',
-                                    style: AppTextStyles.screenTitleStrong.copyWith(
-                                      fontSize: 26,
-                                      fontWeight: FontWeight.w800,
-                                      color: AppColors.statusNegative,
-                                    ),
+                                    style: AppTextStyles.screenTitleStrong
+                                        .copyWith(
+                                          fontSize: 26,
+                                          fontWeight: FontWeight.w800,
+                                          color: AppColors.statusNegative,
+                                        ),
                                   ),
                                   const SizedBox(height: AppSizes.p8),
                                   _ExpiredTurniCard(
@@ -292,10 +312,11 @@ class _ListaTurniScreenState extends ConsumerState<ListaTurniScreen>
                                 ],
                                 Text(
                                   'Turni assegnati',
-                                  style: AppTextStyles.screenTitleStrong.copyWith(
-                                    fontSize: 26,
-                                    fontWeight: FontWeight.w800,
-                                  ),
+                                  style: AppTextStyles.screenTitleStrong
+                                      .copyWith(
+                                        fontSize: 26,
+                                        fontWeight: FontWeight.w800,
+                                      ),
                                 ),
                                 const SizedBox(height: AppSizes.p8),
                                 if (turniAssegnati.isEmpty)
@@ -325,10 +346,11 @@ class _ListaTurniScreenState extends ConsumerState<ListaTurniScreen>
                               children: [
                                 Text(
                                   'Turni assegnati',
-                                  style: AppTextStyles.screenTitleStrong.copyWith(
-                                    fontSize: 26,
-                                    fontWeight: FontWeight.w800,
-                                  ),
+                                  style: AppTextStyles.screenTitleStrong
+                                      .copyWith(
+                                        fontSize: 26,
+                                        fontWeight: FontWeight.w800,
+                                      ),
                                 ),
                                 const SizedBox(height: AppSizes.p8),
                                 const _TurniStatePanel(
@@ -832,7 +854,7 @@ String _formatTurnoDateLabel(DateTime? date) {
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
   final target = DateTime(date.year, date.month, date.day);
-  
+
   final deltaMs = target.millisecondsSinceEpoch - today.millisecondsSinceEpoch;
   final delta = (deltaMs / 86400000).round();
 
@@ -1045,8 +1067,9 @@ class _TurnoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final showCompleta = isCurrentAssignee && isExpired;
-    final taskColor =
-        isExpired ? AppColors.statusNegative : const Color(0xFFD6D7E8);
+    final taskColor = isExpired
+        ? AppColors.statusNegative
+        : const Color(0xFFD6D7E8);
 
     return ClipRRect(
       borderRadius: _cardBorderRadius,
@@ -1070,8 +1093,9 @@ class _TurnoCard extends StatelessWidget {
                     UserAvatar(
                       radius: AppSizes.p23,
                       userId: userId?.isNotEmpty == true ? userId : null,
-                      username:
-                          displayName.trim().isNotEmpty ? displayName : null,
+                      username: displayName.trim().isNotEmpty
+                          ? displayName
+                          : null,
                       fallback: '?',
                     ),
                     const SizedBox(width: AppSizes.p14),
@@ -1118,10 +1142,7 @@ class _TurnoCard extends StatelessWidget {
                 thickness: 1,
                 color: AppColors.dividerOnDark,
               ),
-              _CompletaBar(
-                isCompleting: isCompleting,
-                onTap: onCompletaTap,
-              ),
+              _CompletaBar(isCompleting: isCompleting, onTap: onCompletaTap),
             ],
           ],
         ),
@@ -1152,8 +1173,9 @@ class _CompletaBar extends StatelessWidget {
             height: 20,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              valueColor:
-                  AlwaysStoppedAnimation<Color>(AppColors.statusSuccess),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                AppColors.statusSuccess,
+              ),
             ),
           ),
         ),
@@ -1201,9 +1223,6 @@ class _InsertTurnoButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MainCtaButton(
-      label: 'Inserisci nuovo turno',
-      onPressed: onPressed,
-    );
+    return MainCtaButton(label: 'Inserisci nuovo turno', onPressed: onPressed);
   }
 }

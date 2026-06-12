@@ -248,7 +248,7 @@ class _ListaScadenzeState extends State<ListaScadenze> {
                         nomeCasa,
                         style: const TextStyle(
                           color: Color(0xFF8C8CA0),
-                          fontSize: 14,
+                          fontSize: 20,
                           fontFamily: 'Inter',
                           fontWeight: FontWeight.w600,
                         ),

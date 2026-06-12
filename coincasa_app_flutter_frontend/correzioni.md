@@ -16,3 +16,8 @@
 - [/] **GESTIONE TURNI:** Introdurre la schermata di feedback: "Turno assegnato a ... con successo".
 - [/] **GESTIONE TURNI:** Ribilanciare e correggere gli spazi di padding e margine tra i vari widget nella schermata di inserimento turno.
 - [/] **CALENDARIO TURNI:** aggiungere i puntini colorati anche nelle settimane successive per tutti i turni (da valutare).
+- [ ] **eliminare Change notifier:** in active_casa.dart levare il ChangeNotifier e sostituire con StateProvider (riverpod).
+- [ ] **FAB inserisci spesa** aggiungere animazione input soldi che non si capisce quando si può scrivere o no.
+- [ ] **Dettaglio Turno** sta scritto sempre "ogni 1 giorni" come frequenza, anche se metto ogni settimana.
+- [ ] **Gestione Problemi** implementare le APi ed eliminare i mock per tutte le schermate del modulo Problemi.
+- [ ] **Scadenza data di scadenza** le scadenze vengono salvate sempre un giorno prima della data di scadenza indicata nel calendario. da correggere.

@@ -175,9 +175,7 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
     // Apply filter
     final filtered = _activeFilter == null
         ? spese
-        : spese
-            .where((s) => _computeSpesaStatus(s) == _activeFilter)
-            .toList();
+        : spese.where((s) => _computeSpesaStatus(s) == _activeFilter).toList();
 
     // Group by month
     final speseGroupedByMonth = <DateTime, List<Spesa>>{};
@@ -209,7 +207,7 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
                     ActiveCasaScope.read(context).selectedCasa?.nome ?? '',
                     style: const TextStyle(
                       color: Color(0xFF8C8CA0),
-                      fontSize: 14,
+                      fontSize: 20,
                       fontFamily: 'Inter',
                       fontWeight: FontWeight.w600,
                     ),
@@ -231,7 +229,10 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
           const SizedBox(height: AppSizes.p24),
 
           // Monthly balance card
-          if (saldi != null) _buildBalanceCard(saldi) else const SizedBox.shrink(),
+          if (saldi != null)
+            _buildBalanceCard(saldi)
+          else
+            const SizedBox.shrink(),
           const SizedBox(height: AppSizes.p20),
 
           // Filter bar
@@ -241,7 +242,10 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
           // Spese list or empty-filter message
           if (filtered.isEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSizes.p22, vertical: AppSizes.p32),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSizes.p22,
+                vertical: AppSizes.p32,
+              ),
               child: Center(
                 child: Text(
                   'Nessuna spesa ${_filterLabel(_activeFilter!).toLowerCase()}.',
@@ -329,9 +333,9 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
   }
 
   String _filterLabel(_SpesaStatus status) => switch (status) {
-    _SpesaStatus.pagata     => 'Pagata',
+    _SpesaStatus.pagata => 'Pagata',
     _SpesaStatus.incompleta => 'Incompleta',
-    _SpesaStatus.nonPagata  => 'Non pagata',
+    _SpesaStatus.nonPagata => 'Non pagata',
   };
 
   Widget _buildBottomActions(BuildContext context) {
@@ -343,16 +347,14 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
           SecondaryCtaButton(
             label: 'Pareggia i conti',
             color: MainCtaColors.turni,
-            onPressed: () => Navigator.of(
-              context,
-            ).pushNamed(PareggiaContiScreen.routeName),
+            onPressed: () =>
+                Navigator.of(context).pushNamed(PareggiaContiScreen.routeName),
           ),
           const SizedBox(height: 10),
           MainCtaButton(
             label: 'Inserisci nuova spesa',
-            onPressed: () => Navigator.of(
-              context,
-            ).pushNamed(InserisciSpesaScreen.routeName),
+            onPressed: () =>
+                Navigator.of(context).pushNamed(InserisciSpesaScreen.routeName),
           ),
         ],
       ),
@@ -465,7 +467,9 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
   Widget _buildSpesaItem(BuildContext context, Spesa spesa) {
     final hasAnticipatore = _spesaHasAnticipatore(spesa.raw);
     final creatoreNome = spesa.creatoreNome.trim();
-    final avatarInitials = creatoreNome.isNotEmpty ? _nameInitials(creatoreNome) : '';
+    final avatarInitials = creatoreNome.isNotEmpty
+        ? _nameInitials(creatoreNome)
+        : '';
     final status = _computeSpesaStatus(spesa);
     final anticipatoreNome = hasAnticipatore ? creatoreNome : '';
 
@@ -474,17 +478,19 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
       child: Padding(
         padding: const EdgeInsets.only(bottom: AppSizes.p16),
         child: InkWell(
-          onTap: () => Navigator.of(context).pushNamed(
-            DettaglioSpesaAdminScreen.routeName,
-            arguments: spesa.id,
-          ),
+          onTap: () => Navigator.of(
+            context,
+          ).pushNamed(DettaglioSpesaAdminScreen.routeName, arguments: spesa.id),
           borderRadius: BorderRadius.circular(AppSizes.radius8),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: AppSizes.p6),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                _SpesaAvatar(initials: avatarInitials, userId: spesa.creatoreId),
+                _SpesaAvatar(
+                  initials: avatarInitials,
+                  userId: spesa.creatoreId,
+                ),
                 const SizedBox(width: AppSizes.p16),
                 Expanded(
                   child: Column(
@@ -597,7 +603,8 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
             p['idUtente']?.toString() == userId)) {
       return true;
     }
-    if (userEmail != null && p['email']?.toString().toLowerCase() == userEmail) {
+    if (userEmail != null &&
+        p['email']?.toString().toLowerCase() == userEmail) {
       return true;
     }
     return false;
@@ -619,10 +626,15 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
   }
 
   String _nameInitials(String name) {
-    final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    final parts = name
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((p) => p.isNotEmpty)
+        .toList();
     if (parts.isEmpty) return '';
     if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
-    return '${parts.first.substring(0, 1)}${parts.last.substring(0, 1)}'.toUpperCase();
+    return '${parts.first.substring(0, 1)}${parts.last.substring(0, 1)}'
+        .toUpperCase();
   }
 
   String _formatDate(DateTime date) {
@@ -763,20 +775,20 @@ class _SpesaStatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final (label, bg, fg) = switch (status) {
       _SpesaStatus.pagata => (
-          'Pagata',
-          const Color(0xFF0A2D1A),
-          const Color(0xFF47CC5D),
-        ),
+        'Pagata',
+        const Color(0xFF0A2D1A),
+        const Color(0xFF47CC5D),
+      ),
       _SpesaStatus.incompleta => (
-          'Incompleta',
-          const Color(0xFF2E1800),
-          const Color(0xFFFF9E45),
-        ),
+        'Incompleta',
+        const Color(0xFF2E1800),
+        const Color(0xFFFF9E45),
+      ),
       _SpesaStatus.nonPagata => (
-          'Non pagata',
-          const Color(0xFF2D0A0A),
-          const Color(0xFFFF5252),
-        ),
+        'Non pagata',
+        const Color(0xFF2D0A0A),
+        const Color(0xFFFF5252),
+      ),
     };
 
     return Container(
@@ -977,7 +989,12 @@ class _TitleWithDate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (date.isEmpty) {
-      return Text(title, style: _titleStyle, maxLines: 1, overflow: TextOverflow.ellipsis);
+      return Text(
+        title,
+        style: _titleStyle,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      );
     }
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -993,7 +1010,8 @@ class _TitleWithDate extends StatelessWidget {
           maxLines: 1,
         )..layout(maxWidth: double.infinity);
 
-        final showDate = titlePainter.width + datePainter.width <= constraints.maxWidth;
+        final showDate =
+            titlePainter.width + datePainter.width <= constraints.maxWidth;
 
         return Row(
           children: [

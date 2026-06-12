@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
+import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
 import 'scadenza_form_screen.dart';
 
@@ -73,7 +74,8 @@ class DettaglioScadenzaAdminScreen extends StatelessWidget {
                   Card(
                     color: const Color(0xFF37325A),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                     elevation: 4,
                     child: Padding(
                       padding: const EdgeInsets.all(16),
@@ -151,23 +153,26 @@ class DettaglioScadenzaAdminScreen extends StatelessWidget {
             deleteLabel: 'Elimina scadenza',
             backLabel: 'Torna alle scadenze',
             isCreator: isAdmin,
-            onModify: () => Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) => ScadenzaFormScreen.modifica(
-                nome: titolo,
-                descrizione: descrizione,
-                data: dataScadenza,
-                frequenza: frequenza,
-                idScadenza: idScadenza ?? '',
-                casaId: casaId ?? '',
+            onModify: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => ScadenzaFormScreen.modifica(
+                  nome: titolo,
+                  descrizione: descrizione,
+                  data: dataScadenza,
+                  frequenza: frequenza,
+                  idScadenza: idScadenza ?? '',
+                  casaId: casaId ?? '',
+                ),
               ),
-            )),
+            ),
             onDelete: () async {
               final confirm = await showDialog<bool>(
                 context: context,
                 builder: (ctx) => AlertDialog(
                   title: const Text('Conferma eliminazione'),
                   content: const Text(
-                      'Sei sicuro di voler eliminare questa scadenza?'),
+                    'Sei sicuro di voler eliminare questa scadenza?',
+                  ),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.of(ctx).pop(false),
@@ -183,7 +188,10 @@ class DettaglioScadenzaAdminScreen extends StatelessWidget {
               if (confirm == true && context.mounted) {
                 final id = idScadenza;
                 final cId = casaId;
-                if (id != null && cId != null && id.isNotEmpty && cId.isNotEmpty) {
+                if (id != null &&
+                    cId != null &&
+                    id.isNotEmpty &&
+                    cId.isNotEmpty) {
                   try {
                     await ApiProvider.scadenze.delete(cId, id);
                   } catch (_) {}
@@ -195,6 +203,7 @@ class DettaglioScadenzaAdminScreen extends StatelessWidget {
           ),
         ],
       ),
+      bottomNavigationBar: const HouseQuickNav(currentRoute: '/scadenze'),
     );
   }
 

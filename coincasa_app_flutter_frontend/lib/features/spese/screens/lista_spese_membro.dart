@@ -117,50 +117,55 @@ class _MemberSpeseContent extends StatelessWidget {
     final groups = _groupByMonth(data.spese);
     return Column(
       children: [
-        Expanded(child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(14, 8, 14, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.arrow_back, color: Color(0xFF996CFA)),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints.tightFor(
-                    width: 28,
-                    height: 28,
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(14, 8, 14, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(
+                      Icons.arrow_back,
+                      color: Color(0xFF996CFA),
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints.tightFor(
+                      width: 28,
+                      height: 28,
+                    ),
                   ),
                 ),
-              ),
-              Center(
-                child: Text(
-                  'Spese',
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.screenTitleStrong.copyWith(
-                    color: AppColors.brandAccent,
-                    fontSize: 40,
-                    fontWeight: FontWeight.w800,
+                Center(
+                  child: Text(
+                    'Spese',
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.screenTitleStrong.copyWith(
+                      color: AppColors.brandAccent,
+                      fontSize: 40,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 20),
-              _SummaryCard(data: data),
-              const SizedBox(height: 25),
-              for (final entry in groups.entries) ...[
-                _MonthTitle(entry.key),
-                const SizedBox(height: 8),
-                for (int index = 0; index < entry.value.length; index++) ...[
-                  _ExpenseTile(spesa: entry.value[index]),
-                  if (index < entry.value.length - 1)
-                    const Divider(height: 1, color: Color(0xFF77727F)),
+                const SizedBox(height: 20),
+                _SummaryCard(data: data),
+                const SizedBox(height: 25),
+                for (final entry in groups.entries) ...[
+                  _MonthTitle(entry.key),
+                  const SizedBox(height: 8),
+                  for (int index = 0; index < entry.value.length; index++) ...[
+                    _ExpenseTile(spesa: entry.value[index]),
+                    if (index < entry.value.length - 1)
+                      const Divider(height: 1, color: Color(0xFF77727F)),
+                  ],
+                  const SizedBox(height: 28),
                 ],
-                const SizedBox(height: 28),
               ],
-            ],
+            ),
           ),
-        )),
+        ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
           child: Column(
@@ -317,8 +322,11 @@ class _ExpenseTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _TitleWithDate(
-                      title: spesa.descrizione.isEmpty ? 'Spesa' : spesa.descrizione,
-                      date: '${spesa.data.day} ${_monthShort(spesa.data.month)}',
+                      title: spesa.descrizione.isEmpty
+                          ? 'Spesa'
+                          : spesa.descrizione,
+                      date:
+                          '${spesa.data.day} ${_monthShort(spesa.data.month)}',
                     ),
                     Text(
                       isPagata ? 'Pagata' : '$creator ha pagato',
@@ -383,7 +391,7 @@ class _Avatar extends StatelessWidget {
         initials,
         style: const TextStyle(
           color: Color(0xFF70FF90),
-          fontSize: 14,
+          fontSize: 20,
           fontFamily: 'Inter',
           fontWeight: FontWeight.w800,
         ),
@@ -565,7 +573,12 @@ class _TitleWithDate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (date.isEmpty) {
-      return Text(title, style: _titleStyle, maxLines: 1, overflow: TextOverflow.ellipsis);
+      return Text(
+        title,
+        style: _titleStyle,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      );
     }
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -581,7 +594,8 @@ class _TitleWithDate extends StatelessWidget {
           maxLines: 1,
         )..layout(maxWidth: double.infinity);
 
-        final showDate = titlePainter.width + datePainter.width <= constraints.maxWidth;
+        final showDate =
+            titlePainter.width + datePainter.width <= constraints.maxWidth;
 
         return Row(
           children: [

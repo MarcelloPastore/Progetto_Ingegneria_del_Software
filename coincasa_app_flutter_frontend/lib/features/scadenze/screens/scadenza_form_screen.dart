@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
+import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 
 class ScadenzaFormScreen extends StatefulWidget {
   final bool isEditing;
@@ -91,9 +92,9 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isHomeAdmin = ActiveCasaScope.of(context).isHomeAdmin;
     return Scaffold(
       backgroundColor: const Color(0xFF151127),
+      bottomNavigationBar: const HouseQuickNav(currentRoute: '/scadenze'),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -180,22 +181,20 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
             const SizedBox(height: 12),
             _LabeledField(
               label: 'Frequenza',
-              child: isHomeAdmin
-                  ? _FrequencySelector(
-                      selectedValue: _frequenza,
-                      options: _frequencyOptions,
-                      isExpanded: _showFrequencyOptions,
-                      accent: _accent,
-                      dropdownColor: _dropdownColor,
-                      onToggle: () => setState(
-                        () => _showFrequencyOptions = !_showFrequencyOptions,
-                      ),
-                      onSelect: (value) => setState(() {
-                        _frequenza = value;
-                        _showFrequencyOptions = false;
-                      }),
-                    )
-                  : _DisabledFrequencyField(frequenza: _frequenza),
+              child: _FrequencySelector(
+                selectedValue: _frequenza,
+                options: _frequencyOptions,
+                isExpanded: _showFrequencyOptions,
+                accent: _accent,
+                dropdownColor: _dropdownColor,
+                onToggle: () => setState(
+                  () => _showFrequencyOptions = !_showFrequencyOptions,
+                ),
+                onSelect: (value) => setState(() {
+                  _frequenza = value;
+                  _showFrequencyOptions = false;
+                }),
+              ),
             ),
             const SizedBox(height: 28),
             SizedBox(
@@ -311,11 +310,9 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
     }
 
     // Capture context-dependent values before any async gap
-    final casaId =
-        widget.casaId?.isNotEmpty == true
-            ? widget.casaId!
-            : ActiveCasaScope.of(context).selectedCasaId ?? '';
-    final isAdmin = ActiveCasaScope.of(context).isHomeAdmin;
+    final casaId = widget.casaId?.isNotEmpty == true
+        ? widget.casaId!
+        : ActiveCasaScope.of(context).selectedCasaId ?? '';
     final cadenzaGiorni = _cadenzaFromFrequenza(_frequenza);
     final isRicorrente = cadenzaGiorni != null;
     final nome = _nomeController.text.trim();
@@ -330,16 +327,11 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
           'descrizione': descrizione,
           'dataScadenza': dataIso,
         });
-        if (isAdmin) {
-          await ApiProvider.scadenze.updateRicorrenza(
-            casaId,
-            widget.idScadenza!,
-            {
+        await ApiProvider.scadenze
+            .updateRicorrenza(casaId, widget.idScadenza!, {
               'isRicorrente': isRicorrente,
               if (cadenzaGiorni != null) 'cadenzaGiorni': cadenzaGiorni,
-            },
-          );
-        }
+            });
       } else {
         await ApiProvider.scadenze.create(casaId, {
           'nome': nome,
@@ -512,63 +504,6 @@ class _FrequencySelector extends StatelessWidget {
               }).toList(),
             ),
           ),
-      ],
-    );
-  }
-}
-
-class _DisabledFrequencyField extends StatelessWidget {
-  const _DisabledFrequencyField({required this.frequenza});
-  final String frequenza;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Material(
-          color: const Color(0xFF302A4C),
-          borderRadius: BorderRadius.circular(7),
-          elevation: 4,
-          shadowColor: Colors.black45,
-          child: SizedBox(
-            height: 41,
-            child: Padding(
-              padding: const EdgeInsets.only(left: 12, right: 4),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      frequenza,
-                      style: const TextStyle(
-                        color: Color(0xFFBDB7CC),
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  const Icon(
-                    Icons.keyboard_arrow_down,
-                    color: Color(0xFF7A6F86),
-                    size: 26,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 6),
-        Padding(
-          padding: const EdgeInsets.only(left: 6),
-          child: Text(
-            '( solo HomeAdmin ) ⚠',
-            style: TextStyle(
-              color: Colors.amber.shade700,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
       ],
     );
   }
