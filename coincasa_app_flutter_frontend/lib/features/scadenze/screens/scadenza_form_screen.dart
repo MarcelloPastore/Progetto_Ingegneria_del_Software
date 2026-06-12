@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:coincasa_app/core/api/api_provider.dart';
-import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 
 class ScadenzaFormScreen extends StatefulWidget {
@@ -43,8 +41,6 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
   bool _showFrequencyOptions = false;
   bool _hasNameError = false;
   bool _hasDateError = false;
-  bool _isHomeAdmin = false;
-  bool _initialized = false;
 
   static const _primary = Color(0xFF5A2BBF);
   static const _danger = Color(0xFFFF1744);
@@ -84,52 +80,8 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_initialized) return;
-    _initialized = true;
-    _loadCurrentRole();
-  }
-
-  Future<void> _loadCurrentRole() async {
-    try {
-      final activeCasaController = ActiveCasaScope.read(context);
-      final caseUtente = await ApiProvider.casa.list();
-      if (caseUtente.isEmpty) return;
-      final casa = activeCasaController.resolveCasa(caseUtente);
-      final inquilini = await ApiProvider.casa.listInquilini(casa.id);
-      final current = _resolveCurrentUser(inquilini);
-      if (!mounted) return;
-      setState(() => _isHomeAdmin = current?.isHomeAdmin == true);
-    } catch (_) {}
-  }
-
-  Inquilino? _resolveCurrentUser(List<Inquilino> inquilini) {
-    final userId = ApiProvider.client.currentUserId?.trim();
-    if (userId != null && userId.isNotEmpty) {
-      for (final inquilino in inquilini) {
-        if (inquilino.id == userId) return inquilino;
-      }
-    }
-    final email = ApiProvider.client.currentUserEmail?.trim().toLowerCase();
-    final name = ApiProvider.client.currentUserName?.trim().toLowerCase();
-    for (final inquilino in inquilini) {
-      final values = [
-        inquilino.email,
-        inquilino.username,
-        inquilino.nome,
-        inquilino.nomeCompleto,
-      ].map((v) => v.trim().toLowerCase());
-      if ((email != null && values.contains(email)) ||
-          (name != null && values.contains(name))) {
-        return inquilino;
-      }
-    }
-    return inquilini.isNotEmpty ? inquilini.first : null;
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final isHomeAdmin = ActiveCasaScope.of(context).isHomeAdmin;
     return Scaffold(
       backgroundColor: const Color(0xFF151127),
       appBar: AppBar(
@@ -218,7 +170,7 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
             const SizedBox(height: 12),
             _LabeledField(
               label: 'Frequenza',
-              child: _isHomeAdmin
+              child: isHomeAdmin
                   ? _FrequencySelector(
                       selectedValue: _frequenza,
                       options: _frequencyOptions,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
+import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
@@ -184,7 +185,7 @@ class _ListaCoinquiliniScreenState extends State<ListaCoinquiliniScreen> {
 
             final coinquilini = snapshot.data ?? const [];
             final currentUser = _resolveCurrentInquilino(coinquilini);
-            final isAdmin = currentUser?.isHomeAdmin ?? false;
+            final isAdmin = ActiveCasaScope.of(context).isHomeAdmin;
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

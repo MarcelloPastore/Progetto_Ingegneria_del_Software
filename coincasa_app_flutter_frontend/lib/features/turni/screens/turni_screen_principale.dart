@@ -463,7 +463,7 @@ class _TurnoFormPanel extends StatelessWidget {
               inquiliniAsync: inquiliniAsync,
               selectedId: selectedInquilinoId,
               currentUserId: currentUser?.id,
-              canAssignOthers: currentUser?.isHomeAdmin == true,
+              canAssignOthers: ActiveCasaScope.of(context).isHomeAdmin,
               expanded: assigneeExpanded,
               rotazioneAutomatica: rotazioneAutomatica,
               onToggle: onAssigneeToggle,

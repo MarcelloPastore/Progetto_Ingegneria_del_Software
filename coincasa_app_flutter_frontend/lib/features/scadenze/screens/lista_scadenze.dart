@@ -335,7 +335,7 @@ class _ListaScadenzeState extends State<ListaScadenze> {
               dataScadenza: s.sortDate,
               stato: s.badgeText,
               frequenza: s.frequenza,
-              isAdmin: true,
+              isAdmin: ActiveCasaScope.of(context).isHomeAdmin,
             ),
           ),
         );

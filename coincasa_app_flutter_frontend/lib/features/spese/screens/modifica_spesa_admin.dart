@@ -131,7 +131,7 @@ class _ModificaSpesaAdminScreenState
     final form = ref.watch(modificaSpesaFormProvider);
     final ctrl = ref.read(modificaSpesaFormProvider.notifier);
 
-    final isAdmin = form.ruoloCasa == 'HomeAdmin' || form.ruoloCasa == 'SysAdmin';
+    final isAdmin = ActiveCasaScope.of(context).isHomeAdmin;
 
     final inquiliniAsync = form.casa == null
         ? const AsyncValue<List<Inquilino>>.loading()
@@ -332,7 +332,6 @@ class SpesaEditFormState {
     this.submitError = '',
     this.casa,
     this.spesaId,
-    this.ruoloCasa,
   });
 
   final String importo;
@@ -348,7 +347,6 @@ class SpesaEditFormState {
   final String submitError;
   final Casa? casa;
   final String? spesaId;
-  final String? ruoloCasa;
 
   DateTime get effectiveDate => dataSpesa ?? DateTime.now();
 
@@ -380,7 +378,6 @@ class SpesaEditFormState {
     String? submitError,
     Casa? casa,
     String? spesaId,
-    String? ruoloCasa,
   }) {
     return SpesaEditFormState(
       importo: importo ?? this.importo,
@@ -396,7 +393,6 @@ class SpesaEditFormState {
       submitError: submitError ?? this.submitError,
       casa: casa ?? this.casa,
       spesaId: spesaId ?? this.spesaId,
-      ruoloCasa: ruoloCasa ?? this.ruoloCasa,
     );
   }
 }
@@ -451,7 +447,6 @@ class SpesaEditFormController extends StateNotifier<SpesaEditFormState> {
       frequenza: frequenza,
       casa: casa,
       spesaId: spesa.id,
-      ruoloCasa: casa.ruolo,
     );
   }
 

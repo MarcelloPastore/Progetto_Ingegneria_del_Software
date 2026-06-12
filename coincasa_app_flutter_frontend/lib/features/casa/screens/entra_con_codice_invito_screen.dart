@@ -151,6 +151,7 @@ class _EntraConCodiceInvitoScreenState
           houseName: casa.nome,
           houseType: casa.tipoCasa,
           city: casa.citta,
+          casaId: casa.id,
         ),
       ),
     );

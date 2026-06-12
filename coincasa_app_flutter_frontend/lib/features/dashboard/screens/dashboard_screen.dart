@@ -342,13 +342,55 @@ class _CurrentUserAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isAdmin = ActiveCasaScope.of(context).isHomeAdmin;
     return FutureBuilder<_DashboardData>(
       future: future,
       builder: (context, snapshot) {
-        return UserAvatar(
-          radius: radius,
-          userId: _me.currentUserAvatarSeed,
-          username: _me.currentUserUsername,
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            UserAvatar(
+              radius: radius,
+              userId: _me.currentUserAvatarSeed,
+              username: _me.currentUserUsername,
+            ),
+            if (isAdmin) ...[
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFFD700), Color(0xFFFFA500), Color(0xFFFFD700)],
+                    stops: [0.0, 0.5, 1.0],
+                  ),
+                  borderRadius: BorderRadius.circular(6),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x88FFB700),
+                      blurRadius: 6,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Text(
+                  'Admin',
+                  style: TextStyle(
+                    color: Color(0xFF3A2000),
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.5,
+                    shadows: [
+                      Shadow(
+                        color: Color(0x44FFFFFF),
+                        offset: Offset(0, 1),
+                        blurRadius: 1,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ],
         );
       },
     );

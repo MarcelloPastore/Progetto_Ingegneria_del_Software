@@ -149,7 +149,7 @@ class AuthApi {
     if (data is Map<String, dynamic>) {
       final user = data['user'];
       if (user is Map<String, dynamic>) {
-        final id = user['id'];
+        final id = user['idUtente'] ?? user['id'];
         if (id is! String || id.trim().isEmpty) {
           return null;
         }

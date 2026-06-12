@@ -79,6 +79,19 @@ class CasaApi {
     );
   }
 
+  /// Chiama POST /case/:casaId/select e ritorna il nuovo token JWT
+  /// che include idCasa e ruoloCasa, da usare per tutte le chiamate successive.
+  Future<String> selectCasa(String casaId) async {
+    final data = await _client.postJson('/case/$casaId/select');
+    if (data is Map<String, dynamic>) {
+      final token = data['token'];
+      if (token is String && token.isNotEmpty) {
+        return token;
+      }
+    }
+    throw const FormatException('Expected a token in selectCasa response.');
+  }
+
   Future<String> getInviteLink(String casaId) async {
     final data = await _client.getJson('/case/$casaId/invite-link');
     if (data is String) {

@@ -138,11 +138,7 @@ class _InserisciSpesaScreenState extends ConsumerState<InserisciSpesaScreen> {
     final casaAsync = ref.watch(
       speseCreateCasaProvider(activeCasaController.selectedCasaId),
     );
-    final isAdmin = casaAsync.maybeWhen(
-      data: (casa) =>
-          casa?.ruolo == 'HomeAdmin' || casa?.ruolo == 'SysAdmin',
-      orElse: () => false,
-    );
+    final isAdmin = activeCasaController.isHomeAdmin;
     final inquiliniAsync = casaAsync.when(
       data: (casa) => ref.watch(speseCreateInquiliniProvider(casa?.id)),
       loading: () => const AsyncValue<List<Inquilino>>.loading(),
@@ -407,11 +403,7 @@ class _InserisciSpesaPopupContentState
     final casaAsync = ref.watch(
       speseCreateCasaProvider(activeCasaController.selectedCasaId),
     );
-    final isAdmin = casaAsync.maybeWhen(
-      data: (casa) =>
-          casa?.ruolo == 'HomeAdmin' || casa?.ruolo == 'SysAdmin',
-      orElse: () => false,
-    );
+    final isAdmin = activeCasaController.isHomeAdmin;
     final inquiliniAsync = casaAsync.when(
       data: (casa) => ref.watch(speseCreateInquiliniProvider(casa?.id)),
       loading: () => const AsyncValue<List<Inquilino>>.loading(),

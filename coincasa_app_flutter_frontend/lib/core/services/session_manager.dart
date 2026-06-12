@@ -1,6 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/api_provider.dart';
+import '../utils/jwt_utils.dart';
 
 class SessionManager {
   SessionManager._();
@@ -12,6 +13,8 @@ class SessionManager {
   static const _keyUserUsername = 'user_username';
   static const _keyUserNome = 'user_nome';
   static const _keyUserCognome = 'user_cognome';
+  static const _keyCasaId = 'active_casa_id';
+  static const _keyCasaRuolo = 'active_casa_ruolo';
 
   static const Duration _sessionDuration = Duration(days: 14);
 
@@ -61,10 +64,29 @@ class SessionManager {
         surname: prefs.getString(_keyUserCognome),
         username: prefs.getString(_keyUserUsername),
       );
+      final casaId = prefs.getString(_keyCasaId);
+      final casaRuolo = prefs.getString(_keyCasaRuolo);
+      if (casaId != null && casaRuolo != null) {
+        ApiProvider.client.setCasaContext(casaId: casaId, ruolo: casaRuolo);
+      }
       return true;
     } catch (_) {
       return false;
     }
+  }
+
+  /// Chiama POST /case/:casaId/select, aggiorna il token e il contesto casa.
+  /// Il ruoloCasa viene estratto direttamente dal JWT restituito dal server.
+  static Future<String> selectCasa({required String casaId}) async {
+    final token = await ApiProvider.casa.selectCasa(casaId);
+    final ruolo = JwtUtils.extractRuoloCasa(token) ?? '';
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyToken, token);
+    await prefs.setString(_keyCasaId, casaId);
+    await prefs.setString(_keyCasaRuolo, ruolo);
+    ApiProvider.client.setAuthToken(token);
+    ApiProvider.client.setCasaContext(casaId: casaId, ruolo: ruolo);
+    return ruolo;
   }
 
   /// Cancella la sessione (logout).
@@ -77,6 +99,9 @@ class SessionManager {
     await prefs.remove(_keyUserUsername);
     await prefs.remove(_keyUserNome);
     await prefs.remove(_keyUserCognome);
+    await prefs.remove(_keyCasaId);
+    await prefs.remove(_keyCasaRuolo);
     ApiProvider.client.setAuthToken(null);
+    ApiProvider.client.clearCasaContext();
   }
 }

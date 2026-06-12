@@ -5,6 +5,7 @@ import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/models/spesa.dart';
+import 'package:coincasa_app/core/services/session_manager.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
@@ -93,7 +94,11 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
             (casa) => casa.id == widget.casaId,
             orElse: () => caseUtente.first,
           );
-    if (widget.casaId != null) {
+    // Aggiorna il token con idCasa+ruoloCasa e notifica il controller.
+    if (ApiProvider.client.currentCasaId != selected.id) {
+      final ruolo = await SessionManager.selectCasa(casaId: selected.id);
+      _activeCasaController.setCasaContext(casaId: selected.id, ruolo: ruolo);
+    } else {
       _activeCasaController.selectCasa(selected.id);
     }
 
@@ -285,7 +290,7 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
             final data = snapshot.data!;
             final currentInquilino = _resolveCurrentInquilino(data.inquilini);
             final isCurrentOwner = currentInquilino?.isOwner ?? false;
-            final isAdmin = data.casa.ruolo == 'HomeAdmin';
+            final isAdmin = _activeCasaController.isHomeAdmin;
 
             return RefreshIndicator(
               onRefresh: () async => _reload(),
@@ -398,12 +403,9 @@ class _HouseHeaderCard extends StatelessWidget {
     return '${data.casa.tipoCasa.isEmpty ? 'Casa' : data.casa.tipoCasa} - $parts';
   }
 
-  String get _roleLabel {
-    if (data.casa.ruolo == 'HomeAdmin') return 'Admin';
-    if (data.casa.ruolo == 'Inquilino' || data.casa.ruolo.isEmpty) {
-      return 'Membro';
-    }
-    return data.casa.ruolo;
+  String _roleLabel(BuildContext context) {
+    final isAdmin = ActiveCasaScope.of(context).isHomeAdmin;
+    return isAdmin ? 'Admin' : 'Membro';
   }
 
   Inquilino? get _owner {
@@ -482,7 +484,7 @@ class _HouseHeaderCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  _roleLabel,
+                  _roleLabel(context),
                   style: TextStyle(
                     color: Color(0xFF2A5FA8),
                     fontSize: 12,

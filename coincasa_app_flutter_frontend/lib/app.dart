@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'core/api/api_provider.dart';
+import 'core/models/casa.dart';
 import 'core/services/session_manager.dart';
 import 'core/state/active_casa.dart';
 import 'core/theme/app_theme.dart';
@@ -189,7 +190,17 @@ class _AppStartupScreenState extends State<_AppStartupScreen> {
       return;
     }
 
-    List<dynamic> caseUtente = [];
+    // Ripristina la casa attiva e il ruolo nel controller (senza fare rete).
+    final restoredCasaId = ApiProvider.client.currentCasaId;
+    final restoredRuolo = ApiProvider.client.currentCasaRuolo;
+    if (restoredCasaId != null && restoredCasaId.isNotEmpty) {
+      ActiveCasaScope.read(context).setCasaContext(
+        casaId: restoredCasaId,
+        ruolo: restoredRuolo ?? '',
+      );
+    }
+
+    List<Casa> caseUtente = [];
     try {
       caseUtente = await ApiProvider.casa.list();
     } catch (_) {
@@ -204,7 +215,18 @@ class _AppStartupScreenState extends State<_AppStartupScreen> {
     if (!mounted) return;
 
     if (caseUtente.isNotEmpty) {
-      // Case trovate: vai direttamente alla dashboard (verifica già fatta).
+      // Se non c'è già una casa selezionata nel token, usa la prima.
+      if (ApiProvider.client.currentCasaId == null) {
+        final prima = caseUtente.first;
+        try {
+          final ruolo = await SessionManager.selectCasa(casaId: prima.id);
+          if (mounted) {
+            ActiveCasaScope.read(context)
+                .setCasaContext(casaId: prima.id, ruolo: ruolo);
+          }
+        } catch (_) {}
+        if (!mounted) return;
+      }
       Navigator.pushReplacement(
         context,
         MaterialPageRoute<void>(builder: (_) => const DashboardScreen()),

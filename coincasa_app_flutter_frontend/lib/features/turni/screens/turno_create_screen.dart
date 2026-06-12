@@ -302,7 +302,7 @@ class _TurnoCreateScreenState extends ConsumerState<TurnoCreateScreen> {
                     _AssigneeSection(
                       inquilini: assignees,
                       canAssignOthers:
-                          currentUser?.isHomeAdmin == true && !isEditing,
+                          ActiveCasaScope.of(context).isHomeAdmin && !isEditing,
                       currentUserId: currentUser?.id,
                       selectedId: form.selectedInquilinoId,
                       showError:
@@ -350,7 +350,7 @@ class _TurnoCreateScreenState extends ConsumerState<TurnoCreateScreen> {
                     Builder(
                       builder: (context) {
                         final canToggleRotation =
-                            currentUser?.isHomeAdmin == true && !isEditing;
+                            ActiveCasaScope.of(context).isHomeAdmin && !isEditing;
                         return _AutoRotationRow(
                           value: form.autoRotation,
                           onChanged: canToggleRotation

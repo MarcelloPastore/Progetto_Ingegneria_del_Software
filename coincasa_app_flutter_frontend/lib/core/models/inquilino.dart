@@ -28,11 +28,13 @@ class Inquilino {
   bool get isHomeAdmin => ruolo == 'HomeAdmin' || ruolo == 'SysAdmin';
 
   factory Inquilino.fromJson(Map<String, dynamic> json) {
-    final idValue = json['id'] ?? json['idInquilino'] ?? json['idUtente'];
-    final nomeValue = json['nome'] ?? json['name'];
-    final cognomeValue = json['cognome'] ?? json['surname'];
-    final usernameValue = json['username'];
-    final emailValue = json['email'] ?? json['mail'];
+    // Il backend nidifica i dati anagrafici sotto la chiave 'utente'.
+    final utente = json['utente'] as Map<String, dynamic>?;
+    final idValue = utente?['id'] ?? json['id'] ?? json['idInquilino'] ?? json['idUtente'];
+    final nomeValue = utente?['nome'] ?? json['nome'] ?? json['name'];
+    final cognomeValue = utente?['cognome'] ?? json['cognome'] ?? json['surname'];
+    final usernameValue = utente?['username'] ?? json['username'];
+    final emailValue = utente?['email'] ?? json['email'] ?? json['mail'];
     final ruoloValue = json['ruolo'] ?? json['role'];
     final dataIngressoValue = json['dataIngresso'] ?? json['joinedAt'];
     final isOwnerValue = json['isOwner'] ?? false;

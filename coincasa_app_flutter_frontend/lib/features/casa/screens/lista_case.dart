@@ -6,6 +6,7 @@ import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
+import 'package:coincasa_app/core/services/session_manager.dart';
 import 'package:coincasa_app/features/casa/screens/compilazione_form_crea_casa.dart';
 import 'package:coincasa_app/features/casa/screens/entra_con_codice_invito_screen.dart';
 import 'package:coincasa_app/features/casa/screens/hub_casa_admin.dart';
@@ -78,10 +79,26 @@ class _ListaCaseScreenState extends State<ListaCaseScreen> {
                                   final casa = caseUtente[index];
                                   return _HouseCard(
                                     casa: casa,
-                                    onTap: () {
-                                      ActiveCasaScope.read(
-                                        context,
-                                      ).selectCasa(casa.id);
+                                    onTap: () async {
+                                      try {
+                                        final ruolo =
+                                            await SessionManager.selectCasa(
+                                              casaId: casa.id,
+                                            );
+                                        if (context.mounted) {
+                                          ActiveCasaScope.read(context)
+                                              .setCasaContext(
+                                                casaId: casa.id,
+                                                ruolo: ruolo,
+                                              );
+                                        }
+                                      } catch (_) {
+                                        if (context.mounted) {
+                                          ActiveCasaScope.read(context)
+                                              .selectCasa(casa.id);
+                                        }
+                                      }
+                                      if (!context.mounted) return;
                                       Navigator.of(context).push(
                                         MaterialPageRoute<void>(
                                           builder: (_) => HubCasaAdminScreen(

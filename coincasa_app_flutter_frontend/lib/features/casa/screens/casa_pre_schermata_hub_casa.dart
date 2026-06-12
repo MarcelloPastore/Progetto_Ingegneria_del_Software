@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:coincasa_app/core/services/session_manager.dart';
+import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/features/dashboard/screens/dashboard_screen.dart';
 
@@ -10,11 +12,14 @@ class CasaPreSchermataHubCasaScreen extends StatelessWidget {
     required this.houseName,
     this.houseType = '',
     this.city = '',
+    this.casaId,
   });
 
   final String houseName;
   final String houseType;
   final String city;
+  /// Id della casa appena joinata — usato per chiamare selectCasa.
+  final String? casaId;
 
   @override
   Widget build(BuildContext context) {
@@ -62,7 +67,10 @@ class CasaPreSchermataHubCasaScreen extends StatelessWidget {
                           locationText: locationText,
                         ),
                         const SizedBox(height: AppSizes.p32),
-                        _PrimaryEnterButton(houseName: displayHouseName),
+                        _PrimaryEnterButton(
+                          houseName: displayHouseName,
+                          casaId: casaId,
+                        ),
                         const SizedBox(height: AppSizes.p18),
                         const _CancelButton(),
                       ],
@@ -182,21 +190,39 @@ class _HousePreviewCard extends StatelessWidget {
 }
 
 class _PrimaryEnterButton extends StatelessWidget {
-  const _PrimaryEnterButton({required this.houseName});
+  const _PrimaryEnterButton({required this.houseName, this.casaId});
 
   final String houseName;
+  final String? casaId;
+
+  Future<void> _onEnter(BuildContext context) async {
+    final id = casaId;
+    if (id != null && id.isNotEmpty) {
+      try {
+        final ruolo = await SessionManager.selectCasa(casaId: id);
+        if (context.mounted) {
+          ActiveCasaScope.read(context)
+              .setCasaContext(casaId: id, ruolo: ruolo);
+        }
+      } catch (_) {
+        if (context.mounted) {
+          ActiveCasaScope.read(context).selectCasa(id);
+        }
+      }
+    }
+    if (!context.mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute<void>(builder: (_) => const DashboardScreen()),
+      (route) => false,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       height: AppSizes.p58,
       child: FilledButton(
-        onPressed: () {
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute<void>(builder: (_) => const DashboardScreen()),
-            (route) => false,
-          );
-        },
+        onPressed: () => _onEnter(context),
         style: FilledButton.styleFrom(
           backgroundColor: AppColors.brandSecondary,
           foregroundColor: AppColors.textOnDark,

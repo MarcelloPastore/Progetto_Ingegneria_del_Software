@@ -33,6 +33,8 @@ class ApiClient {
   String? _currentUserLastName;
   String? _currentUserAvatarSeed;
   String? _currentUserUsername;
+  String? _currentCasaId;
+  String? _currentCasaRuolo;
 
   void setAuthToken(String? token) {
     _authToken = token;
@@ -88,6 +90,16 @@ class ApiClient {
     _currentUserDisplayName = emailLocalPart.isNotEmpty ? emailLocalPart : null;
   }
 
+  void setCasaContext({required String casaId, required String ruolo}) {
+    _currentCasaId = casaId.trim().isEmpty ? null : casaId.trim();
+    _currentCasaRuolo = ruolo.trim().isEmpty ? null : ruolo.trim();
+  }
+
+  void clearCasaContext() {
+    _currentCasaId = null;
+    _currentCasaRuolo = null;
+  }
+
   String? get currentUserId => _currentUserId;
   String? get currentUserEmail => _currentUserEmail;
   String? get currentUserName => _currentUserDisplayName;
@@ -96,6 +108,9 @@ class ApiClient {
   String? get currentUserLastName => _currentUserLastName;
   String? get currentUserAvatarSeed => _currentUserAvatarSeed;
   String? get currentUserUsername => _currentUserUsername;
+  String? get currentCasaId => _currentCasaId;
+  String? get currentCasaRuolo => _currentCasaRuolo;
+  bool get isHomeAdmin => _currentCasaRuolo == 'HomeAdmin';
 
   Uri buildUri(String path, [Map<String, String>? queryParameters]) {
     final merged = _mergePath(baseUrl, path);
