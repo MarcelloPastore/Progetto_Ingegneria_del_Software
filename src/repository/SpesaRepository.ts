@@ -199,7 +199,10 @@ export class SpesaRepository {
               idSpesa,
               idUtente: q.idUtente,
               quota: q.quota,
-              dataPagamento: q.dataPagamento ?? undefined,
+              OR: [
+                { dataPagamento: null },
+                { dataPagamento: { isSet: false } },
+              ],
             })),
           });
         }
@@ -281,10 +284,7 @@ export class SpesaRepository {
       where: {
         idCasa,
         idUtente,
-        OR: [
-          { dataPagamento: null },
-          { dataPagamento: { isSet: false } }
-        ],
+        OR: [{ dataPagamento: null }, { dataPagamento: { isSet: false } }],
         spesaRel: {
           anticipataDa: { in: idCreditori },
         },
@@ -300,10 +300,7 @@ export class SpesaRepository {
       where: {
         idCasa,
         idUtente,
-        OR: [
-          { dataPagamento: null },
-          { dataPagamento: { isSet: false } }
-        ]
+        OR: [{ dataPagamento: null }, { dataPagamento: { isSet: false } }],
       },
       _sum: { quota: true },
     });
@@ -315,10 +312,7 @@ export class SpesaRepository {
     const result = await prisma.quotaSpesa.aggregate({
       where: {
         idCasa,
-        OR: [
-          { dataPagamento: null },
-          { dataPagamento: { isSet: false } }
-        ],
+        OR: [{ dataPagamento: null }, { dataPagamento: { isSet: false } }],
         spesaRel: { anticipataDa: idUtente },
       },
       _sum: { quota: true },
@@ -336,10 +330,7 @@ export class SpesaRepository {
       where: {
         idCasa,
         idUtente: idInquilino,
-        OR: [
-          { dataPagamento: null },
-          { dataPagamento: { isSet: false } }
-        ],
+        OR: [{ dataPagamento: null }, { dataPagamento: { isSet: false } }],
         spesaRel: { anticipataDa: idUtente },
       },
       _sum: { quota: true },
@@ -357,10 +348,7 @@ export class SpesaRepository {
       where: {
         idCasa,
         idUtente,
-        OR: [
-          { dataPagamento: null },
-          { dataPagamento: { isSet: false } }
-        ],
+        OR: [{ dataPagamento: null }, { dataPagamento: { isSet: false } }],
         spesaRel: { anticipataDa: idInquilino },
       },
       _sum: { quota: true },

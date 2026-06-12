@@ -7,12 +7,17 @@
     "build": "tsc",
     "test": "vitest",
     "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage"
   },
   "devDependencies": {
     "@sonar/scan": "^4.3.6",
     "@types/eslint-plugin-security": "^3.0.1",
     "@types/jsonwebtoken": "^9.0.10",
+    "@types/nodemailer": "^8.0.0",
+    "@vitest/coverage-v8": "4.1.7",
     "eslint": "^10.3.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-ai-guard": "^1.1.13",
@@ -24,9 +29,10 @@
     "jiti": "^2.7.0",
     "prettier": "^3.8.3",
     "prisma": "6.19.0",
-    "tsx": "^4.22.4",
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.59.2",
+    "vi": "^1.0.0",
+    "vitest": "^4.1.7",
     "vi": "^1.0.0",
     "vitest": "^4.1.7"
   },
@@ -38,8 +44,12 @@
     "@prisma/client": "6.19.0",
     "argon2": "^0.44.0",
     "dotenv": "^17.4.2",
+    "dotenv": "^17.4.2",
     "fastify": "^5.8.5",
     "jsonwebtoken": "^9.0.3",
+    "nodemailer": "8.0.5",
+    "tsx": "^4.22.3",
     "zod": "^4.4.3"
   }
 }
+

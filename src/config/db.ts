@@ -4,7 +4,7 @@ declare global {
   var prisma: PrismaClient | undefined;
 }
 
-export const prisma = globalThis.prisma ?? new PrismaClient();
+export const prisma: PrismaClient = globalThis.prisma ?? new PrismaClient();
 globalThis.prisma = prisma;
 
 export async function connectDB() {

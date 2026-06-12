@@ -8,7 +8,7 @@ import eslintConfigPrettier from "eslint-config-prettier";
 
 export default [
   {
-    ignores: ["dist/", "node_modules/", "prisma/"],
+    ignores: ["dist/", "node_modules/", "prisma/", "scripts/", "test/**/*.ts"],
   },
 
   ...tseslint.configs.recommendedTypeChecked,
@@ -20,7 +20,7 @@ export default [
   {
     files: [
       "src/**/*.ts",
-      "test/**/*.ts",
+      //"test/**/*.ts",
       "index.ts",
       "eslint.config.ts",
       "prisma.config.ts",

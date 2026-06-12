@@ -1,4 +1,4 @@
-import { QuotaSpesaDto, SpesaResponseDto } from "../SpesaDto";
+import { QuotaSpesaDto, SpesaListItemDto, SpesaResponseDto } from "../SpesaDto";
 
 interface AssegnatarioInfo {
   id: string;
@@ -84,6 +84,17 @@ export class SpesaConverter {
       dataPagamento: quota.dataPagamento?.toISOString() ?? null,
       utente: toAssegnatario(quota.utenteRel, quota.idUtente),
       spesa: toSpesaInfo(quota.spesaRel),
+    };
+  }
+
+  toSpesaListItemDto(spesa: SpesaForDto): SpesaListItemDto {
+    return {
+      descrizione: spesa.descrizione,
+      dataCreazione: spesa.dataCreazione.toISOString(),
+      anticipataDa: spesa.anticipataDa
+        ? toAssegnatario(spesa.anticipataDaRel, spesa.anticipataDa)
+        : null,
+      importoTotale: spesa.importo,
     };
   }
 

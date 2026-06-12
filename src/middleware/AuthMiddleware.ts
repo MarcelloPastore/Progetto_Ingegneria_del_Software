@@ -1,13 +1,14 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { prisma } from "../config/db";
 import { getJwt } from "../utils/jwt";
-import { mapErrorToHttp } from "../errors/errorMapper";
+import { sendErrorReply } from "../utils/errorReply";
 import {
   MissingAuthTokenError,
   MalformedAuthorizationHeaderError,
   InvalidTokenPayloadError,
   AuthenticatedUserNotFoundError,
 } from "../errors/appErrors";
+import { Ruolo } from "@prisma/client";
 
 const getBearerToken = (authorizationHeader?: string): string => {
   if (!authorizationHeader) {
@@ -33,12 +34,26 @@ const getUserFromPayload = (payload: unknown) => {
   const idUtente =
     typeof idValue === "string" && idValue.length > 0 ? idValue : undefined;
   const tokenTypeStr = typeof tokenType === "string" ? tokenType : undefined;
+  const idCasaValue = p.idCasa ?? p.casa;
+  const idCasaStr =
+    typeof idCasaValue === "string" && idCasaValue.length > 0
+      ? idCasaValue
+      : null;
+  const ruoloCasaValue = p.ruoloCasa;
+  const ruoloCasa =
+    typeof ruoloCasaValue === "string"
+      ? (Ruolo[ruoloCasaValue as keyof typeof Ruolo] ?? undefined)
+      : undefined;
 
   if (!idUtente || (tokenTypeStr !== undefined && tokenTypeStr !== "access")) {
     throw new InvalidTokenPayloadError();
   }
 
-  return { idUtente };
+  if (idCasaStr && !ruoloCasa) {
+    throw new InvalidTokenPayloadError();
+  }
+
+  return { idUtente, ruoloCasa, idCasa: idCasaStr };
 };
 
 export async function authMiddleware(
@@ -50,7 +65,7 @@ export async function authMiddleware(
     const jwt = getJwt(req.server);
     const payload = jwt.verify(token) as Record<string, unknown>;
 
-    const { idUtente } = getUserFromPayload(payload);
+    const { idUtente, ruoloCasa, idCasa } = getUserFromPayload(payload);
     const user = await prisma.utente.findUnique({
       where: { id: idUtente },
       select: {
@@ -59,38 +74,16 @@ export async function authMiddleware(
     });
 
     if (!user) {
-      const mapped = mapErrorToHttp(new AuthenticatedUserNotFoundError());
-      const responsePayload: {
-        error: string;
-        details?: Record<string, string[]>;
-      } = {
-        error: mapped.message,
-      };
-
-      if (mapped.details) {
-        responsePayload.details = mapped.details;
-      }
-
-      await rep.code(mapped.statusCode).send(responsePayload);
+      await sendErrorReply(rep, new AuthenticatedUserNotFoundError());
       return;
     }
 
     req.user = {
       idUtente: user.id,
+      ruoloCasa,
+      idCasa,
     };
   } catch (error) {
-    const mapped = mapErrorToHttp(error);
-    const responsePayload: {
-      error: string;
-      details?: Record<string, string[]>;
-    } = {
-      error: mapped.message,
-    };
-
-    if (mapped.details) {
-      responsePayload.details = mapped.details;
-    }
-
-    await rep.code(mapped.statusCode).send(responsePayload);
+    await sendErrorReply(rep, error);
   }
 }

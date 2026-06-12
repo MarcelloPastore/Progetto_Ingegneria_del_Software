@@ -1,52 +1,58 @@
-import { z } from "zod";
 import { Ruolo } from "@prisma/client";
+import { z } from "zod";
+import { AssegnatarioInfoSchema } from "./AssegnatarioDto";
+
+const ruoloSchema = z.enum([Ruolo.SysAdmin, Ruolo.HomeAdmin, Ruolo.Inquilino]);
 
 export const CreaCasaSchema = z.object({
-  nome: z.string().trim().min(1, "Nome casa richiesto"),
-  indirizzo: z.string().trim(),
-  citta: z.string().trim(),
-  tipoCasa: z.string().trim().min(1, "Tipo casa richiesto"),
+  nome: z.string().min(1, "Campo obbligatorio"),
+  indirizzo: z.string().optional(),
+  citta: z.string().optional(),
+  tipoCasa: z.string().optional(),
 });
-
 export type CreaCasaDto = z.infer<typeof CreaCasaSchema>;
 
-export const ModificaCasaSchema = CreaCasaSchema.partial().refine(
-  (data) => Object.keys(data).length > 0,
-  "Almeno un campo da modificare richiesto",
-);
-
+export const ModificaCasaSchema = CreaCasaSchema.partial();
 export type ModificaCasaDto = z.infer<typeof ModificaCasaSchema>;
 
-export const AggiungiInquilinoSchema = z
-  .object({
-    idUtente: z.string().trim().min(1).optional(),
-    inviteCode: z.string().trim().min(1).optional(),
-    codiceInvito: z.string().trim().min(1).optional(),
-    inviteLink: z.string().trim().min(1).optional(),
-  })
-  .refine(
-    (data) => data.inviteCode || data.codiceInvito || data.inviteLink,
-    "Codice o link di invito richiesto",
-  );
-
+export const AggiungiInquilinoSchema = z.object({
+  inviteLink: z.string().min(1, "Invite link obbligatorio"),
+});
 export type AggiungiInquilinoDto = z.infer<typeof AggiungiInquilinoSchema>;
 
-export const ModificaRuoloInquilinoSchema = z.object({
-  ruolo: z.enum([Ruolo.HomeAdmin, Ruolo.Inquilino]),
+export const ModificaRuoloSchema = z.object({
+  ruolo: ruoloSchema,
 });
+export type ModificaRuoloDto = z.infer<typeof ModificaRuoloSchema>;
 
-export type ModificaRuoloInquilinoDto = z.infer<
-  typeof ModificaRuoloInquilinoSchema
->;
+export const InquilinoSchema = z.object({
+  id: z.string(),
+  utente: AssegnatarioInfoSchema,
+  ruolo: ruoloSchema,
+  dataIngresso: z.coerce.date(),
+});
+export type InquilinoDto = z.infer<typeof InquilinoSchema>;
 
-export type InquilinoCasaDto = {
-  id: string;
-  idUtente: string;
-  nome: string;
-  cognome: string;
-  username: string;
-  email: string;
-  ruolo: Ruolo;
-  dataIngresso: string;
-  isOwner: boolean;
-};
+export const CasaSummarySchema = z.object({
+  id: z.string(),
+  nome: z.string(),
+  indirizzo: z.string().nullable(),
+  citta: z.string().nullable(),
+  tipoCasa: z.string().nullable(),
+  inviteLink: z.string().nullable(),
+  dataCreazione: z.coerce.date(),
+  creator: AssegnatarioInfoSchema,
+  ruoloUtente: ruoloSchema,
+  membriTotali: z.number().int().nonnegative(),
+});
+export type CasaSummaryDto = z.infer<typeof CasaSummarySchema>;
+
+export const CasaResponseSchema = CasaSummarySchema.extend({
+  membri: z.array(InquilinoSchema),
+});
+export type CasaResponseDto = z.infer<typeof CasaResponseSchema>;
+
+export const InviteLinkSchema = z.object({
+  inviteLink: z.string(),
+});
+export type InviteLinkDto = z.infer<typeof InviteLinkSchema>;

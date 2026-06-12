@@ -1,6 +1,6 @@
 export class DuplicateUserError extends Error {
-  constructor() {
-    super("L'utente esiste già");
+  constructor(message = "L'utente esiste già") {
+    super(message);
     this.name = "DuplicateUserError";
   }
 }
@@ -51,5 +51,33 @@ export class InvalidOrExpiredResetCodeError extends Error {
   constructor() {
     super("Codice di recupero non valido o scaduto");
     this.name = "InvalidOrExpiredResetCodeError";
+  }
+}
+
+export class EmailDeliveryError extends Error {
+  constructor() {
+    super("Impossibile inviare l'email di verifica");
+    this.name = "EmailDeliveryError";
+  }
+}
+
+export class PasswordResetEmailDeliveryError extends Error {
+  constructor() {
+    super("Impossibile inviare l'email di recupero password");
+    this.name = "PasswordResetEmailDeliveryError";
+  }
+}
+
+export class InvalidEmailVerificationTokenError extends Error {
+  constructor() {
+    super("Token di verifica email non valido o scaduto");
+    this.name = "InvalidEmailVerificationTokenError";
+  }
+}
+
+export class DatabaseCleanupError extends Error {
+  constructor() {
+    super("Impossibile eliminare l'utente");
+    this.name = "DatabaseCleanupError";
   }
 }

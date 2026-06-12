@@ -2,6 +2,7 @@
 /out-tsc
 /build
 
+/coincasa_app_flutter_frontend
 /node_modules
 /dist
 npm-debug.log*
@@ -13,4 +14,10 @@ yarn-error.log*
 .idea/
 .env
 
-.vscode/*
+.vscode/*
+/src/generated/prisma
+/dist/
+/.scannerwork/.sonar_lock
+/.scannerwork/report-task.txt
+/scripts/
+

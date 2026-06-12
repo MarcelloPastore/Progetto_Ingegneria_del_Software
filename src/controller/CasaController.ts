@@ -1,5 +1,4 @@
 import { FastifyReply, FastifyRequest } from "fastify";
-
 import {
   AggiungiInquilinoDto,
   AggiungiInquilinoSchema,
@@ -7,19 +6,21 @@ import {
   CreaCasaSchema,
   ModificaCasaDto,
   ModificaCasaSchema,
-  ModificaRuoloInquilinoDto,
-  ModificaRuoloInquilinoSchema,
+  ModificaRuoloDto,
+  ModificaRuoloSchema,
 } from "../dto/CasaDto";
 import { CasaService } from "../service/CasaService";
 import { CasaParams, InquilinoParams } from "../types/params";
-import { mapErrorToHttp } from "../errors/errorMapper";
+import { getJwt } from "../utils/jwt";
+import { sendErrorReply } from "../utils/errorReply";
 
 export class CasaController {
-  constructor(private casaService = new CasaService()) {}
+  constructor(private readonly casaService: CasaService) {}
 
-  /**
-   * POST /case
-   */
+  private handleFailure(reply: FastifyReply, error: unknown) {
+    return sendErrorReply(reply, error);
+  }
+
   creaCasa = async (
     request: FastifyRequest<{ Body: CreaCasaDto }>,
     reply: FastifyReply,
@@ -29,27 +30,19 @@ export class CasaController {
       const casa = await this.casaService.creaCasa(dto, request.user.idUtente);
       return reply.status(201).send(casa);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
-  /**
-   * GET /case
-   */
   getCase = async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const caseUtente = await this.casaService.getCase(request.user.idUtente);
-      return reply.status(200).send({ case: caseUtente });
+      return reply.status(200).send(caseUtente);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
-  /**
-   * GET /case/:idCasa
-   */
   getCasa = async (
     request: FastifyRequest<{ Params: CasaParams }>,
     reply: FastifyReply,
@@ -61,35 +54,27 @@ export class CasaController {
       );
       return reply.status(200).send(casa);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
-  /**
-   * PUT /case/:idCasa
-   */
   modificaCasa = async (
     request: FastifyRequest<{ Params: CasaParams; Body: ModificaCasaDto }>,
     reply: FastifyReply,
   ) => {
     try {
       const dto = ModificaCasaSchema.parse(request.body);
-      const casa = await this.casaService.modificaCasa(
+      await this.casaService.modificaCasa(
         request.params.idCasa,
-        dto,
         request.user.idUtente,
+        dto,
       );
-      return reply.status(200).send(casa);
+      return reply.status(204).send();
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
-  /**
-   * DELETE /case/:idCasa
-   */
   eliminaCasa = async (
     request: FastifyRequest<{ Params: CasaParams }>,
     reply: FastifyReply,
@@ -101,33 +86,25 @@ export class CasaController {
       );
       return reply.status(204).send();
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
-  /**
-   * GET /case/:idCasa/inquilini
-   */
-  getInquilini = async (
+  getAllInquilini = async (
     request: FastifyRequest<{ Params: CasaParams }>,
     reply: FastifyReply,
   ) => {
     try {
-      const inquilini = await this.casaService.getInquilini(
+      const inquilini = await this.casaService.getAllInquilini(
         request.params.idCasa,
         request.user.idUtente,
       );
-      return reply.status(200).send({ inquilini });
+      return reply.status(200).send(inquilini);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
-  /**
-   * GET /case/:idCasa/inquilini/:idInquilino
-   */
   getInquilino = async (
     request: FastifyRequest<{ Params: InquilinoParams }>,
     reply: FastifyReply,
@@ -140,19 +117,12 @@ export class CasaController {
       );
       return reply.status(200).send(inquilino);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
-  /**
-   * POST /case/:idCasa/inquilini
-   */
   aggiungiInquilino = async (
-    request: FastifyRequest<{
-      Params: CasaParams;
-      Body: AggiungiInquilinoDto;
-    }>,
+    request: FastifyRequest<{ Params: CasaParams; Body: AggiungiInquilinoDto }>,
     reply: FastifyReply,
   ) => {
     try {
@@ -164,34 +134,10 @@ export class CasaController {
       );
       return reply.status(201).send(inquilino);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
-  /**
-   * POST /case/join
-   */
-  entraConCodiceInvito = async (
-    request: FastifyRequest<{ Body: AggiungiInquilinoDto }>,
-    reply: FastifyReply,
-  ) => {
-    try {
-      const dto = AggiungiInquilinoSchema.parse(request.body);
-      const casa = await this.casaService.entraConCodiceInvito(
-        dto,
-        request.user.idUtente,
-      );
-      return reply.status(201).send(casa);
-    } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
-    }
-  };
-
-  /**
-   * DELETE /case/:idCasa/inquilini/:idInquilino
-   */
   rimuoviInquilino = async (
     request: FastifyRequest<{ Params: InquilinoParams }>,
     reply: FastifyReply,
@@ -204,24 +150,20 @@ export class CasaController {
       );
       return reply.status(204).send();
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
-  /**
-   * PUT /case/:idCasa/inquilini/:idInquilino/ruolo
-   */
   modificaRuoloInquilino = async (
     request: FastifyRequest<{
       Params: InquilinoParams;
-      Body: ModificaRuoloInquilinoDto;
+      Body: ModificaRuoloDto;
     }>,
     reply: FastifyReply,
   ) => {
     try {
-      const dto = ModificaRuoloInquilinoSchema.parse(request.body);
-      const inquilino = await this.casaService.modificaRuoloInquilino(
+      const dto = ModificaRuoloSchema.parse(request.body);
+      const inquilino = await this.casaService.modificaRuolo(
         request.params.idCasa,
         request.params.idInquilino,
         dto,
@@ -229,27 +171,52 @@ export class CasaController {
       );
       return reply.status(200).send(inquilino);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
-  /**
-   * GET /case/:idCasa/invite-link
-   */
-  getInviteLink = async (
+  generaLink = async (
+    request: FastifyRequest<{
+      Params: CasaParams;
+      Querystring?: { rigenera?: string | boolean };
+    }>,
+    reply: FastifyReply,
+  ) => {
+    try {
+      const rigenera =
+        request.query?.rigenera === true ||
+        request.query?.rigenera === "true" ||
+        request.query?.rigenera === "1";
+      const link = await this.casaService.generaLink(
+        request.params.idCasa,
+        request.user.idUtente,
+        rigenera,
+      );
+      return reply.status(200).send(link);
+    } catch (error) {
+      return this.handleFailure(reply, error);
+    }
+  };
+
+  selectCasa = async (
     request: FastifyRequest<{ Params: CasaParams }>,
     reply: FastifyReply,
   ) => {
     try {
-      const casa = await this.casaService.getCasa(
+      const { idCasa, ruoloCasa } = await this.casaService.selectCasa(
         request.params.idCasa,
         request.user.idUtente,
       );
-      return reply.status(200).send({ inviteLink: casa.inviteLink });
+      const jwt = getJwt(request.server);
+      const token = jwt.sign({
+        idUtente: request.user.idUtente,
+        idCasa,
+        ruoloCasa,
+        type: "access",
+      });
+      return reply.status(200).send({ token });
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 }

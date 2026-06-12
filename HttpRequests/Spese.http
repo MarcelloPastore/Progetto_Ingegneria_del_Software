@@ -1,10 +1,10 @@
 @baseUrl = http://localhost:23109/api/v1
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMGRjZTgxMTA1OTY3ZTBhMjRjOTg1ZSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzkyODk3NjUsImV4cCI6MTc4MDQ5OTM2NX0.LhubUfYntsnHtvBTdwz-HSiESQ_eg_UtyUGXs3X9gCM
-@idCasa = 6659f0b4e6a3c2f6a2d1a111
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZFV0ZW50ZSI6IjZhMWVhNGVhM2VjNjNlYWQ4NGIwNmUwMiIsImlkQ2FzYSI6IjZhMjE0ZWJkOGQ4M2NhNzQyN2RlNTFiNyIsInJ1b2xvQ2FzYSI6IkhvbWVBZG1pbiIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3ODA1Njc3NjEsImV4cCI6MTc4MTc3NzM2MX0.N_VojMg37eCdMxmqwXCW-m74Da6VBj8xmsOtMXitUOY
+@idCasa = 6a214ebd8d83ca7427de51b7
 @idSpesa = 6a135999c0f64bb0550766d8
 @idQuota = 7a0a476aa9758a8b9b03e005
 @idInquilino = 6659f0b4e6a3c2f6a2d1a333
-@idUtente = 6a0dce81105967e0a24c985e
+@idUtente = 6a1ea4ea3ec63ead84b06e02
 
 ### Health
 GET {{baseUrl}}/health
@@ -23,29 +23,12 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "descrizione": "Spesa supermercato",
-  "importo": 120.50,
+  "descrizione": "nuovo cane",
+  "importo": 80,
+  "dataScadenza": "2026-05-31",
   "partecipanti": [
-    "{{idUtente}}",
-    "{{idInquilino}}"
+    "{{idUtente}}"
   ]
-}
-
-### Crea spesa (con scadenza ricorrente)
-POST {{baseUrl}}/case/{{idCasa}}/spese
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "descrizione": "Bolletta luce",
-  "importo": 80.00,
-  "dataScadenza": "2026-06-30",
-  "partecipanti": [
-    "{{idUtente}}",
-    "{{idInquilino}}"
-  ],
-  "isRicorrente": true,
-  "cadenzaGiorni": 30
 }
 
 ### Modifica spesa

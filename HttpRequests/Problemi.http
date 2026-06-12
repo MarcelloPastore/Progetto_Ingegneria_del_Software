@@ -1,0 +1,76 @@
+@baseUrl = http://localhost:23109/api/v1
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZFV0ZW50ZSI6IjZhMWVhNGVhM2VjNjNlYWQ4NGIwNmUwMiIsImlkQ2FzYSI6IjZhMWViMWU0MTAwYzYwM2NiZWZiYTJiYiIsInJ1b2xvQ2FzYSI6IkhvbWVBZG1pbiIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3ODAzOTY1NzN9.DoDt8gSjTQbfM0wAs8eIFUxrkxFtpBgz00blql3XV_E
+@idCasa = 6a1eb1e4100c603cbefba2bb
+@idProblema = 6a1eb27a100c603cbefba2be
+@idUtente = 6a1ea4ea3ec63ead84b06e02
+
+### Health
+GET {{baseUrl}}/health
+
+### Lista problemi
+GET {{baseUrl}}/case/{{idCasa}}/problemi
+Authorization: Bearer {{token}}
+
+### Lista problemi non risolti
+GET {{baseUrl}}/case/{{idCasa}}/problemi/non-risolti
+Authorization: Bearer {{token}}
+
+### Dettaglio problema
+GET {{baseUrl}}/case/{{idCasa}}/problemi/{{idProblema}}
+Authorization: Bearer {{token}}
+
+### Segnala problema
+POST {{baseUrl}}/case/{{idCasa}}/problemi
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nome": "Perdita in cucina",
+  "descrizione": "Perdita dal rubinetto del lavandino",
+  "priorita": "Media"
+}
+
+### Elimina problema
+DELETE {{baseUrl}}/case/{{idCasa}}/problemi/{{idProblema}}
+Authorization: Bearer {{token}}
+
+### Auto-assegna problema (Inquilino)
+PUT {{baseUrl}}/case/{{idCasa}}/problemi/{{idProblema}}/autoassegna
+Authorization: Bearer {{token}}
+
+### Assegna problema (HomeAdmin)
+PUT {{baseUrl}}/case/{{idCasa}}/problemi/{{idProblema}}/assegna
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "idUtente": "{{idUtente}}"
+}
+
+### De-assegna problema (HomeAdmin)
+PUT {{baseUrl}}/case/{{idCasa}}/problemi/{{idProblema}}/assegna
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "idUtente": null
+}
+
+### Aggiorna stato problema
+PATCH {{baseUrl}}/case/{{idCasa}}/problemi/{{idProblema}}/stato
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "stato": "Risolto"
+}
+
+### Aggiorna priorita problema
+PATCH {{baseUrl}}/case/{{idCasa}}/problemi/{{idProblema}}/priorita
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "priorita": "Urgente"
+}
+

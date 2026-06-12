@@ -1,13 +1,30 @@
 import { Ruolo } from "@prisma/client";
-
 import { prisma } from "../config/db";
-import { CreaCasaDto } from "../dto/CasaDto";
 
-const membroSelect = {
-  id: true,
-  idUtente: true,
-  ruolo: true,
-  dataIngresso: true,
+export const INCLUDE_CASA_CON_REL = {
+  creatorRel: {
+    select: { id: true, username: true },
+  },
+  membri: {
+    select: {
+      id: true,
+      idUtente: true,
+      ruolo: true,
+      dataIngresso: true,
+      utenteRel: {
+        select: {
+          id: true,
+          username: true,
+          nome: true,
+          cognome: true,
+          email: true,
+        },
+      },
+    },
+  },
+} as const;
+
+export const INCLUDE_MEMBRO_CON_UTENTE = {
   utenteRel: {
     select: {
       id: true,
@@ -17,162 +34,103 @@ const membroSelect = {
       email: true,
     },
   },
+} as const;
+
+const _casaQuery = () =>
+  prisma.casa.findFirst({ include: INCLUDE_CASA_CON_REL });
+const _membroQuery = () =>
+  prisma.membroCasa.findFirst({ include: INCLUDE_MEMBRO_CON_UTENTE });
+
+export type CasaConRelazioni = NonNullable<
+  Awaited<ReturnType<typeof _casaQuery>>
+>;
+export type MembroCasaConUtente = NonNullable<
+  Awaited<ReturnType<typeof _membroQuery>>
+>;
+
+type CasaCreateData = {
+  nome: string;
+  indirizzo: string;
+  citta: string;
+  tipoCasa: string;
+  creator: string;
+  inviteLink: string;
 };
 
-export class CasaRepository {
-  private readonly casaSelect = {
-    id: true,
-    nome: true,
-    indirizzo: true,
-    citta: true,
-    tipoCasa: true,
-    inviteLink: true,
-    creator: true,
-  };
+type CasaUpdateData = Partial<{
+  nome: string;
+  indirizzo: string;
+  citta: string;
+  tipoCasa: string;
+  inviteLink: string;
+}>;
 
-  async createCasa(data: CreaCasaDto, idUtente: string, inviteLink: string) {
+export class CasaRepository {
+  async createCasa(data: CasaCreateData): Promise<CasaConRelazioni> {
     return prisma.casa.create({
       data: {
         nome: data.nome,
         indirizzo: data.indirizzo,
         citta: data.citta,
         tipoCasa: data.tipoCasa,
-        inviteLink,
-        creatorRel: { connect: { id: idUtente } },
+        inviteLink: data.inviteLink,
+        creatorRel: { connect: { id: data.creator } },
         membri: {
           create: {
             ruolo: Ruolo.HomeAdmin,
-            utenteRel: { connect: { id: idUtente } },
+            utenteRel: { connect: { id: data.creator } },
           },
         },
       },
-      select: this.casaSelect,
+      include: INCLUDE_CASA_CON_REL,
     });
   }
 
-  async getCaseByUtente(idUtente: string) {
+  async findCaseByUser(idUtente: string): Promise<CasaConRelazioni[]> {
     return prisma.casa.findMany({
-      where: {
-        OR: [{ creator: idUtente }, { membri: { some: { idUtente } } }],
-      },
-      select: this.casaSelect,
-      orderBy: { dataCreazione: "desc" },
+      where: { membri: { some: { idUtente } } },
+      include: INCLUDE_CASA_CON_REL,
     });
   }
 
-  async getCasaByIdAndUtente(idCasa: string, idUtente: string) {
-    return prisma.casa.findFirst({
-      where: {
-        id: idCasa,
-        OR: [{ creator: idUtente }, { membri: { some: { idUtente } } }],
-      },
-      select: this.casaSelect,
-    });
-  }
-
-  async getCasaById(idCasa: string) {
-    return prisma.casa.findUnique({
+  async findCasaByIdOrThrow(idCasa: string): Promise<CasaConRelazioni> {
+    return prisma.casa.findFirstOrThrow({
       where: { id: idCasa },
-      select: this.casaSelect,
+      include: INCLUDE_CASA_CON_REL,
     });
   }
 
-  async getCasaByInviteCodeOrLink(inviteCodeOrLink: string) {
-    return prisma.casa.findFirst({
-      where: {
-        OR: [
-          { inviteLink: inviteCodeOrLink },
-          { inviteLink: { endsWith: `/${inviteCodeOrLink}` } },
-        ],
-      },
-      select: this.casaSelect,
+  async findCasaByIdAndInviteLinkOrThrow(
+    idCasa: string,
+    inviteLink: string,
+  ): Promise<CasaConRelazioni> {
+    return prisma.casa.findFirstOrThrow({
+      where: { id: idCasa, inviteLink },
+      include: INCLUDE_CASA_CON_REL,
     });
   }
 
-  async updateCasa(idCasa: string, data: Partial<CreaCasaDto>) {
+  async updateCasa(
+    idCasa: string,
+    data: CasaUpdateData,
+  ): Promise<CasaConRelazioni> {
     return prisma.casa.update({
       where: { id: idCasa },
-      data: {
-        ...(data.nome !== undefined && { nome: data.nome }),
-        ...(data.indirizzo !== undefined && { indirizzo: data.indirizzo }),
-        ...(data.citta !== undefined && { citta: data.citta }),
-        ...(data.tipoCasa !== undefined && { tipoCasa: data.tipoCasa }),
-      },
-      select: this.casaSelect,
+      data,
+      include: INCLUDE_CASA_CON_REL,
     });
   }
 
-  async deleteCasa(idCasa: string) {
-    const problemi = await prisma.problema.findMany({
-      where: { idCasa },
-      select: { id: true },
-    });
-    const idProblemi = problemi.map((p) => p.id);
-
-    await prisma.storico.deleteMany({
-      where: { idProblema: { in: idProblemi } },
-    });
-    await prisma.documento.deleteMany({ where: { idCasa } });
-    await prisma.problema.deleteMany({ where: { idCasa } });
-    await prisma.turno.deleteMany({ where: { idCasa } });
-    await prisma.scadenza.deleteMany({ where: { idCasa } });
-    await prisma.quotaSpesa.deleteMany({ where: { idCasa } });
-    await prisma.spesa.deleteMany({ where: { idCasa } });
-    await prisma.membroCasa.deleteMany({ where: { idCasa } });
-    await prisma.casa.delete({ where: { id: idCasa } });
-  }
-
-  async getMembroCasa(idCasa: string, idUtente: string) {
-    return prisma.membroCasa.findUnique({
-      where: { idUtente_idCasa: { idUtente, idCasa } },
-      select: membroSelect,
-    });
-  }
-
-  async getCasaCreator(idCasa: string): Promise<string | null> {
-    const casa = await prisma.casa.findUnique({
-      where: { id: idCasa },
-      select: { creator: true },
-    });
-    return casa?.creator ?? null;
-  }
-
-  async getMembriCasa(idCasa: string) {
-    return prisma.membroCasa.findMany({
-      where: { idCasa },
-      select: membroSelect,
-      orderBy: { dataIngresso: "asc" },
-    });
-  }
-
-  async addMembroCasa(idCasa: string, idUtente: string) {
-    return prisma.membroCasa.create({
-      data: {
-        idCasa,
-        idUtente,
-        ruolo: Ruolo.Inquilino,
-      },
-      select: membroSelect,
-    });
-  }
-
-  async updateRuoloMembro(idCasa: string, idUtente: string, ruolo: Ruolo) {
-    return prisma.membroCasa.update({
-      where: { idUtente_idCasa: { idUtente, idCasa } },
-      data: { ruolo },
-      select: membroSelect,
-    });
-  }
-
-  async removeMembroCasa(idCasa: string, idUtente: string) {
-    await prisma.membroCasa.delete({
-      where: { idUtente_idCasa: { idUtente, idCasa } },
-    });
-  }
-
-  async countHomeAdmin(idCasa: string) {
-    return prisma.membroCasa.count({
-      where: { idCasa, ruolo: Ruolo.HomeAdmin },
+  async deleteCasa(idCasa: string): Promise<void> {
+    await prisma.$transaction(async (tx) => {
+      await tx.quotaSpesa.deleteMany({ where: { idCasa } });
+      await tx.spesa.deleteMany({ where: { idCasa } });
+      await tx.turno.deleteMany({ where: { idCasa } });
+      await tx.problema.deleteMany({ where: { idCasa } });
+      await tx.documento.deleteMany({ where: { idCasa } });
+      await tx.scadenza.deleteMany({ where: { idCasa } });
+      await tx.membroCasa.deleteMany({ where: { idCasa } });
+      await tx.casa.delete({ where: { id: idCasa } });
     });
   }
 
@@ -183,5 +141,74 @@ export class CasaRepository {
     });
 
     return membri.map((m: { idUtente: string }) => m.idUtente);
+  }
+
+  async getCasaCreator(idCasa: string): Promise<string | null> {
+    const casa = await prisma.casa.findUnique({
+      where: { id: idCasa },
+      select: { creator: true },
+    });
+    return casa?.creator ?? null;
+  }
+
+  async findMembroCasaByCasaAndUtente(
+    idCasa: string,
+    idUtente: string,
+  ): Promise<MembroCasaConUtente | null> {
+    return prisma.membroCasa.findFirst({
+      where: { idCasa, idUtente },
+      include: INCLUDE_MEMBRO_CON_UTENTE,
+    });
+  }
+
+  async findMembroCasaByCasaAndUtenteOrThrow(
+    idCasa: string,
+    idUtente: string,
+  ): Promise<MembroCasaConUtente> {
+    return prisma.membroCasa.findFirstOrThrow({
+      where: { idCasa, idUtente },
+      include: INCLUDE_MEMBRO_CON_UTENTE,
+    });
+  }
+
+  async addMembroCasa(
+    idCasa: string,
+    idUtente: string,
+    ruolo: Ruolo = Ruolo.Inquilino,
+  ): Promise<MembroCasaConUtente> {
+    return prisma.membroCasa.create({
+      data: {
+        ruolo,
+        casaRel: { connect: { id: idCasa } },
+        utenteRel: { connect: { id: idUtente } },
+      },
+      include: INCLUDE_MEMBRO_CON_UTENTE,
+    });
+  }
+
+  async updateMembroCasaRole(
+    idCasa: string,
+    idUtente: string,
+    ruolo: Ruolo,
+  ): Promise<MembroCasaConUtente> {
+    const membro = await this.findMembroCasaByCasaAndUtenteOrThrow(
+      idCasa,
+      idUtente,
+    );
+
+    return prisma.membroCasa.update({
+      where: { id: membro.id },
+      data: { ruolo },
+      include: INCLUDE_MEMBRO_CON_UTENTE,
+    });
+  }
+
+  async removeMembroCasa(idCasa: string, idUtente: string): Promise<void> {
+    const membro = await this.findMembroCasaByCasaAndUtenteOrThrow(
+      idCasa,
+      idUtente,
+    );
+
+    await prisma.membroCasa.delete({ where: { id: membro.id } });
   }
 }

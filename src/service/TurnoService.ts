@@ -2,7 +2,9 @@ import {
   CreaTurnoDto,
   ModificaTurnoDto,
   AssegnaTurnoDto,
+  TurnoListItemDto,
   TurnoResponseDto,
+  SaluteCasaDto,
 } from "../dto/TurnoDto";
 import { TurnoConverter } from "../dto/converter/TurnoConverter";
 import {
@@ -11,7 +13,7 @@ import {
 } from "../repository/TurnoRepository";
 import { CasaRepository } from "../repository/CasaRepository";
 import { ForbiddenError } from "../errors/httpErrors";
-import { randomInt } from "crypto";
+import { randomInt } from "node:crypto";
 
 const turnoConverter = new TurnoConverter();
 const turnoRepository = new TurnoRepository();
@@ -123,10 +125,12 @@ export class TurnoService {
     return turnoConverter.toDto(turno);
   }
 
-  async getAllTurni(idCasa: string): Promise<TurnoResponseDto[]> {
+  async getAllTurni(idCasa: string): Promise<TurnoListItemDto[]> {
     const turni = await turnoRepository.findTurniByCasa(idCasa);
 
-    return turni.map((t: TurnoConAssegnatario) => turnoConverter.toDto(t));
+    return turni.map((t: TurnoConAssegnatario) =>
+      turnoConverter.toListItemDto(t),
+    );
   }
 
   async getTurniOdierni(idCasa: string): Promise<TurnoResponseDto[]> {
@@ -135,6 +139,22 @@ export class TurnoService {
     return turni
       .map((t: TurnoConAssegnatario) => turnoConverter.toDto(t))
       .filter((dto: TurnoResponseDto) => isToday(dto.dataProssimaPulizia));
+  }
+
+  async getGiorniDallUltimaPulizia(idCasa: string): Promise<SaluteCasaDto[]> {
+    const turni = await turnoRepository.findTurniByCasa(idCasa);
+    const oggi = new Date();
+
+    return turni
+      .filter((t: TurnoConAssegnatario) => t.dataUltimaPulizia != null)
+      .map((t: TurnoConAssegnatario) => ({
+        id: t.id,
+        task: t.task,
+        giorniPassati: Math.floor(
+          (oggi.getTime() - t.dataUltimaPulizia!.getTime()) /
+            (1000 * 60 * 60 * 24),
+        ),
+      }));
   }
 
   async getTurno(idCasa: string, idTurno: string): Promise<TurnoResponseDto> {
