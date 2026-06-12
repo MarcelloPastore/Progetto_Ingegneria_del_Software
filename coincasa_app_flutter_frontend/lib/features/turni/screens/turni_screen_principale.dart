@@ -172,12 +172,19 @@ class _TurniPopupPanelState extends ConsumerState<TurniPopupPanel> {
   final _taskController = TextEditingController();
   String _frequenza = 'Ogni settimana';
   String? _selectedInquilinoId;
-  DateTime? _selectedTurnoDate;
+  late DateTime _selectedTurnoDate;
   bool _rotazioneAutomatica = true;
   bool _frequencyExpanded = false;
   bool _assigneeExpanded = false;
   bool _isSubmitting = false;
   String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _selectedTurnoDate = DateTime(now.year, now.month, now.day);
+  }
 
   @override
   void dispose() {
@@ -191,7 +198,7 @@ class _TurniPopupPanelState extends ConsumerState<TurniPopupPanel> {
     final firstDate = DateTime(now.year, now.month, now.day);
     final picked = await showDatePicker(
       context: context,
-      initialDate: _selectedTurnoDate ?? firstDate,
+      initialDate: _selectedTurnoDate,
       firstDate: firstDate,
       lastDate: DateTime(now.year + 3, 12, 31),
       builder: (context, child) {
@@ -233,10 +240,6 @@ class _TurniPopupPanelState extends ConsumerState<TurniPopupPanel> {
 
     if (casa == null || casa.id.isEmpty) {
       setState(() => _errorMessage = 'Nessuna casa disponibile.');
-      return;
-    }
-    if (turnoDate == null) {
-      setState(() => _errorMessage = 'Inserisci una data turno valida.');
       return;
     }
 
@@ -288,13 +291,13 @@ class _TurniPopupPanelState extends ConsumerState<TurniPopupPanel> {
       error: (error, stackTrace) =>
           AsyncValue<List<Inquilino>>.error(error, stackTrace),
     );
-    final canSubmit =
-        _taskController.text.trim().isNotEmpty && _selectedTurnoDate != null;
+    final canSubmit = _taskController.text.trim().isNotEmpty;
 
     final body = _TurnoFormPanel(
       formKey: _formKey,
       taskController: _taskController,
       selectedTurnoDate: _selectedTurnoDate,
+
       frequenza: _frequenza,
       frequenze: _frequenze.keys.toList(growable: false),
       frequencyExpanded: _frequencyExpanded,
@@ -390,7 +393,7 @@ class _TurnoFormPanel extends StatelessWidget {
 
   final GlobalKey<FormState> formKey;
   final TextEditingController taskController;
-  final DateTime? selectedTurnoDate;
+  final DateTime selectedTurnoDate;
   final String frequenza;
   final List<String> frequenze;
   final bool frequencyExpanded;
@@ -702,17 +705,14 @@ class _DatePreviewRow extends StatelessWidget {
     required this.onDateTap,
   });
 
-  final DateTime? selectedDate;
+  final DateTime selectedDate;
   final VoidCallback onDateTap;
 
   @override
   Widget build(BuildContext context) {
-    String label = 'Data Inizio Turno';
-    if (selectedDate != null) {
-      final day = selectedDate!.day.toString().padLeft(2, '0');
-      final month = selectedDate!.month.toString().padLeft(2, '0');
-      label = 'Data inizio turno: $day/$month';
-    }
+    final day = selectedDate.day.toString().padLeft(2, '0');
+    final month = selectedDate.month.toString().padLeft(2, '0');
+    final label = 'Data inizio turno: $day/$month';
 
     return Container(
       constraints: const BoxConstraints(minHeight: 47),
@@ -740,7 +740,7 @@ class _DatePreviewRow extends StatelessWidget {
                   children: [
                     Icon(
                       Icons.calendar_today_rounded,
-                      color: selectedDate != null ? AppColors.brandAccent : AppColors.textMutedLight,
+                      color: AppColors.brandAccent,
                       size: 20,
                     ),
                     const SizedBox(width: AppSizes.p12),
@@ -750,7 +750,7 @@ class _DatePreviewRow extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: AppTextStyles.bodyStrong.copyWith(
-                          color: selectedDate != null ? AppColors.textOnDark : AppColors.textMutedLight,
+                          color: AppColors.textOnDark,
                           fontSize: 19,
                         ),
                       ),

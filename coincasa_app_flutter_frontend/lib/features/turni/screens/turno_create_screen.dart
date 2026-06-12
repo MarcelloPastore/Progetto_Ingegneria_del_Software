@@ -444,6 +444,14 @@ class _TurnoCreateFormState {
     this.allowPastDate = false,
   });
 
+  factory _TurnoCreateFormState._today() {
+    final now = DateTime.now();
+    return _TurnoCreateFormState(
+      day: now.day.toString().padLeft(2, '0'),
+      month: _monthLabel(now.month),
+    );
+  }
+
   static const frequencies = [
     'Ogni giorno',
     'Ogni 3 giorni',
@@ -576,7 +584,8 @@ class _TurnoCreateFormState {
 }
 
 class _TurnoCreateFormController extends StateNotifier<_TurnoCreateFormState> {
-  _TurnoCreateFormController() : super(const _TurnoCreateFormState());
+  _TurnoCreateFormController() : super(_TurnoCreateFormState._today());
+
 
   void setTask(String value) =>
       state = state.copyWith(task: value, submitError: null);
