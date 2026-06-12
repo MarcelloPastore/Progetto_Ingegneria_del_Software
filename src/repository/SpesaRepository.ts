@@ -199,7 +199,10 @@ export class SpesaRepository {
               idSpesa,
               idUtente: q.idUtente,
               quota: q.quota,
-              dataPagamento: q.dataPagamento ?? undefined,
+              OR: [
+                { dataPagamento: null },
+                { dataPagamento: { isSet: false } },
+              ],
             })),
           });
         }
@@ -281,7 +284,7 @@ export class SpesaRepository {
       where: {
         idCasa,
         idUtente,
-        dataPagamento: null,
+        OR: [{ dataPagamento: null }, { dataPagamento: { isSet: false } }],
         spesaRel: {
           anticipataDa: { in: idCreditori },
         },
@@ -294,7 +297,11 @@ export class SpesaRepository {
 
   async sumDebito(idCasa: string, idUtente: string): Promise<number> {
     const result = await prisma.quotaSpesa.aggregate({
-      where: { idCasa, idUtente, dataPagamento: null },
+      where: {
+        idCasa,
+        idUtente,
+        OR: [{ dataPagamento: null }, { dataPagamento: { isSet: false } }],
+      },
       _sum: { quota: true },
     });
 
@@ -305,7 +312,7 @@ export class SpesaRepository {
     const result = await prisma.quotaSpesa.aggregate({
       where: {
         idCasa,
-        dataPagamento: null,
+        OR: [{ dataPagamento: null }, { dataPagamento: { isSet: false } }],
         spesaRel: { anticipataDa: idUtente },
       },
       _sum: { quota: true },
@@ -323,7 +330,7 @@ export class SpesaRepository {
       where: {
         idCasa,
         idUtente: idInquilino,
-        dataPagamento: null,
+        OR: [{ dataPagamento: null }, { dataPagamento: { isSet: false } }],
         spesaRel: { anticipataDa: idUtente },
       },
       _sum: { quota: true },
@@ -341,7 +348,7 @@ export class SpesaRepository {
       where: {
         idCasa,
         idUtente,
-        dataPagamento: null,
+        OR: [{ dataPagamento: null }, { dataPagamento: { isSet: false } }],
         spesaRel: { anticipataDa: idInquilino },
       },
       _sum: { quota: true },
@@ -350,3 +357,4 @@ export class SpesaRepository {
     return result._sum.quota ?? 0;
   }
 }
+

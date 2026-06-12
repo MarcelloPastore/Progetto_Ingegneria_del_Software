@@ -9,6 +9,7 @@ const isoDateTimeString = z
 
 export const CreaTurnoSchema = z.object({
   task: z.string().min(1, "Campo obbligatorio"),
+  dataTurno: isoDateTimeString,
   cadenzaGiorni: z
     .number()
     .int()
@@ -36,6 +37,7 @@ export const TurnoResponseSchema = z.object({
   cadenzaGiorni: z.number().int(),
   rotazioneAttiva: z.boolean(),
   assegnatario: AssegnatarioInfoSchema,
+  creatore: AssegnatarioInfoSchema,
   ordineRotazione: z.string().array(),
   indiceRotazioneCorrente: z.number().int(),
   dataUltimaPulizia: isoDateTimeString.nullable(),
@@ -44,15 +46,21 @@ export const TurnoResponseSchema = z.object({
 });
 export type TurnoResponseDto = z.infer<typeof TurnoResponseSchema>;
 
-export const DataTurnoSchema = z.object({
-  id: z.string(),
-  dataProssimaPuliza: z.string(),
-});
-export type DataTurnoDto = z.infer<typeof DataTurnoSchema>;
-
 export const TurnoListItemSchema = z.object({
   task: z.string(),
   assegnatarioCorrente: AssegnatarioInfoSchema,
   dataProssimaPulizia: isoDateTimeString,
 });
 export type TurnoListItemDto = z.infer<typeof TurnoListItemSchema>;
+
+export const DataTurnoSchema = z.object({
+  id: z.string(),
+  dataProssimaPuliza: z.string(),
+});
+
+export const SaluteCasaSchema = z.object({
+  id: z.string(),
+  task: z.string(),
+  giorniPassati: z.number().int().nonnegative(),
+});
+export type SaluteCasaDto = z.infer<typeof SaluteCasaSchema>;

@@ -1,12 +1,12 @@
 ### CASA - 0. HEALTH CHECK
-GET http://localhost:2310/api/v1/health
+GET http://localhost:23109/api/v1/health
 
 ### CASA - 1. REGISTER Alice (se non esistente)
-POST http://localhost:2310/api/v1/auth/register
+POST http://localhost:23109/api/v1/auth/register
 Content-Type: application/json
 
 {
-  "email": "alice@example.com",
+  "email": "alice@gmail.com",
   "password": "SecurePass123!",
   "username": "alice123",
   "nome": "Alice",
@@ -14,51 +14,51 @@ Content-Type: application/json
 }
 
 ### CASA - 2. REGISTER Bob (se non esistente)
-POST http://localhost:2310/api/v1/auth/register
+POST http://localhost:23109/api/v1/auth/register
 Content-Type: application/json
 
 {
-  "email": "bob@example.com",
+  "email": "bob2@example.com",
   "password": "SecurePass456!",
   "username": "bob456",
   "nome": "Bob",
   "cognome": "Verdi"
 }
 
-### CASA - 3. LOGIN Alice (salva token e user_id)
-POST http://localhost:2310/api/v1/auth/login
+### CASA - 3. LOGIN Alice (token base con solo idUtente)
+POST http://localhost:23109/api/v1/auth/login
 Content-Type: application/json
 
 {
-  "email": "alice@example.com",
+  "email": "alice@gmail.com",
   "password": "SecurePass123!"
 }
 
 > {%
-    client.global.set("auth_token", response.body.token);
+    client.global.set("auth_token_alice_login", response.body.token);
     client.global.set("user_id_alice", response.body.user.id);
-    console.log("✓ auth_token (Alice) salvato:", response.body.token?.substring(0, 20) + "...");
+    console.log("✓ auth_token_alice_login salvato:", response.body.token?.substring(0, 20) + "...");
 %}
 
-### CASA - 4. LOGIN Bob (salva token)
-POST http://localhost:2310/api/v1/auth/login
+### CASA - 4. LOGIN Bob (token base con solo idUtente)
+POST http://localhost:23109/api/v1/auth/login
 Content-Type: application/json
 
 {
-  "email": "bob@example.com",
+  "email": "bob2@example.com",
   "password": "SecurePass456!"
 }
 
 > {%
-    client.global.set("auth_token_bob", response.body.token);
+    client.global.set("auth_token_bob_login", response.body.token);
     client.global.set("user_id_bob", response.body.user?.id);
-    console.log("✓ auth_token_bob salvato:", response.body.token?.substring(0, 20) + "...");
+    console.log("✓ auth_token_bob_login salvato:", response.body.token?.substring(0, 20) + "...");
 %}
 
 ### CASA - 5. CREA CASA (Alice) → salva casa_id e inviteLink
-POST http://localhost:2310/api/v1/case
+POST http://localhost:23109/api/v1/case
 Content-Type: application/json
-Authorization: Bearer {{ auth_token }}
+Authorization: Bearer {{ auth_token_alice_login }}
 
 {
   "nome": "Casa Test",
@@ -74,26 +74,35 @@ Authorization: Bearer {{ auth_token }}
     console.log("✓ invite_link:", response.body.inviteLink);
 %}
 
-### CASA - 6. LISTA CASE (Alice) - verifica che la casa appaia
-GET http://localhost:2310/api/v1/case
-Authorization: Bearer {{ auth_token }}
+### CASA - 6. SELECT CASA (Alice) → token con idCasa e ruolo HomeAdmin
+POST http://localhost:23109/api/v1/case/{{ casa_id }}/select
+Authorization: Bearer {{ auth_token_alice_login }}
 
-### CASA - 7. DETTAGLIO CASA (Alice)
-GET http://localhost:2310/api/v1/case/{{ casa_id }}
-Authorization: Bearer {{ auth_token }}
+> {%
+    client.global.set("auth_token_alice_homeadmin", response.body.token);
+    console.log("✓ auth_token_alice_homeadmin salvato:", response.body.token?.substring(0, 20) + "...");
+%}
 
-### CASA - 8. GET INVITE LINK (Alice) - senza rigenerare
-GET http://localhost:2310/api/v1/case/{{ casa_id }}/invite-link
-Authorization: Bearer {{ auth_token }}
+### CASA - 7. LISTA CASE (Alice)
+GET http://localhost:23109/api/v1/case
+Authorization: Bearer {{ auth_token_alice_homeadmin }}
+
+### CASA - 8. DETTAGLIO CASA (Alice)
+GET http://localhost:23109/api/v1/case/{{ casa_id }}
+Authorization: Bearer {{ auth_token_alice_homeadmin }}
+
+### CASA - 9. GET INVITE LINK (Alice) - senza rigenerare
+GET http://localhost:23109/api/v1/case/{{ casa_id }}/invite-link
+Authorization: Bearer {{ auth_token_alice_homeadmin }}
 
 > {%
     client.global.set("invite_link_check", response.body.inviteLink);
     console.log("✓ invite_link_check:", response.body.inviteLink);
 %}
 
-### CASA - 9. RIGENERA INVITE LINK (Alice) - rigenera=true
-GET http://localhost:2310/api/v1/case/{{ casa_id }}/invite-link?rigenera=true
-Authorization: Bearer {{ auth_token }}
+### CASA - 10. RIGENERA INVITE LINK (Alice) - rigenera=true
+GET http://localhost:23109/api/v1/case/{{ casa_id }}/invite-link?rigenera=true
+Authorization: Bearer {{ auth_token_alice_homeadmin }}
 
 > {%
     client.global.set("invite_link_regenerated", response.body.inviteLink);
@@ -101,9 +110,9 @@ Authorization: Bearer {{ auth_token }}
 %}
 
 ### CASA - 11. BOB SI AGGIUNGE ALLA CASA USANDO invite_link_regenerated
-POST http://localhost:2310/api/v1/case/{{ casa_id }}/inquilini
+POST http://localhost:23109/api/v1/case/{{ casa_id }}/inquilini
 Content-Type: application/json
-Authorization: Bearer {{ auth_token_bob }}
+Authorization: Bearer {{ auth_token_bob_login }}
 
 {
   "inviteLink": "{{ invite_link_regenerated }}"
@@ -116,18 +125,27 @@ Authorization: Bearer {{ auth_token_bob }}
     console.log("✓ Bob inquilino_id (idUtente):", response.body.utente.id);
 %}
 
-### CASA - 12. LISTA INQUILINI (Alice)
-GET http://localhost:2310/api/v1/case/{{ casa_id }}/inquilini
-Authorization: Bearer {{ auth_token }}
+### CASA - 12. SELECT CASA (Bob) → token con idCasa e ruolo Inquilino
+POST http://localhost:23109/api/v1/case/{{ casa_id }}/select
+Authorization: Bearer {{ auth_token_bob_login }}
 
-### CASA - 13. DETTAGLIO INQUILINO (Alice) - il Bob appena aggiunto
-GET http://localhost:2310/api/v1/case/{{ casa_id }}/inquilini/{{ inquilino_id_bob }}
-Authorization: Bearer {{ auth_token }}
+> {%
+    client.global.set("auth_token_bob_inquilino", response.body.token);
+    console.log("✓ auth_token_bob_inquilino salvato:", response.body.token?.substring(0, 20) + "...");
+%}
 
-### CASA - 14. PROMUOVI INQUILINO A HomeAdmin (Alice)
-PUT http://localhost:2310/api/v1/case/{{ casa_id }}/inquilini/{{ inquilino_id_bob }}/ruolo
+### CASA - 13. LISTA INQUILINI (Alice)
+GET http://localhost:23109/api/v1/case/{{ casa_id }}/inquilini
+Authorization: Bearer {{ auth_token_alice_homeadmin }}
+
+### CASA - 14. DETTAGLIO INQUILINO (Alice) - il Bob appena aggiunto
+GET http://localhost:23109/api/v1/case/{{ casa_id }}/inquilini/{{ inquilino_id_bob }}
+Authorization: Bearer {{ auth_token_alice_homeadmin }}
+
+### CASA - 15. PROMUOVI INQUILINO A HomeAdmin (Alice)
+PUT http://localhost:23109/api/v1/case/{{ casa_id }}/inquilini/{{ inquilino_id_bob }}/ruolo
 Content-Type: application/json
-Authorization: Bearer {{ auth_token }}
+Authorization: Bearer {{ auth_token_alice_homeadmin }}
 
 {
   "ruolo": "HomeAdmin"
@@ -138,14 +156,14 @@ Authorization: Bearer {{ auth_token }}
     console.log("✓ Inquilino promosso:", response.body.id, response.body.ruolo);
 %}
 
-### CASA - 15. VERIFICA RUOLO DOPO PROMOZIONE
-GET http://localhost:2310/api/v1/case/{{ casa_id }}/inquilini/{{ inquilino_id_bob }}
-Authorization: Bearer {{ auth_token }}
+### CASA - 16. VERIFICA RUOLO DOPO PROMOZIONE
+GET http://localhost:23109/api/v1/case/{{ casa_id }}/inquilini/{{ inquilino_id_bob }}
+Authorization: Bearer {{ auth_token_alice_homeadmin }}
 
-### CASA - 16. DEGRADA INQUILINO A Inquilino (Alice)
-PUT http://localhost:2310/api/v1/case/{{ casa_id }}/inquilini/{{ inquilino_id_bob }}/ruolo
+### CASA - 17. DEGRADA INQUILINO A Inquilino (Alice)
+PUT http://localhost:23109/api/v1/case/{{ casa_id }}/inquilini/{{ inquilino_id_bob }}/ruolo
 Content-Type: application/json
-Authorization: Bearer {{ auth_token }}
+Authorization: Bearer {{ auth_token_alice_homeadmin }}
 
 {
   "ruolo": "Inquilino"
@@ -155,18 +173,18 @@ Authorization: Bearer {{ auth_token }}
     console.log("✓ Degradato:", response.body.id, response.body.ruolo);
 %}
 
-### CASA - 17. RIMUOVI INQUILINO (Alice) - delete Bob
-DELETE http://localhost:2310/api/v1/case/{{ casa_id }}/inquilini/{{ inquilino_id_bob }}
-Authorization: Bearer {{ auth_token }}
+### CASA - 18. RIMUOVI INQUILINO (Alice) - delete Bob
+DELETE http://localhost:23109/api/v1/case/{{ casa_id }}/inquilini/{{ inquilino_id_bob }}
+Authorization: Bearer {{ auth_token_alice_homeadmin }}
 
-### CASA - 18. LISTA INQUILINI DOPO RIMOZIONE (Alice) - verifica che Bob non ci sia più
-GET http://localhost:2310/api/v1/case/{{ casa_id }}/inquilini
-Authorization: Bearer {{ auth_token }}
+### CASA - 19. LISTA INQUILINI DOPO RIMOZIONE (Alice) - verifica che Bob non ci sia più
+GET http://localhost:23109/api/v1/case/{{ casa_id }}/inquilini
+Authorization: Bearer {{ auth_token_alice_homeadmin }}
 
-### CASA - 19. BOB SI RIAFFERISCE CON L'ULTIMO INVITE LINK (ri-aggiungi)
-POST http://localhost:2310/api/v1/case/{{ casa_id }}/inquilini
+### CASA - 20. BOB SI RIAFFERISCE CON L'ULTIMO INVITE LINK (ri-aggiungi)
+POST http://localhost:23109/api/v1/case/{{ casa_id }}/inquilini
 Content-Type: application/json
-Authorization: Bearer {{ auth_token_bob }}
+Authorization: Bearer {{ auth_token_bob_login }}
 
 {
   "inviteLink": "{{ invite_link_regenerated }}"
@@ -179,10 +197,10 @@ Authorization: Bearer {{ auth_token_bob }}
     console.log("✓ Bob readded user id:", response.body.utente.id);
 %}
 
-### CASA - 20. ELIMINA CASA (Alice) - Solo HomeAdmin può farlo
-DELETE http://localhost:2310/api/v1/case/{{ casa_id }}
-Authorization: Bearer {{ auth_token }}
+### CASA - 21. ELIMINA CASA (Alice) - Solo HomeAdmin può farlo
+DELETE http://localhost:23109/api/v1/case/{{ casa_id }}
+Authorization: Bearer {{ auth_token_alice_homeadmin }}
 
-### CASA - 21. (OPZIONALE) PROVA A LEGGERE LA CASA DOPO LA CANCELLAZIONE (dovrebbe essere 404)
-GET http://localhost:2310/api/v1/case/{{ casa_id }}
-Authorization: Bearer {{ auth_token }}
+### CASA - 22. (OPZIONALE) PROVA A LEGGERE LA CASA DOPO LA CANCELLAZIONE (dovrebbe essere 404)
+GET http://localhost:23109/api/v1/case/{{ casa_id }}
+Authorization: Bearer {{ auth_token_alice_homeadmin }}

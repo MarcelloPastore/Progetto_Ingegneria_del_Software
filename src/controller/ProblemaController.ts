@@ -11,10 +11,14 @@ import {
   CreaProblemaDto,
   CreaProblemaSchema,
 } from "../dto/ProblemaDto";
-import { mapErrorToHttp } from "../errors/errorMapper";
+import { sendErrorReply } from "../utils/errorReply";
 
 export class ProblemaController {
   constructor(private readonly problemiService: ProblemaService) {}
+
+  private handleFailure(reply: FastifyReply, error: unknown) {
+    return sendErrorReply(reply, error);
+  }
 
   /**
    * GET /case/:idCasa/problemi
@@ -29,8 +33,7 @@ export class ProblemaController {
       );
       return reply.status(200).send(problemi);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
@@ -47,8 +50,7 @@ export class ProblemaController {
       );
       return reply.status(200).send(problemi);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
@@ -66,8 +68,7 @@ export class ProblemaController {
       );
       return reply.status(200).send(problema);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
@@ -87,8 +88,7 @@ export class ProblemaController {
       );
       return reply.status(201).send(problema);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
@@ -106,8 +106,7 @@ export class ProblemaController {
       );
       return reply.status(204).send();
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
@@ -126,8 +125,7 @@ export class ProblemaController {
       );
       return reply.status(200).send(problema);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
@@ -150,8 +148,7 @@ export class ProblemaController {
       );
       return reply.status(200).send(problema);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
@@ -171,8 +168,7 @@ export class ProblemaController {
       );
       return reply.status(200).send(problema);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
@@ -195,8 +191,7 @@ export class ProblemaController {
       );
       return reply.status(200).send(problema);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 }

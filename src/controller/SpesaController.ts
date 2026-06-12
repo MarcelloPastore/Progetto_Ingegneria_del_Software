@@ -14,10 +14,14 @@ import {
   PareggiaContiDto,
   PareggiaContiSchema,
 } from "../dto/SpesaDto";
-import { mapErrorToHttp } from "../errors/errorMapper";
+import { sendErrorReply } from "../utils/errorReply";
 
 export class SpesaController {
   constructor(private readonly speseService: SpesaService) {}
+
+  private handleFailure(reply: FastifyReply, error: unknown) {
+    return sendErrorReply(reply, error);
+  }
 
   /**
    * GET /case/:idCasa/spese
@@ -30,8 +34,7 @@ export class SpesaController {
       const spese = await this.speseService.getAllSpese(request.params.idCasa);
       return reply.status(200).send(spese);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
@@ -49,8 +52,7 @@ export class SpesaController {
       );
       return reply.status(200).send(spesa);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
@@ -68,8 +70,7 @@ export class SpesaController {
       );
       return reply.status(200).send(saldoTot);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
@@ -87,8 +88,7 @@ export class SpesaController {
       );
       return reply.status(200).send(creditoTot);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
@@ -106,8 +106,7 @@ export class SpesaController {
       );
       return reply.status(200).send(debitoTot);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
@@ -127,8 +126,7 @@ export class SpesaController {
       );
       return reply.status(201).send(spesa);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
@@ -149,8 +147,7 @@ export class SpesaController {
       );
       return reply.status(200).send(spesa);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
@@ -169,8 +166,7 @@ export class SpesaController {
       );
       return reply.status(204).send();
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
@@ -188,8 +184,7 @@ export class SpesaController {
       );
       return reply.status(200).send(quote);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
@@ -209,8 +204,7 @@ export class SpesaController {
       );
       return reply.status(200).send(quota);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
@@ -230,8 +224,7 @@ export class SpesaController {
       );
       return reply.status(200).send(quote);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
@@ -251,8 +244,7 @@ export class SpesaController {
       );
       return reply.status(204).send();
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
@@ -271,8 +263,7 @@ export class SpesaController {
       );
       return reply.status(200).send(credito);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 
@@ -291,8 +282,7 @@ export class SpesaController {
       );
       return reply.status(200).send(debito);
     } catch (error) {
-      const mapped = mapErrorToHttp(error);
-      return reply.status(mapped.statusCode).send({ message: mapped.message });
+      return this.handleFailure(reply, error);
     }
   };
 }

@@ -12,7 +12,13 @@ export const INCLUDE_CASA_CON_REL = {
       ruolo: true,
       dataIngresso: true,
       utenteRel: {
-        select: { id: true, username: true },
+        select: {
+          id: true,
+          username: true,
+          nome: true,
+          cognome: true,
+          email: true,
+        },
       },
     },
   },
@@ -20,7 +26,13 @@ export const INCLUDE_CASA_CON_REL = {
 
 export const INCLUDE_MEMBRO_CON_UTENTE = {
   utenteRel: {
-    select: { id: true, username: true },
+    select: {
+      id: true,
+      username: true,
+      nome: true,
+      cognome: true,
+      email: true,
+    },
   },
 } as const;
 
@@ -129,6 +141,14 @@ export class CasaRepository {
     });
 
     return membri.map((m: { idUtente: string }) => m.idUtente);
+  }
+
+  async getCasaCreator(idCasa: string): Promise<string | null> {
+    const casa = await prisma.casa.findUnique({
+      where: { id: idCasa },
+      select: { creator: true },
+    });
+    return casa?.creator ?? null;
   }
 
   async findMembroCasaByCasaAndUtente(

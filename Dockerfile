@@ -1,25 +1,33 @@
-FROM node:20-bookworm-slim AS build
+FROM node:24.16.0-trixie-slim AS build
 WORKDIR /app
+
+ARG MONGODB_URI=mongodb://localhost:27017/placeholder
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends python3 make g++ ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
 COPY package.json package-lock.json ./
+COPY prisma ./prisma
 
 RUN --mount=type=cache,target=/root/.npm --mount=type=cache,target=/root/.cache npm ci
 
-COPY prisma ./prisma
-RUN npx prisma generate
 
-COPY tsconfig.json index.ts prisma.config.ts eslint.config.ts vitest.config.ts ./
+COPY prisma.config.ts ./
+COPY prisma ./prisma
+
+RUN MONGODB_URI=${MONGODB_URI} npx prisma generate
+
+COPY tsconfig.json index.ts eslint.config.ts vitest.config.ts ./
 COPY src ./src
 
 RUN npm run build
 
-FROM node:20-bookworm-slim
+RUN npm prune --omit=dev
+
+FROM node:24.16.0-trixie-slim
 WORKDIR /app
-ARG PORT=2310
+ARG PORT=23109
 ENV NODE_ENV=production
 ENV PORT=${PORT}
 
@@ -45,7 +53,7 @@ USER appuser
 
 EXPOSE ${PORT}
 HEALTHCHECK --interval=10s --timeout=3s --start-period=30s --retries=3 \
-  CMD node -e "const http=require('node:http'); const port=process.env.PORT||2310; const req=http.get('http://127.0.0.1:'+port+'/api/v1/health',(res)=>process.exit(res.statusCode===200?0:1)); req.on('error',()=>process.exit(1)); req.setTimeout(2000,()=>{ req.destroy(); process.exit(1); });"
+  CMD node -e "const http=require('node:http'); const port=process.env.PORT||23109; const req=http.get('http://127.0.0.1:'+port+'/api/v1/health',(res)=>process.exit(res.statusCode===200?0:1)); req.on('error',()=>process.exit(1)); req.setTimeout(2000,()=>{ req.destroy(); process.exit(1); });"
 
 ENTRYPOINT ["node", "dist/index.js"]
 

@@ -1,8 +1,8 @@
 @baseUrl = http://localhost:23109/api/v1
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMGRjZTgxMTA1OTY3ZTBhMjRjOTg1ZSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzkyODk3NjUsImV4cCI6MTc4MDQ5OTM2NX0.LhubUfYntsnHtvBTdwz-HSiESQ_eg_UtyUGXs3X9gCM
-@idCasa = 6659f0b4e6a3c2f6a2d1a111
-@idProblema = 6a15779fa6671b99c1727d53
-@idUtente = 6a0dce81105967e0a24c985e
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZFV0ZW50ZSI6IjZhMWVhNGVhM2VjNjNlYWQ4NGIwNmUwMiIsImlkQ2FzYSI6IjZhMWViMWU0MTAwYzYwM2NiZWZiYTJiYiIsInJ1b2xvQ2FzYSI6IkhvbWVBZG1pbiIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3ODAzOTY1NzN9.DoDt8gSjTQbfM0wAs8eIFUxrkxFtpBgz00blql3XV_E
+@idCasa = 6a1eb1e4100c603cbefba2bb
+@idProblema = 6a1eb27a100c603cbefba2be
+@idUtente = 6a1ea4ea3ec63ead84b06e02
 
 ### Health
 GET {{baseUrl}}/health
@@ -25,7 +25,7 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "nome": "Perdita in bagno",
+  "nome": "Perdita in cucina",
   "descrizione": "Perdita dal rubinetto del lavandino",
   "priorita": "Media"
 }

@@ -35,7 +35,9 @@ vi.mock("../../src/repository/TurnoRepository", () => ({
 vi.mock("../../src/repository/CasaRepository", () => ({
   // Non usato in questi test (che si fermano sull'autorizzazione prima di chiamare la repo casa),
   // ma lo mock rimane per evitare di istanziare dipendenze reali durante l'import del service.
-  CasaRepository: class {},
+  CasaRepository: class {
+    getMembriCasaIds = vi.fn().mockResolvedValue(["u1", "u2", "u3"]);
+  },
 }));
 
 import { TurnoService } from "../../src/service/TurnoService";

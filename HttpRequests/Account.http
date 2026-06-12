@@ -1,0 +1,74 @@
+### 2. REGISTER - Nuovo utente
+POST http://localhost:23109/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "email": "mofawab461@herojp.com",
+  "password": "SecurePass123!",
+  "username": "alice1234",
+  "nome": "Alice",
+  "cognome": "Rossi"
+}
+### 3. Login - Ottieni token per autenticazione
+POST http://localhost:23109/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "mofawab461@herojp.com",
+  "password": "SecurePass123!"
+}
+
+> {%
+    client.global.set("auth_token", response.body.token);
+    client.global.set("user_id", response.body.user.id);
+    console.log("✓ Token salvato: " + response.body.token.substring(0, 20) + "...");
+    console.log("✓ User ID: " + response.body.user.id);
+%}
+
+
+### 1. GET PROFILE - Ottieni profilo dell'utente autenticato (Alice)
+GET http://localhost:23109/api/v1/account
+Authorization: Bearer {{ auth_token }}
+
+### 2. GET PROFILE - Senza token (dovrebbe fallire 401)
+GET http://localhost:23109/api/v1/account
+
+### 3. MODIFICA USERNAME - Valido
+PATCH http://localhost:23109/api/v1/account/username
+Authorization: Bearer {{ auth_token }}
+Content-Type: application/json
+
+{
+  "username": "alice_nuovo"
+}
+
+### 4. MODIFICA USERNAME - Troppo corto (dovrebbe fallire 400)
+PATCH http://localhost:23109/api/v1/account/username
+Authorization: Bearer {{ auth_token }}
+Content-Type: application/json
+
+{
+  "username": "al"
+}
+
+### 5. MODIFICA EMAIL - Valida (richiede invio email e verifica)
+PATCH http://localhost:23109/api/v1/account/email
+Authorization: Bearer {{ auth_token }}
+Content-Type: application/json
+
+{
+  "email": "mofawab461@herojp.com"
+}
+
+### 6. MODIFICA EMAIL - Non valida (dovrebbe fallire 400)
+PATCH http://localhost:23109/api/v1/account/email
+Authorization: Bearer {{ auth_token }}
+Content-Type: application/json
+
+{
+  "email": "email-non-valida"
+}
+
+### 7. ELIMINA ACCOUNT - Anonimizza ed elimina account dell'utente autenticato
+DELETE http://localhost:23109/api/v1/account
+Authorization: Bearer {{ auth_token }}

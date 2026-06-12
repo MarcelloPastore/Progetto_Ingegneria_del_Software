@@ -1,23 +1,14 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { AuthService } from "../service/AuthService";
-import { RegisterData } from "../dto/auth.dto";
+import { RegisterData, VerifyEmailData } from "../dto/auth.dto";
 import { getJwt } from "../utils/jwt";
-import { mapErrorToHttp } from "../errors/errorMapper";
+import { sendErrorReply } from "../utils/errorReply";
 
 const authService = new AuthService();
 
 export class AuthController {
   private handleAuthFailure(reply: FastifyReply, error: unknown) {
-    const mapped = mapErrorToHttp(error);
-    const payload: { error: string; details?: Record<string, string[]> } = {
-      error: mapped.message,
-    };
-
-    if (mapped.details) {
-      payload.details = mapped.details;
-    }
-
-    return reply.code(mapped.statusCode).send(payload);
+    return sendErrorReply(reply, error);
   }
 
   register = async (
@@ -43,14 +34,14 @@ export class AuthController {
 
       const jwt = getJwt(request.server);
       const token = jwt.sign({
-        id: user.id,
+        idUtente: user.id,
         type: "access",
       });
 
       return reply.send({
         token,
         user: {
-          id: user.id,
+          idUtente: user.id,
           username: user.username,
           nome: user.nome,
         },
@@ -96,11 +87,15 @@ export class AuthController {
     }
   };
   verificaEmail = async (
-    request: FastifyRequest<{ Body: { email: string } }>,
+    request: FastifyRequest<{
+      Body?: VerifyEmailData;
+      Querystring?: VerifyEmailData;
+    }>,
     reply: FastifyReply,
   ) => {
     try {
-      const result = await authService.verificaEmail(request.body);
+      const payload = request.body ?? request.query;
+      const result = await authService.verificaEmail(payload);
       return reply.send(result);
     } catch (error) {
       return this.handleAuthFailure(reply, error);

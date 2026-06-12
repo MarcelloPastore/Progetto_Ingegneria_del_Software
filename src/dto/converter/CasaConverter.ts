@@ -38,7 +38,7 @@ function toInquilinoDto(membro: MembroForDto): InquilinoDto {
     id: membro.id,
     utente: toUtenteInfo(membro.utenteRel, membro.idUtente),
     ruolo: membro.ruolo,
-    dataIngresso: membro.dataIngresso.toISOString(),
+    dataIngresso: membro.dataIngresso,
   };
 }
 
@@ -60,7 +60,7 @@ function baseCasaDto(casa: CasaForDto, idUtente?: string): CasaSummaryDto {
     citta: casa.citta,
     tipoCasa: casa.tipoCasa,
     inviteLink: casa.inviteLink,
-    dataCreazione: casa.dataCreazione.toISOString(),
+    dataCreazione: casa.dataCreazione,
     creator: toUtenteInfo(casa.creatorRel),
     ruoloUtente: resolveRuoloUtente(membri, idUtente),
     membriTotali: membri.length,

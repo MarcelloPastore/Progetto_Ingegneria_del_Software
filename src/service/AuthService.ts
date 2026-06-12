@@ -1,10 +1,10 @@
 import { prisma } from "../config/db";
 import argon2 from "argon2";
-import { randomInt } from "node:crypto";
+import { randomBytes, randomInt } from "node:crypto";
 import {
   RegisterSchema,
   LoginSchema,
-  EmailSchema,
+  VerifyEmailSchema,
   RequestPasswordResetSchema,
   VerifyPasswordResetCodeSchema,
   ResetPasswordSchema,
@@ -15,9 +15,39 @@ import {
   InvalidCredentialsError,
   UserNotFoundError,
   InvalidOrExpiredResetCodeError,
+  EmailDeliveryError,
+  PasswordResetEmailDeliveryError,
+  InvalidEmailVerificationTokenError,
+  DatabaseCleanupError,
 } from "../errors/appErrors";
+import type { VerificationMailInput } from "../utils/mail";
+import {
+  sendVerificationEmail,
+  sendPasswordResetEmail,
+  type PasswordResetMailInput,
+} from "../utils/mail";
+
+type AuthServiceMailers = {
+  sendVerificationMail?: (input: VerificationMailInput) => Promise<void>;
+  sendPasswordResetMail?: (input: PasswordResetMailInput) => Promise<void>;
+};
 
 export class AuthService {
+  private readonly sendVerificationMail: (
+    input: VerificationMailInput,
+  ) => Promise<void>;
+
+  private readonly sendPasswordResetMail: (
+    input: PasswordResetMailInput,
+  ) => Promise<void>;
+
+  constructor(mailers: AuthServiceMailers = {}) {
+    this.sendVerificationMail =
+      mailers.sendVerificationMail ?? sendVerificationEmail;
+    this.sendPasswordResetMail =
+      mailers.sendPasswordResetMail ?? sendPasswordResetEmail;
+  }
+
   private readonly resetCodes = new Map<
     string,
     { codice: string; expiresAtMs: number }
@@ -29,6 +59,18 @@ export class AuthService {
 
   private generateResetCode(): string {
     return randomInt(0, 1_000_000).toString().padStart(6, "0");
+  }
+
+  private generateVerificationToken(): string {
+    return randomBytes(32).toString("hex");
+  }
+
+  private async cleanupFailedRegistration(userId: string): Promise<void> {
+    try {
+      await prisma.utente.delete({ where: { id: userId } });
+    } catch {
+      throw new DatabaseCleanupError();
+    }
   }
 
   private ensureValidResetCode(params: {
@@ -52,7 +94,19 @@ export class AuthService {
       throw validation.error;
     }
 
-    const user = await this.register(validation.data);
+    const verificationToken = this.generateVerificationToken();
+    const user = await this.register(validation.data, verificationToken);
+
+    try {
+      await this.sendVerificationMail({
+        to: user.email,
+        username: user.username,
+        verificationToken,
+      });
+    } catch {
+      await this.cleanupFailedRegistration(user.id);
+      throw new EmailDeliveryError();
+    }
 
     return { id: user.id, message: "Registrazione completata" };
   }
@@ -80,13 +134,13 @@ export class AuthService {
     };
   }
 
-  async register(data: RegisterData) {
+  async register(data: RegisterData, tokenVerifica: string) {
     const existingByEmail = await prisma.utente.findUnique({
       where: { email: data.email },
     });
 
     if (existingByEmail) {
-      throw new DuplicateUserError();
+      throw new DuplicateUserError("L'email è già in uso.");
     }
 
     const existingByUsername = await prisma.utente.findFirst({
@@ -94,7 +148,7 @@ export class AuthService {
     });
 
     if (existingByUsername) {
-      throw new DuplicateUserError();
+      throw new DuplicateUserError("L'email è già in uso.");
     }
 
     const hashedPassword = await argon2.hash(data.password, {
@@ -108,6 +162,7 @@ export class AuthService {
         passwordHash: hashedPassword,
         nome: data.nome,
         cognome: data.cognome,
+        tokenVerifica,
       },
     });
   }
@@ -133,7 +188,7 @@ export class AuthService {
   }
 
   async verificaEmail(data: unknown): Promise<{ ok: boolean; date: string }> {
-    const validation = EmailSchema.safeParse(data);
+    const validation = VerifyEmailSchema.safeParse(data);
     if (!validation.success) {
       throw validation.error;
     }
@@ -146,6 +201,17 @@ export class AuthService {
       throw new InvalidCredentialsError();
     }
 
+    if (user.emailVerificata) {
+      return {
+        ok: true,
+        date: user.dataVerificaMail?.toISOString() ?? new Date().toISOString(),
+      };
+    }
+
+    if (!user.tokenVerifica || user.tokenVerifica !== validation.data.token) {
+      throw new InvalidEmailVerificationTokenError();
+    }
+
     const now = new Date();
 
     await prisma.utente.update({
@@ -153,18 +219,24 @@ export class AuthService {
       data: {
         emailVerificata: true,
         dataVerificaMail: now,
+        tokenVerifica: null,
       },
     });
 
     return {
       ok: true,
       date: now.toISOString(),
+      user: {
+        id: user.id,
+        nome: user.nome,
+        username: user.username,
+      },
     };
   }
 
   async requestPasswordResetWithValidation(
     data: unknown,
-  ): Promise<{ ok: boolean; date: string; expiresAt: string; codice: string }> {
+  ): Promise<{ ok: boolean; date: string; expiresAt: string }> {
     const validation = RequestPasswordResetSchema.safeParse(data);
     if (!validation.success) {
       throw validation.error;
@@ -186,11 +258,22 @@ export class AuthService {
       expiresAtMs: expiresAt.getTime(),
     });
 
+    try {
+      await this.sendPasswordResetMail({
+        to: user.email,
+        username: user.username,
+        resetCode: codice,
+        expiresAt: expiresAt.toISOString(),
+      });
+    } catch {
+      this.resetCodes.delete(this.emailKey(user.email));
+      throw new PasswordResetEmailDeliveryError();
+    }
+
     return {
       ok: true,
       date: new Date().toISOString(),
       expiresAt: expiresAt.toISOString(),
-      codice,
     };
   }
 

@@ -17,6 +17,11 @@ export const EmailSchema = z.object({
   email: z.email(),
 });
 
+export const VerifyEmailSchema = z.object({
+  email: z.email(),
+  token: z.string().min(1),
+});
+
 export const RequestPasswordResetSchema = z.object({
   email: z.email(),
 });

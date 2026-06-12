@@ -1,0 +1,36 @@
+name: Release Client
+
+on:
+  push:
+    tags:
+      - 'client/v*'
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+          channel: stable
+
+      - name: Install dependencies
+        working-directory: coincasa_app_flutter_frontend
+        run: flutter pub get
+
+      - name: Build APK
+        working-directory: coincasa_app_flutter_frontend
+        run: flutter build apk --release
+
+      - name: Extract version
+        id: version
+        run: echo "VERSION=${GITHUB_REF_NAME#client/}" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release with APK
+        uses: softprops/action-gh-release@v1
+        with:
+          name: "Client ${{ steps.version.outputs.VERSION }}"
+          files: coincasa_app_flutter_frontend/build/app/outputs/flutter-apk/app-release.apk
+          tag_name: ${{ github.ref_name }}

@@ -4,6 +4,9 @@ export const INCLUDE_ASSEGNATARIO = {
   assegnatarioCorrenteRel: {
     select: { id: true, username: true },
   },
+  idCreatoreRel: {
+    select: { id: true, username: true },
+  },
 } as const;
 
 const _turnoQuery = () =>
@@ -21,6 +24,7 @@ type TurnoCreateData = {
   assegnatarioCorrente: string;
   ordineRotazione: string[];
   indiceRotazioneCorrente: number;
+  dataUltimaPulizia?: Date;
   idCreatore: string;
 };
 

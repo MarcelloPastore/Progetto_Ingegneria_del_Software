@@ -4,11 +4,25 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        PORT: ${PORT:-2310}
+        PORT: ${PORT:-23109}
     image: coincasa:latest
     env_file:
       - .env
+    environment:
+      MAIL_HOST: ${MAIL_HOST:-mailpit}
+      MAIL_PORT: ${MAIL_PORT:-1025}
+      MAIL_USER: ${MAIL_USER:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-no-reply@example.com}
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL:-http://localhost:${PORT:-23109}}
     ports:
-      - "${PORT:-2310}:${PORT:-2310}"
+      - "${PORT:-23109}:${PORT:-23109}"
+    restart: unless-stopped
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "1025:1025"
+      - "8025:8025"
     restart: unless-stopped
 

@@ -1,21 +1,21 @@
 ### 1. HEALTH CHECK
-GET http://localhost:2310/api/v1/health
+GET http://localhost:23109/api/v1/health
 
 ### 2. REGISTER - Nuovo utente
-POST http://localhost:2310/api/v1/auth/register
+POST http://localhost:23109/api/v1/auth/register
 Content-Type: application/json
 
 {
-  "email": "alice@example.com",
+  "email": "alice2@example.com",
   "password": "SecurePass123!",
-  "username": "alice123",
+  "username": "alice1234",
   "nome": "Alice",
   "cognome": "Rossi"
 }
 
 
 ### 3. REGISTER - Secondo utente
-POST http://localhost:2310/api/v1/auth/register
+POST http://localhost:23109/api/v1/auth/register
 Content-Type: application/json
 
 {
@@ -27,16 +27,16 @@ Content-Type: application/json
 }
 
 ### 4. LOGIN - Credenziali corrette (Alice)
-POST http://localhost:2310/api/v1/auth/login
+POST http://localhost:23109/api/v1/auth/login
 Content-Type: application/json
 
 {
-  "email": "alice@example.com",
+  "email": "alice2@example.com",
   "password": "SecurePass123!"
 }
 
 ### 5. LOGIN - Password sbagliata
-POST http://localhost:2310/api/v1/auth/login
+POST http://localhost:23109/api/v1/auth/login
 Content-Type: application/json
 
 {
@@ -45,7 +45,7 @@ Content-Type: application/json
 }
 
 ### 6. LOGIN - Email non esistente
-POST http://localhost:2310/api/v1/auth/login
+POST http://localhost:23109/api/v1/auth/login
 Content-Type: application/json
 
 {
@@ -54,7 +54,7 @@ Content-Type: application/json
 }
 
 ### 7. REGISTER - Email duplicata (dovrebbe fallire)
-POST http://localhost:2310/api/v1/auth/register
+POST http://localhost:23109/api/v1/auth/register
 Content-Type: application/json
 
 {
@@ -66,7 +66,7 @@ Content-Type: application/json
 }
 
 ### 8. LOGIN - Alice per ottenere token
-POST http://localhost:2310/api/v1/auth/login
+POST http://localhost:23109/api/v1/auth/login
 Content-Type: application/json
 
 {
@@ -82,7 +82,7 @@ Content-Type: application/json
 %}
 
 ### 9. LOGIN - Bob per ottenere token (alternativo)
-POST http://localhost:2310/api/v1/auth/login
+POST http://localhost:23109/api/v1/auth/login
 Content-Type: application/json
 
 {
@@ -96,22 +96,22 @@ Content-Type: application/json
 %}
 
 ### 10. PROTECTED - Accedi con token (Alice)
-GET http://localhost:2310/api/v1/protected
+GET http://localhost:23109/api/v1/protected
 Authorization: Bearer {{ auth_token }}
 
 ### 11. PROTECTED - Accedi con token (Bob - alternativo)
-GET http://localhost:2310/api/v1/protected
+GET http://localhost:23109/api/v1/protected
 Authorization: Bearer {{ auth_token_bob }}
 
 ### 12. PROTECTED - Senza token (dovrebbe fallire 401)
-GET http://localhost:2310/api/v1/protected
+GET http://localhost:23109/api/v1/protected
 
 ### 13. PROTECTED - Con token non valido (dovrebbe fallire 401)
-GET http://localhost:2310/api/v1/protected
+GET http://localhost:23109/api/v1/protected
 Authorization: Bearer invalid.token.here
 
 ### 14. REGISTER - Password troppo corta (validation error)
-POST http://localhost:2310/api/v1/auth/register
+POST http://localhost:23109/api/v1/auth/register
 Content-Type: application/json
 
 {
@@ -122,7 +122,7 @@ Content-Type: application/json
   "cognome": ""
 }
 ### 15. VERIFICA - Verifica email Alice
-POST http://localhost:2310/api/v1/auth/verifica-email
+POST http://localhost:23109/api/v1/auth/verifica-email
 Content-Type: application/json
 
 {
@@ -130,7 +130,7 @@ Content-Type: application/json
 }
 
 ### 16. RECUPERA PASSWORD - Richiedi codice temporaneo
-POST http://localhost:2310/api/v1/auth/recupera-password
+POST http://localhost:23109/api/v1/auth/recupera-password
 Content-Type: application/json
 
 {
@@ -143,7 +143,7 @@ Content-Type: application/json
 %}
 
 ### 17. RECUPERA PASSWORD - Verifica codice
-POST http://localhost:2310/api/v1/auth/verifica-codice-recupero
+POST http://localhost:23109/api/v1/auth/verifica-codice-recupero
 Content-Type: application/json
 
 {
@@ -152,7 +152,7 @@ Content-Type: application/json
 }
 
 ### 18. RECUPERA PASSWORD - Reset password con codice valido
-POST http://localhost:2310/api/v1/auth/reset-password
+POST http://localhost:23109/api/v1/auth/reset-password
 Content-Type: application/json
 
 {
@@ -165,10 +165,10 @@ Content-Type: application/json
 ### NOTE SUI TEST:
 ###
 ### • Per test manuali con curl:
-###   1. Register: curl -X POST http://localhost:2310/api/v1/auth/register -H "Content-Type: application/json" -d '{"email":"user@test.com","password":"SecurePass123!","nome":"Nome","cognome":"Cognome"}'
-###   2. Login: curl -X POST http://localhost:2310/api/v1/auth/login -H "Content-Type: application/json" -d '{"email":"user@test.com","password":"SecurePass123!"}' | jq
-###   3. Estrai token: TOKEN=$(curl -s -X POST http://localhost:2310/api/v1/auth/login -H "Content-Type: application/json" -d '{"email":"user@test.com","password":"SecurePass123!"}' | jq -r '.token')
-###   4. Usa token: curl -H "Authorization: Bearer ${TOKEN}" http://localhost:2310/api/v1/protected
+###   1. Register: curl -X POST http://localhost:23109/api/v1/auth/register -H "Content-Type: application/json" -d '{"email":"user@test.com","password":"SecurePass123!","nome":"Nome","cognome":"Cognome"}'
+###   2. Login: curl -X POST http://localhost:23109/api/v1/auth/login -H "Content-Type: application/json" -d '{"email":"user@test.com","password":"SecurePass123!"}' | jq
+###   3. Estrai token: TOKEN=$(curl -s -X POST http://localhost:23109/api/v1/auth/login -H "Content-Type: application/json" -d '{"email":"user@test.com","password":"SecurePass123!"}' | jq -r '.token')
+###   4. Usa token: curl -H "Authorization: Bearer ${TOKEN}" http://localhost:23109/api/v1/protected
 ###
 ### • VARIABILI SALVATE AUTOMATICAMENTE:
 ###   - auth_token: token JWT di Alice (disponibile per i test successivi)

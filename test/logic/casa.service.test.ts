@@ -18,25 +18,48 @@ vi.mock("crypto", () => ({
   randomUUID: vi.fn(() => "invite-123"),
 }));
 
-vi.mock("../src/repository/CasaRepository", () => ({
+/* eslint-disable @typescript-eslint/no-unused-vars */
+vi.mock("../../src/repository/CasaRepository", () => ({
   CasaRepository: class {
-    createCasa = mocks.createCasa;
-    findCaseByUser = mocks.findCaseByUser;
-    findCasaByIdOrThrow = mocks.findCasaByIdOrThrow;
-    findCasaByIdAndInviteLinkOrThrow = mocks.findCasaByIdAndInviteLinkOrThrow;
-    updateCasa = mocks.updateCasa;
-    deleteCasa = mocks.deleteCasa;
-    findMembroCasaByCasaAndUtente = mocks.findMembroCasaByCasaAndUtente;
-    findMembroCasaByCasaAndUtenteOrThrow =
-      mocks.findMembroCasaByCasaAndUtenteOrThrow;
-    addMembroCasa = mocks.addMembroCasa;
-    updateMembroCasaRole = mocks.updateMembroCasaRole;
-    removeMembroCasa = mocks.removeMembroCasa;
+    createCasa(...args: unknown[]) {
+      return mocks.createCasa(...args);
+    }
+    findCaseByUser(...args: unknown[]) {
+      return mocks.findCaseByUser(...args);
+    }
+    findCasaByIdOrThrow(...args: unknown[]) {
+      return mocks.findCasaByIdOrThrow(...args);
+    }
+    findCasaByIdAndInviteLinkOrThrow(...args: unknown[]) {
+      return mocks.findCasaByIdAndInviteLinkOrThrow(...args);
+    }
+    updateCasa(...args: unknown[]) {
+      return mocks.updateCasa(...args);
+    }
+    deleteCasa(...args: unknown[]) {
+      return mocks.deleteCasa(...args);
+    }
+    findMembroCasaByCasaAndUtente(...args: unknown[]) {
+      return mocks.findMembroCasaByCasaAndUtente(...args);
+    }
+    findMembroCasaByCasaAndUtenteOrThrow(...args: unknown[]) {
+      return mocks.findMembroCasaByCasaAndUtenteOrThrow(...args);
+    }
+    addMembroCasa(...args: unknown[]) {
+      return mocks.addMembroCasa(...args);
+    }
+    updateMembroCasaRole(...args: unknown[]) {
+      return mocks.updateMembroCasaRole(...args);
+    }
+    removeMembroCasa(...args: unknown[]) {
+      return mocks.removeMembroCasa(...args);
+    }
   },
 }));
+/* eslint-enable @typescript-eslint/no-unused-vars */
 
 import { Ruolo } from "@prisma/client";
-import { CasaService } from "../src/service/CasaService";
+import { CasaService } from "../../src/service/CasaService";
 
 const baseCasa = {
   id: "c1",

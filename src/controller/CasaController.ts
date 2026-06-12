@@ -4,19 +4,21 @@ import {
   AggiungiInquilinoSchema,
   CreaCasaDto,
   CreaCasaSchema,
+  ModificaCasaDto,
+  ModificaCasaSchema,
   ModificaRuoloDto,
   ModificaRuoloSchema,
 } from "../dto/CasaDto";
 import { CasaService } from "../service/CasaService";
 import { CasaParams, InquilinoParams } from "../types/params";
-import { mapErrorToHttp } from "../errors/errorMapper";
+import { getJwt } from "../utils/jwt";
+import { sendErrorReply } from "../utils/errorReply";
 
 export class CasaController {
   constructor(private readonly casaService: CasaService) {}
 
   private handleFailure(reply: FastifyReply, error: unknown) {
-    const mapped = mapErrorToHttp(error);
-    return reply.status(mapped.statusCode).send({ message: mapped.message });
+    return sendErrorReply(reply, error);
   }
 
   creaCasa = async (
@@ -51,6 +53,23 @@ export class CasaController {
         request.user.idUtente,
       );
       return reply.status(200).send(casa);
+    } catch (error) {
+      return this.handleFailure(reply, error);
+    }
+  };
+
+  modificaCasa = async (
+    request: FastifyRequest<{ Params: CasaParams; Body: ModificaCasaDto }>,
+    reply: FastifyReply,
+  ) => {
+    try {
+      const dto = ModificaCasaSchema.parse(request.body);
+      await this.casaService.modificaCasa(
+        request.params.idCasa,
+        request.user.idUtente,
+        dto,
+      );
+      return reply.status(204).send();
     } catch (error) {
       return this.handleFailure(reply, error);
     }
@@ -135,7 +154,7 @@ export class CasaController {
     }
   };
 
-  modificaRuolo = async (
+  modificaRuoloInquilino = async (
     request: FastifyRequest<{
       Params: InquilinoParams;
       Body: ModificaRuoloDto;
@@ -174,6 +193,28 @@ export class CasaController {
         rigenera,
       );
       return reply.status(200).send(link);
+    } catch (error) {
+      return this.handleFailure(reply, error);
+    }
+  };
+
+  selectCasa = async (
+    request: FastifyRequest<{ Params: CasaParams }>,
+    reply: FastifyReply,
+  ) => {
+    try {
+      const { idCasa, ruoloCasa } = await this.casaService.selectCasa(
+        request.params.idCasa,
+        request.user.idUtente,
+      );
+      const jwt = getJwt(request.server);
+      const token = jwt.sign({
+        idUtente: request.user.idUtente,
+        idCasa,
+        ruoloCasa,
+        type: "access",
+      });
+      return reply.status(200).send({ token });
     } catch (error) {
       return this.handleFailure(reply, error);
     }

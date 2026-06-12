@@ -79,6 +79,7 @@ function toSpesaInfo(spesa: SpesaInfoForDto) {
 export class SpesaConverter {
   toQuotaDto(quota: QuotaForDto): QuotaSpesaDto {
     return {
+      id: quota.id,
       quota: quota.quota,
       dataPagamento: quota.dataPagamento?.toISOString() ?? null,
       utente: toAssegnatario(quota.utenteRel, quota.idUtente),

@@ -1,0 +1,63 @@
+@baseUrl = http://localhost:3000/api/v1
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMGRjZTgxMTA1OTY3ZTBhMjRjOTg1ZSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzkyODk3NjUsImV4cCI6MTc4MDQ5OTM2NX0.LhubUfYntsnHtvBTdwz-HSiESQ_eg_UtyUGXs3X9gCM
+@idCasa = 6659f0b4e6a3c2f6a2d1a111
+@idInquilino = 6659f0b4e6a3c2f6a2d1a222
+@inviteCode = CX-ABC123
+
+### Crea casa
+POST {{baseUrl}}/case
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nome": "Casa Centro",
+  "indirizzo": "Via Roma 1",
+  "citta": "Roma",
+  "tipoCasa": "Appartamento"
+}
+
+### Lista case
+GET {{baseUrl}}/case
+Authorization: Bearer {{token}}
+
+### Dettaglio casa
+GET {{baseUrl}}/case/{{idCasa}}
+Authorization: Bearer {{token}}
+
+### Link invito
+GET {{baseUrl}}/case/{{idCasa}}/invite-link
+Authorization: Bearer {{token}}
+
+### Aggiungi inquilino con codice invito
+POST {{baseUrl}}/case/{{idCasa}}/inquilini
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "inviteCode": "{{inviteCode}}"
+}
+
+### Lista inquilini
+GET {{baseUrl}}/case/{{idCasa}}/inquilini
+Authorization: Bearer {{token}}
+
+### Dettaglio inquilino
+GET {{baseUrl}}/case/{{idCasa}}/inquilini/{{idInquilino}}
+Authorization: Bearer {{token}}
+
+### Modifica ruolo inquilino
+PUT {{baseUrl}}/case/{{idCasa}}/inquilini/{{idInquilino}}/ruolo
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "ruolo": "HomeAdmin"
+}
+
+### Rimuovi inquilino
+DELETE {{baseUrl}}/case/{{idCasa}}/inquilini/{{idInquilino}}
+Authorization: Bearer {{token}}
+
+### Elimina casa
+DELETE {{baseUrl}}/case/{{idCasa}}
+Authorization: Bearer {{token}}

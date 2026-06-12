@@ -4,5 +4,12 @@ export default defineConfig({
   test: {
     include: ["test/**/*.test.ts"],
     environment: "node",
+    coverage: {
+      provider: "v8",
+      reporter: ["lcov", "text"],
+      include: ["src/**/*.ts"],
+      exclude: ["src/**/*.d.ts", "src/**/*.test.ts", "node_modules/", "dist/"],
+      all: true,
+    },
   },
 });
