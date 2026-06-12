@@ -21,13 +21,14 @@ class _DashboardCreatePopupState extends State<DashboardCreatePopup> {
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.sizeOf(context);
-    final popupWidth = screenSize.width < 450 ? screenSize.width - 20 : 410.0;
-    final popupHeight = 850.0;
+    final popupWidth = screenSize.width * 0.95;
+    final popupHeight = screenSize.height * 0.85;
 
     return Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      insetPadding: EdgeInsets.zero,
       backgroundColor: Colors.transparent,
-      child: Container(
+      child: Center(
+        child: Container(
         width: popupWidth,
         height: popupHeight,
         decoration: ShapeDecoration(
@@ -66,6 +67,7 @@ class _DashboardCreatePopupState extends State<DashboardCreatePopup> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

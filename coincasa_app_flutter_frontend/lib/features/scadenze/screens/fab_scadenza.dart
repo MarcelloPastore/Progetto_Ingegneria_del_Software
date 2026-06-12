@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
+import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/widgets/common/fab_buttons.dart';
 
 import 'fab_sacdenza_creata.dart';
 
@@ -24,10 +26,8 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
   bool _isCreated = false;
   bool _isSaving = false;
 
-  static const _primary = Color(0xFF5A2BBF);
   static const _danger = Color(0xFFFF1744);
   static const _fieldColor = Color(0xFF302A4C);
-  static const _disabled = Color(0xFF9D9D9D);
   static const _frequencyOptions = [
     'Non ripetere',
     'Settimanale',
@@ -67,6 +67,15 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        Text(
+          'Nuova Scadenza',
+          style: AppTextStyles.screenTitleStrong.copyWith(
+            color: AppColors.brandPrimary,
+            fontSize: 23,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 12),
         _LabeledField(
           label: 'Nome scadenza',
           required: _hasNameError,
@@ -193,62 +202,14 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
                 ),
         ),
         const SizedBox(height: 18),
-        SizedBox(
-          height: 54,
-          child: ElevatedButton(
-            onPressed: (_hasErrors || _isSaving) ? null : _save,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _primary,
-              disabledBackgroundColor: _disabled,
-              disabledForegroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
-              ),
-              elevation: 4,
-            ),
-            child: _isSaving
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
-                    ),
-                  )
-                : const Text(
-                    'Salva scadenza',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-          ),
+        FabSaveButton(
+          label: 'Salva scadenza',
+          onPressed: _hasErrors ? null : _save,
+          isLoading: _isSaving,
         ),
         const SizedBox(height: 14),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 30),
-          child: SizedBox(
-            height: 54,
-            child: OutlinedButton(
-              onPressed: () => Navigator.of(context).maybePop(),
-              style: OutlinedButton.styleFrom(
-                backgroundColor: const Color(0xFF501C26),
-                side: const BorderSide(color: _danger, width: 2),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
-                ),
-              ),
-              child: const Text(
-                'Annulla',
-                style: TextStyle(
-                  color: _danger,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ),
+        FabCancelButton(
+          onPressed: () => Navigator.of(context).maybePop(),
         ),
       ],
     );
@@ -532,19 +493,20 @@ class _LabeledField extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: 5, bottom: 5),
+          padding: const EdgeInsets.only(left: 2, bottom: 4),
           child: RichText(
             text: TextSpan(
-              text: label,
+              text: label.toUpperCase(),
               style: const TextStyle(
                 color: _primaryLabel,
-                fontSize: 16,
+                fontSize: 13,
                 fontWeight: FontWeight.w800,
+                letterSpacing: 0.5,
               ),
               children: required
                   ? const [
                       TextSpan(
-                        text: '*',
+                        text: ' *',
                         style: TextStyle(color: _FabColors.danger),
                       ),
                     ]
@@ -557,7 +519,7 @@ class _LabeledField extends StatelessWidget {
     );
   }
 
-  static const _primaryLabel = Color(0xFF5A2BBF);
+  static const _primaryLabel = Color(0xFF5228AD);
 }
 
 class _ErrorMessage extends StatelessWidget {

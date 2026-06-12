@@ -7,6 +7,7 @@ import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/utils/user_initials.dart';
+import 'package:coincasa_app/core/widgets/common/fab_buttons.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
 import 'package:coincasa_app/features/spese/screens/lista_spese_admin.dart';
@@ -319,12 +320,10 @@ class InserisciSpesaPopupContent extends ConsumerStatefulWidget {
 
 class _InserisciSpesaPopupContentState
     extends ConsumerState<InserisciSpesaPopupContent> {
-  final _importoController = TextEditingController();
   final _descrizioneController = TextEditingController();
 
   @override
   void dispose() {
-    _importoController.dispose();
     _descrizioneController.dispose();
     super.dispose();
   }
@@ -422,8 +421,9 @@ class _InserisciSpesaPopupContentState
           ),
         ),
         const SizedBox(height: 10),
-        _PopupImportoField(
-          controller: _importoController,
+        // Importo card con display grande
+        _ImportoCard(
+          value: form.importo,
           hasError: form.showErrors && !form.hasValidImporto,
           onChanged: controller.setImporto,
         ),
@@ -432,13 +432,14 @@ class _InserisciSpesaPopupContentState
           controller: _descrizioneController,
           onChanged: controller.setDescrizione,
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 18),
         inquiliniAsync.when(
           loading: () => const _DivisioneLoading(),
           error: (_, _) => _PopupDivisioneSection(
             inquilini: const [],
             selectedIds: form.selectedInquiliniIds,
             currentUserId: null,
+            importo: form.importo,
             showError: form.showErrors && form.selectedInquiliniIds.isEmpty,
             onSelected: controller.toggleInquilino,
           ),
@@ -452,61 +453,30 @@ class _InserisciSpesaPopupContentState
               inquilini: inquilini,
               selectedIds: form.selectedInquiliniIds,
               currentUserId: currentUserId,
+              importo: form.importo,
               showError: form.showErrors && form.selectedInquiliniIds.isEmpty,
               onSelected: controller.toggleInquilino,
             );
           },
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         _PopupPaidForAllRow(
           value: form.hoAnticipatoPerTutti,
           onChanged: controller.setHoAnticipatoPerTutti,
         ),
-        const SizedBox(height: 12),
-        _PopupRecurringRow(
-          value: form.spesaRicorrente,
-          isAdmin: isAdmin,
-          onChanged: isAdmin ? controller.setSpesaRicorrente : null,
-        ),
-        if (isAdmin && form.spesaRicorrente) ...[
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Text(
-              'Frequenza',
-              style: AppTextStyles.screenTitleStrong.copyWith(
-                color: AppColors.brandPrimary,
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: _FrequencyDropdown(
-              value: form.frequenza,
-              onChanged: controller.setFrequenza,
-            ),
-          ),
-        ],
         if (form.showMissingError) ...[
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
           _ErrorLine(message: 'Dati mancanti: compila i campi necessari'),
         ],
-        const SizedBox(height: 16),
-        _PopupSaveButton(
-          enabled: form.canSubmit,
-          submitting: form.isSubmitting,
-          onPressed: _submit,
+        const SizedBox(height: 14),
+        FabSaveButton(
+          label: 'Salva spesa',
+          onPressed: form.canSubmit ? _submit : null,
+          isLoading: form.isSubmitting,
         ),
         const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 28),
-          child: _CancelButton(
-            enabled: !form.isSubmitting,
-            onPressed: () => Navigator.of(context).pop(),
-          ),
+        FabCancelButton(
+          onPressed: form.isSubmitting ? null : () => Navigator.of(context).pop(),
         ),
       ],
     );
@@ -592,13 +562,13 @@ class _PopupDescrizioneField extends StatelessWidget {
       onChanged: onChanged,
       style: AppTextStyles.screenTitleStrong.copyWith(
         color: AppColors.textOnDark,
-        fontSize: 16,
+        fontSize: 14,
       ),
       decoration: InputDecoration(
         hintText: 'Descrizione spesa...',
         hintStyle: AppTextStyles.screenTitleStrong.copyWith(
-          color: AppColors.textOnDark.withValues(alpha: 0.72),
-          fontSize: 16,
+          color: AppColors.textOnDark.withValues(alpha: 0.55),
+          fontSize: 14,
         ),
         filled: true,
         fillColor: AppColors.surfaceDarkElevated,
@@ -616,7 +586,7 @@ class _PopupDescrizioneField extends StatelessWidget {
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppSizes.p12,
-          vertical: AppSizes.p12,
+          vertical: AppSizes.p10,
         ),
       ),
     );
@@ -628,6 +598,7 @@ class _PopupDivisioneSection extends StatelessWidget {
     required this.inquilini,
     required this.selectedIds,
     required this.currentUserId,
+    required this.importo,
     required this.showError,
     required this.onSelected,
   });
@@ -635,41 +606,48 @@ class _PopupDivisioneSection extends StatelessWidget {
   final List<Inquilino> inquilini;
   final Set<String> selectedIds;
   final String? currentUserId;
+  final String importo;
   final bool showError;
   final ValueChanged<String> onSelected;
 
   @override
   Widget build(BuildContext context) {
+    final selectedCount = selectedIds.length;
+    final importoNum = double.tryParse(importo.replaceAll(',', '.')) ?? 0;
+    final quota = selectedCount > 0 ? importoNum / selectedCount : 0.0;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 24),
-          child: Text(
-            'DIVIDI TRA',
-            style: AppTextStyles.screenTitleStrong.copyWith(
-              color: const Color(0xFF5228AD),
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
-            ),
+        Text(
+          'DIVIDI TRA',
+          style: AppTextStyles.screenTitleStrong.copyWith(
+            color: const Color(0xFF5228AD),
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.5,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 6),
         ...inquilini.map((inq) {
           final isSelected = selectedIds.contains(inq.id);
           final isCurrentUser = inq.id == currentUserId;
+          final quotaLabel = isSelected && quota > 0
+              ? '€ ${quota.toStringAsFixed(0)}'
+              : '–';
           return Padding(
-            padding: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.only(bottom: 2),
             child: _PopupInquilinoCheckbox(
               inquilino: inq,
               isSelected: isSelected,
               isCurrentUser: isCurrentUser,
+              quotaLabel: quotaLabel,
               onChanged: () => onSelected(inq.id),
             ),
           );
         }),
         if (showError) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           const _ErrorLine(message: 'Seleziona almeno un coinquilino'),
         ],
       ],
@@ -682,74 +660,87 @@ class _PopupInquilinoCheckbox extends StatelessWidget {
     required this.inquilino,
     required this.isSelected,
     required this.isCurrentUser,
+    required this.quotaLabel,
     required this.onChanged,
   });
 
   final Inquilino inquilino;
   final bool isSelected;
   final bool isCurrentUser;
+  final String quotaLabel;
   final VoidCallback onChanged;
 
   Color _avatarColor(String id) => userAvatarColorsForSeed(id).background;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDarkElevated,
+    final name = inquilino.username.isNotEmpty
+        ? inquilino.username
+        : inquilino.email.split('@').first;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: isCurrentUser ? null : onChanged,
         borderRadius: BorderRadius.circular(AppSizes.radius8),
-        border: Border.all(
-          color: isSelected ? AppColors.brandAccent : Colors.transparent,
-        ),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: isCurrentUser ? null : onChanged,
-          borderRadius: BorderRadius.circular(AppSizes.radius8),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  backgroundColor: _avatarColor(inquilino.id),
-                  radius: 18,
-                  child: Text(
-                    resolveUserInitials(
-                      displayName: inquilino.username.isNotEmpty
-                          ? inquilino.username
-                          : inquilino.email,
-                      fallback: '?',
-                    ),
-                    style: const TextStyle(
-                      color: AppColors.textOnDark,
-                      fontWeight: FontWeight.bold,
-                    ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+          child: Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: _avatarColor(inquilino.id),
+                radius: 19,
+                child: Text(
+                  resolveUserInitials(
+                    displayName: name,
+                    fallback: '?',
+                  ),
+                  style: const TextStyle(
+                    color: AppColors.textOnDark,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    isCurrentUser
-                        ? '${inquilino.username} (Tu)'
-                        : inquilino.username,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.screenTitleStrong.copyWith(
-                      color: isCurrentUser
-                          ? AppColors.textOnDark.withValues(alpha: 0.45)
-                          : AppColors.textOnDark,
-                      fontSize: 14,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  isCurrentUser ? '$name (Tu)' : name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.screenTitleStrong.copyWith(
+                    color: const Color(0xFF7A7490).withValues(
+                      alpha: isCurrentUser ? 0.5 : 1.0,
                     ),
+                    fontSize: 13,
                   ),
                 ),
-                Checkbox(
+              ),
+              Transform.scale(
+                scale: 1.25,
+                child: Checkbox(
                   value: isSelected,
                   onChanged: isCurrentUser ? null : (_) => onChanged(),
                   activeColor: AppColors.brandAccent,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-              ],
-            ),
+              ),
+              SizedBox(
+                width: 36,
+                child: Text(
+                  quotaLabel,
+                  textAlign: TextAlign.right,
+                  style: AppTextStyles.screenTitleStrong.copyWith(
+                    color: isSelected
+                        ? AppColors.brandAccent
+                        : AppColors.textOnDark.withValues(alpha: 0.3),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -859,75 +850,6 @@ class _PopupRecurringRow extends StatelessWidget {
             activeTrackColor: AppColors.brandPrimary,
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _PopupSaveButton extends StatelessWidget {
-  const _PopupSaveButton({
-    required this.enabled,
-    required this.submitting,
-    required this.onPressed,
-  });
-
-  final bool enabled;
-  final bool submitting;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton(
-      onPressed: enabled && !submitting ? onPressed : null,
-      style: ElevatedButton.styleFrom(
-        backgroundColor:
-            submitting ? AppColors.textMuted : const Color(0xFFA48DDA),
-        disabledBackgroundColor: AppColors.textMuted,
-        elevation: 4,
-        shadowColor: Colors.black.withValues(alpha: 0.25),
-        padding: const EdgeInsets.symmetric(vertical: 13),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
-      ),
-      child: Text(
-        submitting ? 'Salvataggio...' : 'Aggiungi spesa',
-        style: AppTextStyles.screenTitleStrong.copyWith(
-          color: AppColors.textOnDark,
-          fontSize: 22,
-          fontWeight: FontWeight.w800,
-        ),
-      ),
-    );
-  }
-}
-
-class _CancelButton extends StatelessWidget {
-  const _CancelButton({required this.enabled, required this.onPressed});
-
-  final bool enabled;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return OutlinedButton(
-      onPressed: enabled ? onPressed : null,
-      style: OutlinedButton.styleFrom(
-        backgroundColor: AppColors.errorContainerStrong,
-        foregroundColor: AppColors.errorStrong,
-        side: const BorderSide(color: AppColors.errorStrong, width: 2),
-        padding: const EdgeInsets.symmetric(vertical: 13),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-        ),
-        disabledForegroundColor: AppColors.textMuted.withValues(alpha: 0.42),
-      ),
-      child: Text(
-        'Annulla',
-        style: AppTextStyles.buttonCompact.copyWith(
-          color: AppColors.errorStrong,
-          fontWeight: FontWeight.w800,
-        ),
       ),
     );
   }
@@ -1123,7 +1045,7 @@ class _ImportoCardState extends State<_ImportoCard> {
     return GestureDetector(
       onTap: () => _focus.requestFocus(),
       child: Container(
-        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
         decoration: BoxDecoration(
           color: AppColors.surfaceDarkElevated,
           borderRadius: BorderRadius.circular(AppSizes.radius8),
@@ -1141,20 +1063,20 @@ class _ImportoCardState extends State<_ImportoCard> {
               'Importo',
               style: TextStyle(
                 color: AppColors.textOnDark.withValues(alpha: 0.55),
-                fontSize: 13,
+                fontSize: 12,
                 fontFamily: 'Inter',
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             Row(
               children: [
                 Expanded(
                   child: Text(
                     _displayAmount,
                     style: AppTextStyles.screenTitleStrong.copyWith(
-                      color: AppColors.brandPrimary,
-                      fontSize: 32,
+                      color: AppColors.textOnDark,
+                      fontSize: 26,
                       fontWeight: FontWeight.w800,
                     ),
                     textAlign: TextAlign.right,

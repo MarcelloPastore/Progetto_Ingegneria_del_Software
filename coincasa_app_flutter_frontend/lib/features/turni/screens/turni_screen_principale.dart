@@ -6,6 +6,7 @@ import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/widgets/common/fab_buttons.dart';
 import 'package:coincasa_app/features/turni/screens/turno_salvato_con_successo.dart';
 
 Future<void> showTurniScreenPrincipaleDialog(BuildContext context) {
@@ -435,22 +436,25 @@ class _TurnoFormPanel extends StatelessWidget {
               'Nuovo Turno',
               style: AppTextStyles.screenTitleStrong.copyWith(
                 color: AppColors.brandPrimary,
-                fontSize: 21,
+                fontSize: 23,
+                fontWeight: FontWeight.w800,
               ),
             ),
-            const SizedBox(height: AppSizes.p20),
+            const SizedBox(height: AppSizes.p14),
             _TaskField(controller: taskController, onChanged: onTaskChanged),
-            const SizedBox(height: AppSizes.p20),
+            const SizedBox(height: AppSizes.p14),
             _DatePreviewRow(
               selectedDate: selectedTurnoDate,
               onDateTap: onDateTap,
             ),
-            const SizedBox(height: AppSizes.p20),
+            const SizedBox(height: AppSizes.p14),
             Text(
-              'Frequenza',
+              'FREQUENZA',
               style: AppTextStyles.screenTitleStrong.copyWith(
-                color: AppColors.brandPrimary,
-                fontSize: 21,
+                color: const Color(0xFF5228AD),
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.5,
               ),
             ),
             const SizedBox(height: AppSizes.p8),
@@ -484,58 +488,14 @@ class _TurnoFormPanel extends StatelessWidget {
               ),
             ],
             const SizedBox(height: AppSizes.p22),
-            FilledButton(
+            FabSaveButton(
+              label: 'Salva turno',
               onPressed: isSubmitting || !canSubmit ? null : onSubmit,
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.brandSecondary,
-                disabledBackgroundColor: AppColors.textMutedDark,
-                foregroundColor: AppColors.textOnDark,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
-                ),
-              ),
-              child: isSubmitting
-                  ? const SizedBox(
-                      width: AppSizes.p24,
-                      height: AppSizes.p24,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.4,
-                        color: AppColors.textOnDark,
-                      ),
-                    )
-                  : Text(
-                      'Salva Turno',
-                      style: AppTextStyles.buttonCompact.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
+              isLoading: isSubmitting,
             ),
             const SizedBox(height: AppSizes.p8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSizes.p28),
-              child: OutlinedButton(
-                onPressed: isSubmitting ? null : onCancel,
-                style: OutlinedButton.styleFrom(
-                  backgroundColor: AppColors.errorContainerStrong,
-                  foregroundColor: AppColors.errorStrong,
-                  side: const BorderSide(
-                    color: AppColors.errorStrong,
-                    width: 2,
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 13),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                ),
-                child: Text(
-                  'Annulla',
-                  style: AppTextStyles.buttonCompact.copyWith(
-                    color: AppColors.errorStrong,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
+            FabCancelButton(
+              onPressed: isSubmitting ? null : onCancel,
             ),
           ],
         ),

@@ -7,8 +7,8 @@ import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/widgets/common/fab_buttons.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
-import 'package:coincasa_app/core/widgets/common/primary_button.dart';
 import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 import 'package:coincasa_app/features/problemi/screens/popup_successo_FAB.dart';
 
@@ -533,11 +533,11 @@ class _ProblemiFormContent extends StatelessWidget {
           'Nuovo Problema',
           style: AppTextStyles.screenTitleStrong.copyWith(
             color: AppColors.brandPrimary,
-            fontSize: 24,
+            fontSize: 23,
             fontWeight: FontWeight.w800,
           ),
         ),
-        const SizedBox(height: AppSizes.p18),
+        const SizedBox(height: AppSizes.p12),
         _ProblemTextField(
           controller: nomeController,
           hintText: 'Nome problema...',
@@ -556,15 +556,14 @@ class _ProblemiFormContent extends StatelessWidget {
           errorText: form.hasDescrizioneError
               ? 'Descrivi il problema in modo chiaro'
               : null,
-          maxLines: 4,
-          minLines: 4,
+          maxLines: 3,
+          minLines: 3,
           onChanged: controller.setDescrizione,
         ),
         const SizedBox(height: AppSizes.p2),
         _SectionTitle(
           title: 'Priorità',
           hasError: form.hasPrioritaError,
-          textColor: AppColors.brandSecondary,
         ),
         const SizedBox(height: AppSizes.p2),
         _PriorityRow(
@@ -572,7 +571,7 @@ class _ProblemiFormContent extends StatelessWidget {
           selected: form.priorita,
           onChanged: controller.setPriorita,
         ),
-        const SizedBox(height: AppSizes.p18),
+        const SizedBox(height: AppSizes.p10),
         _AssigneeSection(
           hasError: form.hasAssignmentError,
           selected: form.assignmentMode,
@@ -583,36 +582,14 @@ class _ProblemiFormContent extends StatelessWidget {
           _ErrorBanner(message: resolveBannerText(form)),
         ],
         const SizedBox(height: AppSizes.p16),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSizes.p2),
-          child: PrimaryButton(
-            label: 'Segnala problema',
-            isLoading: form.isSubmitting,
-            onPressed: form.canSubmit ? onSubmit : null,
-          ),
+        FabSaveButton(
+          label: 'Segnala problema',
+          onPressed: form.canSubmit ? onSubmit : null,
+          isLoading: form.isSubmitting,
         ),
         const SizedBox(height: AppSizes.p8),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSizes.p28),
-          child: OutlinedButton(
-            onPressed: form.isSubmitting ? null : onCancel,
-            style: OutlinedButton.styleFrom(
-              backgroundColor: AppColors.errorContainerStrong,
-              foregroundColor: AppColors.errorStrong,
-              side: const BorderSide(color: AppColors.errorStrong, width: 2),
-              padding: const EdgeInsets.symmetric(vertical: 13),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
-              ),
-            ),
-            child: Text(
-              'Annulla',
-              style: AppTextStyles.buttonCompact.copyWith(
-                color: AppColors.errorStrong,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
+        FabCancelButton(
+          onPressed: form.isSubmitting ? null : onCancel,
         ),
       ],
     );
@@ -796,30 +773,24 @@ class _TabItem extends StatelessWidget {
 }
 
 class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({
-    required this.title,
-    required this.hasError,
-    this.textColor,
-  });
+  const _SectionTitle({required this.title, required this.hasError});
 
   final String title;
   final bool hasError;
-  final Color? textColor;
 
   @override
   Widget build(BuildContext context) {
-    final color = hasError
-        ? AppColors.errorStrong
-        : (textColor ?? AppColors.brandAccent);
+    final color = hasError ? AppColors.errorStrong : const Color(0xFF5228AD);
     return Row(
       children: [
         Expanded(
           child: Text(
-            title,
+            title.toUpperCase(),
             style: AppTextStyles.screenTitleStrong.copyWith(
               color: color,
-              fontSize: 20,
+              fontSize: 13,
               fontWeight: FontWeight.w800,
+              letterSpacing: 0.5,
             ),
           ),
         ),
@@ -828,7 +799,7 @@ class _SectionTitle extends StatelessWidget {
             '*',
             style: AppTextStyles.screenTitleStrong.copyWith(
               color: color,
-              fontSize: 20,
+              fontSize: 13,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -974,6 +945,7 @@ class _PriorityRow extends StatelessWidget {
           ),
         ],
       ),
+
     );
   }
 }
@@ -1016,7 +988,7 @@ class _PriorityChip extends StatelessWidget {
       borderRadius: BorderRadius.circular(AppSizes.radius16),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 140),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         decoration: BoxDecoration(
           gradient: background,
           borderRadius: BorderRadius.circular(AppSizes.radius16),
@@ -1077,9 +1049,9 @@ class _AssigneeSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(
         AppSizes.p12,
+        AppSizes.p8,
         AppSizes.p12,
-        AppSizes.p12,
-        AppSizes.p14,
+        AppSizes.p10,
       ),
       decoration: BoxDecoration(
         color: AppColors.surfaceDarkElevated,
@@ -1090,7 +1062,7 @@ class _AssigneeSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _SectionTitle(title: 'Chi se ne occupa?', hasError: hasError),
-          const SizedBox(height: AppSizes.p10),
+          const SizedBox(height: AppSizes.p6),
           _AssigneeChoiceButton(
             label: 'Assegna a me',
             icon: Icons.pan_tool_alt_rounded,
@@ -1100,7 +1072,7 @@ class _AssigneeSection extends StatelessWidget {
             selected: selected == _ProblemaAssignmentMode.me,
             onTap: () => onChanged(_ProblemaAssignmentMode.me),
           ),
-          const SizedBox(height: AppSizes.p10),
+          const SizedBox(height: AppSizes.p6),
           _AssigneeChoiceButton(
             label: 'Chiedi a tutti',
             icon: Icons.groups_rounded,
@@ -1142,7 +1114,7 @@ class _AssigneeChoiceButton extends StatelessWidget {
       borderRadius: BorderRadius.circular(AppSizes.radius12),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 140),
-        height: 54,
+        height: 44,
         decoration: BoxDecoration(
           color: fillColor,
           borderRadius: BorderRadius.circular(AppSizes.radius12),
