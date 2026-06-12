@@ -86,6 +86,22 @@ class ListaScadenze extends StatefulWidget {
 class _ListaScadenzeState extends State<ListaScadenze> {
   late Future<_ScadenzeData> _future;
   bool _initialized = false;
+  final Set<ScadenzaTipo> _activeFilters = {
+    ScadenzaTipo.turno,
+    ScadenzaTipo.spesa,
+    ScadenzaTipo.scadenza,
+  };
+
+  void _toggleFilter(ScadenzaTipo tipo) {
+    setState(() {
+      if (_activeFilters.contains(tipo)) {
+        // Lascia almeno un filtro attivo
+        if (_activeFilters.length > 1) _activeFilters.remove(tipo);
+      } else {
+        _activeFilters.add(tipo);
+      }
+    });
+  }
 
   @override
   void didChangeDependencies() {
@@ -251,7 +267,10 @@ class _ListaScadenzeState extends State<ListaScadenze> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const _Legend(),
+                _Legend(
+                  activeFilters: _activeFilters,
+                  onToggle: _toggleFilter,
+                ),
                 const SizedBox(height: 12),
                 Expanded(
                   child: FutureBuilder<_ScadenzeData>(
@@ -289,18 +308,29 @@ class _ListaScadenzeState extends State<ListaScadenze> {
                       }
 
                       final data = snap.data!;
+                      final inScadenza = data.inScadenza
+                          .where((i) => _activeFilters.contains(i.tipo))
+                          .toList();
+                      final prossime = data.prossime
+                          .where((i) => _activeFilters.contains(i.tipo))
+                          .toList();
+
                       if (data.inScadenza.isEmpty && data.prossime.isEmpty) {
                         return const _EmptyState();
+                      }
+
+                      if (inScadenza.isEmpty && prossime.isEmpty) {
+                        return const _EmptyFilterState();
                       }
 
                       return RefreshIndicator(
                         onRefresh: () async => _refresh(),
                         child: ListView(
                           children: [
-                            if (data.inScadenza.isNotEmpty) ...[
+                            if (inScadenza.isNotEmpty) ...[
                               const _SectionHeader(label: 'IN SCADENZA'),
                               const SizedBox(height: 8),
-                              ...data.inScadenza.map(
+                              ...inScadenza.map(
                                 (s) => _ScadenzaCard(
                                   item: s,
                                   onTap: () => _navigate(s),
@@ -308,10 +338,10 @@ class _ListaScadenzeState extends State<ListaScadenze> {
                               ),
                               const SizedBox(height: 12),
                             ],
-                            if (data.prossime.isNotEmpty) ...[
+                            if (prossime.isNotEmpty) ...[
                               const _SectionHeader(label: 'PROSSIME'),
                               const SizedBox(height: 8),
-                              ...data.prossime.map(
+                              ...prossime.map(
                                 (s) => _ScadenzaCard(
                                   item: s,
                                   onTap: () => _navigate(s),
@@ -569,47 +599,123 @@ class _EmptyState extends StatelessWidget {
 }
 
 class _Legend extends StatelessWidget {
-  const _Legend();
+  const _Legend({required this.activeFilters, required this.onToggle});
+
+  final Set<ScadenzaTipo> activeFilters;
+  final ValueChanged<ScadenzaTipo> onToggle;
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
+    return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        _LegendDot(color: _colorTurno, label: 'Turni'),
-        SizedBox(width: 16),
-        _LegendDot(color: _colorSpesa, label: 'Spese'),
-        SizedBox(width: 16),
-        _LegendDot(color: _colorScadenza, label: 'Scadenze'),
+        _LegendDot(
+          color: _colorTurno,
+          label: 'Turni',
+          active: activeFilters.contains(ScadenzaTipo.turno),
+          onTap: () => onToggle(ScadenzaTipo.turno),
+        ),
+        const SizedBox(width: 16),
+        _LegendDot(
+          color: _colorSpesa,
+          label: 'Spese',
+          active: activeFilters.contains(ScadenzaTipo.spesa),
+          onTap: () => onToggle(ScadenzaTipo.spesa),
+        ),
+        const SizedBox(width: 16),
+        _LegendDot(
+          color: _colorScadenza,
+          label: 'Scadenze',
+          active: activeFilters.contains(ScadenzaTipo.scadenza),
+          onTap: () => onToggle(ScadenzaTipo.scadenza),
+        ),
       ],
     );
   }
 }
 
 class _LegendDot extends StatelessWidget {
-  const _LegendDot({required this.color, required this.label});
+  const _LegendDot({
+    required this.color,
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
   final Color color;
   final String label;
+  final bool active;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 5),
-        Text(
-          label,
-          style: const TextStyle(
-            color: Color(0xFFB0AACC),
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 180),
+        opacity: active ? 1.0 : 0.35,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: active
+                ? color.withValues(alpha: 0.12)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: active ? color.withValues(alpha: 0.5) : Colors.transparent,
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+              ),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: TextStyle(
+                  color: active ? color : const Color(0xFFB0AACC),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
         ),
-      ],
+      ),
+    );
+  }
+}
+
+class _EmptyFilterState extends StatelessWidget {
+  const _EmptyFilterState();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.filter_list_off, color: Color(0xFF5A2BBF), size: 56),
+          SizedBox(height: 16),
+          Text(
+            'Nessun risultato',
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Attiva almeno un filtro dalla legenda.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white38, fontSize: 14),
+          ),
+        ],
+      ),
     );
   }
 }
