@@ -2,7 +2,6 @@ import {
   CreaSpesaDto,
   ModificaSpesaDto,
   QuotaSpesaDto,
-  SpesaListItemDto,
   SpesaResponseDto,
   SaldoResponseDto,
   CreditoResponseDto,
@@ -135,10 +134,10 @@ export class SpesaService {
     return spesa;
   }
 
-  async getAllSpese(idCasa: string): Promise<SpesaListItemDto[]> {
+  async getAllSpese(idCasa: string): Promise<SpesaResponseDto[]> {
     const spese = await spesaRepository.findSpeseByCasa(idCasa);
 
-    return spese.map((spesa) => spesaConverter.toSpesaListItemDto(spesa));
+    return spese.map((spesa) => spesaConverter.toSpesaDto(spesa));
   }
 
   async getSpesa(idCasa: string, idSpesa: string): Promise<SpesaResponseDto> {

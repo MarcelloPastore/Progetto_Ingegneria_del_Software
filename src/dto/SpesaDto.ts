@@ -95,6 +95,7 @@ export const SpesaResponseSchema = z.object({
   dataScadenza: isoDateString.nullable(),
   isRicorrente: z.boolean(),
   cadenzaMesi: z.number().int().positive().nullable(),
+  idScadenza: z.string().nullable(),
   owner: AssegnatarioInfoSchema,
   anticipataDa: AssegnatarioInfoSchema.nullable(),
   partecipanti: z.array(PartecipanteSaldoSchema),
