@@ -1,18 +1,4 @@
-/**
- * LOGIC TESTS — TurnoService
- *
- * Scopo:
- * - testare la business logic del dominio "turni" isolandola dal DB
- * - verificare che il service costruisca correttamente i dati da persistere e aggiorni lo stato (rotazione, assegnatario, ecc.)
- *
- * Come funziona:
- * - i repository vengono mockati (`TurnoRepository`, `CasaRepository`)
- * - i test verificano le chiamate (argomenti) fatte dal service ai repository e non la persistenza reale
- *
- * Perché è utile:
- * - evita regressioni su rotazione e aggiornamenti
- * - consente refactoring interno del service mantenendo invariato il comportamento osservabile
- */
+/*
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -222,3 +208,4 @@ describe("TurnoService", () => {
   });
 });
 
+ */

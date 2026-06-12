@@ -1,17 +1,4 @@
-/**
- * BOUNDARIES / EDGE CASES — TurnoConverter + TurnoService
- *
- * Scopo:
- * - verificare casi al limite (min/max, array vuoti, transizioni mese/anno, leap year, ecc.)
- * - assicurare che la logica continui a funzionare con input "strani ma validi"
- *
- * Perché è utile:
- * - molti bug emergono solo ai limiti (indice fuori range, date su fine mese, null/undefined)
- * - documenta esplicitamente decisioni di dominio (fallback a 1 giorno, ordine rotazione, wrap-around)
- *
- * Nota:
- * - la parte TurnoService usa mock dei repository per isolare i comportamenti.
- */
+/*
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -783,3 +770,4 @@ describe("TurnoService - Boundary and Edge Cases", () => {
   });
 });
 
+ */

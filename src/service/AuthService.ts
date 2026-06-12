@@ -226,11 +226,11 @@ export class AuthService {
     return {
       ok: true,
       date: now.toISOString(),
-      user: {
-        id: user.id,
-        nome: user.nome,
-        username: user.username,
-      },
+      //user: {
+      //  id: user.id,
+      //  nome: user.nome,
+      //  username: user.username,
+      //},
     };
   }
 
