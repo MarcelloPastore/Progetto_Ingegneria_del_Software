@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
+import 'package:coincasa_app/core/models/scadenza.dart';
 import 'package:coincasa_app/core/models/spesa.dart';
 import 'package:coincasa_app/core/models/turno.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
@@ -36,6 +37,7 @@ class ScadenzaItem {
     this.frequenza = 'Non ripetere',
     this.turno,
     this.spesa,
+    this.scadenzaObj,
   });
 
   final String title;
@@ -47,6 +49,7 @@ class ScadenzaItem {
   final String frequenza;
   final Turno? turno;
   final Spesa? spesa;
+  final Scadenza? scadenzaObj;
 
   Color get sideColor => switch (tipo) {
     ScadenzaTipo.turno => _colorTurno,
@@ -101,6 +104,7 @@ class _ListaScadenzeState extends State<ListaScadenze> {
     final results = await Future.wait([
       ApiProvider.turni.list(casa.id),
       ApiProvider.spese.list(casa.id),
+      ApiProvider.scadenze.list(casa.id),
     ]);
 
     final turni = (results[0] as List<Turno>)
@@ -111,20 +115,20 @@ class _ListaScadenzeState extends State<ListaScadenze> {
         .where((s) => s.dataScadenza != null)
         .toList();
 
-    final mockScadenza = ScadenzaItem(
-      title: 'Revisione caldaia',
-      subtitle: 'Revisione annuale obbligatoria',
-      date: _fmt(DateTime.now().add(const Duration(days: 14))),
-      badgeText: _badge(DateTime.now().add(const Duration(days: 14))),
-      tipo: ScadenzaTipo.scadenza,
-      sortDate: DateTime.now().add(const Duration(days: 14)),
-      frequenza: 'Annuale',
-    );
+    final scadenze = results[2] as List<Scadenza>;
+
+    // Scadenze collegate a una spesa vanno mostrate in giallo (come le spese)
+    final idScadenzeConSpesa = spese
+        .map((s) => s.idScadenza)
+        .whereType<String>()
+        .toSet();
 
     final items = <ScadenzaItem>[
       for (final t in turni) _turnoToItem(t),
       for (final s in spese) _spesaToItem(s),
-      mockScadenza,
+      // Salta le scadenze già rappresentate dalla loro spesa collegata
+      for (final sc in scadenze)
+        if (!idScadenzeConSpesa.contains(sc.id)) _scadenzaToItem(sc),
     ]..sort((a, b) => a.sortDate.compareTo(b.sortDate));
 
     final today = _normDate(DateTime.now());
@@ -165,6 +169,34 @@ class _ListaScadenzeState extends State<ListaScadenze> {
       frequenza: s.isRicorrente ? 'Ricorrente' : 'Non ripetere',
       spesa: s,
     );
+  }
+
+  ScadenzaItem _scadenzaToItem(Scadenza sc) {
+    final date = sc.dataScadenza;
+    return ScadenzaItem(
+      title: sc.nome,
+      subtitle: sc.descrizione,
+      date: _fmt(date),
+      badgeText: _badge(date),
+      tipo: ScadenzaTipo.scadenza,
+      sortDate: date,
+      frequenza: _frequenzaFromCadenza(sc.isRicorrente, sc.cadenzaGiorni),
+      scadenzaObj: sc,
+    );
+  }
+
+  static String _frequenzaFromCadenza(bool isRicorrente, int? cadenzaGiorni) {
+    if (!isRicorrente) return 'Non ripetere';
+    switch (cadenzaGiorni) {
+      case 7:
+        return 'Settimanale';
+      case 30:
+        return 'Mensile';
+      case 365:
+        return 'Annuale';
+      default:
+        return 'Non ripetere';
+    }
   }
 
   void _refresh() {
@@ -327,6 +359,7 @@ class _ListaScadenzeState extends State<ListaScadenze> {
           context,
         ).pushNamed(DettaglioSpesaAdminScreen.routeName, arguments: s.spesa);
       case ScadenzaTipo.scadenza:
+        final activeCasa = ActiveCasaScope.of(context);
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => DettaglioScadenzaAdminScreen(
@@ -335,10 +368,12 @@ class _ListaScadenzeState extends State<ListaScadenze> {
               dataScadenza: s.sortDate,
               stato: s.badgeText,
               frequenza: s.frequenza,
-              isAdmin: ActiveCasaScope.of(context).isHomeAdmin,
+              isAdmin: activeCasa.isHomeAdmin,
+              idScadenza: s.scadenzaObj?.id,
+              casaId: activeCasa.selectedCasaId,
             ),
           ),
-        );
+        ).then((_) => _refresh());
     }
   }
 

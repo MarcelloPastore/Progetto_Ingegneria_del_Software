@@ -9,6 +9,7 @@ class Spesa {
     this.partecipanti = const [],
     this.creatoreId = '',
     this.creatoreNome = '',
+    this.idScadenza,
     this.raw = const {},
   });
 
@@ -21,6 +22,7 @@ class Spesa {
   final List<Map<String, dynamic>> partecipanti;
   final String creatoreId;
   final String creatoreNome;
+  final String? idScadenza;
   final Map<String, dynamic> raw;
 
   factory Spesa.fromJson(Map<String, dynamic> json) {
@@ -45,6 +47,7 @@ class Spesa {
       partecipanti: _parseMapList(json['partecipanti']),
       creatoreId: _parseCreatorId(json),
       creatoreNome: _parseCreatorName(json),
+      idScadenza: json['idScadenza']?.toString(),
       raw: json,
     );
   }

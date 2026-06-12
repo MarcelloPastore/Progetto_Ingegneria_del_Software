@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 
 import 'fab_sacdenza_creata.dart';
@@ -21,6 +22,7 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
   bool _hasNameError = false;
   bool _hasDateError = false;
   bool _isCreated = false;
+  bool _isSaving = false;
 
   static const _primary = Color(0xFF5A2BBF);
   static const _danger = Color(0xFFFF1744);
@@ -186,7 +188,7 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
         SizedBox(
           height: 54,
           child: ElevatedButton(
-            onPressed: _hasErrors ? null : _save,
+            onPressed: (_hasErrors || _isSaving) ? null : _save,
             style: ElevatedButton.styleFrom(
               backgroundColor: _primary,
               disabledBackgroundColor: _disabled,
@@ -196,14 +198,23 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
               ),
               elevation: 4,
             ),
-            child: const Text(
-              'Salva scadenza',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+            child: _isSaving
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : const Text(
+                    'Salva scadenza',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
           ),
         ),
         const SizedBox(height: 14),
@@ -278,7 +289,7 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
     });
   }
 
-  void _save() {
+  Future<void> _save() async {
     final selectedDate = _parseDate(_dataController.text);
     final hasNameError = _nomeController.text.trim().isEmpty;
     final hasDateError = selectedDate == null || !_isFutureDate(selectedDate);
@@ -291,7 +302,46 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
       return;
     }
 
-    setState(() => _isCreated = true);
+    // Capture context-dependent values before any async gap
+    final casaId = ActiveCasaScope.of(context).selectedCasaId ?? '';
+    final cadenzaGiorni = _cadenzaFromFrequenza(_frequenza);
+    final isRicorrente = cadenzaGiorni != null;
+    final nome = _nomeController.text.trim();
+    final descrizione = _descrizioneController.text.trim();
+    final dataIso = selectedDate.toIso8601String();
+
+    setState(() => _isSaving = true);
+    try {
+      await ApiProvider.scadenze.create(casaId, {
+        'nome': nome,
+        'descrizione': descrizione,
+        'dataScadenza': dataIso,
+        'isRicorrente': isRicorrente,
+        if (cadenzaGiorni != null) 'cadenzaGiorni': cadenzaGiorni,
+      });
+
+      if (mounted) setState(() => _isCreated = true);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Errore durante il salvataggio: $e')),
+        );
+      }
+    }
+  }
+
+  static int? _cadenzaFromFrequenza(String frequenza) {
+    switch (frequenza) {
+      case 'Settimanale':
+        return 7;
+      case 'Mensile':
+        return 30;
+      case 'Annuale':
+        return 365;
+      default:
+        return null;
+    }
   }
 
   void _goToScadenze() {

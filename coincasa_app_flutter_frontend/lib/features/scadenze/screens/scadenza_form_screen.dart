@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 
 class ScadenzaFormScreen extends StatefulWidget {
@@ -8,13 +9,17 @@ class ScadenzaFormScreen extends StatefulWidget {
   final String initialDescrizione;
   final DateTime? initialData;
   final String initialFrequenza;
+  final String? idScadenza;
+  final String? casaId;
 
   const ScadenzaFormScreen.nuova({super.key})
     : isEditing = false,
       initialNome = '',
       initialDescrizione = '',
       initialData = null,
-      initialFrequenza = 'Non ripetere';
+      initialFrequenza = 'Non ripetere',
+      idScadenza = null,
+      casaId = null;
 
   const ScadenzaFormScreen.modifica({
     super.key,
@@ -22,11 +27,15 @@ class ScadenzaFormScreen extends StatefulWidget {
     required String descrizione,
     required DateTime? data,
     required String frequenza,
+    required String idScadenza,
+    required String casaId,
   }) : isEditing = true,
        initialNome = nome,
        initialDescrizione = descrizione,
        initialData = data,
-       initialFrequenza = frequenza;
+       initialFrequenza = frequenza,
+       this.idScadenza = idScadenza,
+       this.casaId = casaId;
 
   @override
   State<ScadenzaFormScreen> createState() => _ScadenzaFormScreenState();
@@ -41,6 +50,7 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
   bool _showFrequencyOptions = false;
   bool _hasNameError = false;
   bool _hasDateError = false;
+  bool _isSaving = false;
 
   static const _primary = Color(0xFF5A2BBF);
   static const _danger = Color(0xFFFF1744);
@@ -191,7 +201,7 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
             SizedBox(
               height: 54,
               child: ElevatedButton(
-                onPressed: _hasErrors ? null : _save,
+                onPressed: (_hasErrors || _isSaving) ? null : _save,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _primary,
                   disabledBackgroundColor: _disabled,
@@ -201,14 +211,23 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
                   ),
                   elevation: 4,
                 ),
-                child: Text(
-                  widget.isEditing ? 'Salva modifiche' : 'Salva scadenza',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+                child: _isSaving
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : Text(
+                        widget.isEditing ? 'Salva modifiche' : 'Salva scadenza',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
               ),
             ),
             const SizedBox(height: 14),
@@ -278,7 +297,7 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
     });
   }
 
-  void _save() {
+  Future<void> _save() async {
     final selectedDate = _parseDate(_dataController.text);
     final hasNameError = _nomeController.text.trim().isEmpty;
     final hasDateError = selectedDate == null || !_isFutureDate(selectedDate);
@@ -291,7 +310,68 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
       return;
     }
 
-    Navigator.of(context).pop(true);
+    // Capture context-dependent values before any async gap
+    final casaId =
+        widget.casaId?.isNotEmpty == true
+            ? widget.casaId!
+            : ActiveCasaScope.of(context).selectedCasaId ?? '';
+    final isAdmin = ActiveCasaScope.of(context).isHomeAdmin;
+    final cadenzaGiorni = _cadenzaFromFrequenza(_frequenza);
+    final isRicorrente = cadenzaGiorni != null;
+    final nome = _nomeController.text.trim();
+    final descrizione = _descrizioneController.text.trim();
+    final dataIso = selectedDate.toIso8601String();
+
+    setState(() => _isSaving = true);
+    try {
+      if (widget.isEditing && widget.idScadenza != null) {
+        await ApiProvider.scadenze.update(casaId, widget.idScadenza!, {
+          'nome': nome,
+          'descrizione': descrizione,
+          'dataScadenza': dataIso,
+        });
+        if (isAdmin) {
+          await ApiProvider.scadenze.updateRicorrenza(
+            casaId,
+            widget.idScadenza!,
+            {
+              'isRicorrente': isRicorrente,
+              if (cadenzaGiorni != null) 'cadenzaGiorni': cadenzaGiorni,
+            },
+          );
+        }
+      } else {
+        await ApiProvider.scadenze.create(casaId, {
+          'nome': nome,
+          'descrizione': descrizione,
+          'dataScadenza': dataIso,
+          'isRicorrente': isRicorrente,
+          if (cadenzaGiorni != null) 'cadenzaGiorni': cadenzaGiorni,
+        });
+      }
+
+      if (mounted) Navigator.of(context).pop(true);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Errore durante il salvataggio: $e')),
+        );
+      }
+    }
+  }
+
+  static int? _cadenzaFromFrequenza(String frequenza) {
+    switch (frequenza) {
+      case 'Settimanale':
+        return 7;
+      case 'Mensile':
+        return 30;
+      case 'Annuale':
+        return 365;
+      default:
+        return null;
+    }
   }
 
   void _clearNameErrorIfValid() {

@@ -92,7 +92,7 @@ class _ProblemaDettaglioSheetState extends State<_ProblemaDettaglioSheet> {
   }
 
   String get _priorityLabel {
-    final value = (_priorityOverride ?? widget.problema.priorita ?? 'Media').trim();
+    final value = (_priorityOverride ?? widget.problema.priorita).trim();
     final lower = value.toLowerCase();
     if (lower.contains('urg')) return 'Urgente';
     if (lower.contains('med')) return 'Media';

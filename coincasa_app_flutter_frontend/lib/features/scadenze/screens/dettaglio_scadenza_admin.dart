@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
 import 'scadenza_form_screen.dart';
 
@@ -13,6 +14,8 @@ class DettaglioScadenzaAdminScreen extends StatelessWidget {
   final String creatoDa;
   final String visibileA;
   final bool isAdmin;
+  final String? idScadenza;
+  final String? casaId;
 
   const DettaglioScadenzaAdminScreen({
     super.key,
@@ -25,6 +28,8 @@ class DettaglioScadenzaAdminScreen extends StatelessWidget {
     this.creatoDa = 'Tu (Admin)',
     this.visibileA = 'Tutti i coinquilini',
     this.isAdmin = true,
+    this.idScadenza,
+    this.casaId,
   });
 
   String _formatDate(DateTime dt) {
@@ -152,6 +157,8 @@ class DettaglioScadenzaAdminScreen extends StatelessWidget {
                 descrizione: descrizione,
                 data: dataScadenza,
                 frequenza: frequenza,
+                idScadenza: idScadenza ?? '',
+                casaId: casaId ?? '',
               ),
             )),
             onDelete: () async {
@@ -174,7 +181,14 @@ class DettaglioScadenzaAdminScreen extends StatelessWidget {
                 ),
               );
               if (confirm == true && context.mounted) {
-                Navigator.of(context).maybePop();
+                final id = idScadenza;
+                final cId = casaId;
+                if (id != null && cId != null && id.isNotEmpty && cId.isNotEmpty) {
+                  try {
+                    await ApiProvider.scadenze.delete(cId, id);
+                  } catch (_) {}
+                }
+                if (context.mounted) Navigator.of(context).maybePop();
               }
             },
             onBack: () => Navigator.of(context).maybePop(),
