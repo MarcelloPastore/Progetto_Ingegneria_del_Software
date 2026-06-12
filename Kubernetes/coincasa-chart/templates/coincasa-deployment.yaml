@@ -57,14 +57,14 @@ spec:
         livenessProbe:
           httpGet:
             path: /api/v1/health
-            port: 2310
+            port: 23109
           initialDelaySeconds: 30
           periodSeconds: 10
           failureThreshold: 3
         readinessProbe:
           httpGet:
             path: /api/v1/health
-            port: 2310
+            port: 23109
           initialDelaySeconds: 10
           periodSeconds: 5
           failureThreshold: 3

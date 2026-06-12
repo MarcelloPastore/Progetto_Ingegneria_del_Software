@@ -13,5 +13,5 @@ spec:
       timeoutSeconds: 10800
   ports:
     - protocol: TCP
-      port: 2310
-      targetPort: 2310
+      port: 23109
+      targetPort: 23109

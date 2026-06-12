@@ -58,9 +58,9 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           envFrom:
-              - configMapRef:
+            - configMapRef:
                 name: coincasa-env
-              - secretRef:
+            - secretRef:
                 name: coincasa-secrets
           {{- with .Values.volumeMounts }}
           volumeMounts:

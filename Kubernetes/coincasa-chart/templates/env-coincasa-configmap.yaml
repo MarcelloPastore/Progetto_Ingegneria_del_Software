@@ -7,4 +7,10 @@ metadata:
     app: {{ .Values.appLabel }}
 data:
   JWT_ACCESS_TTL: "14d"
-  PORT: "2310"
+  PORT: "23109"
+  MAIL_HOST: "smtp.gmail.com"
+  MAIL_PORT: "587"
+  MAIL_FROM: "Nome Mittente"
+  MAIL_SECURE: "false"
+  MAIL_FROM_NAME: "CoinCasa"
+

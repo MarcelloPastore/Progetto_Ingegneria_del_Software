@@ -21,3 +21,4 @@ yarn-error.log*
 Kubernetes/coincasa-chart/templates/coincasa-secrets.yaml
 Kubernetes/coincasa-chart/templates/env-mongo-secret.yaml
 Kubernetes/comandi-kubectl.txt
+Kubernetes/coincasa-chart/templates/coincasa-secrets.yaml

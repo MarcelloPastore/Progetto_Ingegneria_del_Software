@@ -9,16 +9,16 @@ replicaCount: 1
 
 # This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
 image:
-  repository: ghcr.io/0xsirel/coincasa
+  repository: ghcr.io/marcellopastore/progetto_ingegneria_del_software/server
   # This sets the pull policy for images.
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "v2.4.1"
+  tag: "latest"
 service:
   name: coincasa
   type: ClusterIP
-  port: 2310
-  targetPort: 2310
+  port: 23109
+  targetPort: 23109
   sessionAffinity: None
   sessionAffinityTimeout: 10800
 
@@ -50,11 +50,11 @@ httpRoute:
             value: /
       backendRefs:
         - name: coincasa
-          port: 2310
+          port: 23109
 
 deployment:
   name: coincasa-deployment
-  containerPort: 2310
+  containerPort: 23109
 
 appLabel: coincasa
 
@@ -109,7 +109,7 @@ securityContext: {}
 livenessProbe:
   httpGet:
     path: /api/v1/health
-    port: 2310
+    port: 23109
   initialDelaySeconds: 30
   periodSeconds: 10
   failureThreshold: 3
@@ -117,7 +117,7 @@ livenessProbe:
 readinessProbe:
   httpGet:
     path: /api/v1/health
-    port: 2310
+    port: 23109
   initialDelaySeconds: 10
   periodSeconds: 5
   failureThreshold: 3
