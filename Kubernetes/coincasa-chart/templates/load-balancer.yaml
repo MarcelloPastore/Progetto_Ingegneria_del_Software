@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: coincasa-lb
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    app: {{ .Values.appLabel }}
+  type: LoadBalancer
+  sessionAffinity: None
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800
+  ports:
+    - protocol: TCP
+      port: 23109
+      targetPort: 23109
