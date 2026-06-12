@@ -6,6 +6,7 @@ import 'package:coincasa_app/app.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/casa.dart';
+import 'package:coincasa_app/core/models/scadenza.dart';
 import 'package:coincasa_app/core/models/spesa.dart';
 import 'package:coincasa_app/core/models/turno.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
@@ -136,6 +137,10 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
     final turni = await turniFuture;
     final turniOggi = await turniOggiFuture;
     final spese = await ApiProvider.spese.list(casa.id);
+    List<Scadenza> scadenze = const [];
+    try {
+      scadenze = await ApiProvider.scadenze.list(casa.id);
+    } catch (_) {}
     final houseHealthBadges = _buildHouseHealthBadges(turni);
 
     return _DashboardData(
@@ -148,6 +153,7 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
       turni: turni,
       turniOggi: turniOggi,
       spese: spese,
+      scadenze: scadenze,
       houseHealthBadges: houseHealthBadges,
     );
   }
@@ -251,11 +257,8 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
                       dashboardDataFuture: _dashboardDataFuture,
                     ),
                     const SizedBox(height: AppSizes.p28),
-                    const _EmptyMessageSection(
-                      title: 'PROSSIME SCADENZE',
-                      message: 'Nessuna scadenza presente...',
-                      height: 150,
-                      routeName: '/scadenze',
+                    _ProssimeScadenzeSection(
+                      dashboardDataFuture: _dashboardDataFuture,
                     ),
                     const SizedBox(height: AppSizes.p28),
                     const OpenProblemsSection(),
@@ -319,6 +322,7 @@ class _DashboardData {
     this.turni = const [],
     this.turniOggi = const [],
     this.spese = const [],
+    this.scadenze = const [],
     this.houseHealthBadges = const [],
   });
 
@@ -331,6 +335,7 @@ class _DashboardData {
   final List<Turno> turni;
   final List<Turno> turniOggi;
   final List<Spesa> spese;
+  final List<Scadenza> scadenze;
   final List<HouseHealthBadgeData> houseHealthBadges;
 }
 
@@ -798,6 +803,193 @@ class _HouseHealthSection extends StatelessWidget {
   }
 }
 
+class _ProssimeScadenzeSection extends StatelessWidget {
+  const _ProssimeScadenzeSection({required this.dashboardDataFuture});
+
+  final Future<_DashboardData> dashboardDataFuture;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const _CenteredSectionTitle('PROSSIME SCADENZE'),
+        const SizedBox(height: AppSizes.p10),
+        FutureBuilder<_DashboardData>(
+          future: dashboardDataFuture,
+          builder: (context, snapshot) {
+            final scadenze = snapshot.data?.scadenze ?? const <Scadenza>[];
+            final spese = snapshot.data?.spese ?? const <Spesa>[];
+            final entries = _buildEntries(scadenze, spese);
+
+            return InkWell(
+              onTap: () => Navigator.of(context).pushNamed('/scadenze'),
+              borderRadius: BorderRadius.circular(AppSizes.radius8),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceDarkElevated,
+                  borderRadius: BorderRadius.circular(AppSizes.radius8),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: AppColors.shadowStrong,
+                      blurRadius: AppSizes.p8,
+                      offset: Offset(0, AppSizes.p5),
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSizes.p14,
+                  AppSizes.p16,
+                  AppSizes.p14,
+                  AppSizes.p16,
+                ),
+                child: entries.isEmpty
+                    ? SizedBox(
+                        height: 80,
+                        child: Center(
+                          child: Text(
+                            'Nessuna scadenza questo mese',
+                            style: AppTextStyles.dashboardCardSubtitleOnDark
+                                .copyWith(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      )
+                    : Column(
+                        children: entries
+                            .asMap()
+                            .entries
+                            .map(
+                              (e) => Padding(
+                                padding: EdgeInsets.only(
+                                  bottom: e.key < entries.length - 1
+                                      ? AppSizes.p12
+                                      : 0,
+                                ),
+                                child: _ScadenzaRow(entry: e.value),
+                              ),
+                            )
+                            .toList(),
+                      ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  static List<_ScadenzaEntry> _buildEntries(
+    List<Scadenza> scadenze,
+    List<Spesa> spese,
+  ) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final entries = <_ScadenzaEntry>[];
+
+    final idScadenzeConSpesa = spese
+        .map((s) => s.idScadenza)
+        .whereType<String>()
+        .toSet();
+
+    for (final spesa in spese) {
+      final d = spesa.dataScadenza;
+      if (d == null) continue;
+      final dOnly = DateTime(d.year, d.month, d.day);
+      if (d.year == now.year && d.month == now.month) {
+        entries.add(_ScadenzaEntry(nome: spesa.descrizione, date: dOnly));
+      }
+    }
+
+    for (final sc in scadenze) {
+      if (idScadenzeConSpesa.contains(sc.id)) continue;
+      final d = sc.dataScadenza;
+      final dOnly = DateTime(d.year, d.month, d.day);
+      if (d.year == now.year && d.month == now.month) {
+        entries.add(_ScadenzaEntry(nome: sc.nome, date: dOnly));
+      }
+    }
+
+    entries.sort((a, b) => a.date.compareTo(b.date));
+
+    return entries
+        .where((e) => !e.date.isBefore(today))
+        .take(3)
+        .toList();
+  }
+}
+
+class _ScadenzaEntry {
+  const _ScadenzaEntry({required this.nome, required this.date});
+  final String nome;
+  final DateTime date;
+}
+
+class _ScadenzaRow extends StatelessWidget {
+  const _ScadenzaRow({required this.entry});
+
+  final _ScadenzaEntry entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final days = entry.date.difference(today).inDays;
+
+    final Color dotColor;
+    final String label;
+    if (days == 0) {
+      dotColor = AppColors.statusPositive;
+      label = 'oggi';
+    } else if (days <= 3) {
+      dotColor = AppColors.statusNegative;
+      label = '$days ${days == 1 ? 'giorno' : 'giorni'}';
+    } else if (days <= 10) {
+      dotColor = AppColors.lockOrange;
+      label = '$days giorni';
+    } else {
+      dotColor = AppColors.statusPositive;
+      label = '$days giorni';
+    }
+
+    return Row(
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(
+            color: dotColor,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: AppSizes.p10),
+        Expanded(
+          child: Text(
+            entry.nome,
+            style: AppTextStyles.dashboardCardTitleOnDark.copyWith(
+              color: AppColors.textOnDark,
+              fontSize: 16,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        const SizedBox(width: AppSizes.p8),
+        Text(
+          label,
+          style: AppTextStyles.dashboardListStatus.copyWith(
+            color: dotColor,
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _EmptyProblemsSection extends StatelessWidget {
   const _EmptyProblemsSection();
 
@@ -1252,6 +1444,7 @@ class _EmptyCalendarSection extends StatelessWidget {
                           builder: (context, snapshot) {
                             final turni = snapshot.data?.turni ?? const [];
                             final spese = snapshot.data?.spese ?? const [];
+                            final scadenze = snapshot.data?.scadenze ?? const <Scadenza>[];
                             final days = _buildGridDays(month);
 
                             return GridView.builder(
@@ -1269,7 +1462,7 @@ class _EmptyCalendarSection extends StatelessWidget {
                                 final date = days[index];
                                 final inMonth = date.month == month.month;
                                 final markers = inMonth
-                                    ? _markersForDate(date, turni, spese)
+                                    ? _markersForDate(date, turni, spese, scadenze)
                                     : const <Color>[];
 
                                 return _DashboardCalendarDay(
@@ -1324,6 +1517,7 @@ class _EmptyCalendarSection extends StatelessWidget {
     DateTime date,
     List<Turno> turni,
     List<Spesa> spese,
+    List<Scadenza> scadenze,
   ) {
     final colors = <Color>[];
     for (final turno in turni) {
@@ -1334,6 +1528,20 @@ class _EmptyCalendarSection extends StatelessWidget {
           turnoDate.day == date.day) {
         colors.add(AppColors.statusInfo);
         if (colors.length == 4) break;
+      }
+    }
+    final idScadenzeConSpesa = spese
+        .map((s) => s.idScadenza)
+        .whereType<String>()
+        .toSet();
+    for (final sc in scadenze) {
+      if (idScadenzeConSpesa.contains(sc.id)) continue;
+      final d = sc.dataScadenza;
+      if (d.year == date.year && d.month == date.month && d.day == date.day) {
+        if (!colors.contains(AppColors.statusNegative)) {
+          colors.add(AppColors.statusNegative);
+        }
+        break;
       }
     }
     for (final spesa in spese) {
