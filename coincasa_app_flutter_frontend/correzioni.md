@@ -21,3 +21,5 @@
 - [ ] **Dettaglio Turno** sta scritto sempre "ogni 1 giorni" come frequenza, anche se metto ogni settimana.
 - [ ] **Gestione Problemi** implementare le APi ed eliminare i mock per tutte le schermate del modulo Problemi.
 - [ ] **Scadenza data di scadenza** le scadenze vengono salvate sempre un giorno prima della data di scadenza indicata nel calendario. da correggere.
+- [ ] **inserisci nuova scadenza & Dettaglio Scadenza color coding** nel simulatore per iphone i colori dell'orario o del wi-fi negli angoli in alto del telefono, non sono adattati allo sfondo scuro, devono essere di colore bianco. solo in queste due schermate.
+- [ ] **FAB nuova scadenza (frequenza solo admin)** anche qui eliminare il ruolo necessario per aggiungere la frequenza e togliere la scritta "(solo HomeAdmin)".
