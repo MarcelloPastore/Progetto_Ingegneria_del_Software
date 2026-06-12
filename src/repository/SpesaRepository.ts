@@ -357,3 +357,4 @@ export class SpesaRepository {
     return result._sum.quota ?? 0;
   }
 }
+

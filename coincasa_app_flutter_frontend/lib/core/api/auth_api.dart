@@ -1,11 +1,38 @@
 import 'api_client.dart';
 
+class AuthLoginResult {
+  const AuthLoginResult({required this.token, required this.user});
+
+  final String token;
+  final AuthUser user;
+}
+
+class AuthUser {
+  const AuthUser({
+    required this.id,
+    required this.username,
+    required this.nome,
+    required this.cognome,
+  });
+
+  final String id;
+  final String username;
+  final String nome;
+  final String cognome;
+
+  String get displayName {
+    final parts = [nome, cognome].where((part) => part.trim().isNotEmpty);
+    final fullName = parts.join(' ').trim();
+    return fullName.isNotEmpty ? fullName : username;
+  }
+}
+
 class AuthApi {
   AuthApi(this._client);
 
   final ApiClient _client;
 
-  Future<String> login({
+  Future<AuthLoginResult> login({
     required String email,
     required String password,
   }) async {
@@ -19,17 +46,30 @@ class AuthApi {
       throw const FormatException('Missing access token in response.');
     }
 
-    return token;
+    final user = _extractUser(data);
+    if (user == null) {
+      throw const FormatException('Missing user data in response.');
+    }
+
+    return AuthLoginResult(token: token, user: user);
   }
 
   Future<void> register({
+    required String username,
     required String nome,
+    required String cognome,
     required String email,
     required String password,
   }) async {
     await _client.postJson(
       '/auth/register',
-      body: {'nome': nome, 'email': email, 'password': password},
+      body: {
+        'email': email,
+        'username': username,
+        'password': password,
+        'nome': nome,
+        'cognome': cognome,
+      },
     );
   }
 
@@ -37,11 +77,33 @@ class AuthApi {
     await _client.postJson('/auth/recupera-password', body: {'email': email});
   }
 
-  Future<void> verifyEmail(String token) async {
-    await _client.getJson(
-      '/auth/verifica-email',
-      queryParameters: {'token': token},
+  Future<void> verifyPasswordResetCode({
+    required String email,
+    required String code,
+  }) async {
+    await _client.postJson(
+      '/auth/verifica-codice-recupero',
+      body: {'email': email, 'codice': code},
     );
+  }
+
+  Future<String?> verifyEmail(String email) async {
+    final data = await _client.postJson(
+      '/auth/verifica-email',
+      body: {'email': email},
+    );
+
+    if (data is Map<String, dynamic>) {
+      final user = data['user'];
+      if (user is Map<String, dynamic>) {
+        final nome = user['nome'] ?? user['name'];
+        if (nome is String) {
+          return nome;
+        }
+      }
+    }
+
+    return null;
   }
 
   Future<String> refreshToken(String refreshToken) async {
@@ -59,12 +121,13 @@ class AuthApi {
   }
 
   Future<void> resetPassword({
+    required String email,
     required String code,
     required String newPassword,
   }) async {
     await _client.postJson(
       '/auth/reset-password',
-      body: {'code': code, 'password': newPassword},
+      body: {'email': email, 'codice': code, 'nuovaPassword': newPassword},
     );
   }
 
@@ -79,6 +142,27 @@ class AuthApi {
         return token;
       }
     }
+    return null;
+  }
+
+  AuthUser? _extractUser(dynamic data) {
+    if (data is Map<String, dynamic>) {
+      final user = data['user'];
+      if (user is Map<String, dynamic>) {
+        final id = user['id'];
+        if (id is! String || id.trim().isEmpty) {
+          return null;
+        }
+
+        return AuthUser(
+          id: id,
+          username: user['username']?.toString() ?? '',
+          nome: user['nome']?.toString() ?? '',
+          cognome: user['cognome']?.toString() ?? '',
+        );
+      }
+    }
+
     return null;
   }
 }

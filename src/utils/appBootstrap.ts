@@ -5,6 +5,7 @@ import fastifyRateLimit from "@fastify/rate-limit";
 import {
   authRoutes,
   casaRoutes,
+  casaRoutes,
   health,
   //debugRoutes,
   speseRoutes,

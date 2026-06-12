@@ -1,770 +1,1288 @@
-// import 'package:flutter/material.dart';
-// import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// import 'package:coincasa_app/app.dart';
+import 'package:coincasa_app/core/api/api_provider.dart';
+import 'package:coincasa_app/core/models/casa.dart';
+import 'package:coincasa_app/core/models/inquilino.dart';
+import 'package:coincasa_app/core/models/turno.dart';
+import 'package:coincasa_app/core/state/active_casa.dart';
+import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/utils/user_initials.dart';
+import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/features/turni/screens/turno_salvato_con_successo.dart';
 
-// class TurnoCreateScreen extends StatefulWidget {
-//   const TurnoCreateScreen({super.key});
+final turniCreateCasaProvider = FutureProvider.autoDispose
+    .family<Casa?, String?>((ref, selectedCasaId) async {
+      final caseUtente = await ApiProvider.casa.list();
+      if (caseUtente.isEmpty) {
+        return null;
+      }
+      if (selectedCasaId != null && selectedCasaId.isNotEmpty) {
+        for (final casa in caseUtente) {
+          if (casa.id == selectedCasaId) {
+            return casa;
+          }
+        }
+      }
+      return caseUtente.first;
+    });
 
-//   @override
-//   State<TurnoCreateScreen> createState() => _TurnoCreateScreenState();
-// }
+final turniCreateInquiliniProvider = FutureProvider.autoDispose
+    .family<List<Inquilino>, String?>((ref, casaId) {
+      if (casaId == null || casaId.isEmpty) {
+        return const [];
+      }
+      return ApiProvider.casa.listInquilini(casaId);
+    });
 
-// class _TurnoCreateScreenState extends State<TurnoCreateScreen> {
-//   int _selectedSection = 2;
-//   bool _rotationEnabled = true;
-//   int _navIndex = 0;
+final turnoCreateFormProvider =
+    StateNotifierProvider.autoDispose<
+      _TurnoCreateFormController,
+      _TurnoCreateFormState
+    >((ref) => _TurnoCreateFormController());
 
-//   void _toggleRotation() {
-//     setState(() => _rotationEnabled = !_rotationEnabled);
-//   }
+Inquilino? _resolveCurrentInquilino(List<Inquilino> inquilini) {
+  final currentId = ApiProvider.client.currentUserId?.trim();
+  if (currentId != null && currentId.isNotEmpty) {
+    for (final inquilino in inquilini) {
+      if (inquilino.id.trim() == currentId) {
+        return inquilino;
+      }
+    }
+  }
 
-//   void _onSectionSelected(int index) {
-//     setState(() => _selectedSection = index);
-//   }
+  final currentEmail = ApiProvider.client.currentUserEmail
+      ?.trim()
+      .toLowerCase();
+  if (currentEmail != null && currentEmail.isNotEmpty) {
+    for (final inquilino in inquilini) {
+      if (inquilino.email.trim().toLowerCase() == currentEmail) {
+        return inquilino;
+      }
+    }
+  }
 
-//   void _onNavTap(int index) {
-//     if (index == _navIndex) {
-//       return;
-//     }
+  final currentDisplayName = ApiProvider.client.currentUserDisplayName
+      ?.trim()
+      .toLowerCase();
+  if (currentDisplayName != null && currentDisplayName.isNotEmpty) {
+    for (final inquilino in inquilini) {
+      final values = <String>{
+        inquilino.nomeCompleto.trim().toLowerCase(),
+        inquilino.nome.trim().toLowerCase(),
+        inquilino.username.trim().toLowerCase(),
+      };
+      if (values.contains(currentDisplayName)) {
+        return inquilino;
+      }
+    }
+  }
 
-//     final route = _routeForIndex(index);
-//     if (route == null) {
-//       _showNotAvailable();
-//       return;
-//     }
+  return null;
+}
 
-//     setState(() => _navIndex = index);
-//     Navigator.of(context).pushReplacementNamed(route);
-//   }
+class TurnoCreateScreen extends ConsumerStatefulWidget {
+  const TurnoCreateScreen({super.key});
 
-//   String? _routeForIndex(int index) {
-//     switch (index) {
-//       case 0:
-//         return AppRoutes.dashboard;
-//       case 1:
-//         return AppRoutes.spese;
-//       case 2:
-//         return AppRoutes.turni;
-//     }
-//     return null;
-//   }
+  static const routeName = '/turni/nuovo';
 
-//   void _showNotAvailable() {
-//     ScaffoldMessenger.of(
-//       context,
-//     ).showSnackBar(const SnackBar(content: Text('Sezione non disponibile.')));
-//   }
+  @override
+  ConsumerState<TurnoCreateScreen> createState() => _TurnoCreateScreenState();
+}
 
-//   @override
-//   Widget build(BuildContext context) {
-//     final baseTheme = Theme.of(context);
-//     final textTheme = GoogleFonts.interTextTheme(baseTheme.textTheme).apply(
-//       bodyColor: _TurnoFormPalette.textPrimary,
-//       displayColor: _TurnoFormPalette.textPrimary,
-//     );
+class _TurnoCreateData {
+  const _TurnoCreateData({
+    required this.casa,
+    required this.inquilini,
+    this.turno,
+  });
 
-//     return Theme(
-//       data: baseTheme.copyWith(textTheme: textTheme),
-//       child: Scaffold(
-//         backgroundColor: _TurnoFormPalette.pageBackground,
-//         bottomNavigationBar: _TurnoBottomNav(
-//           selectedIndex: _navIndex,
-//           onSelected: _onNavTap,
-//         ),
-//         body: SafeArea(
-//           child: SingleChildScrollView(
-//             padding: const EdgeInsets.fromLTRB(0, 10, 0, 20),
-//             child: Column(
-//               children: [
-//                 Padding(
-//                   padding: const EdgeInsets.symmetric(horizontal: 14),
-//                   child: Row(
-//                     children: [
-//                       const _HeaderAvatar(icon: Icons.person),
-//                       Expanded(
-//                         child: Center(
-//                           child: Text(
-//                             'Casa Verdi',
-//                             style: textTheme.titleLarge?.copyWith(
-//                               color: _TurnoFormPalette.title,
-//                               fontWeight: FontWeight.w800,
-//                             ),
-//                           ),
-//                         ),
-//                       ),
-//                       const _HeaderAvatar(icon: Icons.group),
-//                     ],
-//                   ),
-//                 ),
-//                 const SizedBox(height: 6),
-//                 Padding(
-//                   padding: const EdgeInsets.symmetric(horizontal: 11),
-//                   child: Container(
-//                     decoration: BoxDecoration(
-//                       color: _TurnoFormPalette.surface,
-//                       borderRadius: BorderRadius.circular(15),
-//                       border: Border.all(
-//                         color: _TurnoFormPalette.accent,
-//                         width: 3,
-//                       ),
-//                       boxShadow: const [
-//                         BoxShadow(
-//                           color: _TurnoFormPalette.shadow,
-//                           blurRadius: 4,
-//                           offset: Offset(0, 4),
-//                         ),
-//                       ],
-//                     ),
-//                     child: Padding(
-//                       padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
-//                       child: Column(
-//                         crossAxisAlignment: CrossAxisAlignment.start,
-//                         children: [
-//                           _ContentSwitcher(
-//                             selectedIndex: _selectedSection,
-//                             onSelected: _onSectionSelected,
-//                           ),
-//                           const SizedBox(height: 18),
-//                           Text(
-//                             'Nuovo Turno',
-//                             style: textTheme.titleLarge?.copyWith(
-//                               color: _TurnoFormPalette.title,
-//                               fontWeight: FontWeight.w700,
-//                             ),
-//                           ),
-//                           const SizedBox(height: 14),
-//                           _TextFieldBox(
-//                             hintText: 'Nome task...',
-//                             borderColor: _TurnoFormPalette.fieldBorder,
-//                           ),
-//                           const SizedBox(height: 18),
-//                           _DateFieldBox(textTheme: textTheme),
-//                           const SizedBox(height: 18),
-//                           Text(
-//                             'Frequenza',
-//                             style: textTheme.titleMedium?.copyWith(
-//                               color: _TurnoFormPalette.title,
-//                               fontWeight: FontWeight.w700,
-//                             ),
-//                           ),
-//                           const SizedBox(height: 8),
-//                           _DropdownBox(textTheme: textTheme),
-//                           const SizedBox(height: 16),
-//                           _AssigneeCard(
-//                             rotationEnabled: _rotationEnabled,
-//                             onToggleRotation: _toggleRotation,
-//                           ),
-//                           const SizedBox(height: 18),
-//                           _PrimaryActionButton(
-//                             label: 'Salva Turno',
-//                             onPressed: () {},
-//                           ),
-//                           const SizedBox(height: 10),
-//                           _SecondaryActionButton(
-//                             label: 'Annulla',
-//                             onPressed: () {},
-//                           ),
-//                         ],
-//                       ),
-//                     ),
-//                   ),
-//                 ),
-//               ],
-//             ),
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-// }
+  final Casa casa;
+  final List<Inquilino> inquilini;
+  final Turno? turno;
 
-// class _ContentSwitcher extends StatelessWidget {
-//   const _ContentSwitcher({
-//     required this.selectedIndex,
-//     required this.onSelected,
-//   });
+  bool get isEditing => turno != null;
+}
 
-//   final int selectedIndex;
-//   final ValueChanged<int> onSelected;
+class _TurnoCreateScreenState extends ConsumerState<TurnoCreateScreen> {
+  final _taskController = TextEditingController();
+  late Future<_TurnoCreateData?> _future;
+  bool _initializedArgs = false;
 
-//   @override
-//   Widget build(BuildContext context) {
-//     final labels = const ['Spesa', 'Problema', 'Turno', 'Scadenza'];
+  String? get _turnoId {
+    final args = ModalRoute.of(context)?.settings.arguments;
+    return args is String && args.isNotEmpty ? args : null;
+  }
 
-//     return Container(
-//       padding: const EdgeInsets.all(4),
-//       decoration: BoxDecoration(
-//         color: _TurnoFormPalette.switcherBackground,
-//         borderRadius: BorderRadius.circular(16),
-//         border: Border.all(color: _TurnoFormPalette.accent),
-//         boxShadow: const [
-//           BoxShadow(
-//             color: _TurnoFormPalette.shadow,
-//             blurRadius: 4,
-//             offset: Offset(0, 4),
-//           ),
-//         ],
-//       ),
-//       child: Row(
-//         children: List.generate(labels.length * 2 - 1, (index) {
-//           if (index.isOdd) {
-//             return Container(
-//               width: 1,
-//               height: 12,
-//               color: _TurnoFormPalette.switcherDivider,
-//             );
-//           }
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_initializedArgs) {
+      return;
+    }
+    _initializedArgs = true;
+    _future = _loadData();
+  }
 
-//           final itemIndex = index ~/ 2;
-//           final isSelected = itemIndex == selectedIndex;
-//           return Expanded(
-//             child: GestureDetector(
-//               onTap: () => onSelected(itemIndex),
-//               child: AnimatedContainer(
-//                 duration: const Duration(milliseconds: 200),
-//                 padding: const EdgeInsets.symmetric(vertical: 8),
-//                 decoration: BoxDecoration(
-//                   color: isSelected ? _TurnoFormPalette.accent : null,
-//                   borderRadius: BorderRadius.circular(12),
-//                 ),
-//                 child: Text(
-//                   labels[itemIndex],
-//                   textAlign: TextAlign.center,
-//                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
-//                     fontWeight: FontWeight.w700,
-//                     color: isSelected
-//                         ? Colors.white
-//                         : _TurnoFormPalette.switcherText,
-//                   ),
-//                 ),
-//               ),
-//             ),
-//           );
-//         }),
-//       ),
-//     );
-//   }
-// }
+  @override
+  void dispose() {
+    _taskController.dispose();
+    super.dispose();
+  }
 
-// class _HeaderAvatar extends StatelessWidget {
-//   const _HeaderAvatar({required this.icon});
+  Future<_TurnoCreateData?> _loadData() async {
+    final activeCasaController = ActiveCasaScope.read(context);
+    final caseUtente = await ApiProvider.casa.list();
+    if (caseUtente.isEmpty) {
+      return null;
+    }
 
-//   final IconData icon;
+    final casa = activeCasaController.resolveCasa(caseUtente);
+    final turnoId = _turnoId;
 
-//   @override
-//   Widget build(BuildContext context) {
-//     return Opacity(
-//       opacity: 0.5,
-//       child: CircleAvatar(
-//         radius: 24,
-//         backgroundColor: _TurnoFormPalette.avatarBackground,
-//         child: Icon(icon, size: 26, color: _TurnoFormPalette.avatarIcon),
-//       ),
-//     );
-//   }
-// }
+    Turno? turno;
+    if (turnoId != null) {
+      try {
+        turno = await ApiProvider.turni.getById(casa.id, turnoId);
+      } catch (_) {
+        turno = null;
+      }
+    }
 
-// class _TextFieldBox extends StatelessWidget {
-//   const _TextFieldBox({required this.hintText, this.borderColor});
+    final inquilini = await ApiProvider.casa.listInquilini(casa.id);
+    if (turno != null) {
+      _hydrateFromTurno(turno);
+    }
 
-//   final String hintText;
-//   final Color? borderColor;
+    return _TurnoCreateData(casa: casa, inquilini: inquilini, turno: turno);
+  }
 
-//   @override
-//   Widget build(BuildContext context) {
-//     final textTheme = Theme.of(context).textTheme;
+  void _hydrateFromTurno(Turno turno) {
+    final controller = ref.read(turnoCreateFormProvider.notifier);
+    final initialDate = turno.dataProssimaPulizia ?? turno.data;
 
-//     return TextField(
-//       style: textTheme.bodyLarge?.copyWith(
-//         color: _TurnoFormPalette.textLight,
-//         fontWeight: FontWeight.w500,
-//       ),
-//       decoration: InputDecoration(
-//         hintText: hintText,
-//         hintStyle: textTheme.bodyLarge?.copyWith(
-//           color: _TurnoFormPalette.textMuted,
-//           fontWeight: FontWeight.w500,
-//         ),
-//         filled: true,
-//         fillColor: _TurnoFormPalette.fieldBackground,
-//         contentPadding: const EdgeInsets.symmetric(
-//           horizontal: 12,
-//           vertical: 12,
-//         ),
-//         enabledBorder: OutlineInputBorder(
-//           borderRadius: BorderRadius.circular(10),
-//           borderSide: BorderSide(
-//             color: borderColor ?? Colors.transparent,
-//             width: borderColor == null ? 1 : 2,
-//           ),
-//         ),
-//         focusedBorder: OutlineInputBorder(
-//           borderRadius: BorderRadius.circular(10),
-//           borderSide: BorderSide(
-//             color: borderColor ?? _TurnoFormPalette.accent,
-//             width: borderColor == null ? 1.5 : 2,
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-// }
+    _taskController.text = turno.titolo;
+    controller.setAllowPastDate(true);
+    controller.setTask(turno.titolo);
+    controller.setFrequency(_frequencyLabelFor(turno.cadenzaGiorni));
+    controller.setAutoRotation(turno.rotazioneAttiva);
+    if (turno.assegnatarioId.isNotEmpty) {
+      controller.setAssignee(turno.assegnatarioId);
+    }
+    if (initialDate != null) {
+      controller.setPickedDate(initialDate);
+    }
+  }
 
-// class _DateFieldBox extends StatelessWidget {
-//   const _DateFieldBox({required this.textTheme});
+  static String _frequencyLabelFor(int days) {
+    return _TurnoCreateFormState.frequencyDays.entries
+        .firstWhere(
+          (entry) => entry.value == days,
+          orElse: () => const MapEntry('Ogni settimana', 7),
+        )
+        .key;
+  }
 
-//   final TextTheme textTheme;
+  Future<void> _submit() async {
+    FocusScope.of(context).unfocus();
+    final controller = ref.read(turnoCreateFormProvider.notifier);
+    final form = ref.read(turnoCreateFormProvider);
+    final assigneeId = form.selectedInquilinoId?.trim();
+    final turnoDate = form.turnoDate;
+    final data = await _future;
+    final isEditing = data?.turno != null;
 
-//   @override
-//   Widget build(BuildContext context) {
-//     return Container(
-//       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-//       decoration: BoxDecoration(
-//         color: _TurnoFormPalette.fieldBackground,
-//         borderRadius: BorderRadius.circular(10),
-//         boxShadow: const [
-//           BoxShadow(
-//             color: _TurnoFormPalette.shadow,
-//             blurRadius: 4,
-//             offset: Offset(0, 4),
-//           ),
-//         ],
-//       ),
-//       child: Row(
-//         children: [
-//           _MiniSelect(label: 'gg...'),
-//           const SizedBox(width: 8),
-//           _MiniSelect(label: 'MM...'),
-//           const Spacer(),
-//           Text(
-//             'Data turno',
-//             style: textTheme.titleMedium?.copyWith(
-//               color: _TurnoFormPalette.textMuted,
-//               fontWeight: FontWeight.w500,
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }
+    if (!controller.validateBeforeSubmit()) {
+      return;
+    }
+    if (data == null || data.casa.id.isEmpty) {
+      controller.setSubmitError('Nessuna casa disponibile.');
+      return;
+    }
+    if (turnoDate == null) {
+      controller.setSubmitError('Dati mancanti: compila i campi necessari');
+      return;
+    }
 
-// class _MiniSelect extends StatelessWidget {
-//   const _MiniSelect({required this.label});
+    controller.setSubmitting(true);
+    try {
+      final payload = {
+        'task': form.task.trim(),
+        'cadenzaGiorni':
+            _TurnoCreateFormState.frequencyDays[form.frequency] ?? 7,
+        'rotazioneTurno': form.autoRotation,
+      };
 
-//   final String label;
+      final existingTurno = data.turno;
 
-//   @override
-//   Widget build(BuildContext context) {
-//     return Container(
-//       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-//       decoration: BoxDecoration(
-//         color: _TurnoFormPalette.accent,
-//         borderRadius: BorderRadius.circular(8),
-//         border: Border.all(color: _TurnoFormPalette.selectBorder),
-//       ),
-//       child: Text(
-//         label,
-//         style: Theme.of(
-//           context,
-//         ).textTheme.bodyMedium?.copyWith(color: _TurnoFormPalette.textMuted),
-//       ),
-//     );
-//   }
-// }
+      if (isEditing && existingTurno != null) {
+        await ApiProvider.turni.update(data.casa.id, existingTurno.id, payload);
+      } else {
+        payload['dataTurno'] = _payloadDate(turnoDate).toIso8601String();
+        if (assigneeId != null && assigneeId.isNotEmpty) {
+          payload['assegnatario'] = assigneeId;
+        }
+        await ApiProvider.turni.create(data.casa.id, payload);
+      }
 
-// class _DropdownBox extends StatelessWidget {
-//   const _DropdownBox({required this.textTheme});
+      if (!mounted) {
+        return;
+      }
+      Navigator.of(context).pushReplacementNamed(
+        TurnoSalvatoConSuccessoScreen.routeName,
+        arguments: TurnoSaveResultArguments(isEditing: isEditing),
+      );
+    } catch (_) {
+      controller.setSubmitError('Impossibile salvare il turno. Riprova.');
+    }
+  }
 
-//   final TextTheme textTheme;
+  DateTime _payloadDate(DateTime date) {
+    return DateTime(date.year, date.month, date.day, 12);
+  }
 
-//   @override
-//   Widget build(BuildContext context) {
-//     return Container(
-//       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-//       decoration: BoxDecoration(
-//         color: _TurnoFormPalette.dropdownBackground,
-//         borderRadius: BorderRadius.circular(8),
-//         border: Border.all(color: _TurnoFormPalette.dropdownBorder),
-//         boxShadow: const [
-//           BoxShadow(
-//             color: _TurnoFormPalette.shadow,
-//             blurRadius: 4,
-//             offset: Offset(0, 4),
-//           ),
-//         ],
-//       ),
-//       child: Row(
-//         children: [
-//           Text(
-//             'Ogni settimana',
-//             style: textTheme.titleMedium?.copyWith(
-//               color: _TurnoFormPalette.textMuted,
-//               fontWeight: FontWeight.w500,
-//             ),
-//           ),
-//           const Spacer(),
-//           Container(
-//             padding: const EdgeInsets.all(2),
-//             decoration: BoxDecoration(
-//               color: _TurnoFormPalette.fieldBackground.withOpacity(0.7),
-//               borderRadius: BorderRadius.circular(4),
-//             ),
-//             child: const Icon(
-//               Icons.keyboard_arrow_down,
-//               size: 18,
-//               color: _TurnoFormPalette.textMuted,
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }
+  @override
+  Widget build(BuildContext context) {
+    final form = ref.watch(turnoCreateFormProvider);
+    final controller = ref.read(turnoCreateFormProvider.notifier);
+    final future = _future;
 
-// class _AssigneeCard extends StatelessWidget {
-//   const _AssigneeCard({
-//     required this.rotationEnabled,
-//     required this.onToggleRotation,
-//   });
+    return Scaffold(
+      backgroundColor: AppColors.darkBackground,
+      bottomNavigationBar: const HouseQuickNav(currentRoute: '/turni'),
+      body: FutureBuilder<_TurnoCreateData?>(
+        future: future,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-//   final bool rotationEnabled;
-//   final VoidCallback onToggleRotation;
+          final data = snapshot.data;
+          if (data == null) {
+            return const Center(
+              child: Text(
+                'Dati turno non disponibili.',
+                style: TextStyle(color: Colors.white),
+              ),
+            );
+          }
 
-//   @override
-//   Widget build(BuildContext context) {
-//     final textTheme = Theme.of(context).textTheme;
+          final inquilini = data.inquilini;
+          final assignees = _assigneeChoices(inquilini);
+          final currentUser = _resolveCurrentInquilino(assignees);
+          final isEditing = data.isEditing;
 
-//     return Container(
-//       padding: const EdgeInsets.all(12),
-//       decoration: BoxDecoration(
-//         color: _TurnoFormPalette.fieldBackground,
-//         borderRadius: BorderRadius.circular(10),
-//         boxShadow: const [
-//           BoxShadow(
-//             color: _TurnoFormPalette.shadow,
-//             blurRadius: 4,
-//             offset: Offset(0, 4),
-//           ),
-//         ],
-//       ),
-//       child: Column(
-//         crossAxisAlignment: CrossAxisAlignment.start,
-//         children: [
-//           Text(
-//             'Assegnatario',
-//             style: textTheme.labelLarge?.copyWith(
-//               color: _TurnoFormPalette.textHint,
-//               fontWeight: FontWeight.w600,
-//             ),
-//           ),
-//           const SizedBox(height: 10),
-//           Container(
-//             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-//             decoration: BoxDecoration(
-//               color: _TurnoFormPalette.assignBackground,
-//               borderRadius: BorderRadius.circular(10),
-//               border: Border.all(
-//                 color: _TurnoFormPalette.assignBorder,
-//                 width: 2,
-//               ),
-//               boxShadow: const [
-//                 BoxShadow(
-//                   color: _TurnoFormPalette.shadow,
-//                   blurRadius: 4,
-//                   offset: Offset(0, 4),
-//                 ),
-//               ],
-//             ),
-//             child: Row(
-//               children: [
-//                 const Icon(
-//                   Icons.back_hand,
-//                   size: 22,
-//                   color: _TurnoFormPalette.assignText,
-//                 ),
-//                 const SizedBox(width: 8),
-//                 Text(
-//                   'Assegna a me',
-//                   style: textTheme.bodyLarge?.copyWith(
-//                     color: _TurnoFormPalette.assignText,
-//                     fontWeight: FontWeight.w600,
-//                   ),
-//                 ),
-//               ],
-//             ),
-//           ),
-//           const SizedBox(height: 12),
-//           Row(
-//             children: [
-//               Text(
-//                 'Rotazione automatica',
-//                 style: textTheme.bodyMedium?.copyWith(
-//                   color: _TurnoFormPalette.textMuted,
-//                   fontStyle: FontStyle.italic,
-//                   decoration: TextDecoration.underline,
-//                 ),
-//               ),
-//               const Spacer(),
-//               _RotationToggle(value: rotationEnabled, onTap: onToggleRotation),
-//             ],
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }
+          return SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(9, 8, 9, 13),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight:
+                      MediaQuery.sizeOf(context).height -
+                      MediaQuery.paddingOf(context).vertical -
+                      101,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      isEditing ? 'Modifica turno' : 'Inserisci turno',
+                      style: AppTextStyles.screenTitleStrong.copyWith(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 17),
+                    _TaskField(
+                      controller: _taskController,
+                      hasError: form.showErrors && form.task.trim().isEmpty,
+                      onChanged: controller.setTask,
+                    ),
+                    const SizedBox(height: 25),
+                    _AssigneeSection(
+                      inquilini: assignees,
+                      canAssignOthers:
+                          currentUser?.isHomeAdmin == true && !isEditing,
+                      currentUserId: currentUser?.id,
+                      selectedId: form.selectedInquilinoId,
+                      showError:
+                          form.showErrors && form.selectedInquilinoId == null,
+                      onSelected: controller.setAssignee,
+                    ),
+                    const SizedBox(height: 20),
+                    _DateRow(
+                      selectedDate: form.turnoDate,
+                      hasError: form.showErrors && !form.hasValidDate,
+                      onPickDate: isEditing
+                          ? () {}
+                          : () => _pickDate(form.turnoDate),
+                    ),
+                    if (form.showDatePastError) ...[
+                      const SizedBox(height: 12),
+                      const _ErrorLine(
+                        message: 'Data errata: seleziona una data futura',
+                      ),
+                    ],
+                    const SizedBox(height: 25),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 24),
+                      child: Text(
+                        'Frequenza',
+                        style: AppTextStyles.screenTitleStrong.copyWith(
+                          color: AppColors.textMutedLight,
+                          fontSize: 21,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: _FrequencyDropdown(
+                        value: form.frequency,
+                        expanded: form.frequencyExpanded,
+                        hasError: form.showErrors && form.frequency.isEmpty,
+                        onToggle: controller.toggleFrequency,
+                        onChanged: controller.setFrequency,
+                      ),
+                    ),
+                    SizedBox(height: form.frequencyExpanded ? 16 : 34),
+                    Builder(
+                      builder: (context) {
+                        final canToggleRotation =
+                            currentUser?.isHomeAdmin == true && !isEditing;
+                        return _AutoRotationRow(
+                          value: form.autoRotation,
+                          onChanged: canToggleRotation
+                              ? controller.setAutoRotation
+                              : (_) {},
+                          enabled: canToggleRotation,
+                        );
+                      },
+                    ),
+                    if (form.showMissingError) ...[
+                      const SizedBox(height: 18),
+                      const _ErrorLine(
+                        message: 'Dati mancanti: compila i campi necessari',
+                      ),
+                    ],
+                    SizedBox(height: form.showMissingError ? 20 : 34),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: _SaveButton(
+                        enabled: form.canSubmit,
+                        submitting: form.isSubmitting,
+                        onPressed: _submit,
+                        label: isEditing ? 'Salva modifiche' : 'Salva turno',
+                      ),
+                    ),
+                    const SizedBox(height: 7),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 47),
+                      child: _CancelButton(
+                        enabled: !form.isSubmitting,
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
 
-// class _RotationToggle extends StatelessWidget {
-//   const _RotationToggle({required this.value, required this.onTap});
+  Future<void> _pickDate(DateTime? selectedDate) async {
+    FocusScope.of(context).unfocus();
+    final now = DateTime.now();
+    final firstDate = DateTime(now.year, now.month, now.day);
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: selectedDate ?? firstDate,
+      firstDate: firstDate,
+      lastDate: DateTime(now.year + 3, 12, 31),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
+              primary: AppColors.brandPrimary,
+              onPrimary: AppColors.textOnDark,
+              secondary: AppColors.brandAccent,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
 
-//   final bool value;
-//   final VoidCallback onTap;
+    if (picked == null || !mounted) {
+      return;
+    }
 
-//   @override
-//   Widget build(BuildContext context) {
-//     return GestureDetector(
-//       onTap: onTap,
-//       child: AnimatedContainer(
-//         duration: const Duration(milliseconds: 200),
-//         width: 63,
-//         height: 30,
-//         padding: const EdgeInsets.all(2),
-//         decoration: BoxDecoration(
-//           color: _TurnoFormPalette.toggleTrack,
-//           borderRadius: BorderRadius.circular(20),
-//           boxShadow: const [
-//             BoxShadow(
-//               color: _TurnoFormPalette.shadow,
-//               blurRadius: 4,
-//               offset: Offset(0, 4),
-//             ),
-//           ],
-//         ),
-//         child: AnimatedAlign(
-//           duration: const Duration(milliseconds: 200),
-//           alignment: value ? Alignment.centerRight : Alignment.centerLeft,
-//           child: Container(
-//             width: 30,
-//             height: 30,
-//             decoration: BoxDecoration(
-//               color: _TurnoFormPalette.toggleKnob,
-//               shape: BoxShape.circle,
-//               boxShadow: const [
-//                 BoxShadow(
-//                   color: _TurnoFormPalette.toggleShadow,
-//                   blurRadius: 3,
-//                   offset: Offset(0, 1),
-//                 ),
-//                 BoxShadow(
-//                   color: _TurnoFormPalette.toggleShadowStrong,
-//                   blurRadius: 2,
-//                   offset: Offset(0, 1),
-//                 ),
-//               ],
-//             ),
-//             child: Icon(
-//               Icons.check,
-//               size: 16,
-//               color: value ? _TurnoFormPalette.accent : Colors.transparent,
-//             ),
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-// }
+    ref.read(turnoCreateFormProvider.notifier).setPickedDate(picked);
+  }
 
-// class _PrimaryActionButton extends StatelessWidget {
-//   const _PrimaryActionButton({required this.label, required this.onPressed});
+  static List<Inquilino> _assigneeChoices(List<Inquilino> inquilini) {
+    return inquilini.where((item) => item.id.isNotEmpty).toList();
+  }
+}
 
-//   final String label;
-//   final VoidCallback onPressed;
+class _TurnoCreateFormState {
+  const _TurnoCreateFormState({
+    this.task = '',
+    this.day = '',
+    this.month = '',
+    this.frequency = 'Ogni settimana',
+    this.selectedInquilinoId,
+    this.autoRotation = true,
+    this.frequencyExpanded = false,
+    this.showErrors = false,
+    this.isSubmitting = false,
+    this.submitError,
+    this.allowPastDate = false,
+  });
 
-//   @override
-//   Widget build(BuildContext context) {
-//     return SizedBox(
-//       width: double.infinity,
-//       child: ElevatedButton(
-//         onPressed: onPressed,
-//         style: ElevatedButton.styleFrom(
-//           backgroundColor: _TurnoFormPalette.accent,
-//           foregroundColor: Colors.white,
-//           padding: const EdgeInsets.symmetric(vertical: 14),
-//           shape: RoundedRectangleBorder(
-//             borderRadius: BorderRadius.circular(20),
-//           ),
-//           textStyle: Theme.of(
-//             context,
-//           ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-//         ),
-//         child: Text(label),
-//       ),
-//     );
-//   }
-// }
+  static const frequencies = [
+    'Ogni giorno',
+    'Ogni 3 giorni',
+    'Ogni settimana',
+    'Ogni 2 settimane',
+    'Ogni mese',
+  ];
 
-// class _SecondaryActionButton extends StatelessWidget {
-//   const _SecondaryActionButton({required this.label, required this.onPressed});
+  static const frequencyDays = {
+    'Ogni giorno': 1,
+    'Ogni 3 giorni': 3,
+    'Ogni settimana': 7,
+    'Ogni 2 settimane': 14,
+    'Ogni mese': 30,
+  };
 
-//   final String label;
-//   final VoidCallback onPressed;
+  final String task;
+  final String day;
+  final String month;
+  final String frequency;
+  final String? selectedInquilinoId;
+  final bool autoRotation;
+  final bool frequencyExpanded;
+  final bool showErrors;
+  final bool isSubmitting;
+  final String? submitError;
+  final bool allowPastDate;
 
-//   @override
-//   Widget build(BuildContext context) {
-//     return SizedBox(
-//       width: double.infinity,
-//       child: OutlinedButton(
-//         onPressed: onPressed,
-//         style: OutlinedButton.styleFrom(
-//           foregroundColor: _TurnoFormPalette.danger,
-//           backgroundColor: _TurnoFormPalette.dangerBackground,
-//           side: const BorderSide(color: _TurnoFormPalette.danger, width: 2),
-//           padding: const EdgeInsets.symmetric(vertical: 14),
-//           shape: RoundedRectangleBorder(
-//             borderRadius: BorderRadius.circular(20),
-//           ),
-//           textStyle: Theme.of(
-//             context,
-//           ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-//         ),
-//         child: Text(label),
-//       ),
-//     );
-//   }
-// }
+  DateTime? get turnoDate => _parseDate(day, month, allowPast: allowPastDate);
+  bool get hasValidDate => turnoDate != null;
+  bool get isPastDate {
+    final parsed = _parseDate(day, month, allowPast: true);
+    if (parsed == null) {
+      return false;
+    }
+    final today = DateTime.now();
+    final todayOnly = DateTime(today.year, today.month, today.day);
+    return parsed.isBefore(todayOnly);
+  }
 
-// class _TurnoBottomNav extends StatelessWidget {
-//   const _TurnoBottomNav({
-//     required this.selectedIndex,
-//     required this.onSelected,
-//   });
+  bool get showDatePastError => showErrors && isPastDate && !allowPastDate;
+  bool get showMissingError =>
+      showErrors &&
+      submitError == null &&
+      (task.trim().isEmpty || !hasValidDate);
+  bool get canSubmit =>
+      !isSubmitting &&
+      task.trim().isNotEmpty &&
+      hasValidDate &&
+      frequency.isNotEmpty;
 
-//   final int selectedIndex;
-//   final ValueChanged<int> onSelected;
+  _TurnoCreateFormState copyWith({
+    String? task,
+    String? day,
+    String? month,
+    String? frequency,
+    Object? selectedInquilinoId = _sentinel,
+    bool? autoRotation,
+    bool? frequencyExpanded,
+    bool? showErrors,
+    bool? isSubmitting,
+    Object? submitError = _sentinel,
+    bool? allowPastDate,
+  }) {
+    return _TurnoCreateFormState(
+      task: task ?? this.task,
+      day: day ?? this.day,
+      month: month ?? this.month,
+      frequency: frequency ?? this.frequency,
+      selectedInquilinoId: selectedInquilinoId == _sentinel
+          ? this.selectedInquilinoId
+          : selectedInquilinoId as String?,
+      autoRotation: autoRotation ?? this.autoRotation,
+      frequencyExpanded: frequencyExpanded ?? this.frequencyExpanded,
+      showErrors: showErrors ?? this.showErrors,
+      isSubmitting: isSubmitting ?? this.isSubmitting,
+      submitError: submitError == _sentinel
+          ? this.submitError
+          : submitError as String?,
+      allowPastDate: allowPastDate ?? this.allowPastDate,
+    );
+  }
 
-//   @override
-//   Widget build(BuildContext context) {
-//     return SafeArea(
-//       top: false,
-//       child: Container(
-//         height: 88,
-//         margin: const EdgeInsets.fromLTRB(0, 6, 0, 0),
-//         decoration: BoxDecoration(
-//           color: _TurnoFormPalette.navBackground,
-//           borderRadius: BorderRadius.circular(10),
-//         ),
-//         child: Row(
-//           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-//           children: [
-//             _NavItem(
-//               label: 'Home',
-//               assetPath: 'lib/ui/Icons/home.png',
-//               isActive: selectedIndex == 0,
-//               onTap: () => onSelected(0),
-//             ),
-//             _NavItem(
-//               label: 'Spese',
-//               assetPath: 'lib/ui/Icons/spese.png',
-//               isActive: selectedIndex == 1,
-//               onTap: () => onSelected(1),
-//             ),
-//             _NavItem(
-//               label: 'Turni',
-//               assetPath: 'lib/ui/Icons/turni.png',
-//               isActive: selectedIndex == 2,
-//               onTap: () => onSelected(2),
-//             ),
-//             _NavItem(
-//               label: 'Scadenze',
-//               assetPath: 'lib/ui/Icons/reminder.png',
-//               isActive: selectedIndex == 3,
-//               onTap: () => onSelected(3),
-//             ),
-//             _NavItem(
-//               label: 'Problemi',
-//               assetPath: 'lib/ui/Icons/problemi.png',
-//               isActive: selectedIndex == 4,
-//               onTap: () => onSelected(4),
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-// }
+  static DateTime? _parseDate(
+    String dayValue,
+    String monthValue, {
+    bool allowPast = false,
+  }) {
+    final day = int.tryParse(dayValue.trim());
+    final month = _parseMonth(monthValue);
+    if (day == null || month == null) {
+      return null;
+    }
 
-// class _NavItem extends StatelessWidget {
-//   const _NavItem({
-//     required this.label,
-//     required this.assetPath,
-//     required this.isActive,
-//     required this.onTap,
-//   });
+    final now = DateTime.now();
+    final parsed = DateTime(now.year, month, day);
+    if (parsed.day != day || parsed.month != month) {
+      return null;
+    }
+    if (allowPast || !parsed.isBefore(DateTime(now.year, now.month, now.day))) {
+      return parsed;
+    }
+    return null;
+  }
 
-//   final String label;
-//   final String assetPath;
-//   final bool isActive;
-//   final VoidCallback onTap;
+  static int? _parseMonth(String value) {
+    final normalized = value.trim().toLowerCase();
+    if (normalized.isEmpty) {
+      return null;
+    }
+    final numeric = int.tryParse(normalized);
+    if (numeric != null && numeric >= 1 && numeric <= 12) {
+      return numeric;
+    }
+    return const {
+      'gen': 1,
+      'feb': 2,
+      'mar': 3,
+      'apr': 4,
+      'mag': 5,
+      'giu': 6,
+      'lug': 7,
+      'ago': 8,
+      'set': 9,
+      'ott': 10,
+      'nov': 11,
+      'dic': 12,
+    }[normalized];
+  }
+}
 
-//   @override
-//   Widget build(BuildContext context) {
-//     final color = isActive
-//         ? _TurnoFormPalette.navActive
-//         : _TurnoFormPalette.navInactive;
+class _TurnoCreateFormController extends StateNotifier<_TurnoCreateFormState> {
+  _TurnoCreateFormController() : super(const _TurnoCreateFormState());
 
-//     return GestureDetector(
-//       onTap: onTap,
-//       child: Column(
-//         mainAxisAlignment: MainAxisAlignment.center,
-//         children: [
-//           Image.asset(assetPath, width: 30, height: 30, fit: BoxFit.contain),
-//           const SizedBox(height: 6),
-//           Text(
-//             label,
-//             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-//               color: color,
-//               fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-//               fontSize: 12,
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }
+  void setTask(String value) =>
+      state = state.copyWith(task: value, submitError: null);
+  void setDay(String value) =>
+      state = state.copyWith(day: value, submitError: null);
+  void setMonth(String value) =>
+      state = state.copyWith(month: value, submitError: null);
+  void setFrequency(String value) => state = state.copyWith(
+    frequency: value,
+    frequencyExpanded: false,
+    submitError: null,
+  );
+  void setAssignee(String id) =>
+      state = state.copyWith(selectedInquilinoId: id, submitError: null);
+  void setAutoRotation(bool value) =>
+      state = state.copyWith(autoRotation: value);
+  void setAllowPastDate(bool value) =>
+      state = state.copyWith(allowPastDate: value);
+  void toggleFrequency() =>
+      state = state.copyWith(frequencyExpanded: !state.frequencyExpanded);
+  void setPickedDate(DateTime date) => state = state.copyWith(
+    day: date.day.toString().padLeft(2, '0'),
+    month: _monthLabel(date.month),
+    submitError: null,
+  );
+  void setSubmitting(bool value) => state = state.copyWith(isSubmitting: value);
+  void setSubmitError(String message) => state = state.copyWith(
+    submitError: message,
+    showErrors: true,
+    isSubmitting: false,
+  );
 
-// class _TurnoFormPalette {
-//   static const pageBackground = Color(0xFFF3EEFB);
-//   static const surface = Color(0xFFFFFFFF);
-//   static const accent = Color(0xFF996CFA);
-//   static const title = Color(0xFF5228AD);
-//   static const textPrimary = Color(0xFF2B2340);
-//   static const textLight = Color(0xFFC9C9C9);
-//   static const textMuted = Color(0xFFC9C9C9);
-//   static const textHint = Color(0xFFA9A9A9);
-//   static const fieldBackground = Color(0xFF2C2846);
-//   static const fieldBorder = Color(0xFF9B9B9B);
-//   static const selectBorder = Color(0xFFD9D9D9);
-//   static const dropdownBackground = Color(0xFF29263E);
-//   static const dropdownBorder = Color(0x19000000);
-//   static const assignBackground = Color(0xFF32422E);
-//   static const assignBorder = Color(0xFF56961D);
-//   static const assignText = Color(0xFF78DE6B);
-//   static const toggleTrack = Color(0xFF797979);
-//   static const toggleKnob = Color(0xFFFCFCFD);
-//   static const toggleShadow = Color(0x1A101828);
-//   static const toggleShadowStrong = Color(0x0F101828);
-//   static const switcherBackground = Color(0xFFCFCFCF);
-//   static const switcherText = Color(0xFF797979);
-//   static const switcherDivider = Color(0xFFBDBDBD);
-//   static const navBackground = Color(0xFF16223D);
-//   static const navActive = Color(0xFF4796EA);
-//   static const navInactive = Color(0xFFC9C9C9);
-//   static const danger = Color(0xFFFF203B);
-//   static const dangerBackground = Color(0xFF431F24);
-//   static const avatarBackground = Color(0xFFE6DFF6);
-//   static const avatarIcon = Color(0xFF6C5CF6);
-//   static const shadow = Color(0x40000000);
-// }
+  bool validateBeforeSubmit() {
+    state = state.copyWith(showErrors: true, submitError: null);
+    return state.task.trim().isNotEmpty && state.hasValidDate;
+  }
+}
+
+class _TaskField extends StatelessWidget {
+  const _TaskField({
+    required this.controller,
+    required this.hasError,
+    required this.onChanged,
+  });
+
+  final TextEditingController controller;
+  final bool hasError;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      onChanged: onChanged,
+      style: AppTextStyles.input.copyWith(fontSize: 20),
+      decoration: InputDecoration(
+        hintText: 'Nome task...',
+        suffixText: hasError ? '*' : null,
+        suffixStyle: AppTextStyles.input.copyWith(
+          color: AppColors.errorStrong,
+          fontSize: 22,
+          fontWeight: FontWeight.w900,
+        ),
+        hintStyle: AppTextStyles.inputHint.copyWith(
+          color: hasError ? AppColors.errorStrong : AppColors.textMutedLight,
+          fontSize: 20,
+        ),
+        filled: true,
+        fillColor: AppColors.surfaceDarkElevated.withValues(alpha: 0.86),
+        contentPadding: const EdgeInsets.fromLTRB(13, 13, 13, 12),
+        enabledBorder: _outline(
+          hasError ? AppColors.errorStrong : AppColors.transparent,
+        ),
+        focusedBorder: _outline(
+          hasError ? AppColors.errorStrong : AppColors.brandAccent,
+        ),
+      ),
+    );
+  }
+}
+
+class _AssigneeSection extends StatelessWidget {
+  const _AssigneeSection({
+    required this.inquilini,
+    required this.canAssignOthers,
+    required this.currentUserId,
+    required this.selectedId,
+    required this.showError,
+    required this.onSelected,
+  });
+
+  final List<Inquilino> inquilini;
+  final bool canAssignOthers;
+  final String? currentUserId;
+  final String? selectedId;
+  final bool showError;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    if (inquilini.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final fallbackId = currentUserId?.trim().isNotEmpty == true
+        ? currentUserId!.trim()
+        : (inquilini.isNotEmpty ? inquilini.first.id : 'unknown-user-id');
+
+    if (!canAssignOthers || inquilini.length <= 1) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: _AssignMeButton(
+          selected: selectedId == fallbackId,
+          onTap: () => onSelected(fallbackId),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 24, right: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                'Assegna a',
+                style: AppTextStyles.input.copyWith(
+                  color: showError
+                      ? AppColors.errorStrong
+                      : AppColors.textOnDark,
+                  fontSize: 20,
+                ),
+              ),
+              const Spacer(),
+              if (showError)
+                Text(
+                  '*',
+                  style: AppTextStyles.input.copyWith(
+                    color: AppColors.errorStrong,
+                    fontSize: 23,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 15),
+          Row(
+            children: List.generate(inquilini.take(4).length, (index) {
+              final inquilino = inquilini[index];
+              final label = _initials(inquilino);
+              final selected = inquilino.id == selectedId;
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 10),
+                  child: _AssigneeChip(
+                    label: label,
+                    color: userAvatarColorsForSeed(inquilino.id).background,
+                    selected: selected,
+                    showError: showError,
+                    onTap: () => onSelected(inquilino.id),
+                  ),
+                ),
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _initials(Inquilino inquilino) {
+    final username = inquilino.username.trim();
+    if (username.isNotEmpty) {
+      return initialsFromText(username);
+    }
+    return resolveUserInitials(
+      name: inquilino.nome,
+      surname: inquilino.cognome,
+      displayName: inquilino.nomeCompleto,
+      fallback: '?',
+    );
+  }
+}
+
+class _AssignMeButton extends StatelessWidget {
+  const _AssignMeButton({required this.selected, required this.onTap});
+
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return _AnimatedAssignMeButton(selected: selected, onTap: onTap);
+  }
+}
+
+class _AnimatedAssignMeButton extends StatefulWidget {
+  const _AnimatedAssignMeButton({required this.selected, required this.onTap});
+
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  State<_AnimatedAssignMeButton> createState() =>
+      _AnimatedAssignMeButtonState();
+}
+
+class _AnimatedAssignMeButtonState extends State<_AnimatedAssignMeButton> {
+  bool _pressed = false;
+
+  Color _topColor() {
+    if (_pressed) {
+      return widget.selected
+          ? const Color(0xFF7BE47E)
+          : const Color(0xFF77C879);
+    }
+    return widget.selected ? const Color(0xFF53C95B) : const Color(0xFF68B86C);
+  }
+
+  Color _bottomColor() {
+    if (_pressed) {
+      return widget.selected
+          ? const Color(0xFF2C7D34)
+          : const Color(0xFF256A2D);
+    }
+    return widget.selected ? const Color(0xFF2E9F3D) : const Color(0xFF2E7736);
+  }
+
+  Color _textColor() {
+    if (_pressed) {
+      return const Color(0xFFF3FFF3);
+    }
+    return widget.selected ? const Color(0xFFE7FFE8) : AppColors.statusPositive;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.transparent,
+      child: InkWell(
+        onTap: widget.onTap,
+        onHighlightChanged: (value) {
+          if (value != _pressed && mounted) {
+            setState(() => _pressed = value);
+          }
+        },
+        borderRadius: BorderRadius.circular(AppSizes.radius8),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
+          curve: Curves.easeOut,
+          height: 46,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [_topColor(), _bottomColor()],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+            borderRadius: BorderRadius.circular(AppSizes.radius8),
+            border: Border.all(
+              color: widget.selected
+                  ? const Color(0xFFB4FFB8)
+                  : const Color(0xFF17371A),
+              width: 1.3,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: _pressed
+                    ? const Color(0x33000000)
+                    : const Color(0x55000000),
+                blurRadius: _pressed ? 4 : 10,
+                offset: Offset(0, _pressed ? 1 : 4),
+              ),
+            ],
+          ),
+          child: AnimatedScale(
+            duration: const Duration(milliseconds: 120),
+            scale: _pressed ? 0.985 : 1,
+            child: Text(
+              'Assegna a me',
+              style: AppTextStyles.bodyStrong.copyWith(
+                color: _textColor(),
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AssigneeChip extends StatelessWidget {
+  const _AssigneeChip({
+    required this.label,
+    required this.color,
+    required this.selected,
+    required this.showError,
+    required this.onTap,
+  });
+
+  final String label;
+  final Color color;
+  final bool selected;
+  final bool showError;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppSizes.radius12),
+      child: Container(
+        height: 34,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(AppSizes.radius12),
+          border: Border.all(
+            color: showError
+                ? AppColors.errorStrong
+                : selected
+                ? _textColor(label)
+                : AppColors.transparent,
+            width: 2.2,
+          ),
+        ),
+        child: Text(
+          label,
+          style: AppTextStyles.bodyStrong.copyWith(
+            color: _textColor(label),
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+    );
+  }
+
+  static Color _textColor(String label) {
+    return AppColors.textOnDark;
+  }
+}
+
+class _DateRow extends StatelessWidget {
+  const _DateRow({
+    required this.selectedDate,
+    required this.hasError,
+    required this.onPickDate,
+  });
+
+  final DateTime? selectedDate;
+  final bool hasError;
+  final VoidCallback onPickDate;
+
+  @override
+  Widget build(BuildContext context) {
+    String label = 'Data Inizio Turno';
+    if (selectedDate != null) {
+      final day = selectedDate!.day.toString().padLeft(2, '0');
+      final month = selectedDate!.month.toString().padLeft(2, '0');
+      label = 'Data inizio turno: $day/$month';
+    } else if (hasError) {
+      label = 'Data Inizio Turno *';
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        height: 50,
+        decoration: BoxDecoration(
+          color: AppColors.surfaceDarkElevated.withValues(alpha: 0.82),
+          borderRadius: BorderRadius.circular(AppSizes.radius8),
+          border: Border.all(
+            color: hasError ? AppColors.errorStrong : AppColors.transparent,
+            width: 2.4,
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+        child: Row(
+          children: [
+            Expanded(
+              child: InkWell(
+                onTap: onPickDate,
+                borderRadius: BorderRadius.circular(AppSizes.radius8),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today_rounded,
+                      color: (hasError || selectedDate != null)
+                          ? (selectedDate != null
+                                ? AppColors.brandAccent
+                                : AppColors.errorStrong)
+                          : AppColors.textMutedLight,
+                      size: 22,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.bodyStrong.copyWith(
+                          color: (hasError || selectedDate != null)
+                              ? (selectedDate != null
+                                    ? AppColors.textOnDark
+                                    : AppColors.errorStrong)
+                              : AppColors.textMutedLight,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FrequencyDropdown extends StatelessWidget {
+  const _FrequencyDropdown({
+    required this.value,
+    required this.expanded,
+    required this.hasError,
+    required this.onToggle,
+    required this.onChanged,
+  });
+
+  final String value;
+  final bool expanded;
+  final bool hasError;
+  final VoidCallback onToggle;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        InkWell(
+          onTap: onToggle,
+          borderRadius: BorderRadius.circular(AppSizes.radius8),
+          child: Container(
+            height: 49,
+            decoration: BoxDecoration(
+              color: expanded
+                  ? AppColors.brandPrimary
+                  : AppColors.surfaceDarkElevated,
+              borderRadius: BorderRadius.vertical(
+                top: const Radius.circular(AppSizes.radius8),
+                bottom: Radius.circular(expanded ? 0 : AppSizes.radius8),
+              ),
+              border: hasError
+                  ? Border.all(color: AppColors.errorStrong, width: 2.4)
+                  : null,
+              boxShadow: const [
+                BoxShadow(
+                  color: AppColors.shadowStrong,
+                  blurRadius: AppSizes.p5,
+                  offset: Offset(0, AppSizes.p3),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 17),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    hasError ? '$value      *' : value,
+                    style: AppTextStyles.input.copyWith(
+                      color: hasError
+                          ? AppColors.errorStrong
+                          : AppColors.textMutedLight,
+                      fontSize: 20,
+                    ),
+                  ),
+                ),
+                Icon(
+                  expanded
+                      ? Icons.keyboard_arrow_up_rounded
+                      : Icons.keyboard_arrow_down_rounded,
+                  color: hasError
+                      ? AppColors.errorStrong
+                      : AppColors.brandAccent,
+                  size: 28,
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (expanded)
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.dividerDark,
+              borderRadius: const BorderRadius.vertical(
+                bottom: Radius.circular(AppSizes.radius8),
+              ),
+              border: Border.all(color: AppColors.inputBorderDark),
+            ),
+            child: Column(
+              children: _TurnoCreateFormState.frequencies.map((option) {
+                return InkWell(
+                  onTap: () => onChanged(option),
+                  child: Container(
+                    height: 45,
+                    alignment: Alignment.centerLeft,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: const BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(color: AppColors.dividerOnDark),
+                      ),
+                    ),
+                    child: Text(
+                      option,
+                      style: AppTextStyles.bodyStrong.copyWith(
+                        color: option == value
+                            ? AppColors.turniDropdownSelectedText
+                            : AppColors.textMutedLight,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _AutoRotationRow extends StatelessWidget {
+  const _AutoRotationRow({
+    required this.value,
+    required this.onChanged,
+    this.enabled = true,
+  });
+
+  final bool value;
+  final ValueChanged<bool>? onChanged;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            'Rotazione automatica assegnatario',
+            maxLines: 1,
+            overflow: TextOverflow.clip,
+            style: AppTextStyles.bodyStrong.copyWith(
+              color: enabled
+                  ? AppColors.textMutedLight
+                  : AppColors.textMutedDark,
+              fontSize: 16,
+            ),
+          ),
+        ),
+        Switch(
+          value: value,
+          onChanged: enabled ? onChanged : null,
+          activeThumbColor: enabled
+              ? AppColors.textOnDark
+              : AppColors.textMutedDark,
+          activeTrackColor: enabled
+              ? AppColors.brandAccent
+              : AppColors.dividerDark,
+          inactiveThumbColor: AppColors.textOnDark,
+          inactiveTrackColor: AppColors.textMutedDark,
+        ),
+      ],
+    );
+  }
+}
+
+class _ErrorLine extends StatelessWidget {
+  const _ErrorLine({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const SizedBox(width: 24),
+        const Icon(Icons.error, color: AppColors.errorStrong, size: 21),
+        const SizedBox(width: 3),
+        Expanded(
+          child: Text(
+            message,
+            style: AppTextStyles.error.copyWith(
+              color: AppColors.errorStrong,
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SaveButton extends StatelessWidget {
+  const _SaveButton({
+    required this.enabled,
+    required this.submitting,
+    required this.onPressed,
+    required this.label,
+  });
+
+  final bool enabled;
+  final bool submitting;
+  final VoidCallback onPressed;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return FilledButton(
+      onPressed: enabled ? onPressed : null,
+      style: FilledButton.styleFrom(
+        backgroundColor: AppColors.brandPrimary,
+        disabledBackgroundColor: AppColors.textMutedDark,
+        foregroundColor: AppColors.textOnDark,
+        disabledForegroundColor: AppColors.textOnDark,
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      ),
+      child: submitting
+          ? const SizedBox(
+              width: 23,
+              height: 23,
+              child: CircularProgressIndicator(
+                color: AppColors.textOnDark,
+                strokeWidth: 2.4,
+              ),
+            )
+          : Text(
+              label,
+              style: AppTextStyles.buttonCompact.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+    );
+  }
+}
+
+class _CancelButton extends StatelessWidget {
+  const _CancelButton({required this.enabled, required this.onPressed});
+
+  final bool enabled;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton(
+      onPressed: enabled ? onPressed : null,
+      style: OutlinedButton.styleFrom(
+        backgroundColor: AppColors.errorStrong.withValues(alpha: 0.25),
+        foregroundColor: AppColors.errorStrong,
+        side: const BorderSide(color: AppColors.errorStrong, width: 2),
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(21)),
+      ),
+      child: Text(
+        'Annulla',
+        style: AppTextStyles.buttonCompact.copyWith(
+          color: AppColors.errorStrong,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+    );
+  }
+}
+
+const Object _sentinel = Object();
+
+String _monthLabel(int month) {
+  return const [
+    'Gen',
+    'Feb',
+    'Mar',
+    'Apr',
+    'Mag',
+    'Giu',
+    'Lug',
+    'Ago',
+    'Set',
+    'Ott',
+    'Nov',
+    'Dic',
+  ][month - 1];
+}
+
+OutlineInputBorder _outline(Color color, {double width = 1.3}) {
+  return OutlineInputBorder(
+    borderRadius: BorderRadius.circular(AppSizes.radius8),
+    borderSide: BorderSide(color: color, width: width),
+  );
+}

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../constants/app_sizes.dart';
@@ -6,6 +7,8 @@ import '../constants/app_sizes.dart';
 export '../constants/app_sizes.dart';
 
 abstract final class AppColors {
+  static const transparent = Color(0x00000000);
+
   static const brandPrimary = Color(0xFF5228AD);
   static const brandPrimaryDark = Color(0xFF4C2A9E);
   static const brandSecondary = Color(0xFF6E41D1);
@@ -14,7 +17,7 @@ abstract final class AppColors {
   static const primaryBorder = Color(0xFF9C8BF0);
 
   static const pageBackground = Color(0xFFF6F5FB);
-  static const darkBackground = Color(0xFF090616);
+  static const darkBackground = Color(0xFF151127);
   static const surface = Color(0xFFFFFFFF);
   static const surfaceDark = Color(0xFF151528);
   static const surfaceDarkElevated = Color(0xFF1F2848);
@@ -45,6 +48,9 @@ abstract final class AppColors {
   static const success = Color(0xFF2E7D32);
   static const successBright = Color(0xFF3EAE4F);
   static const info = Color(0xFF1565C0);
+  static const problemPriorityUrgent = Color(0xFFFF0005);
+  static const problemPriorityMedium = Color(0xFFFF8D28);
+  static const problemPriorityLow = Color(0xFFFFCC00);
   static const statusPositive = Color(0xFF5EEB64);
   static const statusNegative = Color(0xFFF75C6C);
   static const statusWarning = Color(0xFFF8A541);
@@ -57,6 +63,15 @@ abstract final class AppColors {
   static const lockHole = Color(0xFFB86800);
   static const lockShackle = Color(0xFFB9B4C0);
   static const envelopeRed = Color(0xFFE84545);
+
+  static const turniTabSurface = Color(0xFFE1E0E7);
+  static const turniDropdownSelectedText = Color(0xFFD98DFF);
+  static const turniAssigneeMenuSurface = Color(0xFF4B3A2B);
+  static const turniAssignMeSurface = Color(0xFF214B23);
+  static const turniAssigneeSurface = Color(0xFF5A4528);
+  static const turniAssigneeDivider = Color(0xFF6D5435);
+  static const turniAssigneeBorder = Color(0xFFFF8A1C);
+  static const turniAssigneeSelectedSurface = Color(0xFF7B6B57);
 }
 
 abstract final class AppTextStyles {
@@ -337,6 +352,18 @@ abstract final class AppTheme {
         labelLarge: AppTextStyles.button,
       );
 
+  /// Transizione istantanea: usata dalla navbar per switch tra sezioni.
+  static const pageTransitionsTheme = PageTransitionsTheme(
+    builders: {
+      TargetPlatform.android: _InstantPageTransition(),
+      TargetPlatform.iOS: _InstantPageTransition(),
+      TargetPlatform.windows: _InstantPageTransition(),
+      TargetPlatform.macOS: _InstantPageTransition(),
+      TargetPlatform.linux: _InstantPageTransition(),
+      TargetPlatform.fuchsia: _InstantPageTransition(),
+    },
+  );
+
   static final ThemeData lightTheme = ThemeData(
     useMaterial3: true,
     colorScheme:
@@ -355,10 +382,12 @@ abstract final class AppTheme {
         ),
     scaffoldBackgroundColor: AppColors.pageBackground,
     textTheme: _textTheme,
+    pageTransitionsTheme: pageTransitionsTheme,
     appBarTheme: const AppBarTheme(
       backgroundColor: AppColors.pageBackground,
       foregroundColor: AppColors.textPrimary,
       elevation: 0,
+      systemOverlayStyle: SystemUiOverlayStyle.dark,
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: false,
@@ -395,6 +424,23 @@ abstract final class AppTheme {
   }
 }
 
+/// Transizione senza animazione: la nuova schermata appare istantaneamente.
+/// Usata per lo switch tra sezioni della navbar principale.
+class _InstantPageTransition extends PageTransitionsBuilder {
+  const _InstantPageTransition();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    return child;
+  }
+}
+
 class AuthRecoveryScaffold extends StatelessWidget {
   const AuthRecoveryScaffold({
     super.key,
@@ -407,13 +453,16 @@ class AuthRecoveryScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
-      child: Scaffold(
-        backgroundColor: AppColors.darkBackground,
-        body: SafeArea(
-          child: SingleChildScrollView(
-            child: Padding(padding: padding, child: child),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Scaffold(
+          backgroundColor: AppColors.darkBackground,
+          body: SafeArea(
+            child: SingleChildScrollView(
+              child: Padding(padding: padding, child: child),
+            ),
           ),
         ),
       ),
@@ -1002,6 +1051,8 @@ class AuthRegisterFields extends StatelessWidget {
   const AuthRegisterFields({
     super.key,
     required this.hasError,
+    required this.passwordHasError,
+    required this.confirmPasswordHasError,
     required this.obscurePassword,
     required this.obscureConfirmPassword,
     required this.usernameController,
@@ -1012,9 +1063,12 @@ class AuthRegisterFields extends StatelessWidget {
     required this.confirmPasswordController,
     required this.onTogglePassword,
     required this.onToggleConfirmPassword,
+    this.confirmPasswordErrorText,
   });
 
   final bool hasError;
+  final bool passwordHasError;
+  final bool confirmPasswordHasError;
   final bool obscurePassword;
   final bool obscureConfirmPassword;
   final TextEditingController usernameController;
@@ -1025,6 +1079,7 @@ class AuthRegisterFields extends StatelessWidget {
   final TextEditingController confirmPasswordController;
   final VoidCallback onTogglePassword;
   final VoidCallback onToggleConfirmPassword;
+  final String? confirmPasswordErrorText;
 
   @override
   Widget build(BuildContext context) {
@@ -1039,6 +1094,7 @@ class AuthRegisterFields extends StatelessWidget {
           '••••••••',
           passwordController,
           obscureText: obscurePassword,
+          fieldHasError: passwordHasError,
           suffixIcon: AuthPasswordToggle(
             compact: true,
             obscured: obscurePassword,
@@ -1050,7 +1106,8 @@ class AuthRegisterFields extends StatelessWidget {
           '••••••••',
           confirmPasswordController,
           obscureText: obscureConfirmPassword,
-          errorText: hasError ? 'Le password non coincidono *' : null,
+          fieldHasError: confirmPasswordHasError,
+          errorText: confirmPasswordErrorText,
           suffixIcon: AuthPasswordToggle(
             compact: true,
             obscured: obscureConfirmPassword,
@@ -1068,7 +1125,10 @@ class AuthRegisterFields extends StatelessWidget {
     bool obscureText = false,
     Widget? suffixIcon,
     String? errorText,
+    bool? fieldHasError,
   }) {
+    final effectiveError = fieldHasError ?? hasError;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSizes.p12),
       child: AuthField(
@@ -1077,8 +1137,9 @@ class AuthRegisterFields extends StatelessWidget {
         controller: controller,
         obscureText: obscureText,
         suffixIcon: suffixIcon,
-        hasError: hasError,
-        errorText: errorText ?? (hasError ? 'Campo obbligatorio *' : null),
+        hasError: effectiveError,
+        errorText:
+            errorText ?? (effectiveError ? 'Campo obbligatorio *' : null),
         recoveryStyle: false,
         labelBottomSpacing: AppSizes.p8,
       ),

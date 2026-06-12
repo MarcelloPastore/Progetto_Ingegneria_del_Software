@@ -112,6 +112,7 @@ model Spesa {
   anticipataDa    String?   @db.ObjectId
   scadenzaRel     Scadenza? @relation(fields: [idScadenza], references: [id])
   idScadenza      String?   @db.ObjectId
+  idScadenza      String?   @db.ObjectId
 
   partecipanti    String[] @db.ObjectId
   partecipantiRel Utente[] @relation("SpesaPartecipanti", fields: [partecipanti], references: [id])

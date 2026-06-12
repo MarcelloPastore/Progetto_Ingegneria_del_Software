@@ -1,1 +1,14 @@
+export 'screens/elimina_spesa.dart';
+export 'screens/modifica_spesa_admin.dart';
+export 'screens/dettaglio_spesa_admin.dart';
+export 'screens/dettaglio_spesa_debitore.dart';
+export 'nessuna_spesa_registrata.dart';
+export 'screens/inserisci_spesa_admin.dart';
+export 'screens/inserisci_spesa_membro.dart';
+export 'screens/inserisci_spesa_successo.dart';
+export 'screens/lista_spese_admin.dart';
+export 'screens/lista_spese_membro.dart';
+export 'screens/modifiche_spese_negata.dart';
+export 'screens/modifiche_spese_successo.dart';
+export 'screens/pareggia_conti.dart';
 export 'screens/spese_screen.dart';

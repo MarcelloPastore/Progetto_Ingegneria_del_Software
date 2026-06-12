@@ -1,12 +1,20 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 
+import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 
+import 'inserisci_codice_screen.dart';
+
 class AttesaInvioCodiceScreen extends StatefulWidget {
-  const AttesaInvioCodiceScreen({super.key, this.email = 'marco@gmail.com'});
+  const AttesaInvioCodiceScreen({
+    super.key,
+    this.email = 'marco@gmail.com',
+    this.alreadySent = false,
+  });
 
   final String email;
+  final bool alreadySent;
 
   @override
   State<AttesaInvioCodiceScreen> createState() =>
@@ -28,6 +36,34 @@ class _AttesaInvioCodiceScreenState extends State<AttesaInvioCodiceScreen> {
         });
       }
     });
+    _sendAndContinue();
+  }
+
+  Future<void> _sendAndContinue() async {
+    final normalizedEmail = widget.email.trim().toLowerCase();
+    try {
+      if (!widget.alreadySent) {
+        await ApiProvider.auth.requestPasswordReset(normalizedEmail);
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+      if (!mounted) {
+        return;
+      }
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => InserisciCodiceScreen(email: normalizedEmail),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invio codice non riuscito.')),
+      );
+      Navigator.maybePop(context);
+    }
   }
 
   @override

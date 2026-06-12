@@ -24,6 +24,7 @@ type TurnoCreateData = {
   assegnatarioCorrente: string;
   ordineRotazione: string[];
   indiceRotazioneCorrente: number;
+  dataUltimaPulizia?: Date;
   idCreatore: string;
 };
 
