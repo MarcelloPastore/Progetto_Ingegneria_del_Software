@@ -76,7 +76,7 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
       text: widget.initialDescrizione,
     );
     _dataController = TextEditingController(
-      text: widget.initialData != null ? _formatDate(widget.initialData!) : '',
+      text: _formatDate(widget.initialData ?? DateTime.now()),
     );
     _frequenza = widget.initialFrequenza;
   }
@@ -287,7 +287,7 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
     final selected = await showDatePicker(
       context: context,
       initialDate: initial.isAfter(now) ? initial : now,
-      firstDate: DateTime(now.year - 1),
+      firstDate: DateTime(now.year, now.month, now.day),
       lastDate: DateTime(now.year + 10),
     );
     if (selected == null) return;

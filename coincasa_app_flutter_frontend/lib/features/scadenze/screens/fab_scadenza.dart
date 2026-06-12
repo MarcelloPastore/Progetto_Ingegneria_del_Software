@@ -39,6 +39,14 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
   bool get _hasErrors => _hasNameError || _hasDateError;
 
   @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _dataController.text =
+        '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}';
+  }
+
+  @override
   void dispose() {
     _nomeController.dispose();
     _descrizioneController.dispose();
@@ -271,7 +279,7 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
     final selected = await showDatePicker(
       context: context,
       initialDate: now,
-      firstDate: DateTime(now.year - 1),
+      firstDate: DateTime(now.year, now.month, now.day),
       lastDate: DateTime(now.year + 10),
     );
 
