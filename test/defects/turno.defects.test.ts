@@ -15,12 +15,10 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ForbiddenError } from "../../src/errors/httpErrors";
-import { Ruolo } from "@prisma/client";
 
 const mocks = vi.hoisted(() => ({
   updateTurno: vi.fn(),
   findTurnoByIdOrThrow: vi.fn(),
-  deleteTurno: vi.fn(),
 }));
 
 vi.mock("../../src/repository/TurnoRepository", () => ({
@@ -29,7 +27,6 @@ vi.mock("../../src/repository/TurnoRepository", () => ({
       Object.assign(this as any, {
         updateTurno: mocks.updateTurno,
         findTurnoByIdOrThrow: mocks.findTurnoByIdOrThrow,
-        deleteTurno: mocks.deleteTurno,
       });
     }
   },
@@ -75,7 +72,7 @@ describe("TurnoService - Defect Tests (Error Handling)", () => {
       ).rejects.toThrow(ForbiddenError);
       await expect(
         service.modificaTurno("c1", "t1", { task: "New task" }, "u2"),
-      ).rejects.toThrow("Solo il creatore del turno o un HomeAdmin");
+      ).rejects.toThrow("Solo l'idCreatore");
     });
 
     it("throws ForbiddenError when non-creator tries to delete turno", async () => {
@@ -87,30 +84,8 @@ describe("TurnoService - Defect Tests (Error Handling)", () => {
         ForbiddenError,
       );
       await expect(service.eliminaTurno("c1", "t1", "u2")).rejects.toThrow(
-        "Solo il creatore del turno o un HomeAdmin",
+        "Solo l'idCreatore",
       );
-    });
-
-    it("allows a HomeAdmin to modify and delete a turno created by another user", async () => {
-      mocks.findTurnoByIdOrThrow.mockResolvedValue(baseTurno);
-      mocks.updateTurno.mockResolvedValue({
-        ...baseTurno,
-        task: "Pulizia bagno",
-      });
-
-      const service = new TurnoService();
-      await expect(
-        service.modificaTurno(
-          "c1",
-          "t1",
-          { task: "Pulizia bagno" },
-          "u2",
-          Ruolo.HomeAdmin,
-        ),
-      ).resolves.toBeDefined();
-      await expect(
-        service.eliminaTurno("c1", "t1", "u2", Ruolo.HomeAdmin),
-      ).resolves.toBeUndefined();
     });
 
     it("throws ForbiddenError when non-assignee tries to complete turno", async () => {
@@ -122,12 +97,12 @@ describe("TurnoService - Defect Tests (Error Handling)", () => {
 
       const service = new TurnoService();
 
-      await expect(service.completaTurno("c1", "t1", "u1")).rejects.toThrow(
-        ForbiddenError,
-      );
-      await expect(service.completaTurno("c1", "t1", "u1")).rejects.toThrow(
-        "Solo l'assegnatario corrente",
-      );
+      await expect(
+        service.completaTurno("c1", "t1", "u1"),
+      ).rejects.toThrow(ForbiddenError);
+      await expect(
+        service.completaTurno("c1", "t1", "u1"),
+      ).rejects.toThrow("Solo l'assegnatario corrente");
     });
 
     it("allows creator to complete turno as assignee", async () => {
@@ -147,3 +122,4 @@ describe("TurnoService - Defect Tests (Error Handling)", () => {
     });
   });
 });
+

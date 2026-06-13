@@ -14,7 +14,6 @@ import {
 import { CasaRepository } from "../repository/CasaRepository";
 import { ForbiddenError } from "../errors/httpErrors";
 import { randomInt } from "node:crypto";
-import { Ruolo } from "@prisma/client";
 
 const turnoConverter = new TurnoConverter();
 const turnoRepository = new TurnoRepository();
@@ -61,19 +60,16 @@ function aggiornaOrdineRotazione(
 }
 
 export class TurnoService {
-  private async assertCanManageTurno(
+  private async assertIdCreatoreTurno(
     idCasa: string,
     idTurno: string,
     idUtente: string,
-    ruoloCasa?: Ruolo,
   ): Promise<TurnoConAssegnatario> {
     const turno = await turnoRepository.findTurnoByIdOrThrow(idCasa, idTurno);
 
-    const isAdmin =
-      ruoloCasa === Ruolo.HomeAdmin || ruoloCasa === Ruolo.SysAdmin;
-    if (turno.idCreatore !== idUtente && !isAdmin) {
+    if (turno.idCreatore !== idUtente) {
       throw new ForbiddenError(
-        "Solo il creatore del turno o un HomeAdmin puo modificarlo o eliminarlo",
+        "Solo l'idCreatore del turno puo modificare o eliminare",
       );
     }
 
@@ -172,14 +168,8 @@ export class TurnoService {
     idTurno: string,
     dto: ModificaTurnoDto,
     idUtente: string,
-    ruoloCasa?: Ruolo,
   ): Promise<TurnoResponseDto> {
-    const turno = await this.assertCanManageTurno(
-      idCasa,
-      idTurno,
-      idUtente,
-      ruoloCasa,
-    );
+    const turno = await this.assertIdCreatoreTurno(idCasa, idTurno, idUtente);
     const membriIds = await casaRepository.getMembriCasaIds(idCasa);
     const ordineAggiornato = aggiornaOrdineRotazione(
       turno.ordineRotazione,
@@ -204,9 +194,8 @@ export class TurnoService {
     idCasa: string,
     idTurno: string,
     idUtente: string,
-    ruoloCasa?: Ruolo,
   ): Promise<void> {
-    await this.assertCanManageTurno(idCasa, idTurno, idUtente, ruoloCasa);
+    await this.assertIdCreatoreTurno(idCasa, idTurno, idUtente);
 
     await turnoRepository.deleteTurno(idCasa, idTurno);
   }
