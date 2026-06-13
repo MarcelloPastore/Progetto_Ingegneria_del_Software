@@ -20,6 +20,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _emailEsistente = false;
   bool _passwordTooShort = false;
   bool _passwordMismatch = false;
+  bool _emailDeliveryError = false;
+  bool _serverError = false;
   bool _isSubmitting = false;
 
   final _emailController = TextEditingController();
@@ -48,6 +50,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _emailEsistente = false;
       _passwordTooShort = false;
       _passwordMismatch = false;
+      _emailDeliveryError = false;
+      _serverError = false;
     });
 
     final username = _usernameController.text.trim();
@@ -69,9 +73,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
         password != confirmPassword;
 
     final invalidForm =
-        username.isEmpty ||
+        username.length < 3 ||
+        username.length > 50 ||
         nome.isEmpty ||
+        nome.length > 100 ||
         cognome.isEmpty ||
+        cognome.length > 100 ||
         email.isEmpty ||
         password.isEmpty ||
         confirmPassword.isEmpty ||
@@ -111,12 +118,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       setState(() {
         _emailEsistente = error.statusCode == 409;
-        _campiNonCompilati = error.statusCode != 409;
+        _campiNonCompilati = error.statusCode == 400;
+        _emailDeliveryError = error.statusCode == 502;
+        _serverError =
+            error.statusCode != 400 &&
+            error.statusCode != 409 &&
+            error.statusCode != 502;
       });
     } catch (_) {
       if (!mounted) return;
 
-      setState(() => _campiNonCompilati = true);
+      setState(() => _serverError = true);
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
@@ -127,7 +139,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final hasFieldError = _campiNonCompilati || _emailEsistente;
-    final hasError = hasFieldError || _passwordTooShort || _passwordMismatch;
+    final hasError =
+        hasFieldError ||
+        _passwordTooShort ||
+        _passwordMismatch ||
+        _emailDeliveryError ||
+        _serverError;
     final passwordFieldError =
         hasFieldError || _passwordTooShort || _passwordMismatch;
 
@@ -146,6 +163,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
               compact: true,
               message: _emailEsistente
                   ? "L'email o lo username inseriti sono già associati a un account esistente. "
+                  : _emailDeliveryError
+                  ? 'Account non creato: non è stato possibile inviare l’email di verifica. Riprova tra poco.'
+                  : _serverError
+                  ? 'Registrazione temporaneamente non disponibile. Riprova tra poco.'
                   : _passwordTooShort
                   ? 'La password deve contenere almeno 10 caratteri.'
                   : _passwordMismatch

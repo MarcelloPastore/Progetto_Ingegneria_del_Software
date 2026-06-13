@@ -421,7 +421,7 @@ class _BackTitle extends StatelessWidget {
   }
 }
 
-class _AmountField extends StatelessWidget {
+class _AmountField extends StatefulWidget {
   const _AmountField({
     required this.controller,
     required this.hasError,
@@ -433,67 +433,112 @@ class _AmountField extends StatelessWidget {
   final ValueChanged<String> onChanged;
 
   @override
+  State<_AmountField> createState() => _AmountFieldState();
+}
+
+class _AmountFieldState extends State<_AmountField> {
+  late final FocusNode _focusNode;
+  bool _hasFocus = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode = FocusNode()..addListener(_handleFocusChanged);
+  }
+
+  void _handleFocusChanged() {
+    if (mounted) setState(() => _hasFocus = _focusNode.hasFocus);
+  }
+
+  @override
+  void dispose() {
+    _focusNode
+      ..removeListener(_handleFocusChanged)
+      ..dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 73,
-      decoration: BoxDecoration(
-        color: const Color(0xFF312B4A),
-        border: Border.all(
-          color: hasError ? const Color(0xFFFF2525) : const Color(0xFFAAA6B2),
-          width: hasError ? 2 : 1.8,
+    return GestureDetector(
+      onTap: _focusNode.requestFocus,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+        height: 73,
+        decoration: BoxDecoration(
+          color: const Color(0xFF312B4A),
+          border: Border.all(
+            color: widget.hasError
+                ? const Color(0xFFFF2525)
+                : _hasFocus
+                ? const Color(0xFF996CFA)
+                : const Color(0xFFAAA6B2),
+            width: widget.hasError || _hasFocus ? 2 : 1.8,
+          ),
+          borderRadius: BorderRadius.circular(9),
+          boxShadow: _hasFocus
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF996CFA).withValues(alpha: 0.22),
+                    blurRadius: 14,
+                    offset: const Offset(0, 6),
+                  ),
+                ]
+              : const [],
         ),
-        borderRadius: BorderRadius.circular(9),
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            left: 11,
-            top: 5,
-            child: Text(
-              'Importo',
-              style: AppTextStyles.screenTitleStrong.copyWith(
-                color: Colors.white,
-                fontSize: 19,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          Positioned.fill(
-            child: TextField(
-              controller: controller,
-              onChanged: onChanged,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-                signed: true,
-              ),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[-0-9,.]')),
-              ],
-              textAlign: TextAlign.right,
-              style: AppTextStyles.screenTitleStrong.copyWith(
-                color: const Color(0xFF996CFA),
-                fontSize: 38,
-                fontWeight: FontWeight.w500,
-              ),
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.fromLTRB(12, 22, 11, 0),
-                prefixText: controller.text.trim().isEmpty ? '' : '€ ',
-                prefixStyle: AppTextStyles.screenTitleStrong.copyWith(
-                  color: const Color(0xFF996CFA),
-                  fontSize: 38,
-                  fontWeight: FontWeight.w500,
-                ),
-                hintText: '€ 0,00',
-                hintStyle: AppTextStyles.screenTitleStrong.copyWith(
-                  color: const Color(0xFF996CFA),
-                  fontSize: 38,
+        child: Stack(
+          children: [
+            Positioned(
+              left: 11,
+              top: 5,
+              child: Text(
+                'Importo',
+                style: AppTextStyles.screenTitleStrong.copyWith(
+                  color: Colors.white,
+                  fontSize: 19,
                   fontWeight: FontWeight.w500,
                 ),
               ),
             ),
-          ),
-        ],
+            Positioned.fill(
+              child: TextField(
+                controller: widget.controller,
+                focusNode: _focusNode,
+                onChanged: widget.onChanged,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                  signed: true,
+                ),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[-0-9,.]')),
+                ],
+                textAlign: TextAlign.right,
+                style: AppTextStyles.screenTitleStrong.copyWith(
+                  color: const Color(0xFF996CFA),
+                  fontSize: 38,
+                  fontWeight: FontWeight.w500,
+                ),
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.fromLTRB(12, 22, 11, 0),
+                  prefixText: widget.controller.text.trim().isEmpty ? '' : '€ ',
+                  prefixStyle: AppTextStyles.screenTitleStrong.copyWith(
+                    color: const Color(0xFF996CFA),
+                    fontSize: 38,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  hintText: '€ 0,00',
+                  hintStyle: AppTextStyles.screenTitleStrong.copyWith(
+                    color: const Color(0xFF996CFA),
+                    fontSize: 38,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

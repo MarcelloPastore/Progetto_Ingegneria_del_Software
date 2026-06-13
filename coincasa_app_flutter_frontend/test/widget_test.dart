@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
+import 'package:coincasa_app/core/api/api_client.dart';
 import 'package:coincasa_app/core/api/auth_api.dart';
 import 'package:coincasa_app/features/auth/auth.dart';
 
@@ -18,6 +19,23 @@ class FakeAuthApi extends AuthApi {
   }) async {
     // Mock successful registration
     return;
+  }
+}
+
+class FailingRegistrationAuthApi extends AuthApi {
+  FailingRegistrationAuthApi(this.statusCode) : super(ApiProvider.client);
+
+  final int statusCode;
+
+  @override
+  Future<void> register({
+    required String username,
+    required String nome,
+    required String cognome,
+    required String email,
+    required String password,
+  }) {
+    throw ApiException(statusCode: statusCode);
   }
 }
 
@@ -68,13 +86,72 @@ void main() {
     await tester.tap(submitButton);
     await tester.pump();
 
-    expect(find.textContaining('Le password non coincidono. Controlla e riprova.'), findsOneWidget);
+    expect(
+      find.textContaining('Le password non coincidono. Controlla e riprova.'),
+      findsOneWidget,
+    );
     expect(find.text('Le password non coincidono *'), findsOneWidget);
     expect(find.text('Controlla la tua mail!'), findsNothing);
   });
 
+  testWidgets('registration validates the backend username constraints', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const MaterialApp(home: RegisterScreen()));
+
+    final fields = find.byType(TextField);
+    await tester.enterText(fields.at(0), 'ab');
+    await tester.enterText(fields.at(1), 'Marco');
+    await tester.enterText(fields.at(2), 'Rossi');
+    await tester.enterText(fields.at(3), 'marco@gmail.com');
+    await tester.enterText(fields.at(4), 'password123');
+    await tester.enterText(fields.at(5), 'password123');
+
+    await tester.ensureVisible(
+      find.widgetWithText(ElevatedButton, 'Registrati'),
+    );
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Registrati'));
+    await tester.pump();
+
+    expect(
+      find.textContaining(
+        'Alcuni campi non sono stati compilati correttamente',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Controlla la tua mail!'), findsNothing);
+  });
+
+  testWidgets('registration reports email delivery failures accurately', (
+    tester,
+  ) async {
+    ApiProvider.auth = FailingRegistrationAuthApi(502);
+    await tester.pumpWidget(const MaterialApp(home: RegisterScreen()));
+
+    final fields = find.byType(TextField);
+    await tester.enterText(fields.at(0), 'Marco_Rossi');
+    await tester.enterText(fields.at(1), 'Marco');
+    await tester.enterText(fields.at(2), 'Rossi');
+    await tester.enterText(fields.at(3), 'marco@gmail.com');
+    await tester.enterText(fields.at(4), 'password123');
+    await tester.enterText(fields.at(5), 'password123');
+
+    await tester.ensureVisible(
+      find.widgetWithText(ElevatedButton, 'Registrati'),
+    );
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Registrati'));
+    await tester.pump();
+
+    expect(
+      find.textContaining("non è stato possibile inviare l’email"),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('account activated screen is visible', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: AccountActivatedScreen(email: 'marco@gmail.com')));
+    await tester.pumpWidget(
+      const MaterialApp(home: AccountActivatedScreen(email: 'marco@gmail.com')),
+    );
 
     expect(find.text('Account attivato!'), findsOneWidget);
     expect(find.text('Vai al login'), findsOneWidget);

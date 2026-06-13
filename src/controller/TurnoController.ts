@@ -121,6 +121,7 @@ export class TurnoController {
         request.params.idTurno,
         dto,
         request.user.idUtente,
+        request.user.ruoloCasa,
       );
       return reply.status(200).send(result);
     } catch (error) {
@@ -140,6 +141,7 @@ export class TurnoController {
         request.params.idCasa,
         request.params.idTurno,
         request.user.idUtente,
+        request.user.ruoloCasa,
       );
       return reply.status(204).send();
     } catch (error) {

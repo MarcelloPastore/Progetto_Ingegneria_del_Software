@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/problema.dart';
@@ -8,6 +9,7 @@ import 'package:coincasa_app/core/state/active_casa_session.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
+import 'package:coincasa_app/core/widgets/dashboard/open_problems_section.dart';
 import 'package:coincasa_app/features/problemi/screens/problema_dettaglio_screen.dart';
 import 'package:coincasa_app/features/problemi/screens/segnala_problema_screen.dart';
 
@@ -15,21 +17,23 @@ import 'package:coincasa_app/features/problemi/screens/segnala_problema_screen.d
 // Screen
 // ---------------------------------------------------------------------------
 
-class ProblemiHomeScreen extends StatefulWidget {
+class ProblemiHomeScreen extends ConsumerStatefulWidget {
   const ProblemiHomeScreen({super.key});
 
   static const String routeName = '/problemi';
 
   @override
-  State<ProblemiHomeScreen> createState() => _ProblemiHomeScreenState();
+  ConsumerState<ProblemiHomeScreen> createState() => _ProblemiHomeScreenState();
 }
 
-class _ProblemiHomeScreenState extends State<ProblemiHomeScreen> {
+class _ProblemiHomeScreenState extends ConsumerState<ProblemiHomeScreen> {
   late Future<List<Problema>> _future;
+  int _loadedRevision = -1;
 
   @override
   void initState() {
     super.initState();
+    _loadedRevision = ref.read(problemiRevisionProvider);
     _future = _loadProblemi();
   }
 
@@ -47,6 +51,12 @@ class _ProblemiHomeScreenState extends State<ProblemiHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final revision = ref.watch(problemiRevisionProvider);
+    if (_loadedRevision != revision) {
+      _loadedRevision = revision;
+      _future = _loadProblemi();
+    }
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(

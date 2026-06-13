@@ -3,9 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
-import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
+import 'package:coincasa_app/core/state/active_casa_session.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/dashboard/open_problems_section.dart';
@@ -169,13 +169,8 @@ class _SegnalaProblemaScreenState extends ConsumerState<SegnalaProblemaScreen> {
 
     try {
       // Usiamo ref.read invece di context per evitare problemi di lifecycle
-      final activeCasa = ref.read(activeCasaProvider);
-      final casaId = activeCasa.selectedCasaId;
-
-      if (casaId == null || casaId.isEmpty) {
-        controller.setSubmitError('Nessuna casa selezionata.');
-        return;
-      }
+      final casa = await ensureActiveCasaContext(ActiveCasaScope.read(context));
+      final casaId = casa.id;
 
       // Risolviamo l'id dell'assegnatario prima di procedere
       final assigneeId = await _resolveAssigneeId(form.assignmentMode, casaId);
@@ -197,10 +192,7 @@ class _SegnalaProblemaScreenState extends ConsumerState<SegnalaProblemaScreen> {
         await ApiProvider.problemi.autoAssegna(casaId, problema.id);
       }
 
-      // Invalida il provider dei problemi per forzare il refresh
-      // Invalidiamo sia la famiglia che l'istanza specifica per sicurezza
-      ref.invalidate(openProblemsProvider);
-      ref.invalidate(openProblemsProvider(casaId));
+      ref.read(problemiRevisionProvider.notifier).state++;
 
       if (!mounted) return;
 
