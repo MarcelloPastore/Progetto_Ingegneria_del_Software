@@ -5,7 +5,6 @@ import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/problema.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
-import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 import 'package:coincasa_app/features/problemi/screens/problema_dettaglio_dashboard_screen.dart';
 
 final problemiRevisionProvider = StateProvider<int>((ref) => 0);
@@ -87,10 +86,15 @@ class OpenProblemsSection extends ConsumerWidget {
                   for (var i = 0; i < visible.length; i++) ...[
                     _ProblemRow(problema: visible[i]),
                     if (i < visible.length - 1)
-                      Divider(
-                        height: 1,
-                        thickness: 1,
-                        color: AppColors.dividerOnDark,
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSizes.p10,
+                        ),
+                        child: Divider(
+                          height: 1,
+                          thickness: 0.5,
+                          color: Colors.white.withValues(alpha: 0.15),
+                        ),
                       ),
                   ],
                   const SizedBox(height: AppSizes.p14),
@@ -129,31 +133,74 @@ class _ProblemRow extends StatelessWidget {
     }
   }
 
+  IconData get _priorityIcon {
+    switch (problema.priorita.toLowerCase()) {
+      case 'urgente':
+        return Icons.priority_high_rounded;
+      case 'media':
+        return Icons.remove_rounded;
+      default:
+        return Icons.arrow_downward_rounded;
+    }
+  }
+
+  String? get _segnalatoData {
+    final raw = problema.raw['segnalatoData']?.toString();
+    if (raw != null && raw.isNotEmpty) return raw;
+    final iso = problema.raw['dataCreazione']?.toString();
+    if (iso == null || iso.isEmpty) return null;
+    final dt = DateTime.tryParse(iso);
+    if (dt == null) return null;
+    return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final segnalato = _segnalatoData;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSizes.p12),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          UserAvatar(
-            userId: (problema.raw['assegnatarioId'] ??
-                    problema.raw['segnalatoDaId'])
-                ?.toString(),
-            username: (problema.raw['assegnatarioNome'] ??
-                    problema.raw['segnalatoDa'])
-                ?.toString(),
-            radius: AppSizes.p22,
-            fallback: '?',
+          Container(
+            width: AppSizes.p22 * 2,
+            height: AppSizes.p22 * 2,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: _priorityColor.withValues(alpha: 0.18),
+              border: Border.all(color: _priorityColor, width: 1.5),
+            ),
+            child: Icon(
+              _priorityIcon,
+              color: _priorityColor,
+              size: AppSizes.p22,
+            ),
           ),
           const SizedBox(width: AppSizes.p14),
           Expanded(
-            child: Text(
-              problema.titolo,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppTextStyles.dashboardCardTitleOnDark.copyWith(
-                color: _priorityColor,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  problema.titolo,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.dashboardCardTitleOnDark.copyWith(
+                    color: _priorityColor,
+                  ),
+                ),
+                if (segnalato != null) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    'segnalato il $segnalato',
+                    style: TextStyle(
+                      color: AppColors.textMutedDark,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
           const SizedBox(width: AppSizes.p8),

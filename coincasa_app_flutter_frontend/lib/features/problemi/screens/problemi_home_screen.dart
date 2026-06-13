@@ -12,6 +12,7 @@ import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
 import 'package:coincasa_app/core/widgets/dashboard/open_problems_section.dart';
 import 'package:coincasa_app/features/problemi/screens/problema_dettaglio_screen.dart';
 import 'package:coincasa_app/features/problemi/screens/segnala_problema_screen.dart';
+import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 
 // ---------------------------------------------------------------------------
 // Screen
