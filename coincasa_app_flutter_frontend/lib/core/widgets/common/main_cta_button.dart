@@ -6,7 +6,8 @@ import 'package:flutter/material.dart';
 
 /// Barra azioni fissa in fondo alle schermate di dettaglio.
 ///
-/// Mostra la riga [Modifica | Elimina] solo se [isCreator] è true.
+/// [isCreator] mostra il pulsante Modifica (e Elimina).
+/// [canDelete] mostra solo il pulsante Elimina (per admin non creatori).
 /// "Torna" è sempre visibile come [MainCtaButton].
 class DetailActionsBar extends StatelessWidget {
   const DetailActionsBar({
@@ -18,6 +19,7 @@ class DetailActionsBar extends StatelessWidget {
     this.onModify,
     this.onDelete,
     this.isCreator = false,
+    this.canDelete = false,
   });
 
   final String modifyLabel;
@@ -27,11 +29,15 @@ class DetailActionsBar extends StatelessWidget {
   final VoidCallback? onModify;
   final VoidCallback? onDelete;
   final bool isCreator;
+  final bool canDelete;
 
   @override
   Widget build(BuildContext context) {
     final hasBack = backLabel != null && onBack != null;
-    final showActions = isCreator;
+    final showDelete = isCreator || canDelete;
+    // Modifica è visibile ogni volta che c'è almeno un'azione disponibile,
+    // ma abilitata solo per il creatore (altrimenti appare bloccata).
+    final showActions = showDelete;
 
     if (!hasBack && !showActions) {
       return const SizedBox.shrink();
@@ -48,15 +54,15 @@ class DetailActionsBar extends StatelessWidget {
                 Expanded(
                   child: _DetailActionButton(
                     label: modifyLabel,
-                    color: MainCtaColors.problemi, // viola
-                    onPressed: onModify,
+                    color: MainCtaColors.problemi,
+                    onPressed: isCreator ? onModify : null,
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: _DetailActionButton(
                     label: deleteLabel,
-                    color: MainCtaColors.scadenze, // rosso
+                    color: MainCtaColors.scadenze,
                     onPressed: onDelete,
                   ),
                 ),

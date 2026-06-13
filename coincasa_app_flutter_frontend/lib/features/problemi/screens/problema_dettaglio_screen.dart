@@ -458,7 +458,6 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
   }
 
   bool get _isCreator {
-    if (ActiveCasaScope.read(context).isHomeAdmin) return true;
     final currentId = ApiProvider.client.currentUserId?.trim();
     final rawCreatorId = _firstString([
       _problema.raw['creatoreId'],
@@ -530,6 +529,7 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
                 deleteLabel: 'Elimina problema',
                 backLabel: 'Torna ai problemi',
                 isCreator: _isCreator,
+                canDelete: canDelete,
                 onModify: () async {
                   final updated = await Navigator.of(context).pushNamed(
                     ModificaProblemaScreen.routeName,

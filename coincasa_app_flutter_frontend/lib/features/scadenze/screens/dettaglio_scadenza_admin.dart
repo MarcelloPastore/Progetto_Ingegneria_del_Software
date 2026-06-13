@@ -163,7 +163,8 @@ class DettaglioScadenzaAdminScreen extends StatelessWidget {
               modifyLabel: 'Modifica scadenza',
               deleteLabel: 'Elimina scadenza',
               backLabel: 'Torna alle scadenze',
-              isCreator: isAdmin,
+              isCreator: false,
+              canDelete: isAdmin,
               onModify: () => Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => ScadenzaFormScreen.modifica(

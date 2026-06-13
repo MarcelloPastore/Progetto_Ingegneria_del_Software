@@ -152,11 +152,14 @@ class _DettaglioTurnoAdminScreenState
     final nav = _navArgs;
     if (nav == null) return null;
 
-    final inquilini = await ApiProvider.casa.listInquilini(nav.casaId);
+    final results = await Future.wait([
+      ApiProvider.turni.getById(nav.casaId, nav.turno.id),
+      ApiProvider.casa.listInquilini(nav.casaId),
+    ]);
     return _TurnoDetailData(
       casaId: nav.casaId,
-      turno: nav.turno,
-      inquilini: inquilini,
+      turno: results[0] as Turno,
+      inquilini: results[1] as List<Inquilino>,
     );
   }
 
@@ -295,7 +298,7 @@ class _DettaglioTurnoAdminScreenState
             currentUser != null &&
             data != null &&
             data.turno.isCreatedBy(currentUser.id);
-        final canEditTurno =
+        final canDeleteTurno =
             isCreator || ActiveCasaScope.of(context).isHomeAdmin;
 
         return Scaffold(
@@ -394,7 +397,8 @@ class _DettaglioTurnoAdminScreenState
                         modifyLabel: 'Modifica turno',
                         deleteLabel: 'Elimina turno',
                         backLabel: 'Torna ai turni',
-                        isCreator: canEditTurno,
+                        isCreator: isCreator,
+                        canDelete: canDeleteTurno,
                         onModify: _isSubmitting || data == null
                             ? null
                             : () => Navigator.of(context).pushNamed(

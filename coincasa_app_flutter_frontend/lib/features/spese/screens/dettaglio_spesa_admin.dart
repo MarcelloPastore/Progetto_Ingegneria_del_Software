@@ -265,8 +265,9 @@ class _DetailContent extends StatelessWidget {
           modifyLabel: 'Modifica spesa',
           deleteLabel: 'Elimina spesa',
           backLabel: 'Torna alle spese',
-          isCreator: isCreator || isHomeAdmin,
-          onModify: (hasAnyPaidQuota && !isHomeAdmin)
+          isCreator: isCreator,
+          canDelete: isCreator || isHomeAdmin,
+          onModify: hasAnyPaidQuota
               ? null
               : () => Navigator.of(context).pushNamed(
                     ModificaSpesaAdminScreen.routeName,
