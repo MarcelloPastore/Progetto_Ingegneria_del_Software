@@ -776,53 +776,6 @@ class _BalanceMetric extends StatelessWidget {
   }
 }
 
-class _EmptyMessageSection extends StatelessWidget {
-  const _EmptyMessageSection({
-    required this.title,
-    required this.message,
-    required this.height,
-    this.routeName,
-  });
-
-  final String title;
-  final String message;
-  final double height;
-  final String? routeName;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _CenteredSectionTitle(title),
-        const SizedBox(height: AppSizes.p10),
-        InkWell(
-          onTap: routeName == null
-              ? null
-              : () => Navigator.of(context).pushNamed(routeName!),
-          borderRadius: BorderRadius.circular(AppSizes.radius8),
-          child: Container(
-            height: height,
-            decoration: BoxDecoration(
-              color: AppColors.surfaceDarkElevated,
-              borderRadius: BorderRadius.circular(AppSizes.radius8),
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              message,
-              style: AppTextStyles.dashboardCardSubtitleOnDark.copyWith(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _HouseHealthSection extends StatelessWidget {
   const _HouseHealthSection({required this.dashboardDataFuture});
 
@@ -1014,62 +967,6 @@ class _ScadenzaRow extends StatelessWidget {
             color: dotColor,
             fontSize: 14,
             fontWeight: FontWeight.w700,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _EmptyProblemsSection extends StatelessWidget {
-  const _EmptyProblemsSection();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const _CenteredSectionTitle('PROBLEMI APERTI'),
-        const SizedBox(height: AppSizes.p10),
-        InkWell(
-          onTap: () => Navigator.of(context).pushNamed('/problemi'),
-          borderRadius: BorderRadius.circular(AppSizes.radius8),
-          child: Container(
-            height: 246,
-            decoration: BoxDecoration(
-              color: AppColors.surfaceDarkElevated,
-              borderRadius: BorderRadius.circular(AppSizes.radius8),
-              boxShadow: const [
-                BoxShadow(
-                  color: AppColors.shadowStrong,
-                  blurRadius: AppSizes.p8,
-                  offset: Offset(0, AppSizes.p5),
-                ),
-              ],
-            ),
-            padding: const EdgeInsets.fromLTRB(
-              AppSizes.p10,
-              AppSizes.p15,
-              AppSizes.p20,
-              AppSizes.p17,
-            ),
-            child: Column(
-              children: [
-                const _StatusRow(
-                  title: 'Nessun problema',
-                  status: 'la casa sta bene!',
-                  titleColor: AppColors.statusPositive,
-                ),
-                const Spacer(),
-                Text(
-                  'Vedi tutti',
-                  style: AppTextStyles.dashboardSectionLink.copyWith(
-                    color: AppColors.brandAccent,
-                    fontSize: 16,
-                  ),
-                ),
-              ],
-            ),
           ),
         ),
       ],
@@ -1326,56 +1223,6 @@ class _TodayTurnSectionState extends State<_TodayTurnSection> {
               ),
             );
           },
-        ),
-      ],
-    );
-  }
-}
-
-class _StatusRow extends StatelessWidget {
-  const _StatusRow({
-    required this.title,
-    required this.status,
-    required this.titleColor,
-  });
-
-  final String title;
-  final String status;
-  final Color titleColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: AppSizes.p48,
-          height: AppSizes.p48,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: AppColors.statusPositive, width: 2),
-          ),
-          child: const Icon(
-            Icons.check,
-            color: AppColors.statusPositive,
-            size: AppSizes.p28,
-          ),
-        ),
-        const SizedBox(width: AppSizes.p14),
-        Expanded(
-          child: Text(
-            title,
-            style: AppTextStyles.dashboardCardTitleOnDark.copyWith(
-              color: titleColor,
-              fontSize: 18,
-            ),
-          ),
-        ),
-        Text(
-          status,
-          style: AppTextStyles.dashboardListStatus.copyWith(
-            color: AppColors.statusPositive,
-            fontSize: 18,
-          ),
         ),
       ],
     );

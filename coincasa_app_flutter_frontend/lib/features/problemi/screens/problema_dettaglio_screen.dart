@@ -7,6 +7,7 @@ import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
+import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 import 'package:coincasa_app/features/problemi/screens/deassegnazione_successo_screen.dart';
 import 'package:coincasa_app/features/problemi/screens/modifica_problema_screen.dart';
 
@@ -164,6 +165,18 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
         _problema.raw['createdByName'],
       ]) ??
       'Coinquilino';
+
+  String? get _responsabileId => _firstString([
+    _problema.raw['assegnatarioId'],
+    _problema.raw['assegnatario_id'],
+    _problema.raw['responsabileId'],
+  ]);
+
+  String? get _segnalatoDaId => _firstString([
+    _problema.raw['segnalatoDaId'],
+    _problema.raw['autoreId'],
+    _problema.raw['createdBy'],
+  ]);
 
   String get _segnalatoOre =>
       _problema.raw['segnalatoOre']?.toString() ?? '09:15';
@@ -614,7 +627,11 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
       title: label,
       child: Row(
         children: [
-          _AvatarCircle(name: nome),
+          UserAvatar(
+            userId: _responsabileId,
+            username: nome,
+            radius: 20,
+          ),
           const SizedBox(width: AppSizes.p12),
           Expanded(
             child: Text(
@@ -655,7 +672,11 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          _AvatarCircle(name: _segnalatoDa),
+          UserAvatar(
+            userId: _segnalatoDaId,
+            username: _segnalatoDa,
+            radius: 20,
+          ),
           const SizedBox(width: AppSizes.p12),
           Expanded(
             child: Column(
@@ -848,39 +869,6 @@ class _InfoCard extends StatelessWidget {
           const SizedBox(height: AppSizes.p10),
           child,
         ],
-      ),
-    );
-  }
-}
-
-class _AvatarCircle extends StatelessWidget {
-  const _AvatarCircle({required this.name});
-  final String name;
-
-  @override
-  Widget build(BuildContext context) {
-    final parts = name.trim().split(RegExp(r'\s+'));
-    final initials = parts.length == 1
-        ? parts[0][0].toUpperCase()
-        : (parts[0][0] + parts[1][0]).toUpperCase();
-
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        color: const Color(0xFF304A7E),
-        shape: BoxShape.circle,
-        border: Border.all(color: AppColors.brandAccent, width: 1.5),
-      ),
-      child: Center(
-        child: Text(
-          initials,
-          style: const TextStyle(
-            color: Color(0xFF85A7F0),
-            fontSize: 14,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
       ),
     );
   }

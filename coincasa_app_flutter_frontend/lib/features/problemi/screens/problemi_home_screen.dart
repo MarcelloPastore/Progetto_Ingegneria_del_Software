@@ -8,6 +8,7 @@ import 'package:coincasa_app/core/state/active_casa_session.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
+import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 import 'package:coincasa_app/features/problemi/screens/problema_dettaglio_screen.dart';
 import 'package:coincasa_app/features/problemi/screens/segnala_problema_screen.dart';
 
@@ -262,6 +263,10 @@ class _ProblemaCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final assegnatarioNome = _resolveAssegnatario(problema.raw);
+    final assegnatarioId = (problema.raw['assegnatarioId'] ??
+            problema.raw['assegnatario_id'] ??
+            problema.raw['responsabileId'])
+        ?.toString();
 
     return Material(
       color: AppColors.transparent,
@@ -276,7 +281,12 @@ class _ProblemaCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Avatar
-              _ProblemaAvatar(nome: assegnatarioNome),
+              UserAvatar(
+                userId: assegnatarioId,
+                username: assegnatarioNome,
+                radius: 22,
+                fallback: '?',
+              ),
               const SizedBox(width: AppSizes.p12),
 
               // Content
@@ -340,55 +350,6 @@ class _ProblemaCard extends StatelessWidget {
     }
     if (value is String && value.trim().isNotEmpty) return value.trim();
     return null;
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Problem avatar (initials circle)
-// ---------------------------------------------------------------------------
-
-class _ProblemaAvatar extends StatelessWidget {
-  const _ProblemaAvatar({required this.nome});
-
-  final String? nome;
-
-  @override
-  Widget build(BuildContext context) {
-    final initials = _initials(nome);
-    final hasName = initials != '?';
-
-    return Container(
-      width: 44,
-      height: 44,
-      decoration: BoxDecoration(
-        color: hasName
-            ? AppColors.brandSecondary.withValues(alpha: 0.28)
-            : AppColors.surfaceDarkElevated,
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: hasName ? AppColors.brandAccent : AppColors.dividerOnDark,
-          width: 1.5,
-        ),
-      ),
-      child: Center(
-        child: Text(
-          initials,
-          style: TextStyle(
-            color: hasName ? AppColors.brandAccent : AppColors.textMutedDark,
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            height: 1,
-          ),
-        ),
-      ),
-    );
-  }
-
-  String _initials(String? nome) {
-    if (nome == null || nome.trim().isEmpty) return '?';
-    final parts = nome.trim().split(RegExp(r'\s+'));
-    if (parts.length == 1) return parts[0][0].toUpperCase();
-    return (parts[0][0] + parts[1][0]).toUpperCase();
   }
 }
 

@@ -1070,7 +1070,7 @@ class _AssigneeSection extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surfaceDarkElevated,
         borderRadius: BorderRadius.circular(AppSizes.radius12),
-        border: Border.all(color: AppColors.brandAccent, width: 2),
+        border: Border.all(color: borderColor, width: 2),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

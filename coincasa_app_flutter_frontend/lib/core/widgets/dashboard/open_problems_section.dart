@@ -5,6 +5,7 @@ import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/problema.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 import 'package:coincasa_app/features/problemi/screens/problema_dettaglio_dashboard_screen.dart';
 
 final openProblemsProvider = FutureProvider.autoDispose
@@ -114,20 +115,6 @@ class _ProblemRow extends StatelessWidget {
 
   final Problema problema;
 
-  String get _initials {
-    final source =
-        (problema.raw['assegnatarioNome'] ??
-                problema.raw['segnalatoDa'] ??
-                problema.titolo)
-            .toString()
-            .trim();
-    if (source.isEmpty) return '?';
-    final parts = source.split(RegExp(r'\s+'));
-    return parts.length > 1
-        ? '${parts[0][0]}${parts[1][0]}'.toUpperCase()
-        : parts[0][0].toUpperCase();
-  }
-
   Color get _priorityColor {
     switch (problema.priorita.toLowerCase()) {
       case 'urgente':
@@ -145,15 +132,15 @@ class _ProblemRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: AppSizes.p12),
       child: Row(
         children: [
-          CircleAvatar(
+          UserAvatar(
+            userId: (problema.raw['assegnatarioId'] ??
+                    problema.raw['segnalatoDaId'])
+                ?.toString(),
+            username: (problema.raw['assegnatarioNome'] ??
+                    problema.raw['segnalatoDa'])
+                ?.toString(),
             radius: AppSizes.p22,
-            backgroundColor: _priorityColor.withValues(alpha: 0.18),
-            child: Text(
-              _initials,
-              style: AppTextStyles.dashboardProblemInitials.copyWith(
-                color: _priorityColor,
-              ),
-            ),
+            fallback: '?',
           ),
           const SizedBox(width: AppSizes.p14),
           Expanded(

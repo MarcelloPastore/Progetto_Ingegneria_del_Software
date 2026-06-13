@@ -30,15 +30,13 @@ class ScadenzaFormScreen extends StatefulWidget {
     required String descrizione,
     required DateTime? data,
     required String frequenza,
-    required String idScadenza,
-    required String casaId,
+    required this.idScadenza,
+    required this.casaId,
   }) : isEditing = true,
        initialNome = nome,
        initialDescrizione = descrizione,
        initialData = data,
-       initialFrequenza = frequenza,
-       this.idScadenza = idScadenza,
-       this.casaId = casaId;
+       initialFrequenza = frequenza;
 
   @override
   State<ScadenzaFormScreen> createState() => _ScadenzaFormScreenState();
@@ -398,8 +396,9 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
     final year = int.tryParse(parts[2]);
     if (day == null || month == null || year == null) return null;
     final date = DateTime(year, month, day);
-    if (date.day != day || date.month != month || date.year != year)
+    if (date.day != day || date.month != month || date.year != year) {
       return null;
+    }
     return date;
   }
 

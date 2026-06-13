@@ -176,7 +176,7 @@ class _GestioneAccountScreenState extends State<GestioneAccountScreen> {
                       ),
                       const SizedBox(height: 14),
                       Text(
-                        '$displayName',
+                        displayName,
                         style: GoogleFonts.inter(
                           color: Colors.white,
                           fontSize: 24,
@@ -303,12 +303,6 @@ class _GestioneAccountScreenState extends State<GestioneAccountScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  void _showModificaSnackBar(BuildContext context, String campo) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Modifica $campo non ancora implementata.')),
     );
   }
 

@@ -204,7 +204,7 @@ class LasciaCasaSuccessScreen extends StatelessWidget {
                 'assets/Icons/check.png',
                 width: 100,
                 height: 100,
-                errorBuilder: (_, __, ___) => const Icon(
+                errorBuilder: (_, e, s) => const Icon(
                   Icons.check_circle_rounded,
                   color: Color(0xFF4ADE80),
                   size: 100,

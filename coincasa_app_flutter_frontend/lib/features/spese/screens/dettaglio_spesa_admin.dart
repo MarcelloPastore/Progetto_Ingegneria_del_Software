@@ -163,6 +163,7 @@ class _DetailContent extends StatelessWidget {
         ? data.spesa.importo
         : data.spesa.importo / includedRows;
 
+    final isHomeAdmin = ActiveCasaScope.of(context).isHomeAdmin;
     final isCreator = data.spesa.isCreatedBy(data.currentUserId);
     final hasAnyPaidQuota = _computeHasAnyPaidQuota(data);
     final hasAnticipatore = _spesaHasAnticipatore(data.spesa.raw);
@@ -264,14 +265,14 @@ class _DetailContent extends StatelessWidget {
           modifyLabel: 'Modifica spesa',
           deleteLabel: 'Elimina spesa',
           backLabel: 'Torna alle spese',
-          isCreator: isCreator,
-          onModify: hasAnyPaidQuota
+          isCreator: isCreator || isHomeAdmin,
+          onModify: (hasAnyPaidQuota && !isHomeAdmin)
               ? null
               : () => Navigator.of(context).pushNamed(
                     ModificaSpesaAdminScreen.routeName,
                     arguments: data.spesa,
                   ),
-          onDelete: hasAnyPaidQuota
+          onDelete: (hasAnyPaidQuota && !isHomeAdmin)
               ? null
               : () => showDeleteConfirmDialog(
                     context: context,

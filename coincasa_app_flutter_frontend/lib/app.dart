@@ -10,7 +10,6 @@ import 'features/auth/auth.dart';
 import 'features/auth/screens/elimina_account_success_screen.dart';
 import 'features/auth/screens/gestione_account_screen.dart';
 import 'features/auth/screens/modifica_password_screen.dart';
-import 'features/casa/screens/casa_welcome_screen.dart';
 import 'features/casa/casa.dart';
 import 'features/dashboard/dashboard.dart';
 import 'features/problemi/problemi.dart';
