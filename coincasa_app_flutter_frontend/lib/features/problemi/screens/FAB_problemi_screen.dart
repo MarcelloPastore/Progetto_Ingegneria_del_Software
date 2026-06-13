@@ -11,6 +11,7 @@ import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/fab_buttons.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
+import 'package:coincasa_app/core/widgets/dashboard/open_problems_section.dart';
 import 'package:coincasa_app/features/problemi/screens/popup_successo_FAB.dart';
 
 final _problemiCasaProvider = FutureProvider.family<Casa?, String?>((
@@ -289,6 +290,8 @@ class _ProblemiPopupPanelState extends ConsumerState<ProblemiPopupPanel> {
       if (assigneeId != null && assigneeId.isNotEmpty) {
         await ApiProvider.problemi.autoAssegna(casa.id, problema.id);
       }
+
+      ref.read(problemiRevisionProvider.notifier).state++;
 
       if (!mounted) {
         return;

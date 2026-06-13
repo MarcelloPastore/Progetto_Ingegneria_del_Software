@@ -5,8 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/problema.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
+import 'package:coincasa_app/core/state/active_casa_session.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/core/widgets/dashboard/open_problems_section.dart';
 
 // ---------------------------------------------------------------------------
 // Form state
@@ -171,12 +173,19 @@ class _ModificaProblemaScreenState
     };
 
     try {
-      final casaId = ActiveCasaScope.read(context).selectedCasaId ?? '';
+      if (_problema.id.isEmpty) {
+        controller.setSubmitError('Problema non disponibile.');
+        return;
+      }
+      final casa = await ensureActiveCasaContext(ActiveCasaScope.read(context));
+      final casaId = casa.id;
       final updated = await ApiProvider.problemi.update(casaId, _problema.id, {
         'nome': form.nome.trim(),
         'descrizione': form.descrizione.trim(),
         'priorita': prioritaStr,
       });
+
+      ref.read(problemiRevisionProvider.notifier).state++;
 
       if (!mounted) return;
       controller.setSubmitting(false);

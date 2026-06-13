@@ -290,8 +290,8 @@ class _DettaglioTurnoAdminScreenState
             currentUser != null &&
             data != null &&
             data.turno.isCreatedBy(currentUser.id);
-        final isHomeAdmin = ActiveCasaScope.of(context).isHomeAdmin;
-        final canEditTurno = isCreator || isHomeAdmin;
+        final canEditTurno =
+            isCreator || ActiveCasaScope.of(context).isHomeAdmin;
 
         return Scaffold(
           backgroundColor: AppColors.darkBackground,

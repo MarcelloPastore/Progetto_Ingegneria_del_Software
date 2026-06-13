@@ -8,8 +8,11 @@ import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 import 'package:coincasa_app/features/problemi/screens/problema_dettaglio_dashboard_screen.dart';
 
+final problemiRevisionProvider = StateProvider<int>((ref) => 0);
+
 final openProblemsProvider = FutureProvider.autoDispose
     .family<List<Problema>, String?>((ref, casaId) {
+      ref.watch(problemiRevisionProvider);
       if (casaId == null || casaId.isEmpty) return const [];
       return ApiProvider.problemi.listNonRisolti(casaId);
     });

@@ -25,9 +25,9 @@
 - [/] **FAB nuova scadenza (frequenza solo admin)** anche qui eliminare il ruolo necessario per aggiungere la frequenza e togliere la scritta "(solo HomeAdmin)".
 - [/] **Color coding "problemi aperti":** cambiare il colore verde con il giallo e il giallo con l'arancione.
 - [/] **Ordinamento Problemi aperti:** ordinare la lista problemi nel widget in base alla priorità.
-- [ ]**Crash salvataggio problema:** quando provo a inserire un nuovo problema mi va in crash appena tocco il pulsante di salvataggio. testare per capire se è un problema generale o solo a me succede.
-- [ ] **Refresh lista problemi appena aggiunto un nuovo problema:** si refresha automaticamente solo se vado su un'altra sezione dell'app e poi ritorno sui Problemi.
-- [ ] **Modifica Problema:** implementare la modifica del problema che attualmente restituisce 404.
-- [ ] **Inserimento nuova spesa:** nella schermata di inserimento spesa, il campo "importo" va migliorato usando la logica "hasFocus" usata nella schermata di FAB spesa.
-- [ ] **Sistemare flusso Registrazione:** si blocca con l'errore dei campi compilati incorrettamente.
-- [ ] **dare permesso di rimozione turno all'admin:** se un membro che ha creato un turno, elimina il suo account, qualcuno deve pur eliminare quel turno o quantomeno modificarlo, ora come ora lo fa eliminare/modificare solo all'utente che ha creato il turno.
+- [x] **Crash salvataggio problema:** quando provo a inserire un nuovo problema mi va in crash appena tocco il pulsante di salvataggio. testare per capire se è un problema generale o solo a me succede.
+- [x] **Refresh lista problemi appena aggiunto un nuovo problema:** si refresha automaticamente solo se vado su un'altra sezione dell'app e poi ritorno sui Problemi.
+- [x] **Modifica Problema:** implementare la modifica del problema che attualmente restituisce 404.
+- [x] **Inserimento nuova spesa:** nella schermata di inserimento spesa, il campo "importo" va migliorato usando la logica "hasFocus" usata nella schermata di FAB spesa.
+- [x] **Sistemare flusso Registrazione:** si blocca con l'errore dei campi compilati incorrettamente.
+- [x] **dare permesso di rimozione turno all'admin:** se un membro che ha creato un turno, elimina il suo account, qualcuno deve pur eliminare quel turno o quantomeno modificarlo, ora come ora lo fa eliminare/modificare solo all'utente che ha creato il turno.
