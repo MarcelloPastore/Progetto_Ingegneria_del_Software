@@ -781,21 +781,28 @@ class _TabItem extends StatelessWidget {
 }
 
 class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({required this.title, required this.hasError});
+  const _SectionTitle({
+    required this.title,
+    required this.hasError,
+    this.color,
+  });
 
   final String title;
   final bool hasError;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
-    final color = hasError ? AppColors.errorStrong : const Color(0xFF5228AD);
+    final textColor = hasError
+        ? AppColors.errorStrong
+        : (color ?? const Color(0xFF5228AD));
     return Row(
       children: [
         Expanded(
           child: Text(
             title.toUpperCase(),
             style: AppTextStyles.screenTitleStrong.copyWith(
-              color: color,
+              color: textColor,
               fontSize: 13,
               fontWeight: FontWeight.w800,
               letterSpacing: 0.5,
@@ -806,7 +813,7 @@ class _SectionTitle extends StatelessWidget {
           Text(
             '*',
             style: AppTextStyles.screenTitleStrong.copyWith(
-              color: color,
+              color: textColor,
               fontSize: 13,
               fontWeight: FontWeight.w800,
             ),
@@ -1063,12 +1070,16 @@ class _AssigneeSection extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surfaceDarkElevated,
         borderRadius: BorderRadius.circular(AppSizes.radius12),
-        border: Border.all(color: borderColor, width: 2),
+        border: Border.all(color: AppColors.brandAccent, width: 2),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _SectionTitle(title: 'Chi se ne occupa?', hasError: hasError),
+          _SectionTitle(
+            title: 'Chi se ne occupa?',
+            hasError: hasError,
+            color: AppColors.brandAccent,
+          ),
           const SizedBox(height: AppSizes.p6),
           _AssigneeChoiceButton(
             label: 'Assegna a me',

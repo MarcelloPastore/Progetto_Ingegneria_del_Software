@@ -1050,9 +1050,7 @@ class _ImportoCardState extends State<_ImportoCard> {
         curve: Curves.easeOut,
         padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
         decoration: BoxDecoration(
-          color: _hasFocus
-              ? AppColors.surfaceDarkElevated.withValues(alpha: 0.92)
-              : AppColors.surfaceDarkElevated,
+          color: AppColors.surfaceDarkElevated,
           borderRadius: BorderRadius.circular(AppSizes.radius8),
           border: Border.all(
             color: widget.hasError
@@ -1085,7 +1083,7 @@ class _ImportoCardState extends State<_ImportoCard> {
                 fontFamily: 'Inter',
                 fontWeight: FontWeight.w700,
               ),
-              child: Text(_hasFocus ? 'Importo - scrivi ora' : 'Importo'),
+              child: Text('Importo'),
             ),
             const SizedBox(height: 4),
             Row(

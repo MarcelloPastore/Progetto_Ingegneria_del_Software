@@ -241,10 +241,10 @@ class _ListaScadenzeState extends State<ListaScadenze> {
         backgroundColor: AppColors.darkBackground,
         body: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
             child: Column(
               children: [
-                const SizedBox(height: 32),
+                const SizedBox(height: 5),
                 Center(
                   child: Column(
                     children: [

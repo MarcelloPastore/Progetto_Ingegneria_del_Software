@@ -41,7 +41,8 @@ class _ProblemiHomeScreenState extends State<ProblemiHomeScreen> {
       activeCasa,
       caseUtente: caseUtente,
     );
-    return ApiProvider.problemi.listNonRisolti(casa.id);
+    final list = await ApiProvider.problemi.listNonRisolti(casa.id);
+    return list..sort(Problema.compareByPriority);
   }
 
   @override
@@ -112,7 +113,7 @@ class _ProblemiHomeHeader extends StatelessWidget {
     final nomeCasa = ActiveCasaScope.read(context).selectedCasa?.nome ?? '';
 
     return Padding(
-      padding: const EdgeInsets.only(top: AppSizes.p42, bottom: AppSizes.p12),
+      padding: const EdgeInsets.only(top: AppSizes.p12, bottom: AppSizes.p12),
       child: Center(
         child: Column(
           children: [

@@ -162,7 +162,7 @@ class _ListaTurniScreenState extends ConsumerState<ListaTurniScreen>
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.only(top: AppSizes.p42),
+                        padding: const EdgeInsets.only(top: AppSizes.p12),
                         child: Center(
                           child: Column(
                             children: [

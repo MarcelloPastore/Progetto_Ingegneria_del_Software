@@ -6,28 +6,14 @@ import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
-import 'package:coincasa_app/core/state/active_casa_session.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/core/widgets/dashboard/open_problems_section.dart';
 import 'package:coincasa_app/features/problemi/screens/popup_successo_FAB.dart';
 
 // ---------------------------------------------------------------------------
 // Providers
 // ---------------------------------------------------------------------------
-
-final _segnalaCasaProvider = FutureProvider.family<Casa?, String?>((
-  ref,
-  selectedCasaId,
-) async {
-  final caseUtente = await ApiProvider.casa.list();
-  if (caseUtente.isEmpty) return null;
-  if (selectedCasaId != null && selectedCasaId.isNotEmpty) {
-    for (final casa in caseUtente) {
-      if (casa.id == selectedCasaId) return casa;
-    }
-  }
-  return caseUtente.first;
-});
 
 final _segnalaInquiliniProvider =
     FutureProvider.family<List<Inquilino>, String?>((ref, casaId) async {
@@ -172,69 +158,70 @@ class _SegnalaProblemaScreenState extends ConsumerState<SegnalaProblemaScreen> {
   // -- Submit ---------------------------------------------------------------
 
   Future<void> _submit() async {
-    FocusScope.of(context).unfocus();
-    final controller = ref.read(_segnalaFormProvider.notifier);
     final form = ref.read(_segnalaFormProvider);
-    final activeCasa = ActiveCasaScope.of(context);
-    final loadedCasa = await ref.read(
-      _segnalaCasaProvider(activeCasa.selectedCasaId).future,
-    );
+    if (form.isSubmitting) return;
 
+    final controller = ref.read(_segnalaFormProvider.notifier);
     if (!controller.validate()) return;
 
-    if (loadedCasa == null || loadedCasa.id.isEmpty) {
-      controller.setSubmitError('Nessuna casa disponibile.');
-      return;
-    }
-
-    late final Casa casa;
-    try {
-      casa = await ensureActiveCasaContext(
-        activeCasa,
-        preferredCasaId: loadedCasa.id,
-      );
-    } catch (_) {
-      controller.setSubmitError('Impossibile selezionare la casa attiva.');
-      return;
-    }
-
-    final assigneeId = await _resolveAssigneeId(form.assignmentMode, casa.id);
-    if (form.assignmentMode == _AssignmentMode.me &&
-        (assigneeId == null || assigneeId.isEmpty)) {
-      controller.setSubmitError(
-        'Non riesco a identificare l\'assegnatario corrente.',
-      );
-      return;
-    }
-
+    FocusScope.of(context).unfocus();
     controller.setSubmitting(true);
+
     try {
-      final problema = await ApiProvider.problemi.create(casa.id, {
+      // Usiamo ref.read invece di context per evitare problemi di lifecycle
+      final activeCasa = ref.read(activeCasaProvider);
+      final casaId = activeCasa.selectedCasaId;
+
+      if (casaId == null || casaId.isEmpty) {
+        controller.setSubmitError('Nessuna casa selezionata.');
+        return;
+      }
+
+      // Risolviamo l'id dell'assegnatario prima di procedere
+      final assigneeId = await _resolveAssigneeId(form.assignmentMode, casaId);
+      if (form.assignmentMode == _AssignmentMode.me &&
+          (assigneeId == null || assigneeId.isEmpty)) {
+        controller.setSubmitError(
+          'Non riesco a identificare l\'assegnatario corrente.',
+        );
+        return;
+      }
+
+      final problema = await ApiProvider.problemi.create(casaId, {
         'nome': form.nome.trim(),
         'descrizione': form.descrizione.trim(),
         'priorita': _priorityPayload(form.priorita!),
       });
+
       if (assigneeId != null && assigneeId.isNotEmpty) {
-        await ApiProvider.problemi.autoAssegna(casa.id, problema.id);
+        await ApiProvider.problemi.autoAssegna(casaId, problema.id);
       }
+
+      // Invalida il provider dei problemi per forzare il refresh
+      // Invalidiamo sia la famiglia che l'istanza specifica per sicurezza
+      ref.invalidate(openProblemsProvider);
+      ref.invalidate(openProblemsProvider(casaId));
 
       if (!mounted) return;
 
-      controller.reset();
-      _nomeCtrl.clear();
-      _descrCtrl.clear();
+      final wasAssignedToMe = form.assignmentMode == _AssignmentMode.me;
 
+      // Navighiamo verso la schermata di successo
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
-          builder: (_) => ProblemaSuccessoFABDialog(
-            assignedToMe: form.assignmentMode == _AssignmentMode.me,
-          ),
+          builder: (_) =>
+              ProblemaSuccessoFABDialog(assignedToMe: wasAssignedToMe),
         ),
       );
-    } catch (_) {
-      controller.setSubmitError('Impossibile salvare il problema. Riprova.');
+    } catch (e) {
+      debugPrint('Errore creazione problema: $e');
+      if (mounted) {
+        controller.setSubmitError('Impossibile salvare il problema. Riprova.');
+      }
     } finally {
-      if (mounted) controller.setSubmitting(false);
+      if (mounted) {
+        controller.setSubmitting(false);
+      }
     }
   }
 

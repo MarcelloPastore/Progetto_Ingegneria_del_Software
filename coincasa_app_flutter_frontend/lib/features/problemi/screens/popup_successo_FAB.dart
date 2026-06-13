@@ -21,7 +21,9 @@ class ProblemaSuccessoFABDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = assignedToMe ? 'Problema assegnato a te!' : 'Problema segnalato!';
+    final title = assignedToMe
+        ? 'Problema assegnato a te!'
+        : 'Problema segnalato!';
     final description = assignedToMe
         ? 'Ti sei assegnato correttamente questo problema. Da ora risulti come assegnatario corrente.'
         : 'Il problema è stato segnalato correttamente. Qualcuno se ne occuperà.';
@@ -83,7 +85,10 @@ class ProblemaSuccessoFABDialog extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: AppColors.successBright.withValues(alpha: 0.72),
                     borderRadius: BorderRadius.circular(AppSizes.radius14),
-                    border: Border.all(color: AppColors.statusPositive, width: 2),
+                    border: Border.all(
+                      color: AppColors.statusPositive,
+                      width: 2,
+                    ),
                   ),
                   child: Text(
                     'Tutti i coinquilini sono stati avvisati.',
@@ -116,7 +121,13 @@ class ProblemaSuccessoFABDialog extends StatelessWidget {
                       color: Colors.transparent,
                       child: InkWell(
                         borderRadius: BorderRadius.circular(AppSizes.radius16),
-                        onTap: () => Navigator.of(context).pop(),
+                        onTap: () {
+                          // Naviga esplicitamente verso la home dei problemi
+                          Navigator.of(context).pushNamedAndRemoveUntil(
+                            '/problemi',
+                            (route) => route.isFirst,
+                          );
+                        },
                         child: Center(
                           child: Text(
                             'Vai ai Problemi',

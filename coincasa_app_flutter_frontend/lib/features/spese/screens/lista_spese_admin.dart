@@ -199,7 +199,7 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
         children: [
           // Header
           Padding(
-            padding: const EdgeInsets.only(top: AppSizes.p42),
+            padding: const EdgeInsets.only(top: AppSizes.p12),
             child: Center(
               child: Column(
                 children: [

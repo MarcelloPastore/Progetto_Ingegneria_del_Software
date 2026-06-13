@@ -47,4 +47,11 @@ class Problema {
       raw: raw,
     );
   }
+
+  static int compareByPriority(Problema a, Problema b) {
+    const priorityMap = {'urgente': 0, 'media': 1, 'bassa': 2};
+    final aVal = priorityMap[a.priorita.toLowerCase()] ?? 3;
+    final bVal = priorityMap[b.priorita.toLowerCase()] ?? 3;
+    return aVal.compareTo(bVal);
+  }
 }

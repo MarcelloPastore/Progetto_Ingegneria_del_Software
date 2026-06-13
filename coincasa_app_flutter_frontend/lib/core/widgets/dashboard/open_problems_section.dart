@@ -7,7 +7,7 @@ import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/features/problemi/screens/problema_dettaglio_dashboard_screen.dart';
 
-final _openProblemsProvider = FutureProvider.autoDispose
+final openProblemsProvider = FutureProvider.autoDispose
     .family<List<Problema>, String?>((ref, casaId) {
       if (casaId == null || casaId.isEmpty) return const [];
       return ApiProvider.problemi.listNonRisolti(casaId);
@@ -21,7 +21,7 @@ class OpenProblemsSection extends ConsumerWidget {
     final casaId = ref.watch(
       activeCasaProvider.select((state) => state.selectedCasaId),
     );
-    final problemiAsync = ref.watch(_openProblemsProvider(casaId));
+    final problemiAsync = ref.watch(openProblemsProvider(casaId));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -66,7 +66,10 @@ class OpenProblemsSection extends ConsumerWidget {
               ),
             ),
             data: (problemi) {
-              final visible = problemi.take(3).toList(growable: false);
+              final sortedProblemi = List<Problema>.from(problemi)
+                ..sort(Problema.compareByPriority);
+
+              final visible = sortedProblemi.take(3).toList(growable: false);
               return Column(
                 children: [
                   if (visible.isEmpty)
@@ -128,11 +131,11 @@ class _ProblemRow extends StatelessWidget {
   Color get _priorityColor {
     switch (problema.priorita.toLowerCase()) {
       case 'urgente':
-        return AppColors.statusNegative;
+        return AppColors.problemPriorityUrgent;
       case 'media':
-        return AppColors.statusWarning;
+        return AppColors.problemPriorityMedium;
       default:
-        return AppColors.statusSuccess;
+        return AppColors.problemPriorityLow;
     }
   }
 
