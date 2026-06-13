@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/problema.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
+import 'package:coincasa_app/core/state/active_casa_session.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
@@ -10,85 +12,86 @@ import 'package:coincasa_app/features/problemi/screens/problema_dettaglio_screen
 import 'package:coincasa_app/features/problemi/screens/segnala_problema_screen.dart';
 
 // ---------------------------------------------------------------------------
-// Mock data — sostituire con API call quando il backend è pronto
-// ---------------------------------------------------------------------------
-
-List<Problema> mockProblemi = [
-  Problema(
-    id: '1',
-    titolo: 'Lavatrice non funziona',
-    stato: 'Assegnato',
-    priorita: 'Urgente',
-    raw: {
-      'assegnatarioNome': 'Francesco Paola',
-      'descrizione':
-          'Smette di centrifugare a metà ciclo. Bisogna chiamare il tecnico del costruttore.',
-      'segnalatoDa': 'Marco Rossi',
-      'segnalatoData': '18 apr',
-      'segnalatoOre': '09:15',
-      'assegnatoData': '18 apr',
-      'assegnatoOre': '11:32',
-      'assegnatoNota': 'FP ha accettato',
-    },
-  ),
-  Problema(
-    id: '2',
-    titolo: 'Caldaia rotta',
-    stato: 'Segnalato',
-    priorita: 'Media',
-    raw: {
-      'descrizione':
-          'Non esce più l\'acqua calda, penso sia la caldaia. Già segnalato al proprietario.',
-      'segnalatoDa': 'Luca Bianchi',
-      'segnalatoData': '20 apr',
-      'segnalatoOre': '08:45',
-    },
-  ),
-];
-
-// ---------------------------------------------------------------------------
 // Screen
 // ---------------------------------------------------------------------------
 
-class ProblemiHomeScreen extends StatelessWidget {
+class ProblemiHomeScreen extends StatefulWidget {
   const ProblemiHomeScreen({super.key});
 
   static const String routeName = '/problemi';
 
   @override
-  Widget build(BuildContext context) {
-    final problemi = mockProblemi
-        .where((p) => !p.stato.toLowerCase().contains('risolt'))
-        .toList();
-    final isEmpty = problemi.isEmpty;
+  State<ProblemiHomeScreen> createState() => _ProblemiHomeScreenState();
+}
 
+class _ProblemiHomeScreenState extends State<ProblemiHomeScreen> {
+  late Future<List<Problema>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _loadProblemi();
+  }
+
+  Future<List<Problema>> _loadProblemi() async {
+    final activeCasa = ActiveCasaScope.read(context);
+    final caseUtente = await ApiProvider.casa.list();
+    if (caseUtente.isEmpty) return const [];
+    final casa = await ensureActiveCasaContext(
+      activeCasa,
+      caseUtente: caseUtente,
+    );
+    return ApiProvider.problemi.listNonRisolti(casa.id);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
         backgroundColor: AppColors.darkBackground,
         bottomNavigationBar: const HouseQuickNav(currentRoute: '/problemi'),
-        body: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // ── Header ────────────────────────────────────────────────────
-              _ProblemiHomeHeader(isEmpty: isEmpty),
+        body: FutureBuilder<List<Problema>>(
+          future: _future,
+          builder: (context, snapshot) {
+            final problemi = snapshot.data ?? const <Problema>[];
+            final isLoading = snapshot.connectionState != ConnectionState.done;
+            final isEmpty = !isLoading && problemi.isEmpty;
 
-              // ── Body ──────────────────────────────────────────────────────
-              Expanded(
-                child: isEmpty
-                    ? const _EmptyBody()
-                    : _ListBody(problemi: problemi),
+            return SafeArea(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _ProblemiHomeHeader(isEmpty: isEmpty),
+                  Expanded(
+                    child: isLoading
+                        ? const Center(
+                            child: CircularProgressIndicator(
+                              color: AppColors.brandAccent,
+                            ),
+                          )
+                        : snapshot.hasError
+                        ? _ErrorBody(
+                            onRetry: () =>
+                                setState(() => _future = _loadProblemi()),
+                          )
+                        : isEmpty
+                        ? const _EmptyBody()
+                        : _ListBody(problemi: problemi),
+                  ),
+                  _SegnalaButton(
+                    onPressed: () => Navigator.of(context)
+                        .pushNamed(SegnalaProblemaScreen.routeName)
+                        .then((_) {
+                          if (mounted) {
+                            setState(() => _future = _loadProblemi());
+                          }
+                        }),
+                  ),
+                ],
               ),
-
-              // ── Bottom CTA ────────────────────────────────────────────────
-              _SegnalaButton(
-                onPressed: () => Navigator.of(
-                  context,
-                ).pushNamed(SegnalaProblemaScreen.routeName),
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
@@ -180,6 +183,37 @@ class _EmptyBody extends StatelessWidget {
                 height: 1.5,
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ErrorBody extends StatelessWidget {
+  const _ErrorBody({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSizes.p32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Impossibile caricare i problemi',
+              textAlign: TextAlign.center,
+              style: AppTextStyles.screenTitleStrong.copyWith(
+                color: AppColors.textOnDark,
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: AppSizes.p14),
+            MainCtaButton(label: 'Riprova', onPressed: onRetry),
           ],
         ),
       ),
@@ -292,11 +326,18 @@ class _ProblemaCard extends StatelessWidget {
   }
 
   String? _resolveAssegnatario(Map<String, dynamic> raw) {
-    final nome =
+    final value =
         raw['assegnatarioNome'] ??
         raw['assegnatario_nome'] ??
-        raw['assegnatario'] as String?;
-    if (nome is String && nome.trim().isNotEmpty) return nome.trim();
+        raw['responsabileNome'] ??
+        raw['assegnatario'];
+    if (value is Map<String, dynamic>) {
+      final username = value['username'] ?? value['nome'] ?? value['name'];
+      if (username != null && username.toString().trim().isNotEmpty) {
+        return username.toString().trim();
+      }
+    }
+    if (value is String && value.trim().isNotEmpty) return value.trim();
     return null;
   }
 }

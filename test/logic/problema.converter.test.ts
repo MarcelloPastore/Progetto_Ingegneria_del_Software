@@ -43,9 +43,10 @@ describe("ProblemaConverter", () => {
       dataRisoluzione: null,
     });
 
+    expect(dto.id).toBe("p2");
+    expect(dto.nome).toBe("Lampadina");
     expect(dto.assegnatario).toEqual({ id: "u9", username: "" });
     expect(dto.stato).toBe("Assegnato");
     expect(dto.priorita).toBe("Bassa");
   });
 });
-

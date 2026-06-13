@@ -2,7 +2,7 @@
  * LOGIC TESTS — ProblemaService
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { Priorita, Stato } from "@prisma/client";
+import { Priorita, Ruolo, Stato } from "@prisma/client";
 
 const mocks = vi.hoisted(() => ({
   findProblemiByCasa: vi.fn(),
@@ -68,7 +68,11 @@ describe("ProblemaService", () => {
 
     await service.segnalaProblema(
       "c1",
-      { nome: "Rubinetto", descrizione: "Perde acqua", priorita: Priorita.Urgente },
+      {
+        nome: "Rubinetto",
+        descrizione: "Perde acqua",
+        priorita: Priorita.Urgente,
+      },
       "u1",
     );
 
@@ -97,6 +101,50 @@ describe("ProblemaService", () => {
         dataRisoluzione: null,
       }),
     );
+  });
+
+  it("modificaProblema updates only the provided fields", async () => {
+    mocks.findProblemaByIdOrThrow.mockResolvedValue(baseProblema);
+    mocks.updateProblema.mockResolvedValue({
+      ...baseProblema,
+      nome: "Rubinetto cucina",
+      priorita: Priorita.Urgente,
+    });
+
+    const service = new ProblemaService();
+    await service.modificaProblema(
+      "c1",
+      "p1",
+      {
+        nome: "Rubinetto cucina",
+        priorita: Priorita.Urgente,
+      },
+      "u1",
+      Ruolo.Inquilino,
+    );
+
+    expect(mocks.updateProblema).toHaveBeenCalledWith("p1", {
+      nome: "Rubinetto cucina",
+      priorita: Priorita.Urgente,
+    });
+  });
+
+  it("rinunciaProblema clears the current assignee", async () => {
+    mocks.findProblemaByIdOrThrow.mockResolvedValue({
+      ...baseProblema,
+      stato: Stato.Assegnato,
+      assegnatario: "u2",
+    });
+    mocks.updateProblema.mockResolvedValue(baseProblema);
+
+    const service = new ProblemaService();
+    await service.rinunciaProblema("c1", "p1", "u2");
+
+    expect(mocks.updateProblema).toHaveBeenCalledWith("p1", {
+      assegnatario: null,
+      stato: Stato.Segnalato,
+      dataRisoluzione: null,
+    });
   });
 
   it("assegnaProblema sets stato based on idUtente (null => Segnalato)", async () => {
@@ -136,10 +184,12 @@ describe("ProblemaService", () => {
 
     expect(mocks.updateProblema).toHaveBeenCalledWith(
       "p1",
-      expect.objectContaining({ stato: Stato.Risolto, dataRisoluzione: expect.any(Date) }),
+      expect.objectContaining({
+        stato: Stato.Risolto,
+        dataRisoluzione: expect.any(Date),
+      }),
     );
 
     vi.useRealTimers();
   });
 });
-

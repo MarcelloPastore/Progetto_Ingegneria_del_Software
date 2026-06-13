@@ -100,6 +100,18 @@ class ApiClient {
     _currentCasaRuolo = null;
   }
 
+  void clearSession() {
+    _authToken = null;
+    _currentUserId = null;
+    _currentUserEmail = null;
+    _currentUserDisplayName = null;
+    _currentUserFirstName = null;
+    _currentUserLastName = null;
+    _currentUserAvatarSeed = null;
+    _currentUserUsername = null;
+    clearCasaContext();
+  }
+
   String? get currentUserId => _currentUserId;
   String? get currentUserEmail => _currentUserEmail;
   String? get currentUserName => _currentUserDisplayName;

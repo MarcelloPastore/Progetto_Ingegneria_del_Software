@@ -16,8 +16,28 @@ class ProblemiApi {
     return _parseList(data);
   }
 
+  Future<Problema> getById(String casaId, String problemaId) async {
+    final data = await _client.getJson('/case/$casaId/problemi/$problemaId');
+    return Problema.fromJson(_asMap(data));
+  }
+
   Future<Problema> create(String casaId, Map<String, dynamic> payload) async {
-    final data = await _client.postJson('/case/$casaId/problemi', body: payload);
+    final data = await _client.postJson(
+      '/case/$casaId/problemi',
+      body: payload,
+    );
+    return Problema.fromJson(_asMap(data));
+  }
+
+  Future<Problema> update(
+    String casaId,
+    String problemaId,
+    Map<String, dynamic> payload,
+  ) async {
+    final data = await _client.putJson(
+      '/case/$casaId/problemi/$problemaId',
+      body: payload,
+    );
     return Problema.fromJson(_asMap(data));
   }
 
@@ -25,30 +45,54 @@ class ProblemiApi {
     await _client.deleteJson('/case/$casaId/problemi/$problemaId');
   }
 
-  Future<void> assegna(String casaId, String problemaId) async {
-    await _client.putJson('/case/$casaId/problemi/$problemaId/assegna');
+  Future<Problema> autoAssegna(String casaId, String problemaId) async {
+    final data = await _client.putJson(
+      '/case/$casaId/problemi/$problemaId/autoassegna',
+    );
+    return Problema.fromJson(_asMap(data));
   }
 
-  Future<void> aggiornaStato(
+  Future<Problema> rinuncia(String casaId, String problemaId) async {
+    final data = await _client.putJson(
+      '/case/$casaId/problemi/$problemaId/rinuncia',
+    );
+    return Problema.fromJson(_asMap(data));
+  }
+
+  Future<Problema> assegna(
     String casaId,
     String problemaId,
     Map<String, dynamic> payload,
   ) async {
-    await _client.patchJson(
+    final data = await _client.putJson(
+      '/case/$casaId/problemi/$problemaId/assegna',
+      body: payload,
+    );
+    return Problema.fromJson(_asMap(data));
+  }
+
+  Future<Problema> aggiornaStato(
+    String casaId,
+    String problemaId,
+    Map<String, dynamic> payload,
+  ) async {
+    final data = await _client.patchJson(
       '/case/$casaId/problemi/$problemaId/stato',
       body: payload,
     );
+    return Problema.fromJson(_asMap(data));
   }
 
-  Future<void> aggiornaPriorita(
+  Future<Problema> aggiornaPriorita(
     String casaId,
     String problemaId,
     Map<String, dynamic> payload,
   ) async {
-    await _client.patchJson(
+    final data = await _client.patchJson(
       '/case/$casaId/problemi/$problemaId/priorita',
       body: payload,
     );
+    return Problema.fromJson(_asMap(data));
   }
 
   List<Problema> _parseList(dynamic data) {

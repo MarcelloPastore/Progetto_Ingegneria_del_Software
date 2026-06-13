@@ -6,6 +6,7 @@ import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
+import 'package:coincasa_app/core/state/active_casa_session.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/fab_buttons.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
@@ -245,7 +246,7 @@ class _ProblemiPopupPanelState extends ConsumerState<ProblemiPopupPanel> {
     final controller = ref.read(problemiCreateFormProvider.notifier);
     final form = ref.read(problemiCreateFormProvider);
     final activeCasaController = ActiveCasaScope.of(context);
-    final casa = await ref.read(
+    final loadedCasa = await ref.read(
       _problemiCasaProvider(activeCasaController.selectedCasaId).future,
     );
 
@@ -253,8 +254,19 @@ class _ProblemiPopupPanelState extends ConsumerState<ProblemiPopupPanel> {
       return;
     }
 
-    if (casa == null || casa.id.isEmpty) {
+    if (loadedCasa == null || loadedCasa.id.isEmpty) {
       controller.setSubmitError('Nessuna casa disponibile.');
+      return;
+    }
+
+    late final Casa casa;
+    try {
+      casa = await ensureActiveCasaContext(
+        activeCasaController,
+        preferredCasaId: loadedCasa.id,
+      );
+    } catch (_) {
+      controller.setSubmitError('Impossibile selezionare la casa attiva.');
       return;
     }
 
@@ -269,13 +281,14 @@ class _ProblemiPopupPanelState extends ConsumerState<ProblemiPopupPanel> {
 
     controller.setSubmitting(true);
     try {
-      await ApiProvider.problemi.create(casa.id, {
+      final problema = await ApiProvider.problemi.create(casa.id, {
         'nome': form.nome.trim(),
         'descrizione': form.descrizione.trim(),
         'priorita': _priorityPayload(form.priorita!),
-        if (assigneeId != null && assigneeId.isNotEmpty)
-          'assegnatario': assigneeId,
       });
+      if (assigneeId != null && assigneeId.isNotEmpty) {
+        await ApiProvider.problemi.autoAssegna(casa.id, problema.id);
+      }
 
       if (!mounted) {
         return;
@@ -561,10 +574,7 @@ class _ProblemiFormContent extends StatelessWidget {
           onChanged: controller.setDescrizione,
         ),
         const SizedBox(height: AppSizes.p2),
-        _SectionTitle(
-          title: 'Priorità',
-          hasError: form.hasPrioritaError,
-        ),
+        _SectionTitle(title: 'Priorità', hasError: form.hasPrioritaError),
         const SizedBox(height: AppSizes.p2),
         _PriorityRow(
           hasError: form.hasPrioritaError,
@@ -588,9 +598,7 @@ class _ProblemiFormContent extends StatelessWidget {
           isLoading: form.isSubmitting,
         ),
         const SizedBox(height: AppSizes.p8),
-        FabCancelButton(
-          onPressed: form.isSubmitting ? null : onCancel,
-        ),
+        FabCancelButton(onPressed: form.isSubmitting ? null : onCancel),
       ],
     );
   }
@@ -945,7 +953,6 @@ class _PriorityRow extends StatelessWidget {
           ),
         ],
       ),
-
     );
   }
 }

@@ -6,6 +6,7 @@ import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
+import 'package:coincasa_app/core/state/active_casa_session.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/features/problemi/screens/popup_successo_FAB.dart';
@@ -175,14 +176,25 @@ class _SegnalaProblemaScreenState extends ConsumerState<SegnalaProblemaScreen> {
     final controller = ref.read(_segnalaFormProvider.notifier);
     final form = ref.read(_segnalaFormProvider);
     final activeCasa = ActiveCasaScope.of(context);
-    final casa = await ref.read(
+    final loadedCasa = await ref.read(
       _segnalaCasaProvider(activeCasa.selectedCasaId).future,
     );
 
     if (!controller.validate()) return;
 
-    if (casa == null || casa.id.isEmpty) {
+    if (loadedCasa == null || loadedCasa.id.isEmpty) {
       controller.setSubmitError('Nessuna casa disponibile.');
+      return;
+    }
+
+    late final Casa casa;
+    try {
+      casa = await ensureActiveCasaContext(
+        activeCasa,
+        preferredCasaId: loadedCasa.id,
+      );
+    } catch (_) {
+      controller.setSubmitError('Impossibile selezionare la casa attiva.');
       return;
     }
 
@@ -197,13 +209,14 @@ class _SegnalaProblemaScreenState extends ConsumerState<SegnalaProblemaScreen> {
 
     controller.setSubmitting(true);
     try {
-      await ApiProvider.problemi.create(casa.id, {
+      final problema = await ApiProvider.problemi.create(casa.id, {
         'nome': form.nome.trim(),
         'descrizione': form.descrizione.trim(),
         'priorita': _priorityPayload(form.priorita!),
-        if (assigneeId != null && assigneeId.isNotEmpty)
-          'assegnatario': assigneeId,
       });
+      if (assigneeId != null && assigneeId.isNotEmpty) {
+        await ApiProvider.problemi.autoAssegna(casa.id, problema.id);
+      }
 
       if (!mounted) return;
 

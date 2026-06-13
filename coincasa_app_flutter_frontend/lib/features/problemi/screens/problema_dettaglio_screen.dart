@@ -3,12 +3,12 @@ import 'package:flutter/services.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/problema.dart';
+import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
 import 'package:coincasa_app/features/problemi/screens/deassegnazione_successo_screen.dart';
 import 'package:coincasa_app/features/problemi/screens/modifica_problema_screen.dart';
-import 'package:coincasa_app/features/problemi/screens/problemi_home_screen.dart';
 
 // ---------------------------------------------------------------------------
 // Entry point mantenuto per compatibilità con dashboard_screen
@@ -30,7 +30,7 @@ class ProblemaDettaglioScreen extends StatelessWidget {
   const ProblemaDettaglioScreen({super.key}) : _problema = null;
 
   const ProblemaDettaglioScreen._withProblema(Problema this._problema)
-      : super(key: null);
+    : super(key: null);
 
   static const String routeName = '/problemi/dettaglio';
 
@@ -81,12 +81,15 @@ class _ProblemaDettaglioPage extends StatefulWidget {
 class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
   bool _isProcessing = false;
   late String _priorityOverride;
+  late Problema _problema;
 
   @override
   void initState() {
     super.initState();
-    _priorityOverride =
-        widget.problema.priorita.isNotEmpty ? widget.problema.priorita : 'Media';
+    _problema = widget.problema;
+    _priorityOverride = _problema.priorita.isNotEmpty
+        ? _problema.priorita
+        : 'Media';
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────
@@ -108,11 +111,10 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
     return _priorityOverride;
   }
 
-  bool get _isSegnalato =>
-      widget.problema.stato.toLowerCase().contains('segna');
+  bool get _isSegnalato => _problema.stato.toLowerCase().contains('segna');
 
   bool get _isCurrentUserAssignee {
-    final problema = widget.problema;
+    final problema = _problema;
     final currentId = ApiProvider.client.currentUserId?.trim();
     final rawId = _firstString([
       problema.raw['assegnatarioId'],
@@ -122,17 +124,13 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
     if (currentId != null && currentId.isNotEmpty && rawId == currentId) {
       return true;
     }
-    final currentName =
-        ApiProvider.client.currentUserName?.trim().toLowerCase();
+    final currentName = ApiProvider.client.currentUserName
+        ?.trim()
+        .toLowerCase();
     final assigneeName = _responsabileNome?.trim().toLowerCase();
-    if (currentName != null && currentName.isNotEmpty && assigneeName == currentName) {
-      return true;
-    }
-    // Fallback mock: nessun utente autenticato → se il problema è assegnato
-    // l'utente corrente è considerato l'assegnatario per permettere le azioni.
-    if ((currentId == null || currentId.isEmpty) &&
-        (currentName == null || currentName.isEmpty) &&
-        !_isSegnalato) {
+    if (currentName != null &&
+        currentName.isNotEmpty &&
+        assigneeName == currentName) {
       return true;
     }
     return false;
@@ -140,12 +138,12 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
 
   String? get _responsabileNome {
     final name = _firstString([
-      widget.problema.raw['assegnatarioNome'],
-      widget.problema.raw['assegnatario_nome'],
-      widget.problema.raw['responsabileNome'],
-      widget.problema.raw['responsabile_nome'],
-      widget.problema.raw['assegnatario'],
-      widget.problema.raw['responsabile'],
+      _problema.raw['assegnatarioNome'],
+      _problema.raw['assegnatario_nome'],
+      _problema.raw['responsabileNome'],
+      _problema.raw['responsabile_nome'],
+      _problema.raw['assegnatario'],
+      _problema.raw['responsabile'],
     ]);
     if (name != null && name.trim().isNotEmpty) return name.trim();
     if (_isCurrentUserAssignee) return ApiProvider.client.currentUserName;
@@ -154,50 +152,53 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
 
   String get _descrizione =>
       _firstString([
-        widget.problema.raw['descrizione'],
-        widget.problema.raw['messaggio'],
+        _problema.raw['descrizione'],
+        _problema.raw['messaggio'],
       ]) ??
       'Nessuna descrizione disponibile.';
 
   String get _segnalatoDa =>
       _firstString([
-        widget.problema.raw['segnalatoDa'],
-        widget.problema.raw['autore'],
-        widget.problema.raw['createdByName'],
+        _problema.raw['segnalatoDa'],
+        _problema.raw['autore'],
+        _problema.raw['createdByName'],
       ]) ??
       'Coinquilino';
 
   String get _segnalatoOre =>
-      widget.problema.raw['segnalatoOre']?.toString() ?? '09:15';
+      _problema.raw['segnalatoOre']?.toString() ?? '09:15';
 
   String get _segnalatoData =>
-      widget.problema.raw['segnalatoData']?.toString() ?? '18 apr';
+      _problema.raw['segnalatoData']?.toString() ?? '18 apr';
 
   List<_HistoryEvent> get _storicoStati {
     final events = <_HistoryEvent>[];
-    final raw = widget.problema.raw;
+    final raw = _problema.raw;
 
     // Evento segnalazione
     final segnalatoDaInitials = _initials(_segnalatoDa);
-    events.add(_HistoryEvent(
-      label: 'Segnalato',
-      color: AppColors.statusNegative,
-      timestamp: '$_segnalatoData - $_segnalatoOre - $segnalatoDaInitials',
-    ));
+    events.add(
+      _HistoryEvent(
+        label: 'Segnalato',
+        color: AppColors.statusNegative,
+        timestamp: '$_segnalatoData - $_segnalatoOre - $segnalatoDaInitials',
+      ),
+    );
 
     // Evento assegnazione (se presente)
     if (!_isSegnalato) {
-      final assegnatoOre =
-          raw['assegnatoOre']?.toString() ?? '11:32';
-      final assegnatoData =
-          raw['assegnatoData']?.toString() ?? '18 apr';
+      final assegnatoOre = raw['assegnatoOre']?.toString() ?? '11:32';
+      final assegnatoData = raw['assegnatoData']?.toString() ?? '18 apr';
       final assigneeNote =
-          raw['assegnatoNota']?.toString() ?? '${_initials(_responsabileNome ?? 'FP')} ha accettato';
-      events.add(_HistoryEvent(
-        label: 'Assegnato',
-        color: AppColors.problemPriorityMedium,
-        timestamp: '$assegnatoData - $assegnatoOre - $assigneeNote',
-      ));
+          raw['assegnatoNota']?.toString() ??
+          '${_initials(_responsabileNome ?? 'FP')} ha accettato';
+      events.add(
+        _HistoryEvent(
+          label: 'Assegnato',
+          color: AppColors.problemPriorityMedium,
+          timestamp: '$assegnatoData - $assegnatoOre - $assigneeNote',
+        ),
+      );
     }
 
     return events;
@@ -214,25 +215,27 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
   Future<void> _handleAssignMe() async {
     if (_isProcessing) return;
     setState(() => _isProcessing = true);
-    await Future.delayed(const Duration(milliseconds: 600));
-    final problema = widget.problema;
-    final index = mockProblemi.indexWhere((p) => p.id == problema.id);
-    if (index != -1) {
-      mockProblemi[index] = Problema(
-        id: problema.id,
-        titolo: problema.titolo,
-        stato: 'Assegnato',
-        priorita: _priorityOverride,
-        raw: Map<String, dynamic>.from(problema.raw)
-          ..['assegnatarioNome'] =
-              ApiProvider.client.currentUserName ?? 'Tu',
+    try {
+      final casaId = ActiveCasaScope.read(context).selectedCasaId ?? '';
+      final updated = await ApiProvider.problemi.autoAssegna(
+        casaId,
+        _problema.id,
       );
-    }
-    if (mounted) {
-      setState(() => _isProcessing = false);
+      if (!mounted) return;
+      setState(() {
+        _problema = updated;
+        _priorityOverride = updated.priorita;
+        _isProcessing = false;
+      });
       Navigator.of(context).pushReplacementNamed('/problemi');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Ti sei preso in carico il problema!')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isProcessing = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Impossibile assegnare il problema.')),
       );
     }
   }
@@ -240,57 +243,89 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
   Future<void> _handleDeassign() async {
     if (_isProcessing) return;
     setState(() => _isProcessing = true);
-    await Future.delayed(const Duration(milliseconds: 800));
-    final problema = widget.problema;
-    final index = mockProblemi.indexWhere((p) => p.id == problema.id);
-    if (index != -1) {
-      mockProblemi[index] = Problema(
-        id: problema.id,
-        titolo: problema.titolo,
-        stato: 'Segnalato',
-        priorita: problema.priorita,
-        raw: Map<String, dynamic>.from(problema.raw)
-          ..remove('assegnatarioNome')
-          ..remove('assegnatario_nome')
-          ..remove('assegnatario'),
-      );
-    }
-    if (mounted) {
-      setState(() => _isProcessing = false);
-      Navigator.of(context)
-          .pushReplacementNamed(DeassegnazioneSuccessoScreen.routeName);
+    try {
+      final casaId = ActiveCasaScope.read(context).selectedCasaId ?? '';
+      await ApiProvider.problemi.rinuncia(casaId, _problema.id);
+      if (mounted) {
+        setState(() => _isProcessing = false);
+        Navigator.of(
+          context,
+        ).pushReplacementNamed(DeassegnazioneSuccessoScreen.routeName);
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isProcessing = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Impossibile deassegnare il problema.')),
+        );
+      }
     }
   }
 
   Future<void> _handleElimina() async {
     if (_isProcessing) return;
     setState(() => _isProcessing = true);
-    await Future.delayed(const Duration(milliseconds: 500));
-    mockProblemi.removeWhere((p) => p.id == widget.problema.id);
-    if (mounted) {
-      setState(() => _isProcessing = false);
-      Navigator.of(context).pushReplacementNamed('/problemi');
+    try {
+      final casaId = ActiveCasaScope.read(context).selectedCasaId ?? '';
+      await ApiProvider.problemi.delete(casaId, _problema.id);
+      if (mounted) {
+        setState(() => _isProcessing = false);
+        Navigator.of(context).pushReplacementNamed('/problemi');
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isProcessing = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Impossibile eliminare il problema.')),
+        );
+      }
     }
   }
 
   Future<void> _handleRisolto() async {
     if (_isProcessing) return;
     setState(() => _isProcessing = true);
-    await Future.delayed(const Duration(milliseconds: 600));
-    final problema = widget.problema;
-    final index = mockProblemi.indexWhere((p) => p.id == problema.id);
-    if (index != -1) {
-      mockProblemi[index] = Problema(
-        id: problema.id,
-        titolo: problema.titolo,
-        stato: 'Risolto',
-        priorita: problema.priorita,
-        raw: Map<String, dynamic>.from(problema.raw),
-      );
+    try {
+      final casaId = ActiveCasaScope.read(context).selectedCasaId ?? '';
+      await ApiProvider.problemi.aggiornaStato(casaId, _problema.id, {
+        'stato': 'Risolto',
+      });
+      if (mounted) {
+        setState(() => _isProcessing = false);
+        Navigator.of(context).pushReplacementNamed('/problemi');
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isProcessing = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Impossibile risolvere il problema.')),
+        );
+      }
     }
-    if (mounted) {
+  }
+
+  Future<void> _handlePriorita(String priorita) async {
+    if (_isProcessing || priorita == _normalizedPriority) return;
+    setState(() => _isProcessing = true);
+    try {
+      final casaId = ActiveCasaScope.read(context).selectedCasaId ?? '';
+      final updated = await ApiProvider.problemi.aggiornaPriorita(
+        casaId,
+        _problema.id,
+        {'priorita': priorita},
+      );
+      if (!mounted) return;
+      setState(() {
+        _problema = updated;
+        _priorityOverride = updated.priorita;
+        _isProcessing = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
       setState(() => _isProcessing = false);
-      Navigator.of(context).pushReplacementNamed('/problemi');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Impossibile aggiornare la priorità.')),
+      );
     }
   }
 
@@ -329,20 +364,26 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Row(children: [
-                  Icon(Icons.warning_amber_rounded, color: accentColor, size: 26),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: TextStyle(
-                        color: accentColor,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
+                Row(
+                  children: [
+                    Icon(
+                      Icons.warning_amber_rounded,
+                      color: accentColor,
+                      size: 26,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: TextStyle(
+                          color: accentColor,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
-                  ),
-                ]),
+                  ],
+                ),
                 const SizedBox(height: 16),
                 Text(
                   body,
@@ -354,45 +395,47 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
                   ),
                 ),
                 const SizedBox(height: 28),
-                Row(children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () => Navigator.of(ctx).pop(),
-                      child: Text(
-                        'Annulla',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.45),
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.of(ctx).pop(),
+                        child: Text(
+                          'Annulla',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.45),
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.of(ctx).pop();
-                        onConfirm();
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: accentColor,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(ctx).pop();
+                          onConfirm();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: accentColor,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
                         ),
-                        elevation: 0,
-                      ),
-                      child: Text(
-                        confirmLabel,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
+                        child: Text(
+                          confirmLabel,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ]),
+                  ],
+                ),
               ],
             ),
           ),
@@ -402,24 +445,28 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
   }
 
   bool get _isCreator {
+    if (ActiveCasaScope.read(context).isHomeAdmin) return true;
     final currentId = ApiProvider.client.currentUserId?.trim();
     final rawCreatorId = _firstString([
-      widget.problema.raw['creatoreId'],
-      widget.problema.raw['autoreId'],
-      widget.problema.raw['segnalatoDaId'],
-      widget.problema.raw['createdBy'],
+      _problema.raw['creatoreId'],
+      _problema.raw['autoreId'],
+      _problema.raw['segnalatoDaId'],
+      _problema.raw['createdBy'],
     ]);
-    if (currentId != null && currentId.isNotEmpty && rawCreatorId == currentId) {
+    if (currentId != null &&
+        currentId.isNotEmpty &&
+        rawCreatorId == currentId) {
       return true;
     }
-    // fallback: mock sempre true per demo
-    return true;
+    return false;
   }
 
   // ── Build ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
+    final canDelete = ActiveCasaScope.of(context).isHomeAdmin;
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
@@ -470,17 +517,28 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
                 deleteLabel: 'Elimina problema',
                 backLabel: 'Torna ai problemi',
                 isCreator: _isCreator,
-                onModify: () => Navigator.of(context).pushNamed(
-                  ModificaProblemaScreen.routeName,
-                  arguments: widget.problema,
-                ),
-                onDelete: () => _showConfirmDialog(
-                  title: 'Elimina problema',
-                  body: '"${widget.problema.titolo}" verrà rimosso definitivamente. Tutti i coinquilini verranno avvisati.',
-                  accentColor: const Color(0xFFFF3B44),
-                  confirmLabel: 'Elimina',
-                  onConfirm: _handleElimina,
-                ),
+                onModify: () async {
+                  final updated = await Navigator.of(context).pushNamed(
+                    ModificaProblemaScreen.routeName,
+                    arguments: _problema,
+                  );
+                  if (updated is Problema && mounted) {
+                    setState(() {
+                      _problema = updated;
+                      _priorityOverride = updated.priorita;
+                    });
+                  }
+                },
+                onDelete: canDelete
+                    ? () => _showConfirmDialog(
+                        title: 'Elimina problema',
+                        body:
+                            '"${_problema.titolo}" verrà rimosso definitivamente. Tutti i coinquilini verranno avvisati.',
+                        accentColor: const Color(0xFFFF3B44),
+                        confirmLabel: 'Elimina',
+                        onConfirm: _handleElimina,
+                      )
+                    : null,
                 onBack: () => Navigator.of(context).maybePop(),
               ),
             ],
@@ -494,7 +552,12 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
 
   Widget _buildHeader(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSizes.p8, AppSizes.p16, AppSizes.p20, AppSizes.p8),
+      padding: const EdgeInsets.fromLTRB(
+        AppSizes.p8,
+        AppSizes.p16,
+        AppSizes.p20,
+        AppSizes.p8,
+      ),
       child: Row(
         children: [
           IconButton(
@@ -523,7 +586,7 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          widget.problema.titolo,
+          _problema.titolo,
           style: AppTextStyles.screenTitleStrong.copyWith(
             color: AppColors.textOnDark,
             fontSize: 26,
@@ -531,11 +594,13 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
           ),
         ),
         const SizedBox(height: AppSizes.p10),
-        Row(children: [
-          _StatoChip(stato: widget.problema.stato),
-          const SizedBox(width: AppSizes.p8),
-          _PriorityChip(label: _normalizedPriority),
-        ]),
+        Row(
+          children: [
+            _StatoChip(stato: _problema.stato),
+            const SizedBox(width: AppSizes.p8),
+            _PriorityChip(label: _normalizedPriority),
+          ],
+        ),
       ],
     );
   }
@@ -547,20 +612,22 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
     final label = _isCurrentUserAssignee ? 'Responsabile (tu)' : 'Responsabile';
     return _InfoCard(
       title: label,
-      child: Row(children: [
-        _AvatarCircle(name: nome),
-        const SizedBox(width: AppSizes.p12),
-        Expanded(
-          child: Text(
-            nome,
-            style: AppTextStyles.screenTitleStrong.copyWith(
-              color: AppColors.textMutedLight,
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
+      child: Row(
+        children: [
+          _AvatarCircle(name: nome),
+          const SizedBox(width: AppSizes.p12),
+          Expanded(
+            child: Text(
+              nome,
+              style: AppTextStyles.screenTitleStrong.copyWith(
+                color: AppColors.textMutedLight,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
-        ),
-      ]),
+        ],
+      ),
     );
   }
 
@@ -631,14 +698,16 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
             if (i < events.length - 1)
               Padding(
                 padding: const EdgeInsets.only(left: 5),
-                child: Row(children: [
-                  Container(
-                    width: 2,
-                    height: 14,
-                    margin: const EdgeInsets.symmetric(horizontal: 4.5),
-                    color: AppColors.dividerOnDark,
-                  ),
-                ]),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 2,
+                      height: 14,
+                      margin: const EdgeInsets.symmetric(horizontal: 4.5),
+                      color: AppColors.dividerOnDark,
+                    ),
+                  ],
+                ),
               ),
           ],
         ],
@@ -661,31 +730,33 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
           ),
         ),
         const SizedBox(height: AppSizes.p12),
-        Row(children: [
-          _PriorityButton(
-            label: 'Urgente',
-            dotColor: AppColors.problemPriorityUrgent,
-            bgColor: const Color(0xFF710002),
-            isSelected: _normalizedPriority == 'Urgente',
-            onTap: () => setState(() => _priorityOverride = 'Urgente'),
-          ),
-          const SizedBox(width: AppSizes.p8),
-          _PriorityButton(
-            label: 'Media',
-            dotColor: AppColors.problemPriorityMedium,
-            bgColor: const Color(0xFF7E3B00),
-            isSelected: _normalizedPriority == 'Media',
-            onTap: () => setState(() => _priorityOverride = 'Media'),
-          ),
-          const SizedBox(width: AppSizes.p8),
-          _PriorityButton(
-            label: 'Bassa',
-            dotColor: AppColors.problemPriorityLow,
-            bgColor: const Color(0xFF786000),
-            isSelected: _normalizedPriority == 'Bassa',
-            onTap: () => setState(() => _priorityOverride = 'Bassa'),
-          ),
-        ]),
+        Row(
+          children: [
+            _PriorityButton(
+              label: 'Urgente',
+              dotColor: AppColors.problemPriorityUrgent,
+              bgColor: const Color(0xFF710002),
+              isSelected: _normalizedPriority == 'Urgente',
+              onTap: () => _handlePriorita('Urgente'),
+            ),
+            const SizedBox(width: AppSizes.p8),
+            _PriorityButton(
+              label: 'Media',
+              dotColor: AppColors.problemPriorityMedium,
+              bgColor: const Color(0xFF7E3B00),
+              isSelected: _normalizedPriority == 'Media',
+              onTap: () => _handlePriorita('Media'),
+            ),
+            const SizedBox(width: AppSizes.p8),
+            _PriorityButton(
+              label: 'Bassa',
+              dotColor: AppColors.problemPriorityLow,
+              bgColor: const Color(0xFF786000),
+              isSelected: _normalizedPriority == 'Bassa',
+              onTap: () => _handlePriorita('Bassa'),
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -705,37 +776,41 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
     }
 
     if (_isCurrentUserAssignee) {
-      return Column(children: [
-        _ActionButton(
-          label: 'Segna come risolto',
-          gradient: const LinearGradient(
-            colors: [Color(0xFF4CAF50), Color(0xFF2E7D32)],
-          ),
-          isLoading: false,
-          onPressed: _isProcessing
-              ? () {}
-              : () => _showConfirmDialog(
+      return Column(
+        children: [
+          _ActionButton(
+            label: 'Segna come risolto',
+            gradient: const LinearGradient(
+              colors: [Color(0xFF4CAF50), Color(0xFF2E7D32)],
+            ),
+            isLoading: false,
+            onPressed: _isProcessing
+                ? () {}
+                : () => _showConfirmDialog(
                     title: 'Segna come risolto',
-                    body: 'Confermi che il problema è stato risolto? Tutti i coinquilini verranno avvisati.',
+                    body:
+                        'Confermi che il problema è stato risolto? Tutti i coinquilini verranno avvisati.',
                     accentColor: const Color(0xFF4CAF50),
                     confirmLabel: 'Conferma',
                     onConfirm: _handleRisolto,
                   ),
-        ),
-        const SizedBox(height: AppSizes.p10),
-        _ActionButton(
-          label: 'Rinuncia al problema',
-          color: const Color(0xFFBE2C2C),
-          isLoading: _isProcessing,
-          onPressed: () => _showConfirmDialog(
-            title: 'De-assegnazione',
-            body: 'Se rinunci al problema, tornerà allo stato Segnalato e tutti i coinquilini verranno avvisati.',
-            accentColor: AppColors.warning,
-            confirmLabel: 'Conferma',
-            onConfirm: _handleDeassign,
           ),
-        ),
-      ]);
+          const SizedBox(height: AppSizes.p10),
+          _ActionButton(
+            label: 'Rinuncia al problema',
+            color: const Color(0xFFBE2C2C),
+            isLoading: _isProcessing,
+            onPressed: () => _showConfirmDialog(
+              title: 'De-assegnazione',
+              body:
+                  'Se rinunci al problema, tornerà allo stato Segnalato e tutti i coinquilini verranno avvisati.',
+              accentColor: AppColors.warning,
+              confirmLabel: 'Conferma',
+              onConfirm: _handleDeassign,
+            ),
+          ),
+        ],
+      );
     }
 
     return const SizedBox.shrink();
@@ -900,8 +975,10 @@ class _HistoryRow extends StatelessWidget {
           child: Container(
             width: 12,
             height: 12,
-            decoration:
-                BoxDecoration(color: event.color, shape: BoxShape.circle),
+            decoration: BoxDecoration(
+              color: event.color,
+              shape: BoxShape.circle,
+            ),
           ),
         ),
         const SizedBox(width: AppSizes.p10),
@@ -969,7 +1046,9 @@ class _PriorityButton extends StatelessWidget {
             gradient: gradient,
             borderRadius: BorderRadius.circular(AppSizes.radius16),
             border: Border.all(
-              color: isSelected ? AppColors.brandAccent : AppColors.darkBackground,
+              color: isSelected
+                  ? AppColors.brandAccent
+                  : AppColors.darkBackground,
               width: 2.5,
             ),
             boxShadow: [
@@ -1040,8 +1119,9 @@ class _ActionButton extends StatelessWidget {
                       height: 22,
                       child: CircularProgressIndicator(
                         strokeWidth: 2.5,
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(AppColors.textOnDark),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          AppColors.textOnDark,
+                        ),
                       ),
                     )
                   : Text(
@@ -1060,7 +1140,6 @@ class _ActionButton extends StatelessWidget {
   }
 }
 
-
 class _HistoryEvent {
   const _HistoryEvent({
     required this.label,
@@ -1071,4 +1150,3 @@ class _HistoryEvent {
   final Color color;
   final String timestamp;
 }
-

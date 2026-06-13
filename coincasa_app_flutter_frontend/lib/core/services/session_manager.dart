@@ -101,7 +101,6 @@ class SessionManager {
     await prefs.remove(_keyUserCognome);
     await prefs.remove(_keyCasaId);
     await prefs.remove(_keyCasaRuolo);
-    ApiProvider.client.setAuthToken(null);
-    ApiProvider.client.clearCasaContext();
+    ApiProvider.client.clearSession();
   }
 }

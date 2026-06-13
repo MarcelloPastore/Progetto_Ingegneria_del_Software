@@ -27,14 +27,11 @@ final RouteObserver<ModalRoute<dynamic>> appRouteObserver =
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 class CoinCasaApp extends StatelessWidget {
-  CoinCasaApp({super.key});
-
-  final ActiveCasaController _activeCasaController = ActiveCasaController();
+  const CoinCasaApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return ActiveCasaScope(
-      controller: _activeCasaController,
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
@@ -86,7 +83,8 @@ class CoinCasaApp extends StatelessWidget {
               const ProblemaDettaglioScreen(),
           DeassegnazioneSuccessoScreen.routeName: (_) =>
               const DeassegnazioneSuccessoScreen(),
-          ModificaProblemaScreen.routeName: (_) => const ModificaProblemaScreen(),
+          ModificaProblemaScreen.routeName: (_) =>
+              const ModificaProblemaScreen(),
           EliminaProblemaScreen.routeName: (_) => const EliminaProblemaScreen(),
           '/casa': (_) => const ListaCaseScreen(),
           GestioneAccountScreen.routeName: (_) => const GestioneAccountScreen(),
@@ -194,10 +192,9 @@ class _AppStartupScreenState extends State<_AppStartupScreen> {
     final restoredCasaId = ApiProvider.client.currentCasaId;
     final restoredRuolo = ApiProvider.client.currentCasaRuolo;
     if (restoredCasaId != null && restoredCasaId.isNotEmpty) {
-      ActiveCasaScope.read(context).setCasaContext(
-        casaId: restoredCasaId,
-        ruolo: restoredRuolo ?? '',
-      );
+      ActiveCasaScope.read(
+        context,
+      ).setCasaContext(casaId: restoredCasaId, ruolo: restoredRuolo ?? '');
     }
 
     List<Casa> caseUtente = [];
@@ -221,8 +218,9 @@ class _AppStartupScreenState extends State<_AppStartupScreen> {
         try {
           final ruolo = await SessionManager.selectCasa(casaId: prima.id);
           if (mounted) {
-            ActiveCasaScope.read(context)
-                .setCasaContext(casaId: prima.id, ruolo: ruolo);
+            ActiveCasaScope.read(
+              context,
+            ).setCasaContext(casaId: prima.id, ruolo: ruolo);
           }
         } catch (_) {}
         if (!mounted) return;

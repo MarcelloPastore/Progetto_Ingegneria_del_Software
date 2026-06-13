@@ -28,6 +28,7 @@ describe("TurnoDto - Validation Tests", () => {
     it("accepts valid turno creation data", () => {
       const validData = {
         task: "Pulizia cucina",
+        dataTurno: "2026-05-25T10:30:00Z",
         cadenzaGiorni: 7,
         assegnatario: "u123",
         rotazioneTurno: true,
@@ -45,6 +46,7 @@ describe("TurnoDto - Validation Tests", () => {
     it("applies default value for rotazioneTurno", () => {
       const dataWithoutRotation = {
         task: "Pulizia bagno",
+        dataTurno: "2026-05-25T10:30:00Z",
         cadenzaGiorni: 3,
         assegnatario: "u456",
       };
@@ -59,6 +61,7 @@ describe("TurnoDto - Validation Tests", () => {
     it("rejects task with empty string", () => {
       const invalidData = {
         task: "",
+        dataTurno: "2026-05-25T10:30:00Z",
         cadenzaGiorni: 7,
         assegnatario: "u123",
         rotazioneTurno: true,
@@ -74,6 +77,7 @@ describe("TurnoDto - Validation Tests", () => {
     it("rejects cadenzaGiorni with negative number", () => {
       const invalidData = {
         task: "Pulizia",
+        dataTurno: "2026-05-25T10:30:00Z",
         cadenzaGiorni: -5,
         assegnatario: "u123",
         rotazioneTurno: true,
@@ -86,6 +90,7 @@ describe("TurnoDto - Validation Tests", () => {
     it("rejects cadenzaGiorni with zero", () => {
       const invalidData = {
         task: "Pulizia",
+        dataTurno: "2026-05-25T10:30:00Z",
         cadenzaGiorni: 0,
         assegnatario: "u123",
         rotazioneTurno: true,
@@ -101,6 +106,7 @@ describe("TurnoDto - Validation Tests", () => {
     it("rejects cadenzaGiorni with decimal number", () => {
       const invalidData = {
         task: "Pulizia",
+        dataTurno: "2026-05-25T10:30:00Z",
         cadenzaGiorni: 7.5,
         assegnatario: "u123",
         rotazioneTurno: true,
@@ -113,6 +119,7 @@ describe("TurnoDto - Validation Tests", () => {
     it("rejects assegnatario with empty string", () => {
       const invalidData = {
         task: "Pulizia",
+        dataTurno: "2026-05-25T10:30:00Z",
         cadenzaGiorni: 7,
         assegnatario: "",
         rotazioneTurno: true,
@@ -128,6 +135,7 @@ describe("TurnoDto - Validation Tests", () => {
     it("rejects non-boolean rotazioneTurno", () => {
       const invalidData = {
         task: "Pulizia",
+        dataTurno: "2026-05-25T10:30:00Z",
         cadenzaGiorni: 7,
         assegnatario: "u123",
         rotazioneTurno: "true",
@@ -140,6 +148,7 @@ describe("TurnoDto - Validation Tests", () => {
     it("rejects missing required fields", () => {
       const incompleteData = {
         task: "Pulizia",
+        dataTurno: "2026-05-25T10:30:00Z",
         cadenzaGiorni: 7,
       };
 
@@ -150,6 +159,7 @@ describe("TurnoDto - Validation Tests", () => {
     it("allows extra fields (Zod default behavior)", () => {
       const dataWithExtra = {
         task: "Pulizia",
+        dataTurno: "2026-05-25T10:30:00Z",
         cadenzaGiorni: 7,
         assegnatario: "u123",
         rotazioneTurno: true,
@@ -166,6 +176,7 @@ describe("TurnoDto - Validation Tests", () => {
     it("accepts very large cadenzaGiorni", () => {
       const validData = {
         task: "Pulizia",
+        dataTurno: "2026-05-25T10:30:00Z",
         cadenzaGiorni: 365,
         assegnatario: "u123",
         rotazioneTurno: true,
@@ -178,6 +189,7 @@ describe("TurnoDto - Validation Tests", () => {
     it("accepts minimum valid cadenzaGiorni", () => {
       const validData = {
         task: "Pulizia",
+        dataTurno: "2026-05-25T10:30:00Z",
         cadenzaGiorni: 1,
         assegnatario: "u123",
         rotazioneTurno: true,
@@ -306,6 +318,7 @@ describe("TurnoDto - Validation Tests", () => {
         cadenzaGiorni: 7,
         rotazioneAttiva: true,
         assegnatario: { id: "u1", username: "mario" },
+        creatore: { id: "u1", username: "mario" },
         ordineRotazione: ["u1", "u2"],
         indiceRotazioneCorrente: 0,
         dataUltimaPulizia: null,
@@ -324,6 +337,7 @@ describe("TurnoDto - Validation Tests", () => {
         cadenzaGiorni: 7,
         rotazioneAttiva: true,
         assegnatario: { id: "u1", username: "mario" },
+        creatore: { id: "u1", username: "mario" },
         ordineRotazione: [],
         indiceRotazioneCorrente: 0,
         dataUltimaPulizia: null,
@@ -342,6 +356,7 @@ describe("TurnoDto - Validation Tests", () => {
         cadenzaGiorni: 7,
         rotazioneAttiva: true,
         assegnatario: { id: "u1", username: "mario" },
+        creatore: { id: "u1", username: "mario" },
         ordineRotazione: [],
         indiceRotazioneCorrente: 0,
         dataUltimaPulizia: null,
@@ -358,32 +373,30 @@ describe("TurnoDto - Validation Tests", () => {
     it("accepts valid data turno", () => {
       const validData = {
         id: "t1",
-        dataProssimaPuliza: "2026-05-25T10:30:00Z",
+        dataProssimaPulizia: "2026-05-25T10:30:00Z",
       };
 
       const result = DataTurnoSchema.safeParse(validData);
       expect(result.success).toBe(true);
     });
 
-    it("accepts invalid date format (no specific validation)", () => {
+    it("rejects invalid date format", () => {
       const invalidData = {
         id: "t1",
-        dataProssimaPuliza: "invalid-date",
+        dataProssimaPulizia: "invalid-date",
       };
 
       const result = DataTurnoSchema.safeParse(invalidData);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data.dataProssimaPuliza).toBe("invalid-date");
-      }
+      expect(result.success).toBe(false);
     });
   });
 
   describe("TurnoListItemSchema validation", () => {
     it("accepts valid turno list item", () => {
       const validItem = {
+        id: "t1",
         task: "Pulizia cucina",
-        assegnatarioCorrente: { id: "u1", username: "mario" },
+        assegnatario: { id: "u1", username: "mario" },
         dataProssimaPulizia: "2026-05-25T10:30:00Z",
       };
 
@@ -391,8 +404,9 @@ describe("TurnoDto - Validation Tests", () => {
       expect(result.success).toBe(true);
     });
 
-    it("rejects missing assegnatarioCorrente", () => {
+    it("rejects missing assegnatario", () => {
       const invalidItem = {
+        id: "t1",
         task: "Pulizia cucina",
         dataProssimaPulizia: "2026-05-25T10:30:00Z",
       };
@@ -402,4 +416,3 @@ describe("TurnoDto - Validation Tests", () => {
     });
   });
 });
-

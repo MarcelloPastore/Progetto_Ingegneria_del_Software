@@ -200,8 +200,9 @@ describe("TurnoService", () => {
     expect(items).toHaveLength(1);
     expect(items[0]).toEqual(
       expect.objectContaining({
+        id: "t1",
         task: "Pulizia cucina",
-        assegnatarioCorrente: { id: "u1", username: "mario" },
+        assegnatario: { id: "u1", username: "mario" },
         dataProssimaPulizia: "2026-05-25T00:00:00.000Z",
       }),
     );

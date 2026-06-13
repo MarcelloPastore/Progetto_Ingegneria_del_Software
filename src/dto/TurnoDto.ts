@@ -47,15 +47,16 @@ export const TurnoResponseSchema = z.object({
 export type TurnoResponseDto = z.infer<typeof TurnoResponseSchema>;
 
 export const TurnoListItemSchema = z.object({
+  id: z.string(),
   task: z.string(),
-  assegnatarioCorrente: AssegnatarioInfoSchema,
+  assegnatario: AssegnatarioInfoSchema,
   dataProssimaPulizia: isoDateTimeString,
 });
 export type TurnoListItemDto = z.infer<typeof TurnoListItemSchema>;
 
 export const DataTurnoSchema = z.object({
   id: z.string(),
-  dataProssimaPuliza: z.string(),
+  dataProssimaPulizia: isoDateTimeString,
 });
 
 export const SaluteCasaSchema = z.object({

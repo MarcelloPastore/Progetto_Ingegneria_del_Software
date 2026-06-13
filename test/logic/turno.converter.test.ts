@@ -95,8 +95,9 @@ describe("TurnoConverter", () => {
       dataCreazione: creation,
     });
 
+    expect(listItem.id).toBe("t4");
     expect(listItem.task).toBe("Pulizia scale");
-    expect(listItem.assegnatarioCorrente).toEqual({ id: "u1", username: "mario" });
+    expect(listItem.assegnatario).toEqual({ id: "u1", username: "mario" });
     expect(listItem.dataProssimaPulizia).toBe("2026-05-25T00:00:00.000Z");
   });
 
@@ -138,4 +139,3 @@ describe("TurnoConverter", () => {
     expect(dto.indiceRotazioneCorrente).toBe(0);
   });
 });
-

@@ -29,6 +29,8 @@ export class ProblemaConverter {
     }
 
     return {
+      id: problema.id,
+      nome: problema.nome,
       descrizione: problema.descrizione,
       assegnatario,
       priorita: problema.priorita as ProblemaListItemDto["priorita"],

@@ -5,6 +5,7 @@ import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/models/turno.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
+import 'package:coincasa_app/core/state/active_casa_session.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/utils/user_initials.dart';
 import 'package:coincasa_app/core/widgets/common/delete_confirm_dialog.dart';
@@ -155,7 +156,10 @@ class _DettaglioTurnoAdminScreenState
       return null;
     }
 
-    final casa = activeCasaController.resolveCasa(caseUtente);
+    final casa = await ensureActiveCasaContext(
+      activeCasaController,
+      caseUtente: caseUtente,
+    );
     final results = await Future.wait<dynamic>([
       ApiProvider.turni.getById(casa.id, turnoId),
       ApiProvider.casa.listInquilini(casa.id),
@@ -244,7 +248,9 @@ class _DettaglioTurnoAdminScreenState
       onConfirm: () => ApiProvider.turni.delete(data.casaId, turno.id),
       onSuccess: () {
         if (mounted) {
-          Navigator.of(context).pushReplacementNamed(TurnoRimossoScreen.routeName);
+          Navigator.of(
+            context,
+          ).pushReplacementNamed(TurnoRimossoScreen.routeName);
         }
       },
     );
@@ -280,7 +286,8 @@ class _DettaglioTurnoAdminScreenState
         final currentUser = data == null
             ? null
             : _findCurrentUser(data.inquilini);
-        final isCreator = currentUser != null &&
+        final isCreator =
+            currentUser != null &&
             data != null &&
             data.turno.isCreatedBy(currentUser.id);
         final canEditTurno = isCreator;
@@ -339,12 +346,14 @@ class _DettaglioTurnoAdminScreenState
                                 label: isLoading
                                     ? 'Caricamento...'
                                     : 'Assegna a me',
-                                onPressed: _isSubmitting ||
+                                onPressed:
+                                    _isSubmitting ||
                                         data == null ||
                                         (data.turno.assegnatarioId.isNotEmpty &&
                                             data.turno.assegnatarioId ==
                                                 ApiProvider
-                                                    .client.currentUserId)
+                                                    .client
+                                                    .currentUserId)
                                     ? null
                                     : () => _handleAssignMe(data),
                               ),
@@ -353,8 +362,9 @@ class _DettaglioTurnoAdminScreenState
                                 _AssigneeSelector(
                                   assignees: assignees,
                                   selectedAssigneeId: selectedAssigneeId,
-                                  selectedAssigneeLabel:
-                                      _selectedAssigneeLabel(assignees),
+                                  selectedAssigneeLabel: _selectedAssigneeLabel(
+                                    assignees,
+                                  ),
                                   expanded: _assigneeMenuOpen,
                                   isSubmitting: _isSubmitting,
                                   onToggle: () {
@@ -382,12 +392,13 @@ class _DettaglioTurnoAdminScreenState
                         onModify: _isSubmitting || data == null
                             ? null
                             : () => Navigator.of(context).pushNamed(
-                                  TurnoCreateScreen.routeName,
-                                  arguments: data.turno.id,
-                                ),
+                                TurnoCreateScreen.routeName,
+                                arguments: data.turno.id,
+                              ),
                         onDelete: _isSubmitting ? null : _handleDelete,
-                        onBack: () =>
-                            Navigator.of(context).pushReplacementNamed('/turni'),
+                        onBack: () => Navigator.of(
+                          context,
+                        ).pushReplacementNamed('/turni'),
                       ),
                     ],
                   ),
@@ -463,7 +474,7 @@ class _TurnoSummaryCard extends StatelessWidget {
             ),
             TextSpan(
               text:
-                  'Ogni ${turno?.cadenzaGiorni ?? 1} giorni\nprossimo: ${_formatDate(turno?.dataProssimaPulizia)}',
+                  '${turno?.frequenzaLabel ?? 'Ogni giorno'}\nprossimo: ${_formatDate(turno?.dataProssimaPulizia)}',
               style: AppTextStyles.bodyStrong.copyWith(
                 color: AppColors.textMutedLight,
                 fontSize: 20,
@@ -878,8 +889,6 @@ class _CreatorRow extends StatelessWidget {
     );
   }
 }
-
-
 
 class TurnoRimossoScreen extends StatelessWidget {
   const TurnoRimossoScreen({super.key});

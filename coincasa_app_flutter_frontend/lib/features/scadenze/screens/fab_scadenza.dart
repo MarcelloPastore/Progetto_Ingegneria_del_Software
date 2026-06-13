@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
+import 'package:coincasa_app/core/state/active_casa_session.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/fab_buttons.dart';
 
@@ -56,7 +57,6 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final isHomeAdmin = ActiveCasaScope.of(context).isHomeAdmin;
     if (_isCreated) {
       return FabScadenzaCreataPanel(
         onBackToScadenze: _goToScadenze,
@@ -137,69 +137,20 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
         const SizedBox(height: 8),
         _LabeledField(
           label: 'Frequenza',
-          child: isHomeAdmin
-              ? _FrequencySelector(
-                  selectedValue: _frequenza,
-                  options: _frequencyOptions,
-                  isExpanded: _showFrequencyOptions,
-                  onToggle: () {
-                    setState(() => _showFrequencyOptions = !_showFrequencyOptions);
-                  },
-                  onSelect: (value) {
-                    setState(() {
-                      _frequenza = value;
-                      _showFrequencyOptions = false;
-                    });
-                  },
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Material(
-                      color: _FabColors.fieldColor,
-                      borderRadius: BorderRadius.circular(7),
-                      elevation: 4,
-                      shadowColor: Colors.black45,
-                      child: SizedBox(
-                        height: 41,
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 12, right: 4),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  _frequenza,
-                                  style: const TextStyle(
-                                    color: Color(0xFFBDB7CC),
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                              Icon(
-                                Icons.keyboard_arrow_down,
-                                color: const Color(0xFF7A6F86),
-                                size: 26,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Padding(
-                      padding: const EdgeInsets.only(left: 6),
-                      child: Text(
-                        '( solo HomeAdmin ) ⚠',
-                        style: TextStyle(
-                          color: Colors.amber.shade700,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+          child: _FrequencySelector(
+            selectedValue: _frequenza,
+            options: _frequencyOptions,
+            isExpanded: _showFrequencyOptions,
+            onToggle: () {
+              setState(() => _showFrequencyOptions = !_showFrequencyOptions);
+            },
+            onSelect: (value) {
+              setState(() {
+                _frequenza = value;
+                _showFrequencyOptions = false;
+              });
+            },
+          ),
         ),
         const SizedBox(height: 18),
         FabSaveButton(
@@ -208,9 +159,7 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
           isLoading: _isSaving,
         ),
         const SizedBox(height: 14),
-        FabCancelButton(
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
+        FabCancelButton(onPressed: () => Navigator.of(context).maybePop()),
       ],
     );
   }
@@ -272,16 +221,17 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
     }
 
     // Capture context-dependent values before any async gap
-    final casaId = ActiveCasaScope.of(context).selectedCasaId ?? '';
+    final activeCasa = ActiveCasaScope.read(context);
     final cadenzaGiorni = _cadenzaFromFrequenza(_frequenza);
     final isRicorrente = cadenzaGiorni != null;
     final nome = _nomeController.text.trim();
     final descrizione = _descrizioneController.text.trim();
-    final dataIso = selectedDate.toIso8601String();
+    final dataIso = _payloadDate(selectedDate).toIso8601String();
 
     setState(() => _isSaving = true);
     try {
-      await ApiProvider.scadenze.create(casaId, {
+      final casa = await ensureActiveCasaContext(activeCasa);
+      await ApiProvider.scadenze.create(casa.id, {
         'nome': nome,
         'descrizione': descrizione,
         'dataScadenza': dataIso,
@@ -311,6 +261,10 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
       default:
         return null;
     }
+  }
+
+  static DateTime _payloadDate(DateTime date) {
+    return DateTime.utc(date.year, date.month, date.day, 12);
   }
 
   void _goToScadenze() {

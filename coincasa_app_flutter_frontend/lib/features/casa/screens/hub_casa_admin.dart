@@ -5,8 +5,8 @@ import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/models/spesa.dart';
-import 'package:coincasa_app/core/services/session_manager.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
+import 'package:coincasa_app/core/state/active_casa_session.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
@@ -88,19 +88,11 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
       throw StateError('Nessuna casa disponibile.');
     }
 
-    final selected = widget.casaId == null
-        ? _activeCasaController.resolveCasa(caseUtente)
-        : caseUtente.firstWhere(
-            (casa) => casa.id == widget.casaId,
-            orElse: () => caseUtente.first,
-          );
-    // Aggiorna il token con idCasa+ruoloCasa e notifica il controller.
-    if (ApiProvider.client.currentCasaId != selected.id) {
-      final ruolo = await SessionManager.selectCasa(casaId: selected.id);
-      _activeCasaController.setCasaContext(casaId: selected.id, ruolo: ruolo);
-    } else {
-      _activeCasaController.selectCasa(selected.id);
-    }
+    final selected = await ensureActiveCasaContext(
+      _activeCasaController,
+      caseUtente: caseUtente,
+      preferredCasaId: widget.casaId,
+    );
 
     final results = await Future.wait<dynamic>([
       ApiProvider.casa.getById(selected.id),
@@ -204,10 +196,13 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
     final spesePendenti = data.spese.where((spesa) {
       if (spesa.partecipanti.isEmpty) return false;
       return spesa.partecipanti.any((q) {
-        final uid = (q['utenteId'] ?? q['idUtente'] ?? q['inquilinoId'] ??
-                (q['utente'] as Map?)?['id'])
-            ?.toString()
-            .trim() ??
+        final uid =
+            (q['utenteId'] ??
+                    q['idUtente'] ??
+                    q['inquilinoId'] ??
+                    (q['utente'] as Map?)?['id'])
+                ?.toString()
+                .trim() ??
             '';
         final raw = q['pagata'] ?? q['pagato'] ?? q['isPaid'];
         final pagata = raw == true || raw?.toString().toLowerCase() == 'true';
@@ -254,8 +249,11 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
         backgroundColor: AppColors.brandPrimary,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              color: Colors.white, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: Colors.white,
+            size: 20,
+          ),
           onPressed: () => Navigator.of(context).pushReplacement(
             MaterialPageRoute<void>(builder: (_) => const ListaCaseScreen()),
           ),
@@ -809,10 +807,7 @@ class _AdminWarningCard extends StatelessWidget {
 }
 
 class _DeleteHouseButton extends StatelessWidget {
-  const _DeleteHouseButton({
-    required this.onPressed,
-    required this.isOwner,
-  });
+  const _DeleteHouseButton({required this.onPressed, required this.isOwner});
 
   final VoidCallback onPressed;
   final bool isOwner;

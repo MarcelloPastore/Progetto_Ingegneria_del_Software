@@ -10,6 +10,7 @@ import 'package:coincasa_app/core/models/scadenza.dart';
 import 'package:coincasa_app/core/models/spesa.dart';
 import 'package:coincasa_app/core/models/turno.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
+import 'package:coincasa_app/core/state/active_casa_session.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
@@ -34,6 +35,7 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
 
   /// Cache statica: sopravvive alla distruzione del widget (pushReplacementNamed).
   static _DashboardData? _cachedData;
+  static String? _cachedUserId;
   bool _isBackgroundRefreshing = false;
 
   @override
@@ -50,6 +52,11 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _activeCasaController = ActiveCasaScope.read(context);
+    final currentUserId = ApiProvider.client.currentUserId;
+    if (_cachedUserId != currentUserId) {
+      _cachedData = null;
+      _cachedUserId = currentUserId;
+    }
     // Registra il RouteObserver ad ogni chiamata (sicuro: unsubscribe avviene in dispose)
     final route = ModalRoute.of(context);
     if (route != null) {
@@ -90,16 +97,18 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
         _isBackgroundRefreshing = true;
         _dashboardDataFuture = Future.value(_cachedData!);
       });
-      _fetchFromNetwork().then((fresh) {
-        if (!mounted) return;
-        _cachedData = fresh;
-        setState(() {
-          _dashboardDataFuture = Future.value(fresh);
-          _isBackgroundRefreshing = false;
-        });
-      }).catchError((_) {
-        if (mounted) setState(() => _isBackgroundRefreshing = false);
-      });
+      _fetchFromNetwork()
+          .then((fresh) {
+            if (!mounted) return;
+            _cachedData = fresh;
+            setState(() {
+              _dashboardDataFuture = Future.value(fresh);
+              _isBackgroundRefreshing = false;
+            });
+          })
+          .catchError((_) {
+            if (mounted) setState(() => _isBackgroundRefreshing = false);
+          });
     } else {
       // Prima visita senza cache: se già in caricamento da didChangeDependencies non fare nulla.
       if (_initialized) return;
@@ -123,7 +132,10 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
       );
     }
 
-    final casa = _activeCasaController.resolveCasa(caseUtente);
+    final casa = await ensureActiveCasaContext(
+      _activeCasaController,
+      caseUtente: caseUtente,
+    );
     final nomeCasa = _formatNomeCasa(casa);
     final displayName = nomeCasa.isEmpty ? 'Casa senza nome' : nomeCasa;
     final turniFuture = ApiProvider.turni.list(casa.id);
@@ -171,10 +183,29 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
     if (_activeCasaController.selectedCasaId == casaId) {
       return;
     }
+    _selectCasaAndRefresh(casaId);
+  }
 
-    _activeCasaController.selectCasa(casaId);
-    _cachedData = null; // Invalida la cache al cambio di casa
-    _triggerRefresh();
+  Future<void> _selectCasaAndRefresh(String casaId) async {
+    try {
+      await ensureActiveCasaContext(
+        _activeCasaController,
+        preferredCasaId: casaId,
+      );
+      if (!mounted) return;
+      _cachedData = null;
+      setState(() {
+        _dashboardDataFuture = _fetchFromNetwork().then((data) {
+          _cachedData = data;
+          return data;
+        });
+      });
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Impossibile cambiare casa. Riprova.')),
+      );
+    }
   }
 
   List<HouseHealthBadgeData> _buildHouseHealthBadges(List<Turno> turni) {
@@ -209,7 +240,9 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
     final daysUntil = nextOnly.difference(todayOnly).inDays;
 
     if (daysUntil < -3) return 0; // grigio
-    if (!badge.completato && daysUntil >= -3 && daysUntil <= 0) return 1; // rosso
+    if (!badge.completato && daysUntil >= -3 && daysUntil <= 0) {
+      return 1; // rosso
+    }
     // Soglia arancione proporzionale alla cadenza, identica a _HealthBadge._color
     final orangeThreshold = badge.cadenzaGiorni ~/ 3;
     if (daysUntil <= orangeThreshold) return 2; // arancione
@@ -365,7 +398,11 @@ class _CurrentUserAvatar extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFFFFD700), Color(0xFFFFA500), Color(0xFFFFD700)],
+                    colors: [
+                      Color(0xFFFFD700),
+                      Color(0xFFFFA500),
+                      Color(0xFFFFD700),
+                    ],
                     stops: [0.0, 0.5, 1.0],
                   ),
                   borderRadius: BorderRadius.circular(6),
@@ -915,10 +952,7 @@ class _ProssimeScadenzeSection extends StatelessWidget {
 
     entries.sort((a, b) => a.date.compareTo(b.date));
 
-    return entries
-        .where((e) => !e.date.isBefore(today))
-        .take(3)
-        .toList();
+    return entries.where((e) => !e.date.isBefore(today)).take(3).toList();
   }
 }
 
@@ -960,10 +994,7 @@ class _ScadenzaRow extends StatelessWidget {
         Container(
           width: 10,
           height: 10,
-          decoration: BoxDecoration(
-            color: dotColor,
-            shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
         ),
         const SizedBox(width: AppSizes.p10),
         Expanded(
@@ -1166,7 +1197,9 @@ class _TodayTurnSectionState extends State<_TodayTurnSection> {
           UserAvatar(
             radius: 24,
             userId: turno.assegnatarioId,
-            username: turno.assegnatarioNome.isNotEmpty ? turno.assegnatarioNome : null,
+            username: turno.assegnatarioNome.isNotEmpty
+                ? turno.assegnatarioNome
+                : null,
             fallback: '?',
           ),
           const SizedBox(width: AppSizes.p14),
@@ -1298,7 +1331,6 @@ class _TodayTurnSectionState extends State<_TodayTurnSection> {
     );
   }
 }
-
 
 class _StatusRow extends StatelessWidget {
   const _StatusRow({
@@ -1444,7 +1476,8 @@ class _EmptyCalendarSection extends StatelessWidget {
                           builder: (context, snapshot) {
                             final turni = snapshot.data?.turni ?? const [];
                             final spese = snapshot.data?.spese ?? const [];
-                            final scadenze = snapshot.data?.scadenze ?? const <Scadenza>[];
+                            final scadenze =
+                                snapshot.data?.scadenze ?? const <Scadenza>[];
                             final days = _buildGridDays(month);
 
                             return GridView.builder(
@@ -1462,7 +1495,12 @@ class _EmptyCalendarSection extends StatelessWidget {
                                 final date = days[index];
                                 final inMonth = date.month == month.month;
                                 final markers = inMonth
-                                    ? _markersForDate(date, turni, spese, scadenze)
+                                    ? _markersForDate(
+                                        date,
+                                        turni,
+                                        spese,
+                                        scadenze,
+                                      )
                                     : const <Color>[];
 
                                 return _DashboardCalendarDay(
@@ -1646,10 +1684,7 @@ class _LegendItem extends StatelessWidget {
         Container(
           width: 11,
           height: 11,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: AppSizes.p6),
         Text(

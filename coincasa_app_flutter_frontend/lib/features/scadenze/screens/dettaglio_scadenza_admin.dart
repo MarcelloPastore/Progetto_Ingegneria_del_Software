@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
@@ -43,167 +44,178 @@ class DettaglioScadenzaAdminScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final data = dataScadenza ?? DateTime(2026, 6, 25);
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF151127),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFFAC86FF)),
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
-        title: const Text(
-          'Dettaglio scadenza',
-          style: TextStyle(
-            color: Color(0xFFAC86FF),
-            fontSize: 20,
-            fontFamily: 'Inter',
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        centerTitle: true,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light.copyWith(
+        statusBarColor: Colors.transparent,
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Card(
-                    color: const Color(0xFF37325A),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    elevation: 4,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            titolo,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            descrizione,
-                            style: const TextStyle(
-                              color: Color(0xFFC9C9C9),
-                              fontSize: 16,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Data scadenza',
-                                    style: TextStyle(
-                                      color: Color(0xFFC9C9C9),
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    _formatDate(data),
-                                    style: const TextStyle(
-                                      color: Color(0xFFFF860E),
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              StatusBadge(
-                                text: stato,
-                                color: const Color(0xFFFF860E),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          _infoRow('Frequenza', frequenza),
-                          if (isAdmin) ...[
-                            const SizedBox(height: 8),
-                            _infoRow('Ricorrente', ricorrente ? 'Sì' : 'No'),
-                          ],
-                          const SizedBox(height: 8),
-                          _infoRow('Creata da', creatoDa),
-                          const SizedBox(height: 8),
-                          _infoRow('Visibile a', visibileA),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+      child: Scaffold(
+        backgroundColor: const Color(0xFF151127),
+        appBar: AppBar(
+          systemOverlayStyle: SystemUiOverlayStyle.light.copyWith(
+            statusBarColor: Colors.transparent,
+          ),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Color(0xFFAC86FF)),
+            onPressed: () => Navigator.of(context).maybePop(),
+          ),
+          title: const Text(
+            'Dettaglio scadenza',
+            style: TextStyle(
+              color: Color(0xFFAC86FF),
+              fontSize: 20,
+              fontFamily: 'Inter',
+              fontWeight: FontWeight.w600,
             ),
           ),
-          DetailActionsBar(
-            modifyLabel: 'Modifica scadenza',
-            deleteLabel: 'Elimina scadenza',
-            backLabel: 'Torna alle scadenze',
-            isCreator: isAdmin,
-            onModify: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => ScadenzaFormScreen.modifica(
-                  nome: titolo,
-                  descrizione: descrizione,
-                  data: dataScadenza,
-                  frequenza: frequenza,
-                  idScadenza: idScadenza ?? '',
-                  casaId: casaId ?? '',
+          centerTitle: true,
+        ),
+        body: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
                 ),
-              ),
-            ),
-            onDelete: () async {
-              final confirm = await showDialog<bool>(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  title: const Text('Conferma eliminazione'),
-                  content: const Text(
-                    'Sei sicuro di voler eliminare questa scadenza?',
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(ctx).pop(false),
-                      child: const Text('Annulla'),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.of(ctx).pop(true),
-                      child: const Text('Elimina'),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Card(
+                      color: const Color(0xFF37325A),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      elevation: 4,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              titolo,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              descrizione,
+                              style: const TextStyle(
+                                color: Color(0xFFC9C9C9),
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Data scadenza',
+                                      style: TextStyle(
+                                        color: Color(0xFFC9C9C9),
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      _formatDate(data),
+                                      style: const TextStyle(
+                                        color: Color(0xFFFF860E),
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                StatusBadge(
+                                  text: stato,
+                                  color: const Color(0xFFFF860E),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            _infoRow('Frequenza', frequenza),
+                            if (isAdmin) ...[
+                              const SizedBox(height: 8),
+                              _infoRow('Ricorrente', ricorrente ? 'Sì' : 'No'),
+                            ],
+                            const SizedBox(height: 8),
+                            _infoRow('Creata da', creatoDa),
+                            const SizedBox(height: 8),
+                            _infoRow('Visibile a', visibileA),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
                 ),
-              );
-              if (confirm == true && context.mounted) {
-                final id = idScadenza;
-                final cId = casaId;
-                if (id != null &&
-                    cId != null &&
-                    id.isNotEmpty &&
-                    cId.isNotEmpty) {
-                  try {
-                    await ApiProvider.scadenze.delete(cId, id);
-                  } catch (_) {}
+              ),
+            ),
+            DetailActionsBar(
+              modifyLabel: 'Modifica scadenza',
+              deleteLabel: 'Elimina scadenza',
+              backLabel: 'Torna alle scadenze',
+              isCreator: isAdmin,
+              onModify: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => ScadenzaFormScreen.modifica(
+                    nome: titolo,
+                    descrizione: descrizione,
+                    data: dataScadenza,
+                    frequenza: frequenza,
+                    idScadenza: idScadenza ?? '',
+                    casaId: casaId ?? '',
+                  ),
+                ),
+              ),
+              onDelete: () async {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('Conferma eliminazione'),
+                    content: const Text(
+                      'Sei sicuro di voler eliminare questa scadenza?',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(ctx).pop(false),
+                        child: const Text('Annulla'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.of(ctx).pop(true),
+                        child: const Text('Elimina'),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirm == true && context.mounted) {
+                  final id = idScadenza;
+                  final cId = casaId;
+                  if (id != null &&
+                      cId != null &&
+                      id.isNotEmpty &&
+                      cId.isNotEmpty) {
+                    try {
+                      await ApiProvider.scadenze.delete(cId, id);
+                    } catch (_) {}
+                  }
+                  if (context.mounted) Navigator.of(context).maybePop();
                 }
-                if (context.mounted) Navigator.of(context).maybePop();
-              }
-            },
-            onBack: () => Navigator.of(context).maybePop(),
-          ),
-        ],
+              },
+              onBack: () => Navigator.of(context).maybePop(),
+            ),
+          ],
+        ),
+        bottomNavigationBar: const HouseQuickNav(currentRoute: '/scadenze'),
       ),
-      bottomNavigationBar: const HouseQuickNav(currentRoute: '/scadenze'),
     );
   }
 

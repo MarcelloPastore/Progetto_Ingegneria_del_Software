@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
+import 'package:coincasa_app/core/state/active_casa_session.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 
 class ScadenzaFormScreen extends StatefulWidget {
@@ -92,170 +94,180 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF151127),
-      bottomNavigationBar: const HouseQuickNav(currentRoute: '/scadenze'),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: widget.isEditing
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back, color: Color(0xFFAC86FF)),
-                onPressed: () => Navigator.of(context).maybePop(),
-              )
-            : null,
-        title: Text(
-          widget.isEditing ? 'Modifica scadenza' : 'Nuova Scadenza',
-          style: const TextStyle(
-            color: Color(0xFFAC86FF),
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        centerTitle: true,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light.copyWith(
+        statusBarColor: Colors.transparent,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _LabeledField(
-              label: 'Nome scadenza',
-              hasError: _hasNameError,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextFormField(
-                    controller: _nomeController,
-                    onChanged: (_) => _clearNameErrorIfValid(),
-                    style: TextStyle(
-                      color: _hasNameError ? _danger : Colors.white,
-                      fontSize: 18,
-                    ),
-                    decoration: _inputDecoration(
-                      'Es. Revisione caldaia',
-                      hasError: _hasNameError,
-                    ),
-                  ),
-                  if (_hasNameError)
-                    const _ErrorMessage(text: 'Inserisci un nome'),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            _LabeledField(
-              label: 'Descrizione (opzionale)',
-              child: TextFormField(
-                controller: _descrizioneController,
-                minLines: 1,
-                maxLines: 2,
-                style: const TextStyle(color: Colors.white, fontSize: 18),
-                decoration: _inputDecoration('Es. Revisione annuale'),
-              ),
-            ),
-            const SizedBox(height: 12),
-            _LabeledField(
-              label: 'Data di scadenza',
-              hasError: _hasDateError,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextFormField(
-                    controller: _dataController,
-                    readOnly: true,
-                    onTap: _pickDate,
-                    style: TextStyle(
-                      color: _hasDateError ? _danger : Colors.white,
-                      fontSize: 18,
-                    ),
-                    decoration: _inputDecoration(
-                      'GG/MM/AAAA',
-                      hasError: _hasDateError,
-                    ),
-                  ),
-                  if (_hasDateError)
-                    const _ErrorMessage(text: 'La data deve essere futura'),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            _LabeledField(
-              label: 'Frequenza',
-              child: _FrequencySelector(
-                selectedValue: _frequenza,
-                options: _frequencyOptions,
-                isExpanded: _showFrequencyOptions,
-                accent: _accent,
-                dropdownColor: _dropdownColor,
-                onToggle: () => setState(
-                  () => _showFrequencyOptions = !_showFrequencyOptions,
-                ),
-                onSelect: (value) => setState(() {
-                  _frequenza = value;
-                  _showFrequencyOptions = false;
-                }),
-              ),
-            ),
-            const SizedBox(height: 28),
-            SizedBox(
-              height: 54,
-              child: ElevatedButton(
-                onPressed: (_hasErrors || _isSaving) ? null : _save,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _primary,
-                  disabledBackgroundColor: _disabled,
-                  disabledForegroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  elevation: 4,
-                ),
-                child: _isSaving
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
-                      )
-                    : Text(
-                        widget.isEditing ? 'Salva modifiche' : 'Salva scadenza',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-              ),
-            ),
-            const SizedBox(height: 14),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 30),
-              child: SizedBox(
-                height: 54,
-                child: OutlinedButton(
+      child: Scaffold(
+        backgroundColor: const Color(0xFF151127),
+        bottomNavigationBar: const HouseQuickNav(currentRoute: '/scadenze'),
+        appBar: AppBar(
+          systemOverlayStyle: SystemUiOverlayStyle.light.copyWith(
+            statusBarColor: Colors.transparent,
+          ),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: widget.isEditing
+              ? IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Color(0xFFAC86FF)),
                   onPressed: () => Navigator.of(context).maybePop(),
-                  style: OutlinedButton.styleFrom(
-                    backgroundColor: const Color(0xFF501C26),
-                    side: const BorderSide(color: _danger, width: 2),
+                )
+              : null,
+          title: Text(
+            widget.isEditing ? 'Modifica scadenza' : 'Nuova Scadenza',
+            style: const TextStyle(
+              color: Color(0xFFAC86FF),
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          centerTitle: true,
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _LabeledField(
+                label: 'Nome scadenza',
+                hasError: _hasNameError,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextFormField(
+                      controller: _nomeController,
+                      onChanged: (_) => _clearNameErrorIfValid(),
+                      style: TextStyle(
+                        color: _hasNameError ? _danger : Colors.white,
+                        fontSize: 18,
+                      ),
+                      decoration: _inputDecoration(
+                        'Es. Revisione caldaia',
+                        hasError: _hasNameError,
+                      ),
+                    ),
+                    if (_hasNameError)
+                      const _ErrorMessage(text: 'Inserisci un nome'),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              _LabeledField(
+                label: 'Descrizione (opzionale)',
+                child: TextFormField(
+                  controller: _descrizioneController,
+                  minLines: 1,
+                  maxLines: 2,
+                  style: const TextStyle(color: Colors.white, fontSize: 18),
+                  decoration: _inputDecoration('Es. Revisione annuale'),
+                ),
+              ),
+              const SizedBox(height: 12),
+              _LabeledField(
+                label: 'Data di scadenza',
+                hasError: _hasDateError,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextFormField(
+                      controller: _dataController,
+                      readOnly: true,
+                      onTap: _pickDate,
+                      style: TextStyle(
+                        color: _hasDateError ? _danger : Colors.white,
+                        fontSize: 18,
+                      ),
+                      decoration: _inputDecoration(
+                        'GG/MM/AAAA',
+                        hasError: _hasDateError,
+                      ),
+                    ),
+                    if (_hasDateError)
+                      const _ErrorMessage(text: 'La data deve essere futura'),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              _LabeledField(
+                label: 'Frequenza',
+                child: _FrequencySelector(
+                  selectedValue: _frequenza,
+                  options: _frequencyOptions,
+                  isExpanded: _showFrequencyOptions,
+                  accent: _accent,
+                  dropdownColor: _dropdownColor,
+                  onToggle: () => setState(
+                    () => _showFrequencyOptions = !_showFrequencyOptions,
+                  ),
+                  onSelect: (value) => setState(() {
+                    _frequenza = value;
+                    _showFrequencyOptions = false;
+                  }),
+                ),
+              ),
+              const SizedBox(height: 28),
+              SizedBox(
+                height: 54,
+                child: ElevatedButton(
+                  onPressed: (_hasErrors || _isSaving) ? null : _save,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _primary,
+                    disabledBackgroundColor: _disabled,
+                    disabledForegroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(18),
                     ),
+                    elevation: 4,
                   ),
-                  child: const Text(
-                    'Annulla',
-                    style: TextStyle(
-                      color: _danger,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
+                  child: _isSaving
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : Text(
+                          widget.isEditing
+                              ? 'Salva modifiche'
+                              : 'Salva scadenza',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 30),
+                child: SizedBox(
+                  height: 54,
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.of(context).maybePop(),
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: const Color(0xFF501C26),
+                      side: const BorderSide(color: _danger, width: 2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                    ),
+                    child: const Text(
+                      'Annulla',
+                      style: TextStyle(
+                        color: _danger,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 24),
-          ],
+              const SizedBox(height: 24),
+            ],
+          ),
         ),
       ),
     );
@@ -310,17 +322,20 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
     }
 
     // Capture context-dependent values before any async gap
-    final casaId = widget.casaId?.isNotEmpty == true
-        ? widget.casaId!
-        : ActiveCasaScope.of(context).selectedCasaId ?? '';
+    final activeCasa = ActiveCasaScope.read(context);
     final cadenzaGiorni = _cadenzaFromFrequenza(_frequenza);
     final isRicorrente = cadenzaGiorni != null;
     final nome = _nomeController.text.trim();
     final descrizione = _descrizioneController.text.trim();
-    final dataIso = selectedDate.toIso8601String();
+    final dataIso = _payloadDate(selectedDate).toIso8601String();
 
     setState(() => _isSaving = true);
     try {
+      final casa = await ensureActiveCasaContext(
+        activeCasa,
+        preferredCasaId: widget.casaId,
+      );
+      final casaId = casa.id;
       if (widget.isEditing && widget.idScadenza != null) {
         await ApiProvider.scadenze.update(casaId, widget.idScadenza!, {
           'nome': nome,
@@ -364,6 +379,10 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
       default:
         return null;
     }
+  }
+
+  static DateTime _payloadDate(DateTime date) {
+    return DateTime.utc(date.year, date.month, date.day, 12);
   }
 
   void _clearNameErrorIfValid() {

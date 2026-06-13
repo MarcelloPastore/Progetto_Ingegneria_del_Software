@@ -77,7 +77,8 @@ class Turno {
       final id = nested['id'] ?? nested['idUtente'] ?? nested['userId'];
       if (id != null) return id.toString();
     }
-    final direct = raw['creatoreId'] ??
+    final direct =
+        raw['creatoreId'] ??
         raw['createdById'] ??
         raw['ownerId'] ??
         raw['idCreatore'];
@@ -88,13 +89,15 @@ class Turno {
   String get creatoreNome {
     final nested = raw['creatore'];
     if (nested is Map<String, dynamic>) {
-      final name = nested['username'] ??
+      final name =
+          nested['username'] ??
           nested['nome'] ??
           nested['name'] ??
           nested['email'];
       if (name != null) return name.toString();
     }
-    final direct = raw['creatoreNome'] ??
+    final direct =
+        raw['creatoreNome'] ??
         raw['createdByName'] ??
         raw['ownerName'] ??
         raw['nomeCreatore'];
@@ -110,17 +113,17 @@ class Turno {
   }
 
   String get assegnatarioId {
-    final value = raw['assegnatario'];
+    final value = raw['assegnatario'] ?? raw['assegnatarioCorrente'];
     if (value is Map<String, dynamic>) {
-      return value['id']?.toString() ?? '';
+      return (value['id'] ?? value['idUtente'] ?? value['userId'])
+              ?.toString() ??
+          '';
     }
-    return raw['assegnatarioCorrente']?.toString() ??
-        raw['responsabileId']?.toString() ??
-        '';
+    return value?.toString() ?? raw['responsabileId']?.toString() ?? '';
   }
 
   String get assegnatarioNome {
-    final value = raw['assegnatario'];
+    final value = raw['assegnatario'] ?? raw['assegnatarioCorrente'];
     if (value is Map<String, dynamic>) {
       return value['username']?.toString() ??
           value['nome']?.toString() ??
@@ -131,11 +134,36 @@ class Turno {
   }
 
   int get cadenzaGiorni {
-    final value = raw['cadenzaGiorni'];
+    final value =
+        raw['cadenzaGiorni'] ??
+        raw['cadenza'] ??
+        raw['frequenzaGiorni'] ??
+        raw['frequenza_giorni'] ??
+        raw['repeatEveryDays'];
     if (value is num) {
       return value.toInt();
     }
+    if (value is String) {
+      final parsed = int.tryParse(value);
+      if (parsed != null && parsed > 0) return parsed;
+      final lower = value.toLowerCase();
+      if (lower.contains('sett')) return 7;
+      if (lower.contains('quindic')) return 14;
+      if (lower.contains('mens')) return 30;
+      if (lower.contains('giorn')) return 1;
+    }
     return 1;
+  }
+
+  String get frequenzaLabel {
+    final giorni = cadenzaGiorni;
+    return switch (giorni) {
+      1 => 'Ogni giorno',
+      7 => 'Ogni settimana',
+      14 => 'Ogni 2 settimane',
+      30 => 'Ogni mese',
+      _ => 'Ogni $giorni giorni',
+    };
   }
 
   bool get completato {

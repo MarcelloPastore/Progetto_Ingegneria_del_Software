@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/services/session_manager.dart';
+import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 import 'package:coincasa_app/features/auth/screens/check_email_screen.dart';
@@ -319,8 +320,10 @@ class _GestioneAccountScreenState extends State<GestioneAccountScreen> {
     );
   }
 
-  void _handleLogout(BuildContext context) {
-    SessionManager.clear();
+  Future<void> _handleLogout(BuildContext context) async {
+    ActiveCasaScope.read(context).clear();
+    await SessionManager.clear();
+    if (!context.mounted) return;
     Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
   }
 }

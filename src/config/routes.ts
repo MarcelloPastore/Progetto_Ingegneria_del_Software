@@ -54,6 +54,7 @@ import {
   AggiornaStatoDto,
   AssegnaProblemaDto,
   CreaProblemaDto,
+  ModificaProblemaDto,
   ProblemaResponseDto,
 } from "../dto/ProblemaDto";
 import { RegisterData, PublicUser } from "../dto/auth.dto";
@@ -914,6 +915,20 @@ export function problemiRoutes(app: FastifyInstance) {
     problemaController.segnalaProblema,
   );
   /**
+   * @api  ModificaProblema
+   * @route PUT /case/:idCasa/problemi/:idProblema
+   *
+   * @summary Modifica nome, descrizione e priorità di un problema.
+   *
+   * @see {@link ModificaProblemaDto}
+   * @see {@link ProblemaResponseDto}
+   */
+  app.put<{ Params: ProblemaParams; Body: ModificaProblemaDto }>(
+    "/case/:idCasa/problemi/:idProblema",
+    { preHandler: requireRole(Ruolo.Inquilino) },
+    problemaController.modificaProblema,
+  );
+  /**
    * @api  EliminaProblema
    * @route DELETE /case/:idCasa/problemi/:idProblema
    *
@@ -942,6 +957,19 @@ export function problemiRoutes(app: FastifyInstance) {
     "/case/:idCasa/problemi/:idProblema/autoassegna",
     { preHandler: requireRole(Ruolo.Inquilino) },
     problemaController.autoassegnaProblema,
+  );
+  /**
+   * @api  RinunciaProblema
+   * @route PUT /case/:idCasa/problemi/:idProblema/rinuncia
+   *
+   * @summary Rimuove l'assegnazione dell'utente corrente dal problema.
+   *
+   * @see {@link ProblemaResponseDto}
+   */
+  app.put<{ Params: ProblemaParams }>(
+    "/case/:idCasa/problemi/:idProblema/rinuncia",
+    { preHandler: requireRole(Ruolo.Inquilino) },
+    problemaController.rinunciaProblema,
   );
   /**
    * @api  AssegnaProblema

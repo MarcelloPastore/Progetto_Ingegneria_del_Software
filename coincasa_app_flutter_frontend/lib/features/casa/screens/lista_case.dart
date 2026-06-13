@@ -4,9 +4,9 @@ import 'package:flutter/services.dart';
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
+import 'package:coincasa_app/core/state/active_casa_session.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
-import 'package:coincasa_app/core/services/session_manager.dart';
 import 'package:coincasa_app/features/casa/screens/compilazione_form_crea_casa.dart';
 import 'package:coincasa_app/features/casa/screens/entra_con_codice_invito_screen.dart';
 import 'package:coincasa_app/features/casa/screens/hub_casa_admin.dart';
@@ -81,22 +81,23 @@ class _ListaCaseScreenState extends State<ListaCaseScreen> {
                                     casa: casa,
                                     onTap: () async {
                                       try {
-                                        final ruolo =
-                                            await SessionManager.selectCasa(
-                                              casaId: casa.id,
-                                            );
-                                        if (context.mounted) {
-                                          ActiveCasaScope.read(context)
-                                              .setCasaContext(
-                                                casaId: casa.id,
-                                                ruolo: ruolo,
-                                              );
-                                        }
+                                        await ensureActiveCasaContext(
+                                          ActiveCasaScope.read(context),
+                                          caseUtente: caseUtente,
+                                          preferredCasaId: casa.id,
+                                        );
                                       } catch (_) {
-                                        if (context.mounted) {
-                                          ActiveCasaScope.read(context)
-                                              .selectCasa(casa.id);
-                                        }
+                                        if (!context.mounted) return;
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'Impossibile selezionare la casa. Riprova.',
+                                            ),
+                                          ),
+                                        );
+                                        return;
                                       }
                                       if (!context.mounted) return;
                                       Navigator.of(context).push(
@@ -142,7 +143,10 @@ class _ListaCaseScreenState extends State<ListaCaseScreen> {
                       ),
                     ),
                     const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 15, vertical: 16),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 15,
+                        vertical: 16,
+                      ),
                       child: _OrDivider(),
                     ),
                     Padding(

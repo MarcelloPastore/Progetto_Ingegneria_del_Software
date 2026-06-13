@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/problema.dart';
+import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
-import 'package:coincasa_app/features/problemi/screens/problemi_home_screen.dart';
 
 // ---------------------------------------------------------------------------
 // Form state
@@ -63,11 +64,13 @@ class _ModificaFormState {
 
 class _ModificaFormController extends StateNotifier<_ModificaFormState> {
   _ModificaFormController(Problema problema)
-      : super(_ModificaFormState(
+    : super(
+        _ModificaFormState(
           nome: problema.titolo,
           descrizione: (problema.raw['descrizione'] as String?) ?? '',
           priorita: _parsePriorita(problema.priorita),
-        ));
+        ),
+      );
 
   static _Priorita? _parsePriorita(String value) {
     final lower = value.toLowerCase();
@@ -77,11 +80,18 @@ class _ModificaFormController extends StateNotifier<_ModificaFormState> {
     return null;
   }
 
-  void setNome(String v) => state = state.copyWith(nome: v, clearSubmitError: true);
-  void setDescrizione(String v) => state = state.copyWith(descrizione: v, clearSubmitError: true);
-  void setPriorita(_Priorita v) => state = state.copyWith(priorita: v, clearSubmitError: true);
+  void setNome(String v) =>
+      state = state.copyWith(nome: v, clearSubmitError: true);
+  void setDescrizione(String v) =>
+      state = state.copyWith(descrizione: v, clearSubmitError: true);
+  void setPriorita(_Priorita v) =>
+      state = state.copyWith(priorita: v, clearSubmitError: true);
   void setSubmitting(bool v) => state = state.copyWith(isSubmitting: v);
-  void setSubmitError(String msg) => state = state.copyWith(isSubmitting: false, submitError: msg, showErrors: true);
+  void setSubmitError(String msg) => state = state.copyWith(
+    isSubmitting: false,
+    submitError: msg,
+    showErrors: true,
+  );
 
   bool validate() {
     state = state.copyWith(showErrors: true, clearSubmitError: true);
@@ -89,10 +99,10 @@ class _ModificaFormController extends StateNotifier<_ModificaFormState> {
   }
 }
 
-final _modificaFormProvider =
-    StateNotifierProvider.autoDispose.family<_ModificaFormController, _ModificaFormState, Problema>(
-  (ref, problema) => _ModificaFormController(problema),
-);
+final _modificaFormProvider = StateNotifierProvider.autoDispose
+    .family<_ModificaFormController, _ModificaFormState, Problema>(
+      (ref, problema) => _ModificaFormController(problema),
+    );
 
 // ---------------------------------------------------------------------------
 // Screen
@@ -104,10 +114,12 @@ class ModificaProblemaScreen extends ConsumerStatefulWidget {
   static const String routeName = '/problemi/modifica';
 
   @override
-  ConsumerState<ModificaProblemaScreen> createState() => _ModificaProblemaScreenState();
+  ConsumerState<ModificaProblemaScreen> createState() =>
+      _ModificaProblemaScreenState();
 }
 
-class _ModificaProblemaScreenState extends ConsumerState<ModificaProblemaScreen> {
+class _ModificaProblemaScreenState
+    extends ConsumerState<ModificaProblemaScreen> {
   final _nomeCtrl = TextEditingController();
   final _descrCtrl = TextEditingController();
   bool _initialized = false;
@@ -123,7 +135,13 @@ class _ModificaProblemaScreenState extends ConsumerState<ModificaProblemaScreen>
     if (args is Problema) {
       _problema = args;
     } else {
-      _problema = Problema(id: '', titolo: '', stato: 'Segnalato', priorita: 'Media', raw: {});
+      _problema = Problema(
+        id: '',
+        titolo: '',
+        stato: 'Segnalato',
+        priorita: 'Media',
+        raw: {},
+      );
     }
 
     _nomeCtrl.text = _problema.titolo;
@@ -145,7 +163,6 @@ class _ModificaProblemaScreenState extends ConsumerState<ModificaProblemaScreen>
     if (!controller.validate()) return;
 
     controller.setSubmitting(true);
-    await Future.delayed(const Duration(milliseconds: 600));
 
     final prioritaStr = switch (form.priorita!) {
       _Priorita.urgent => 'Urgente',
@@ -153,21 +170,19 @@ class _ModificaProblemaScreenState extends ConsumerState<ModificaProblemaScreen>
       _Priorita.low => 'Bassa',
     };
 
-    final index = mockProblemi.indexWhere((p) => p.id == _problema.id);
-    if (index != -1) {
-      mockProblemi[index] = Problema(
-        id: _problema.id,
-        titolo: form.nome.trim(),
-        stato: _problema.stato,
-        priorita: prioritaStr,
-        raw: Map<String, dynamic>.from(_problema.raw)
-          ..['descrizione'] = form.descrizione.trim(),
-      );
-    }
+    try {
+      final casaId = ActiveCasaScope.read(context).selectedCasaId ?? '';
+      final updated = await ApiProvider.problemi.update(casaId, _problema.id, {
+        'nome': form.nome.trim(),
+        'descrizione': form.descrizione.trim(),
+        'priorita': prioritaStr,
+      });
 
-    if (mounted) {
+      if (!mounted) return;
       controller.setSubmitting(false);
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(updated);
+    } catch (_) {
+      controller.setSubmitError('Impossibile salvare le modifiche. Riprova.');
     }
   }
 
@@ -197,22 +212,24 @@ class _ModificaProblemaScreenState extends ConsumerState<ModificaProblemaScreen>
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Header back
-                  Row(children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                      color: AppColors.brandAccent,
-                      iconSize: 20,
-                      onPressed: () => Navigator.of(context).maybePop(),
-                    ),
-                    Text(
-                      'Problemi',
-                      style: AppTextStyles.screenTitleStrong.copyWith(
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back_ios_new_rounded),
                         color: AppColors.brandAccent,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
+                        iconSize: 20,
+                        onPressed: () => Navigator.of(context).maybePop(),
                       ),
-                    ),
-                  ]),
+                      Text(
+                        'Problemi',
+                        style: AppTextStyles.screenTitleStrong.copyWith(
+                          color: AppColors.brandAccent,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: AppSizes.p16),
 
                   // Title
@@ -257,55 +274,64 @@ class _ModificaProblemaScreenState extends ConsumerState<ModificaProblemaScreen>
                     ),
                   ),
                   const SizedBox(height: AppSizes.p10),
-                  Row(children: [
-                    Expanded(
-                      child: _PriorityChip(
-                        label: 'Urgente',
-                        bgColor: const Color(0xFF710002),
-                        dotColor: AppColors.problemPriorityUrgent,
-                        selected: form.priorita == _Priorita.urgent,
-                        onTap: () => ctrl.setPriorita(_Priorita.urgent),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _PriorityChip(
+                          label: 'Urgente',
+                          bgColor: const Color(0xFF710002),
+                          dotColor: AppColors.problemPriorityUrgent,
+                          selected: form.priorita == _Priorita.urgent,
+                          onTap: () => ctrl.setPriorita(_Priorita.urgent),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: AppSizes.p8),
-                    Expanded(
-                      child: _PriorityChip(
-                        label: 'Media',
-                        bgColor: const Color(0xFF7E3B00),
-                        dotColor: AppColors.problemPriorityMedium,
-                        selected: form.priorita == _Priorita.medium,
-                        onTap: () => ctrl.setPriorita(_Priorita.medium),
+                      const SizedBox(width: AppSizes.p8),
+                      Expanded(
+                        child: _PriorityChip(
+                          label: 'Media',
+                          bgColor: const Color(0xFF7E3B00),
+                          dotColor: AppColors.problemPriorityMedium,
+                          selected: form.priorita == _Priorita.medium,
+                          onTap: () => ctrl.setPriorita(_Priorita.medium),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: AppSizes.p8),
-                    Expanded(
-                      child: _PriorityChip(
-                        label: 'Bassa',
-                        bgColor: const Color(0xFF786000),
-                        dotColor: AppColors.problemPriorityLow,
-                        selected: form.priorita == _Priorita.low,
-                        onTap: () => ctrl.setPriorita(_Priorita.low),
+                      const SizedBox(width: AppSizes.p8),
+                      Expanded(
+                        child: _PriorityChip(
+                          label: 'Bassa',
+                          bgColor: const Color(0xFF786000),
+                          dotColor: AppColors.problemPriorityLow,
+                          selected: form.priorita == _Priorita.low,
+                          onTap: () => ctrl.setPriorita(_Priorita.low),
+                        ),
                       ),
-                    ),
-                  ]),
+                    ],
+                  ),
 
                   // Error banner
                   if (form.showErrors && !form.canSubmit) ...[
                     const SizedBox(height: AppSizes.p14),
-                    Row(children: [
-                      const Icon(Icons.error_rounded, color: AppColors.errorStrong, size: 20),
-                      const SizedBox(width: AppSizes.p6),
-                      Expanded(
-                        child: Text(
-                          form.submitError ?? 'Dati mancanti: compila i campi necessari',
-                          style: AppTextStyles.error.copyWith(
-                            color: AppColors.errorStrong,
-                            fontSize: 14,
-                            fontStyle: FontStyle.italic,
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.error_rounded,
+                          color: AppColors.errorStrong,
+                          size: 20,
+                        ),
+                        const SizedBox(width: AppSizes.p6),
+                        Expanded(
+                          child: Text(
+                            form.submitError ??
+                                'Dati mancanti: compila i campi necessari',
+                            style: AppTextStyles.error.copyWith(
+                              color: AppColors.errorStrong,
+                              fontSize: 14,
+                              fontStyle: FontStyle.italic,
+                            ),
                           ),
                         ),
-                      ),
-                    ]),
+                      ],
+                    ),
                   ],
 
                   const SizedBox(height: AppSizes.p28),
@@ -326,7 +352,9 @@ class _ModificaProblemaScreenState extends ConsumerState<ModificaProblemaScreen>
                   const SizedBox(height: AppSizes.p12),
 
                   // Annulla
-                  _CancelButton(onPressed: () => Navigator.of(context).maybePop()),
+                  _CancelButton(
+                    onPressed: () => Navigator.of(context).maybePop(),
+                  ),
                 ],
               ),
             ),
@@ -360,7 +388,9 @@ class _FormTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borderColor = hasError ? AppColors.errorStrong : AppColors.primaryBorder;
+    final borderColor = hasError
+        ? AppColors.errorStrong
+        : AppColors.primaryBorder;
     return Stack(
       children: [
         TextField(
@@ -395,7 +425,14 @@ class _FormTextField extends StatelessWidget {
           Positioned(
             top: AppSizes.p10,
             right: AppSizes.p12,
-            child: Text('*', style: TextStyle(color: AppColors.errorStrong, fontSize: 22, fontWeight: FontWeight.w800)),
+            child: Text(
+              '*',
+              style: TextStyle(
+                color: AppColors.errorStrong,
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
           ),
       ],
     );
@@ -444,7 +481,9 @@ class _PriorityChip extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: selected ? Colors.black.withValues(alpha: 0.45) : AppColors.shadowStrong,
+              color: selected
+                  ? Colors.black.withValues(alpha: 0.45)
+                  : AppColors.shadowStrong,
               blurRadius: selected ? 8 : 6,
               offset: Offset(0, selected ? 4 : 3),
             ),
@@ -517,7 +556,9 @@ class _SubmitButton extends StatelessWidget {
                         height: 22,
                         child: CircularProgressIndicator(
                           strokeWidth: 2.5,
-                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.textOnDark),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            AppColors.textOnDark,
+                          ),
                         ),
                       )
                     : Text(
@@ -554,7 +595,10 @@ class _CancelButton extends StatelessWidget {
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(AppSizes.radius15),
-              border: Border.all(color: AppColors.error.withValues(alpha: 0.7), width: 2),
+              border: Border.all(
+                color: AppColors.error.withValues(alpha: 0.7),
+                width: 2,
+              ),
             ),
             alignment: Alignment.center,
             child: Text(

@@ -203,7 +203,8 @@ class _InserisciSpesaScreenState extends ConsumerState<InserisciSpesaScreen> {
                         Expanded(
                           child: SpesaFormDescrizioneField(
                             controller: _descCtrl,
-                            hasError: form.showErrors &&
+                            hasError:
+                                form.showErrors &&
                                 form.descrizione.trim().isEmpty,
                             onChanged: controller.setDescrizione,
                           ),
@@ -220,7 +221,8 @@ class _InserisciSpesaScreenState extends ConsumerState<InserisciSpesaScreen> {
                         selectedIds: form.selectedInquiliniIds,
                         lockedId: form.currentUserId,
                         importo: form.importo,
-                        showError: form.showErrors &&
+                        showError:
+                            form.showErrors &&
                             form.selectedInquiliniIds.isEmpty,
                         onSelected: controller.toggleInquilino,
                       ),
@@ -235,7 +237,8 @@ class _InserisciSpesaScreenState extends ConsumerState<InserisciSpesaScreen> {
                           selectedIds: form.selectedInquiliniIds,
                           lockedId: currentUserId,
                           importo: form.importo,
-                          showError: form.showErrors &&
+                          showError:
+                              form.showErrors &&
                               form.selectedInquiliniIds.isEmpty,
                           onSelected: controller.toggleInquilino,
                         );
@@ -402,7 +405,6 @@ class _InserisciSpesaPopupContentState
     final casaAsync = ref.watch(
       speseCreateCasaProvider(activeCasaController.selectedCasaId),
     );
-    final isAdmin = activeCasaController.isHomeAdmin;
     final inquiliniAsync = casaAsync.when(
       data: (casa) => ref.watch(speseCreateInquiliniProvider(casa?.id)),
       loading: () => const AsyncValue<List<Inquilino>>.loading(),
@@ -476,7 +478,9 @@ class _InserisciSpesaPopupContentState
         ),
         const SizedBox(height: 8),
         FabCancelButton(
-          onPressed: form.isSubmitting ? null : () => Navigator.of(context).pop(),
+          onPressed: form.isSubmitting
+              ? null
+              : () => Navigator.of(context).pop(),
         ),
       ],
     );
@@ -691,10 +695,7 @@ class _PopupInquilinoCheckbox extends StatelessWidget {
                 backgroundColor: _avatarColor(inquilino.id),
                 radius: 19,
                 child: Text(
-                  resolveUserInitials(
-                    displayName: name,
-                    fallback: '?',
-                  ),
+                  resolveUserInitials(displayName: name, fallback: '?'),
                   style: const TextStyle(
                     color: AppColors.textOnDark,
                     fontWeight: FontWeight.bold,
@@ -710,9 +711,9 @@ class _PopupInquilinoCheckbox extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
                   style: AppTextStyles.screenTitleStrong.copyWith(
-                    color: const Color(0xFF7A7490).withValues(
-                      alpha: isCurrentUser ? 0.5 : 1.0,
-                    ),
+                    color: const Color(
+                      0xFF7A7490,
+                    ).withValues(alpha: isCurrentUser ? 0.5 : 1.0),
                     fontSize: 13,
                   ),
                 ),
@@ -934,18 +935,18 @@ class _SpesaCreateFormState {
 // Form Controller
 // ---------------------------------------------------------------------------
 
-class _SpesaCreateFormController
-    extends StateNotifier<_SpesaCreateFormState> {
+class _SpesaCreateFormController extends StateNotifier<_SpesaCreateFormState> {
   _SpesaCreateFormController() : super(_SpesaCreateFormState());
 
-  void setImporto(String v) => state = state.copyWith(importo: v, submitError: '');
-  void setDescrizione(String v) => state = state.copyWith(descrizione: v, submitError: '');
+  void setImporto(String v) =>
+      state = state.copyWith(importo: v, submitError: '');
+  void setDescrizione(String v) =>
+      state = state.copyWith(descrizione: v, submitError: '');
   void setDataSpesa(DateTime v) => state = state.copyWith(dataSpesa: v);
   void clearDataSpesa() => state = state.copyWith(clearDataSpesa: true);
   void setHoAnticipatoPerTutti(bool v) =>
       state = state.copyWith(hoAnticipatoPerTutti: v);
-  void setSpesaRicorrente(bool v) =>
-      state = state.copyWith(spesaRicorrente: v);
+  void setSpesaRicorrente(bool v) => state = state.copyWith(spesaRicorrente: v);
   void setFrequenza(String v) => state = state.copyWith(frequenza: v);
 
   void toggleInquilino(String id) {
@@ -962,8 +963,7 @@ class _SpesaCreateFormController
 
   void ensureSelected(String? id) {
     if (id == null || id.isEmpty) return;
-    if (state.selectedInquiliniIds.contains(id) &&
-        state.currentUserId == id) {
+    if (state.selectedInquiliniIds.contains(id) && state.currentUserId == id) {
       return;
     }
     state = state.copyWith(
@@ -986,8 +986,11 @@ class _SpesaCreateFormController
   }
 
   void setSubmitting(bool v) => state = state.copyWith(isSubmitting: v);
-  void setSubmitError(String e) =>
-      state = state.copyWith(submitError: e, showErrors: true, isSubmitting: false);
+  void setSubmitError(String e) => state = state.copyWith(
+    submitError: e,
+    showErrors: true,
+    isSubmitting: false,
+  );
 }
 
 class _ImportoCard extends StatefulWidget {
@@ -1008,12 +1011,18 @@ class _ImportoCard extends StatefulWidget {
 class _ImportoCardState extends State<_ImportoCard> {
   late final TextEditingController _ctrl;
   late final FocusNode _focus;
+  bool _hasFocus = false;
 
   @override
   void initState() {
     super.initState();
     _ctrl = TextEditingController(text: widget.value);
     _focus = FocusNode();
+    _focus.addListener(() {
+      if (mounted) {
+        setState(() => _hasFocus = _focus.hasFocus);
+      }
+    });
   }
 
   @override
@@ -1021,8 +1030,7 @@ class _ImportoCardState extends State<_ImportoCard> {
     super.didUpdateWidget(old);
     if (widget.value != _ctrl.text) {
       _ctrl.text = widget.value;
-      _ctrl.selection =
-          TextSelection.collapsed(offset: _ctrl.text.length);
+      _ctrl.selection = TextSelection.collapsed(offset: _ctrl.text.length);
     }
   }
 
@@ -1033,68 +1041,86 @@ class _ImportoCardState extends State<_ImportoCard> {
     super.dispose();
   }
 
-  String get _displayAmount {
-    final raw = widget.value.trim().replaceAll(',', '.');
-    final n = double.tryParse(raw);
-    if (n == null || n == 0) return '€ 0,00';
-    return '€ ${n.toStringAsFixed(2).replaceAll('.', ',')}';
-  }
-
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () => _focus.requestFocus(),
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
         padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
         decoration: BoxDecoration(
-          color: AppColors.surfaceDarkElevated,
+          color: _hasFocus
+              ? AppColors.surfaceDarkElevated.withValues(alpha: 0.92)
+              : AppColors.surfaceDarkElevated,
           borderRadius: BorderRadius.circular(AppSizes.radius8),
           border: Border.all(
             color: widget.hasError
                 ? AppColors.statusNegative
+                : _hasFocus
+                ? AppColors.brandAccent
                 : Colors.transparent,
-            width: 1.5,
+            width: _hasFocus ? 2 : 1.5,
           ),
+          boxShadow: _hasFocus
+              ? [
+                  BoxShadow(
+                    color: AppColors.brandAccent.withValues(alpha: 0.22),
+                    blurRadius: 14,
+                    offset: const Offset(0, 6),
+                  ),
+                ]
+              : const [],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Importo',
+            AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 180),
               style: TextStyle(
-                color: AppColors.textOnDark.withValues(alpha: 0.55),
-                fontSize: 12,
+                color: _hasFocus
+                    ? AppColors.brandAccent
+                    : AppColors.textOnDark.withValues(alpha: 0.55),
+                fontSize: _hasFocus ? 13 : 12,
                 fontFamily: 'Inter',
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
               ),
+              child: Text(_hasFocus ? 'Importo - scrivi ora' : 'Importo'),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 4),
             Row(
               children: [
                 Expanded(
-                  child: Text(
-                    _displayAmount,
-                    style: AppTextStyles.screenTitleStrong.copyWith(
-                      color: AppColors.textOnDark,
-                      fontSize: 26,
-                      fontWeight: FontWeight.w800,
-                    ),
-                    textAlign: TextAlign.right,
-                  ),
-                ),
-                // TextField invisibile per catturare l'input
-                SizedBox(
-                  width: 0,
-                  height: 0,
                   child: TextField(
                     controller: _ctrl,
                     focusNode: _focus,
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
+                    textAlign: TextAlign.right,
+                    cursorColor: AppColors.brandAccent,
                     onChanged: widget.onChanged,
-                    style: const TextStyle(fontSize: 1, color: Colors.transparent),
-                    decoration: const InputDecoration(border: InputBorder.none),
+                    style: AppTextStyles.screenTitleStrong.copyWith(
+                      color: AppColors.textOnDark,
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                    ),
+                    decoration: InputDecoration(
+                      isDense: true,
+                      border: InputBorder.none,
+                      hintText: '0,00',
+                      prefixText: '€ ',
+                      prefixStyle: AppTextStyles.screenTitleStrong.copyWith(
+                        color: AppColors.textOnDark,
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                      ),
+                      hintStyle: AppTextStyles.screenTitleStrong.copyWith(
+                        color: AppColors.textOnDark.withValues(alpha: 0.34),
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -1139,8 +1165,7 @@ class _DescrizioneFieldState extends State<_DescrizioneField> {
     super.didUpdateWidget(old);
     if (widget.value != _ctrl.text) {
       _ctrl.text = widget.value;
-      _ctrl.selection =
-          TextSelection.collapsed(offset: _ctrl.text.length);
+      _ctrl.selection = TextSelection.collapsed(offset: _ctrl.text.length);
     }
   }
 
@@ -1188,8 +1213,7 @@ class _DescrizioneFieldState extends State<_DescrizioneField> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSizes.radius8),
-          borderSide:
-              const BorderSide(color: AppColors.brandAccent, width: 2),
+          borderSide: const BorderSide(color: AppColors.brandAccent, width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 12,
@@ -1221,10 +1245,7 @@ class _DivisioneLoading extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _FrequencyDropdown extends StatelessWidget {
-  const _FrequencyDropdown({
-    required this.value,
-    required this.onChanged,
-  });
+  const _FrequencyDropdown({required this.value, required this.onChanged});
 
   final String value;
   final ValueChanged<String> onChanged;
@@ -1305,8 +1326,11 @@ class _ErrorLine extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const Icon(Icons.warning_rounded,
-            color: AppColors.statusNegative, size: 18),
+        const Icon(
+          Icons.warning_rounded,
+          color: AppColors.statusNegative,
+          size: 18,
+        ),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
@@ -1343,8 +1367,7 @@ class _SpesaAggiuntaDialog extends StatelessWidget {
   final String anticipatoreNome;
   final VoidCallback onTornaAlleSpese;
 
-  String _fmt(double v) =>
-      '€ ${v.toStringAsFixed(2).replaceAll('.', ',')}';
+  String _fmt(double v) => '€ ${v.toStringAsFixed(2).replaceAll('.', ',')}';
 
   @override
   Widget build(BuildContext context) {
@@ -1404,10 +1427,7 @@ class _SpesaAggiuntaDialog extends StatelessWidget {
                 children: [
                   _SummaryRow(label: 'Totale', value: _fmt(importo)),
                   const Divider(height: 1, color: Color(0xFF2E2A42)),
-                  _SummaryRow(
-                    label: 'Quota per persona',
-                    value: _fmt(quota),
-                  ),
+                  _SummaryRow(label: 'Quota per persona', value: _fmt(quota)),
                   if (haAnticipato) ...[
                     const Divider(height: 1, color: Color(0xFF2E2A42)),
                     _SummaryRow(

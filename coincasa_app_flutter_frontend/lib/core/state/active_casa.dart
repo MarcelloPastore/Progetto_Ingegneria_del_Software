@@ -1,50 +1,85 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:coincasa_app/core/models/casa.dart';
 
-class ActiveCasaController extends ChangeNotifier {
-  String? _selectedCasaId;
-  String? _ruoloCasa;
+@immutable
+class ActiveCasaState {
+  const ActiveCasaState({
+    this.selectedCasaId,
+    this.ruoloCasa,
+    this.selectedCasa,
+  });
 
-  /// Casa completa attualmente selezionata, disponibile dopo la prima
-  /// chiamata a [resolveCasa]. Consente lettura sincrona del ruolo.
-  Casa? _selectedCasa;
+  final String? selectedCasaId;
+  final String? ruoloCasa;
+  final Casa? selectedCasa;
 
-  String? get selectedCasaId => _selectedCasaId;
+  bool get isHomeAdmin => ruoloCasa == 'HomeAdmin' || ruoloCasa == 'SysAdmin';
 
-  /// Restituisce la [Casa] correntemente selezionata, se già nota.
-  Casa? get selectedCasa => _selectedCasa;
+  ActiveCasaState copyWith({
+    String? selectedCasaId,
+    String? ruoloCasa,
+    Casa? selectedCasa,
+    bool clearRuoloCasa = false,
+    bool clearSelectedCasa = false,
+  }) {
+    return ActiveCasaState(
+      selectedCasaId: selectedCasaId ?? this.selectedCasaId,
+      ruoloCasa: clearRuoloCasa ? null : ruoloCasa ?? this.ruoloCasa,
+      selectedCasa: clearSelectedCasa
+          ? null
+          : selectedCasa ?? this.selectedCasa,
+    );
+  }
+}
 
-  /// Ruolo JWT dell'utente nella casa attiva ('HomeAdmin', 'Inquilino', …).
-  String? get ruoloCasa => _ruoloCasa;
+final activeCasaProvider = StateProvider<ActiveCasaState>(
+  (ref) => const ActiveCasaState(),
+);
 
-  /// true se il token corrente concede ruolo HomeAdmin (o superiore).
-  bool get isHomeAdmin =>
-      _ruoloCasa == 'HomeAdmin' || _ruoloCasa == 'SysAdmin';
+class ActiveCasaController {
+  ActiveCasaController(this._container);
 
-  /// Aggiorna la casa attiva e il ruolo estratto dal JWT in un'unica
-  /// notifica. Chiamato dopo ogni [SessionManager.selectCasa].
+  final ProviderContainer _container;
+
+  ActiveCasaState get _state => _container.read(activeCasaProvider);
+
+  String? get selectedCasaId => _state.selectedCasaId;
+
+  Casa? get selectedCasa => _state.selectedCasa;
+
+  String? get ruoloCasa => _state.ruoloCasa;
+
+  bool get isHomeAdmin => _state.isHomeAdmin;
+
+  void clear() {
+    _container.read(activeCasaProvider.notifier).state =
+        const ActiveCasaState();
+  }
+
   void setCasaContext({required String casaId, required String ruolo}) {
-    final ruoloNorm = ruolo.trim().isEmpty ? null : ruolo.trim();
-    final changed = _selectedCasaId != casaId || _ruoloCasa != ruoloNorm;
-    _selectedCasaId = casaId;
-    _ruoloCasa = ruoloNorm;
-    if (_selectedCasa?.id != casaId) _selectedCasa = null;
-    if (changed) notifyListeners();
+    final normalizedCasaId = casaId.trim();
+    final normalizedRuolo = ruolo.trim();
+    final current = _state;
+
+    _container.read(activeCasaProvider.notifier).state = ActiveCasaState(
+      selectedCasaId: normalizedCasaId.isEmpty ? null : normalizedCasaId,
+      ruoloCasa: normalizedRuolo.isEmpty ? null : normalizedRuolo,
+      selectedCasa: current.selectedCasa?.id == normalizedCasaId
+          ? current.selectedCasa
+          : null,
+    );
   }
 
   void selectCasa(String casaId) {
-    if (_selectedCasaId == casaId) {
-      return;
-    }
+    final normalizedCasaId = casaId.trim();
+    final current = _state;
+    if (current.selectedCasaId == normalizedCasaId) return;
 
-    _selectedCasaId = casaId;
-    _ruoloCasa = null;
-    // Invalida la Casa in cache perché l'id è cambiato.
-    if (_selectedCasa?.id != casaId) {
-      _selectedCasa = null;
-    }
-    notifyListeners();
+    _container.read(activeCasaProvider.notifier).state = ActiveCasaState(
+      selectedCasaId: normalizedCasaId.isEmpty ? null : normalizedCasaId,
+    );
   }
 
   Casa resolveCasa(List<Casa> caseUtente) {
@@ -52,36 +87,51 @@ class ActiveCasaController extends ChangeNotifier {
       throw StateError('Nessuna casa disponibile.');
     }
 
+    final current = _state;
     final selected = caseUtente.firstWhere(
-      (casa) => casa.id == _selectedCasaId,
+      (casa) => casa.id == current.selectedCasaId,
       orElse: () => caseUtente.first,
     );
-    _selectedCasaId = selected.id;
-    _selectedCasa = selected;
+
+    _container.read(activeCasaProvider.notifier).state = current.copyWith(
+      selectedCasaId: selected.id,
+      selectedCasa: selected,
+    );
 
     return selected;
   }
 }
 
-class ActiveCasaScope extends InheritedNotifier<ActiveCasaController> {
-  const ActiveCasaScope({
-    super.key,
-    required ActiveCasaController controller,
-    required super.child,
-  }) : super(notifier: controller);
+class ActiveCasaScope extends ConsumerWidget {
+  const ActiveCasaScope({super.key, required this.child});
+
+  final Widget child;
 
   static ActiveCasaController of(BuildContext context) {
-    final scope = context
-        .dependOnInheritedWidgetOfExactType<ActiveCasaScope>();
-    assert(scope != null, 'ActiveCasaScope non trovato nel widget tree.');
-    return scope!.notifier!;
+    context.dependOnInheritedWidgetOfExactType<_ActiveCasaInherited>();
+    final container = ProviderScope.containerOf(context);
+    return ActiveCasaController(container);
   }
 
   static ActiveCasaController read(BuildContext context) {
-    final element = context
-        .getElementForInheritedWidgetOfExactType<ActiveCasaScope>();
-    final scope = element?.widget as ActiveCasaScope?;
-    assert(scope != null, 'ActiveCasaScope non trovato nel widget tree.');
-    return scope!.notifier!;
+    final container = ProviderScope.containerOf(context, listen: false);
+    return ActiveCasaController(container);
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(activeCasaProvider);
+    return _ActiveCasaInherited(state: state, child: child);
+  }
+}
+
+class _ActiveCasaInherited extends InheritedWidget {
+  const _ActiveCasaInherited({required this.state, required super.child});
+
+  final ActiveCasaState state;
+
+  @override
+  bool updateShouldNotify(_ActiveCasaInherited oldWidget) {
+    return state != oldWidget.state;
   }
 }

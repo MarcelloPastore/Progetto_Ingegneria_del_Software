@@ -10,6 +10,8 @@ import {
   AssegnaProblemaSchema,
   CreaProblemaDto,
   CreaProblemaSchema,
+  ModificaProblemaDto,
+  ModificaProblemaSchema,
 } from "../dto/ProblemaDto";
 import { sendErrorReply } from "../utils/errorReply";
 
@@ -105,6 +107,50 @@ export class ProblemaController {
         request.params.idProblema,
       );
       return reply.status(204).send();
+    } catch (error) {
+      return this.handleFailure(reply, error);
+    }
+  };
+
+  /**
+   * PUT /case/:idCasa/problemi/:idProblema
+   */
+  modificaProblema = async (
+    request: FastifyRequest<{
+      Params: ProblemaParams;
+      Body: ModificaProblemaDto;
+    }>,
+    reply: FastifyReply,
+  ) => {
+    try {
+      const dto = ModificaProblemaSchema.parse(request.body);
+      const problema = await this.problemiService.modificaProblema(
+        request.params.idCasa,
+        request.params.idProblema,
+        dto,
+        request.user.idUtente,
+        request.user.ruoloCasa,
+      );
+      return reply.status(200).send(problema);
+    } catch (error) {
+      return this.handleFailure(reply, error);
+    }
+  };
+
+  /**
+   * PUT /case/:idCasa/problemi/:idProblema/rinuncia
+   */
+  rinunciaProblema = async (
+    request: FastifyRequest<{ Params: ProblemaParams }>,
+    reply: FastifyReply,
+  ) => {
+    try {
+      const problema = await this.problemiService.rinunciaProblema(
+        request.params.idCasa,
+        request.params.idProblema,
+        request.user.idUtente,
+      );
+      return reply.status(200).send(problema);
     } catch (error) {
       return this.handleFailure(reply, error);
     }

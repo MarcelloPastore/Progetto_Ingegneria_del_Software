@@ -6,6 +6,7 @@ import 'package:coincasa_app/core/models/scadenza.dart';
 import 'package:coincasa_app/core/models/spesa.dart';
 import 'package:coincasa_app/core/models/turno.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
+import 'package:coincasa_app/core/state/active_casa_session.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
@@ -115,7 +116,10 @@ class _ListaScadenzeState extends State<ListaScadenze> {
     final activeCasa = ActiveCasaScope.read(context);
     final caseUtente = await ApiProvider.casa.list();
     if (caseUtente.isEmpty) throw Exception('Nessuna casa trovata');
-    final casa = activeCasa.resolveCasa(caseUtente);
+    final casa = await ensureActiveCasaContext(
+      activeCasa,
+      caseUtente: caseUtente,
+    );
 
     final results = await Future.wait([
       ApiProvider.turni.list(casa.id),
@@ -267,10 +271,7 @@ class _ListaScadenzeState extends State<ListaScadenze> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                _Legend(
-                  activeFilters: _activeFilters,
-                  onToggle: _toggleFilter,
-                ),
+                _Legend(activeFilters: _activeFilters, onToggle: _toggleFilter),
                 const SizedBox(height: 12),
                 Expanded(
                   child: FutureBuilder<_ScadenzeData>(
@@ -390,20 +391,22 @@ class _ListaScadenzeState extends State<ListaScadenze> {
         ).pushNamed(DettaglioSpesaAdminScreen.routeName, arguments: s.spesa);
       case ScadenzaTipo.scadenza:
         final activeCasa = ActiveCasaScope.of(context);
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => DettaglioScadenzaAdminScreen(
-              titolo: s.title,
-              descrizione: s.subtitle,
-              dataScadenza: s.sortDate,
-              stato: s.badgeText,
-              frequenza: s.frequenza,
-              isAdmin: activeCasa.isHomeAdmin,
-              idScadenza: s.scadenzaObj?.id,
-              casaId: activeCasa.selectedCasaId,
-            ),
-          ),
-        ).then((_) => _refresh());
+        Navigator.of(context)
+            .push(
+              MaterialPageRoute(
+                builder: (_) => DettaglioScadenzaAdminScreen(
+                  titolo: s.title,
+                  descrizione: s.subtitle,
+                  dataScadenza: s.sortDate,
+                  stato: s.badgeText,
+                  frequenza: s.frequenza,
+                  isAdmin: activeCasa.isHomeAdmin,
+                  idScadenza: s.scadenzaObj?.id,
+                  casaId: activeCasa.selectedCasaId,
+                ),
+              ),
+            )
+            .then((_) => _refresh());
     }
   }
 
@@ -656,9 +659,7 @@ class _LegendDot extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
-            color: active
-                ? color.withValues(alpha: 0.12)
-                : Colors.transparent,
+            color: active ? color.withValues(alpha: 0.12) : Colors.transparent,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: active ? color.withValues(alpha: 0.5) : Colors.transparent,

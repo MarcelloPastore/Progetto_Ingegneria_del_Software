@@ -1,53 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/problema.dart';
+import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/features/problemi/screens/problema_dettaglio_dashboard_screen.dart';
 
-final _mockProblemi = [
-  Problema(
-    id: 'dash-1',
-    titolo: 'Lavatrice non funziona',
-    stato: 'Assegnato',
-    priorita: 'Urgente',
-    raw: {
-      'segnalatoDa': 'Francesco P.',
-      'segnalatoData': '18 apr',
-      'assegnatarioNome': 'Francesco P.',
-      'descrizione': 'La lavatrice si blocca a metà ciclo e fa un rumore strano alla centrifuga.',
-    },
-  ),
-  Problema(
-    id: 'dash-2',
-    titolo: 'Perdita rubinetto bagno',
-    stato: 'Segnalato',
-    priorita: 'Media',
-    raw: {
-      'segnalatoDa': 'Anna L.',
-      'segnalatoData': '20 apr',
-      'descrizione': 'Il rubinetto del bagno perde lentamente, bisogna stringere il raccordo.',
-    },
-  ),
-  Problema(
-    id: 'dash-3',
-    titolo: 'Plafoniera corridoio fulminata',
-    stato: 'Segnalato',
-    priorita: 'Bassa',
-    raw: {
-      'segnalatoDa': 'Marco C.',
-      'segnalatoData': '21 apr',
-      'descrizione': 'La luce del corridoio non si accende, probabilmente la plafoniera è fulminata.',
-    },
-  ),
-];
+final _openProblemsProvider = FutureProvider.autoDispose
+    .family<List<Problema>, String?>((ref, casaId) {
+      if (casaId == null || casaId.isEmpty) return const [];
+      return ApiProvider.problemi.listNonRisolti(casaId);
+    });
 
-const _initials = ['FP', 'AL', 'MC'];
-
-class OpenProblemsSection extends StatelessWidget {
+class OpenProblemsSection extends ConsumerWidget {
   const OpenProblemsSection({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final casaId = ref.watch(
+      activeCasaProvider.select((state) => state.selectedCasaId),
+    );
+    final problemiAsync = ref.watch(_openProblemsProvider(casaId));
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -67,25 +42,63 @@ class OpenProblemsSection extends StatelessWidget {
             color: AppColors.surfaceDarkElevated,
             borderRadius: BorderRadius.circular(AppSizes.radius24),
             boxShadow: const [
-              BoxShadow(color: AppColors.shadowSoft, blurRadius: AppSizes.p20, offset: Offset(0, AppSizes.p8)),
-            ],
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: AppSizes.p18, vertical: AppSizes.p16),
-          child: Column(
-            children: [
-              for (var i = 0; i < _mockProblemi.length; i++) ...[
-                _ProblemRow(problema: _mockProblemi[i], initials: _initials[i]),
-                if (i < _mockProblemi.length - 1)
-                  Divider(height: 1, thickness: 1, color: AppColors.dividerOnDark),
-              ],
-              const SizedBox(height: AppSizes.p14),
-              GestureDetector(
-                onTap: () => Navigator.of(context).pushNamed('/problemi'),
-                child: Center(
-                  child: Text('Vedi tutti', style: AppTextStyles.dashboardSectionLink),
-                ),
+              BoxShadow(
+                color: AppColors.shadowSoft,
+                blurRadius: AppSizes.p20,
+                offset: Offset(0, AppSizes.p8),
               ),
             ],
+          ),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSizes.p18,
+            vertical: AppSizes.p16,
+          ),
+          child: problemiAsync.when(
+            loading: () => const Padding(
+              padding: EdgeInsets.all(AppSizes.p16),
+              child: CircularProgressIndicator(color: AppColors.brandAccent),
+            ),
+            error: (_, _) => const Padding(
+              padding: EdgeInsets.all(AppSizes.p12),
+              child: Text(
+                'Problemi non disponibili',
+                style: TextStyle(color: AppColors.textMutedDark),
+              ),
+            ),
+            data: (problemi) {
+              final visible = problemi.take(3).toList(growable: false);
+              return Column(
+                children: [
+                  if (visible.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.all(AppSizes.p12),
+                      child: Text(
+                        'Nessun problema aperto',
+                        style: TextStyle(color: AppColors.textMutedDark),
+                      ),
+                    ),
+                  for (var i = 0; i < visible.length; i++) ...[
+                    _ProblemRow(problema: visible[i]),
+                    if (i < visible.length - 1)
+                      Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: AppColors.dividerOnDark,
+                      ),
+                  ],
+                  const SizedBox(height: AppSizes.p14),
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pushNamed('/problemi'),
+                    child: Center(
+                      child: Text(
+                        'Vedi tutti',
+                        style: AppTextStyles.dashboardSectionLink,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ],
@@ -94,16 +107,32 @@ class OpenProblemsSection extends StatelessWidget {
 }
 
 class _ProblemRow extends StatelessWidget {
-  const _ProblemRow({required this.problema, required this.initials});
+  const _ProblemRow({required this.problema});
 
   final Problema problema;
-  final String initials;
+
+  String get _initials {
+    final source =
+        (problema.raw['assegnatarioNome'] ??
+                problema.raw['segnalatoDa'] ??
+                problema.titolo)
+            .toString()
+            .trim();
+    if (source.isEmpty) return '?';
+    final parts = source.split(RegExp(r'\s+'));
+    return parts.length > 1
+        ? '${parts[0][0]}${parts[1][0]}'.toUpperCase()
+        : parts[0][0].toUpperCase();
+  }
 
   Color get _priorityColor {
     switch (problema.priorita.toLowerCase()) {
-      case 'urgente': return AppColors.statusNegative;
-      case 'media':   return AppColors.statusWarning;
-      default:        return AppColors.statusSuccess;
+      case 'urgente':
+        return AppColors.statusNegative;
+      case 'media':
+        return AppColors.statusWarning;
+      default:
+        return AppColors.statusSuccess;
     }
   }
 
@@ -117,8 +146,10 @@ class _ProblemRow extends StatelessWidget {
             radius: AppSizes.p22,
             backgroundColor: _priorityColor.withValues(alpha: 0.18),
             child: Text(
-              initials,
-              style: AppTextStyles.dashboardProblemInitials.copyWith(color: _priorityColor),
+              _initials,
+              style: AppTextStyles.dashboardProblemInitials.copyWith(
+                color: _priorityColor,
+              ),
             ),
           ),
           const SizedBox(width: AppSizes.p14),
@@ -127,7 +158,9 @@ class _ProblemRow extends StatelessWidget {
               problema.titolo,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: AppTextStyles.dashboardCardTitleOnDark.copyWith(color: _priorityColor),
+              style: AppTextStyles.dashboardCardTitleOnDark.copyWith(
+                color: _priorityColor,
+              ),
             ),
           ),
           const SizedBox(width: AppSizes.p8),

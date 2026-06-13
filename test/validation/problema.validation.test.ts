@@ -7,6 +7,7 @@ import {
   AssegnaProblemaSchema,
   AggiornaStatoSchema,
   AggiornaPrioritaSchema,
+  ModificaProblemaSchema,
 } from "../../src/dto/ProblemaDto";
 
 describe("ProblemaDto - validation", () => {
@@ -44,5 +45,9 @@ describe("ProblemaDto - validation", () => {
     const result = AggiornaPrioritaSchema.safeParse({ priorita: "Media" });
     expect(result.success).toBe(true);
   });
-});
 
+  it("ModificaProblemaSchema rejects empty fields", () => {
+    const result = ModificaProblemaSchema.safeParse({ nome: "" });
+    expect(result.success).toBe(false);
+  });
+});

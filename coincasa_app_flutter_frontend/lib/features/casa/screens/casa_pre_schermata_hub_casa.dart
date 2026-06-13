@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:coincasa_app/core/services/session_manager.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
+import 'package:coincasa_app/core/state/active_casa_session.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/features/dashboard/screens/dashboard_screen.dart';
 
@@ -18,6 +18,7 @@ class CasaPreSchermataHubCasaScreen extends StatelessWidget {
   final String houseName;
   final String houseType;
   final String city;
+
   /// Id della casa appena joinata — usato per chiamare selectCasa.
   final String? casaId;
 
@@ -199,15 +200,18 @@ class _PrimaryEnterButton extends StatelessWidget {
     final id = casaId;
     if (id != null && id.isNotEmpty) {
       try {
-        final ruolo = await SessionManager.selectCasa(casaId: id);
-        if (context.mounted) {
-          ActiveCasaScope.read(context)
-              .setCasaContext(casaId: id, ruolo: ruolo);
-        }
+        await ensureActiveCasaContext(
+          ActiveCasaScope.read(context),
+          preferredCasaId: id,
+        );
       } catch (_) {
-        if (context.mounted) {
-          ActiveCasaScope.read(context).selectCasa(id);
-        }
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Impossibile selezionare la casa. Riprova.'),
+          ),
+        );
+        return;
       }
     }
     if (!context.mounted) return;
