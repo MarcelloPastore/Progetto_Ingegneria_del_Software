@@ -5,7 +5,6 @@ import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/models/turno.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
-import 'package:coincasa_app/core/state/active_casa_session.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/utils/user_initials.dart';
 import 'package:coincasa_app/core/widgets/common/delete_confirm_dialog.dart';
@@ -124,17 +123,22 @@ class _DettaglioTurnoAdminScreenState
   bool _assigneeMenuOpen = false;
   String? _selectedAssigneeId;
 
-  String? get _turnoId {
+  ({Turno turno, String casaId})? get _navArgs {
     final args = ModalRoute.of(context)?.settings.arguments;
-    return args is String && args.isNotEmpty ? args : null;
+    if (args is Map) {
+      final turno = args['turno'];
+      final casaId = args['casaId'];
+      if (turno is Turno && casaId is String && casaId.isNotEmpty) {
+        return (turno: turno, casaId: casaId);
+      }
+    }
+    return null;
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_initialized) {
-      return;
-    }
+    if (_initialized) return;
     _initialized = true;
     _detailFuture = _loadDetailData();
   }
@@ -145,30 +149,14 @@ class _DettaglioTurnoAdminScreenState
   }
 
   Future<_TurnoDetailData?> _loadDetailData() async {
-    final turnoId = _turnoId;
-    if (turnoId == null) {
-      return null;
-    }
+    final nav = _navArgs;
+    if (nav == null) return null;
 
-    final activeCasaController = ActiveCasaScope.read(context);
-    final caseUtente = await ApiProvider.casa.list();
-    if (caseUtente.isEmpty) {
-      return null;
-    }
-
-    final casa = await ensureActiveCasaContext(
-      activeCasaController,
-      caseUtente: caseUtente,
-    );
-    final results = await Future.wait<dynamic>([
-      ApiProvider.turni.getById(casa.id, turnoId),
-      ApiProvider.casa.listInquilini(casa.id),
-    ]);
-
+    final inquilini = await ApiProvider.casa.listInquilini(nav.casaId);
     return _TurnoDetailData(
-      casaId: casa.id,
-      turno: results[0] as Turno,
-      inquilini: results[1] as List<Inquilino>,
+      casaId: nav.casaId,
+      turno: nav.turno,
+      inquilini: inquilini,
     );
   }
 
@@ -277,6 +265,23 @@ class _DettaglioTurnoAdminScreenState
     return FutureBuilder<_TurnoDetailData?>(
       future: _detailFuture,
       builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Scaffold(
+            backgroundColor: AppColors.darkBackground,
+            body: SafeArea(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSizes.p24),
+                  child: Text(
+                    'Impossibile caricare il turno.\n${snapshot.error}',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: AppColors.textMutedLight, fontSize: 16),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
         final data = snapshot.data;
         final isLoading = snapshot.connectionState == ConnectionState.waiting;
         final assignees = data == null

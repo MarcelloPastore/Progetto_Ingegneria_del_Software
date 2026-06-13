@@ -301,7 +301,10 @@ class _ListaTurniScreenState extends ConsumerState<ListaTurniScreen>
                                     onTurnoTap: (turno) =>
                                         Navigator.of(context).pushNamed(
                                           DettaglioTurnoAdminScreen.routeName,
-                                          arguments: turno.id,
+                                          arguments: {
+                                            'turno': turno,
+                                            'casaId': casaAsync.value?.id,
+                                          },
                                         ),
                                     currentUserId: _me.currentUserId,
                                     casaId: casaAsync.value?.id,
@@ -329,7 +332,10 @@ class _ListaTurniScreenState extends ConsumerState<ListaTurniScreen>
                                     onTurnoTap: (turno) =>
                                         Navigator.of(context).pushNamed(
                                           DettaglioTurnoAdminScreen.routeName,
-                                          arguments: turno.id,
+                                          arguments: {
+                                            'turno': turno,
+                                            'casaId': casaAsync.value?.id,
+                                          },
                                         ),
                                     currentUserId: _me.currentUserId,
                                     casaId: casaAsync.value?.id,
