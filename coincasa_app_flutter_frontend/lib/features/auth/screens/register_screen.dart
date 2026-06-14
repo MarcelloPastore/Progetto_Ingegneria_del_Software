@@ -20,7 +20,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _emailEsistente = false;
   bool _passwordTooShort = false;
   bool _passwordMismatch = false;
-  bool _emailDeliveryError = false;
   bool _serverError = false;
   bool _isSubmitting = false;
 
@@ -50,7 +49,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _emailEsistente = false;
       _passwordTooShort = false;
       _passwordMismatch = false;
-      _emailDeliveryError = false;
       _serverError = false;
     });
 
@@ -111,7 +109,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (!mounted) return;
 
       Navigator.of(context).push(
-        MaterialPageRoute(builder: (context) => CheckEmailScreen(email: email)),
+        MaterialPageRoute(
+          builder: (context) => CheckEmailScreen(email: email),
+        ),
       );
     } on ApiException catch (error) {
       if (!mounted) return;
@@ -119,11 +119,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       setState(() {
         _emailEsistente = error.statusCode == 409;
         _campiNonCompilati = error.statusCode == 400;
-        _emailDeliveryError = error.statusCode == 502;
-        _serverError =
-            error.statusCode != 400 &&
-            error.statusCode != 409 &&
-            error.statusCode != 502;
+        _serverError = error.statusCode != 400 && error.statusCode != 409;
       });
     } catch (_) {
       if (!mounted) return;
@@ -140,11 +136,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget build(BuildContext context) {
     final hasFieldError = _campiNonCompilati || _emailEsistente;
     final hasError =
-        hasFieldError ||
-        _passwordTooShort ||
-        _passwordMismatch ||
-        _emailDeliveryError ||
-        _serverError;
+        hasFieldError || _passwordTooShort || _passwordMismatch || _serverError;
     final passwordFieldError =
         hasFieldError || _passwordTooShort || _passwordMismatch;
 
@@ -162,16 +154,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
             AuthErrorBanner(
               compact: true,
               message: _emailEsistente
-                  ? "L'email o lo username inseriti sono già associati a un account esistente. "
-                  : _emailDeliveryError
-                  ? 'Account non creato: non è stato possibile inviare l’email di verifica. Riprova tra poco.'
+                  ? "L’email inserita è già associata a un account esistente. "
                   : _serverError
-                  ? 'Registrazione temporaneamente non disponibile. Riprova tra poco.'
+                  ? "Registrazione temporaneamente non disponibile. Riprova tra poco."
                   : _passwordTooShort
-                  ? 'La password deve contenere almeno 10 caratteri.'
+                  ? "La password deve contenere almeno 10 caratteri."
                   : _passwordMismatch
-                  ? 'Le password non coincidono. Controlla e riprova.'
-                  : 'Alcuni campi non sono stati compilati correttamente. Controlla i dati inseriti e riprova.',
+                  ? "Le password non coincidono. Controlla e riprova."
+                  : "Alcuni campi non sono stati compilati correttamente. Controlla i dati inseriti e riprova.",
               actionText: _emailEsistente ? 'Accedi' : null,
               trailingMessage: _emailEsistente
                   ? " oppure utilizza un'altra email."

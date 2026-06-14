@@ -86,7 +86,7 @@ class _InserisciCodiceScreenState extends State<InserisciCodiceScreen> {
           Padding(
             padding: const EdgeInsets.only(left: AppSizes.p5),
             child: Text(
-              'Abbiamo inviato un codice a\n$normalizedEmail inseriscilo qui\nsotto.',
+              'Abbiamo inviato un codice a\n$normalizedEmail inseriscilo qui sotto.',
               style: AppTextStyles.body.copyWith(height: 1.05),
             ),
           ),

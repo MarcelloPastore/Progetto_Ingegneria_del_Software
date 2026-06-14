@@ -10,15 +10,14 @@ class FakeAuthApi extends AuthApi {
   FakeAuthApi() : super(ApiProvider.client);
 
   @override
-  Future<void> register({
+  Future<String> register({
     required String username,
     required String nome,
     required String cognome,
     required String email,
     required String password,
   }) async {
-    // Mock successful registration
-    return;
+    return email;
   }
 }
 
@@ -28,7 +27,7 @@ class FailingRegistrationAuthApi extends AuthApi {
   final int statusCode;
 
   @override
-  Future<void> register({
+  Future<String> register({
     required String username,
     required String nome,
     required String cognome,

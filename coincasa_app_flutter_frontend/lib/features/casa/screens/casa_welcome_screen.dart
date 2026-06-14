@@ -91,17 +91,9 @@ class _CasaWelcomeScreenState extends State<CasaWelcomeScreen> {
       return;
     }
 
-    String? name;
-    try {
-      name = await ApiProvider.auth.verifyEmail(normalizedEmail);
-    } catch (_) {
-      name = null;
-    }
-
     if (!mounted) return;
 
     setState(() {
-      _userName = name?.trim() ?? '';
       _isLoading = false;
     });
 

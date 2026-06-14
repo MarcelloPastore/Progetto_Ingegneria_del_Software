@@ -1,19 +1,61 @@
+import 'dart:async';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/features/auth/screens/login_screen.dart';
 
-class CheckEmailScreen extends StatelessWidget {
+class CheckEmailScreen extends StatefulWidget {
   final String email;
 
   const CheckEmailScreen({super.key, required this.email});
 
   @override
+  State<CheckEmailScreen> createState() => _CheckEmailScreenState();
+}
+
+class _CheckEmailScreenState extends State<CheckEmailScreen> {
+  static const _pollInterval = Duration(seconds: 4);
+
+  Timer? _pollTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startPolling();
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startPolling() {
+    _pollTimer = Timer.periodic(_pollInterval, (_) async {
+      try {
+        final verified = await ApiProvider.auth
+            .checkEmailVerificata(widget.email.trim().toLowerCase());
+        if (verified && mounted) {
+          _pollTimer?.cancel();
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const LoginScreen()),
+            (route) => false,
+          );
+        }
+      } catch (_) {
+        // ignora errori di rete: si riprova al prossimo tick
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final normalizedEmail = email.trim().toLowerCase();
+    final normalizedEmail = widget.email.trim().toLowerCase();
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -31,27 +73,6 @@ class CheckEmailScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: TextButton(
-                              onPressed: () {
-                                Navigator.of(context).pushAndRemoveUntil(
-                                  MaterialPageRoute(
-                                    builder: (context) => const LoginScreen(),
-                                  ),
-                                  (route) => false,
-                                );
-                              },
-                              style: TextButton.styleFrom(
-                                foregroundColor: AppColors.brandAccent,
-                                padding: EdgeInsets.zero,
-                              ),
-                              child: const Text(
-                                'email controllata',
-                                style: AppTextStyles.link,
-                              ),
-                            ),
-                          ),
                           const SizedBox(height: AppSizes.p60),
 
                           SvgPicture.asset(
@@ -120,29 +141,6 @@ class CheckEmailScreen extends StatelessWidget {
                             text: TextSpan(
                               style: AppTextStyles.bodyMuted,
                               children: [
-                                const TextSpan(
-                                  text: "Non hai ricevuto l'email? ",
-                                ),
-                                TextSpan(
-                                  text: 'Reinvia',
-                                  style: AppTextStyles.link.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                  recognizer: TapGestureRecognizer()
-                                    ..onTap = () {
-                                      // Logica di reinvio email
-                                    },
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          const SizedBox(height: AppSizes.p24),
-
-                          RichText(
-                            text: TextSpan(
-                              style: AppTextStyles.bodyMuted,
-                              children: [
                                 const TextSpan(text: "Email sbagliata? "),
                                 TextSpan(
                                   text: 'Modifica',
@@ -150,9 +148,7 @@ class CheckEmailScreen extends StatelessWidget {
                                     fontWeight: FontWeight.w600,
                                   ),
                                   recognizer: TapGestureRecognizer()
-                                    ..onTap = () {
-                                      Navigator.pop(context);
-                                    },
+                                    ..onTap = () => Navigator.pop(context),
                                 ),
                               ],
                             ),

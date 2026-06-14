@@ -71,6 +71,7 @@ class AuthApi {
         'cognome': cognome,
       },
     );
+    // Backend responds with { message, userId } and auto-sends verification email.
   }
 
   Future<void> requestPasswordReset(String email) async {
@@ -87,23 +88,15 @@ class AuthApi {
     );
   }
 
-  Future<String?> verifyEmail(String email) async {
-    final data = await _client.postJson(
-      '/auth/verifica-email',
-      body: {'email': email},
+  Future<bool> checkEmailVerificata(String email) async {
+    final data = await _client.getJson(
+      '/auth/email-verificata',
+      queryParameters: {'email': email},
     );
-
     if (data is Map<String, dynamic>) {
-      final user = data['user'];
-      if (user is Map<String, dynamic>) {
-        final nome = user['nome'] ?? user['name'];
-        if (nome is String) {
-          return nome;
-        }
-      }
+      return data['verificata'] == true;
     }
-
-    return null;
+    return false;
   }
 
   Future<String> refreshToken(String refreshToken) async {
