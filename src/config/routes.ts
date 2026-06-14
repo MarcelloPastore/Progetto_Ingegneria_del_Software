@@ -69,6 +69,7 @@ import {
 import {
   ModificaUsernameDto,
   ModificaEmailDto,
+  ModificaPasswordDto,
   UserProfileDto,
 } from "../dto/AccountDto";
 
@@ -1210,6 +1211,19 @@ export function accountRoutes(app: FastifyInstance) {
   app.patch<{ Body: ModificaEmailDto }>(
     "/account/email",
     accountController.modificaEmail,
+  );
+
+  /**
+   * @api  ModificaPassword
+   * @route PATCH /account/password
+   *
+   * @summary Modifica la password dell'utente autenticato. Richiede la vecchia password.
+   *
+   * @see {@link ModificaPasswordDto}
+   */
+  app.patch<{ Body: ModificaPasswordDto }>(
+    "/account/password",
+    accountController.modificaPassword,
   );
 
   /**

@@ -1,6 +1,10 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import { AccountService } from "../service/AccountService";
-import { ModificaUsernameDto, ModificaEmailDto } from "../dto/AccountDto";
+import {
+  ModificaUsernameDto,
+  ModificaEmailDto,
+  ModificaPasswordDto,
+} from "../dto/AccountDto";
 import { sendErrorReply } from "../utils/errorReply";
 
 export class AccountController {
@@ -47,6 +51,22 @@ export class AccountController {
     try {
       const dto = ModificaEmailDto.parse(request.body);
       const result = await this.accountService.modificaEmail(
+        request.user.idUtente,
+        dto,
+      );
+      return reply.status(200).send(result);
+    } catch (error) {
+      return this.handleFailure(reply, error);
+    }
+  };
+
+  modificaPassword = async (
+    request: FastifyRequest<{ Body: ModificaPasswordDto }>,
+    reply: FastifyReply,
+  ) => {
+    try {
+      const dto = ModificaPasswordDto.parse(request.body);
+      const result = await this.accountService.modificaPassword(
         request.user.idUtente,
         dto,
       );

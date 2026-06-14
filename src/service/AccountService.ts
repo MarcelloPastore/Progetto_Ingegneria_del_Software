@@ -1,14 +1,17 @@
 import { prisma } from "../config/db";
 import { randomBytes } from "node:crypto";
+import argon2 from "argon2";
 import {
   ModificaUsernameDto,
   ModificaEmailDto,
+  ModificaPasswordDto,
   UserProfileDto,
 } from "../dto/AccountDto";
 import {
   UserNotFoundError,
   EmailDeliveryError,
   DuplicateUserError,
+  InvalidCurrentPasswordError,
 } from "../errors/appErrors";
 import { ConflictError } from "../errors/httpErrors";
 import type { VerificationMailInput } from "../utils/mail";
@@ -155,6 +158,33 @@ export class AccountService {
         "Email modificata con successo. Verifica il tuo indirizzo per completare il cambio.",
       newEmail: dto.email,
     };
+  }
+
+  async modificaPassword(
+    idUtente: string,
+    dto: ModificaPasswordDto,
+  ): Promise<{ message: string }> {
+    const user = await prisma.utente.findUnique({
+      where: { id: idUtente },
+      select: { id: true, passwordHash: true },
+    });
+
+    if (!user) {
+      throw new UserNotFoundError();
+    }
+
+    const isValid = await argon2.verify(user.passwordHash, dto.oldPassword);
+    if (!isValid) {
+      throw new InvalidCurrentPasswordError();
+    }
+
+    const newHash = await argon2.hash(dto.newPassword);
+    await prisma.utente.update({
+      where: { id: idUtente },
+      data: { passwordHash: newHash },
+    });
+
+    return { message: "Password modificata con successo." };
   }
 
   async eliminaAccount(idUtente: string): Promise<{ message: string }> {

@@ -81,3 +81,10 @@ export class DatabaseCleanupError extends Error {
     this.name = "DatabaseCleanupError";
   }
 }
+
+export class InvalidCurrentPasswordError extends Error {
+  constructor() {
+    super("La password attuale non è corretta.");
+    this.name = "InvalidCurrentPasswordError";
+  }
+}
