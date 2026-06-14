@@ -17,6 +17,7 @@ class CondividiCodiceScreen extends StatefulWidget {
 
 class _CondividiCodiceScreenState extends State<CondividiCodiceScreen> {
   late Future<String> _inviteLinkFuture;
+  bool _regenerating = false;
 
   @override
   void initState() {
@@ -28,6 +29,27 @@ class _CondividiCodiceScreenState extends State<CondividiCodiceScreen> {
     setState(() {
       _inviteLinkFuture = ApiProvider.casa.getInviteLink(widget.casaId);
     });
+  }
+
+  Future<void> _regenerate() async {
+    setState(() => _regenerating = true);
+    try {
+      final newLink = await ApiProvider.casa.regenerateInviteLink(widget.casaId);
+      if (!mounted) return;
+      setState(() {
+        _inviteLinkFuture = Future.value(newLink);
+        _regenerating = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Link rigenerato con successo')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _regenerating = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Errore durante la rigenerazione del link')),
+      );
+    }
   }
 
   Future<void> _copy(String value, String message) async {
@@ -116,9 +138,10 @@ class _CondividiCodiceScreenState extends State<CondividiCodiceScreen> {
                     onPressed: () => _copy(inviteLink, 'Link copiato'),
                   ),
                   const SizedBox(height: 24),
-                  const _RegenerateInfoCard(),
-                  const SizedBox(height: 26),
-                  _RegenerateButton(onPressed: _reload),
+                  _RegenerateButton(
+                    onPressed: _regenerating ? null : _regenerate,
+                    loading: _regenerating,
+                  ),
                 ],
               ),
             );
@@ -277,36 +300,12 @@ class _CopyButton extends StatelessWidget {
   }
 }
 
-class _RegenerateInfoCard extends StatelessWidget {
-  const _RegenerateInfoCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 22),
-      decoration: BoxDecoration(
-        color: const Color(0xFF17213B),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF9CA5DA), width: 2),
-      ),
-      child: const Text(
-        'La rigenerazione del link non e ancora esposta dal backend. Puoi aggiornare per recuperare il link attuale.',
-        style: TextStyle(
-          color: Color(0xFFD2D4DF),
-          fontSize: 16,
-          height: 1.25,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-    );
-  }
-}
 
 class _RegenerateButton extends StatelessWidget {
-  const _RegenerateButton({required this.onPressed});
+  const _RegenerateButton({required this.onPressed, this.loading = false});
 
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
+  final bool loading;
 
   @override
   Widget build(BuildContext context) {
@@ -317,15 +316,28 @@ class _RegenerateButton extends StatelessWidget {
         style: OutlinedButton.styleFrom(
           backgroundColor: const Color(0xFF09031F),
           foregroundColor: Colors.white,
-          side: const BorderSide(color: AppColors.brandAccent, width: 2),
+          disabledForegroundColor: Colors.white54,
+          side: BorderSide(
+            color: onPressed != null ? AppColors.brandAccent : Colors.white24,
+            width: 2,
+          ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
         ),
-        child: const Text(
-          'Aggiorna link',
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
-        ),
+        child: loading
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: Colors.white54,
+                ),
+              )
+            : const Text(
+                'Rigenera link',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+              ),
       ),
     );
   }

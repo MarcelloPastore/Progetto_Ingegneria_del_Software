@@ -98,6 +98,17 @@ class CasaApi {
 
   Future<String> getInviteLink(String casaId) async {
     final data = await _client.getJson('/case/$casaId/invite-link');
+    return _parseInviteLinkResponse(data);
+  }
+
+  Future<String> regenerateInviteLink(String casaId) async {
+    final data = await _client.getJson(
+      '/case/$casaId/invite-link?rigenera=true',
+    );
+    return _parseInviteLinkResponse(data);
+  }
+
+  String _parseInviteLinkResponse(dynamic data) {
     if (data is String) {
       return data;
     }
