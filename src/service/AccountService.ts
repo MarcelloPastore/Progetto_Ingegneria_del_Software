@@ -1,3 +1,4 @@
+import { Ruolo } from "@prisma/client";
 import { prisma } from "../config/db";
 import { randomBytes } from "node:crypto";
 import argon2 from "argon2";
@@ -188,27 +189,79 @@ export class AccountService {
   }
 
   async eliminaAccount(idUtente: string): Promise<{ message: string }> {
-    const user = await prisma.utente.findUnique({
-      where: { id: idUtente },
-      select: { id: true },
-    });
+    await prisma.$transaction(async (tx) => {
+      const user = await tx.utente.findUnique({
+        where: { id: idUtente },
+        select: { id: true },
+      });
 
-    if (!user) {
-      throw new UserNotFoundError();
-    }
+      if (!user) {
+        throw new UserNotFoundError();
+      }
 
-    await prisma.utente.update({
-      where: { id: idUtente },
-      data: {
-        username: `Utente_${idUtente.substring(0, 8)}`,
-        email: `deleted_${idUtente}@deleted.local`,
-        nome: "Anonimo",
-        cognome: "Anonimo",
-        passwordHash: "DELETED",
-        emailVerificata: false,
-        tokenVerifica: null,
-        fcmToken: null,
-      },
+      // Carica tutte le membership dell'utente
+      const memberships = await tx.membroCasa.findMany({
+        where: { idUtente },
+        select: { id: true, idCasa: true, ruolo: true },
+      });
+
+      for (const membership of memberships) {
+        const { id: idMembership, idCasa, ruolo } = membership;
+
+        const allMembers = await tx.membroCasa.findMany({
+          where: { idCasa },
+          select: { id: true, idUtente: true, ruolo: true },
+        });
+
+        if (allMembers.length === 1) {
+          // Ultimo membro: elimina la casa e tutte le sue entità
+          await tx.quotaSpesa.deleteMany({ where: { idCasa } });
+          await tx.spesa.deleteMany({ where: { idCasa } });
+          await tx.turno.deleteMany({ where: { idCasa } });
+          await tx.problema.deleteMany({ where: { idCasa } });
+          await tx.documento.deleteMany({ where: { idCasa } });
+          await tx.scadenza.deleteMany({ where: { idCasa } });
+          await tx.membroCasa.deleteMany({ where: { idCasa } });
+          await tx.casa.delete({ where: { id: idCasa } });
+        } else {
+          // Ci sono altri membri
+          if (ruolo === Ruolo.HomeAdmin) {
+            const altriAdmin = allMembers.filter(
+              (m) => m.idUtente !== idUtente && m.ruolo === Ruolo.HomeAdmin,
+            );
+
+            if (altriAdmin.length === 0) {
+              // Ultimo admin: promuovi un membro random
+              const altriMembri = allMembers.filter(
+                (m) => m.idUtente !== idUtente,
+              );
+              const nuovoAdmin =
+                altriMembri[Math.floor(Math.random() * altriMembri.length)];
+              await tx.membroCasa.update({
+                where: { id: nuovoAdmin.id },
+                data: { ruolo: Ruolo.HomeAdmin },
+              });
+            }
+          }
+
+          await tx.membroCasa.delete({ where: { id: idMembership } });
+        }
+      }
+
+      // Anonimizza i dati dell'utente
+      await tx.utente.update({
+        where: { id: idUtente },
+        data: {
+          username: `Utente_${idUtente.substring(0, 8)}`,
+          email: `deleted_${idUtente}@deleted.local`,
+          nome: "Anonimo",
+          cognome: "Anonimo",
+          passwordHash: "DELETED",
+          emailVerificata: false,
+          tokenVerifica: null,
+          fcmToken: null,
+        },
+      });
     });
 
     return {

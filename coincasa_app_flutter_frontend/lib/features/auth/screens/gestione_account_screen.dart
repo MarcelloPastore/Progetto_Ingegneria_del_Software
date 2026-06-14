@@ -815,11 +815,42 @@ class _EliminaAccountButton extends StatelessWidget {
 // Popup di conferma eliminazione account
 // ---------------------------------------------------------------------------
 
-class _EliminaAccountDialog extends StatelessWidget {
+class _EliminaAccountDialog extends StatefulWidget {
   const _EliminaAccountDialog();
 
+  @override
+  State<_EliminaAccountDialog> createState() => _EliminaAccountDialogState();
+}
+
+class _EliminaAccountDialogState extends State<_EliminaAccountDialog> {
   static const _red = Color(0xFFFF0202);
   static const _borderRadius = BorderRadius.all(Radius.circular(16));
+
+  bool _isDeleting = false;
+  String? _errorMessage;
+
+  Future<void> _confermaEliminazione() async {
+    if (_isDeleting) return;
+    setState(() {
+      _isDeleting = true;
+      _errorMessage = null;
+    });
+    try {
+      await ApiProvider.account.deleteAccount();
+      await SessionManager.clear();
+      if (!mounted) return;
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        EliminaAccountSuccessScreen.routeName,
+        (_) => false,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isDeleting = false;
+        _errorMessage = 'Eliminazione non riuscita. Riprova.';
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -874,6 +905,20 @@ class _EliminaAccountDialog extends StatelessWidget {
                 height: 1.4,
               ),
             ),
+
+            if (_errorMessage != null) ...[
+              const SizedBox(height: 10),
+              Text(
+                _errorMessage!,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  color: _red,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+
             const SizedBox(height: 20),
 
             // ── Pulsante Annulla (primario) ──────────────────────────────
@@ -897,7 +942,7 @@ class _EliminaAccountDialog extends StatelessWidget {
                   ],
                 ),
                 child: ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: _isDeleting ? null : () => Navigator.of(context).pop(),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.transparent,
                     shadowColor: Colors.transparent,
@@ -919,31 +964,31 @@ class _EliminaAccountDialog extends StatelessWidget {
             const SizedBox(height: 12),
 
             // ── Link testuale Elimina account (secondario) ───────────────
-            GestureDetector(
-              onTap: () => _confermaEliminazione(context),
-              child: Text(
-                'Elimina comunque',
-                style: GoogleFonts.inter(
-                  color: _red.withValues(alpha: 0.7),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  decoration: TextDecoration.underline,
-                  decorationColor: _red.withValues(alpha: 0.5),
-                ),
-              ),
-            ),
+            _isDeleting
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: _red,
+                    ),
+                  )
+                : GestureDetector(
+                    onTap: _confermaEliminazione,
+                    child: Text(
+                      'Elimina comunque',
+                      style: GoogleFonts.inter(
+                        color: _red.withValues(alpha: 0.7),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        decoration: TextDecoration.underline,
+                        decorationColor: _red.withValues(alpha: 0.5),
+                      ),
+                    ),
+                  ),
           ],
         ),
       ),
-    );
-  }
-
-  Future<void> _confermaEliminazione(BuildContext context) async {
-    await SessionManager.clear();
-    if (!context.mounted) return;
-    Navigator.of(context).pushNamedAndRemoveUntil(
-      EliminaAccountSuccessScreen.routeName,
-      (_) => false,
     );
   }
 }

@@ -46,4 +46,11 @@ class AccountApi {
       body: {'oldPassword': oldPassword, 'newPassword': newPassword},
     );
   }
+
+  /// DELETE /account → { message }
+  /// Rimuove l'utente da tutte le case, elegge admin se necessario,
+  /// elimina case vuote e anonimizza i dati.
+  Future<void> deleteAccount() async {
+    await _client.deleteJson('/account');
+  }
 }
