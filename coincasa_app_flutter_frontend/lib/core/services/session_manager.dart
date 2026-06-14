@@ -89,6 +89,13 @@ class SessionManager {
     return ruolo;
   }
 
+  /// Aggiorna lo username in sessione dopo una modifica account riuscita.
+  static Future<void> updateUsername(String username) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyUserUsername, username);
+    ApiProvider.client.setCurrentUserIdentity(username: username);
+  }
+
   /// Cancella la sessione (logout).
   static Future<void> clear() async {
     final prefs = await SharedPreferences.getInstance();

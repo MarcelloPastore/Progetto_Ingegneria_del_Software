@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:coincasa_app/core/api/api_client.dart';
+import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/services/session_manager.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 
@@ -56,10 +58,10 @@ class _ModificaPasswordScreenState extends State<ModificaPasswordScreen> {
       );
       return;
     }
-    if (nuova.length < 8) {
+    if (nuova.length < 10) {
       setState(
         () =>
-            _errorMessage = 'La nuova password deve avere almeno 8 caratteri.',
+            _errorMessage = 'La nuova password deve avere almeno 10 caratteri.',
       );
       return;
     }
@@ -69,10 +71,30 @@ class _ModificaPasswordScreenState extends State<ModificaPasswordScreen> {
       _isSaving = true;
     });
 
-    // Backend non ancora disponibile: clear sessione e vai al login.
-    await SessionManager.clear();
-    if (!mounted) return;
-    Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
+    try {
+      await ApiProvider.account.patchPassword(
+        oldPassword: vecchia,
+        newPassword: nuova,
+      );
+      await SessionManager.clear();
+      if (!mounted) return;
+      Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      final msg = e.statusCode == 401
+          ? 'La password attuale non è corretta.'
+          : 'Modifica non riuscita. Riprova.';
+      setState(() {
+        _errorMessage = msg;
+        _isSaving = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'Modifica non riuscita. Riprova.';
+        _isSaving = false;
+      });
+    }
   }
 
   @override

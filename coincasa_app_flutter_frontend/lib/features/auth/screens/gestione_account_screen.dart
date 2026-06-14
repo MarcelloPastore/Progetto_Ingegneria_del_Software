@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:coincasa_app/core/api/api_client.dart';
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/services/session_manager.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
@@ -29,6 +30,8 @@ class _GestioneAccountScreenState extends State<GestioneAccountScreen> {
   final _newEmailController = TextEditingController();
   String? _emailError;
 
+  bool _isConfirming = false;
+
   @override
   void dispose() {
     _newUsernameController.dispose();
@@ -52,7 +55,8 @@ class _GestioneAccountScreenState extends State<GestioneAccountScreen> {
     });
   }
 
-  void _confirmEditUsername(String currentUsername) {
+  Future<void> _confirmEditUsername(String currentUsername) async {
+    if (_isConfirming) return;
     final newUsername = _newUsernameController.text.trim();
 
     if (newUsername.isEmpty) {
@@ -66,16 +70,34 @@ class _GestioneAccountScreenState extends State<GestioneAccountScreen> {
       return;
     }
 
-    // Backend non ancora disponibile.
     setState(() {
-      _isEditingUsername = false;
+      _isConfirming = true;
       _usernameError = null;
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Modifica username non ancora disponibile sul server.'),
-      ),
-    );
+    try {
+      final saved = await ApiProvider.account.patchUsername(newUsername);
+      await SessionManager.updateUsername(saved);
+      if (!mounted) return;
+      setState(() {
+        _isEditingUsername = false;
+        _isConfirming = false;
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      final msg = e.statusCode == 409
+          ? 'Username già in uso, scegline un altro.'
+          : 'Modifica non riuscita. Riprova.';
+      setState(() {
+        _usernameError = msg;
+        _isConfirming = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _usernameError = 'Modifica non riuscita. Riprova.';
+        _isConfirming = false;
+      });
+    }
   }
 
   void _startEditEmail() {
@@ -94,7 +116,8 @@ class _GestioneAccountScreenState extends State<GestioneAccountScreen> {
     });
   }
 
-  void _confirmEditEmail(String currentEmail) {
+  Future<void> _confirmEditEmail(String currentEmail) async {
+    if (_isConfirming) return;
     final newEmail = _newEmailController.text.trim();
 
     if (newEmail.isEmpty) {
@@ -113,12 +136,35 @@ class _GestioneAccountScreenState extends State<GestioneAccountScreen> {
     }
 
     setState(() {
-      _isEditingEmail = false;
+      _isConfirming = true;
       _emailError = null;
     });
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => CheckEmailScreen(email: newEmail)),
-    );
+    try {
+      final confirmedEmail = await ApiProvider.account.patchEmail(newEmail);
+      await SessionManager.clear();
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (_) => CheckEmailScreen(email: confirmedEmail),
+        ),
+        (_) => false,
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      final msg = e.statusCode == 409
+          ? 'Email già in uso da un altro account.'
+          : 'Modifica non riuscita. Riprova.';
+      setState(() {
+        _emailError = msg;
+        _isConfirming = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _emailError = 'Modifica non riuscita. Riprova.';
+        _isConfirming = false;
+      });
+    }
   }
 
   @override
@@ -274,23 +320,37 @@ class _GestioneAccountScreenState extends State<GestioneAccountScreen> {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(24, 0, 24, 10),
                   child: _ConfermaButton(
-                    onPressed: () => _confirmEditUsername(username),
+                    isLoading: _isConfirming,
+                    onPressed: _isConfirming
+                        ? null
+                        : () {
+                            _confirmEditUsername(username);
+                          },
                   ),
                 ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(52, 0, 52, 24),
-                  child: _AnnullaEditButton(onPressed: _cancelEditUsername),
+                  child: _AnnullaEditButton(
+                    onPressed: _isConfirming ? null : _cancelEditUsername,
+                  ),
                 ),
               ] else if (_isEditingEmail) ...[
                 Padding(
                   padding: const EdgeInsets.fromLTRB(24, 0, 24, 10),
                   child: _ConfermaButton(
-                    onPressed: () => _confirmEditEmail(email),
+                    isLoading: _isConfirming,
+                    onPressed: _isConfirming
+                        ? null
+                        : () {
+                            _confirmEditEmail(email);
+                          },
                   ),
                 ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(52, 0, 52, 24),
-                  child: _AnnullaEditButton(onPressed: _cancelEditEmail),
+                  child: _AnnullaEditButton(
+                    onPressed: _isConfirming ? null : _cancelEditEmail,
+                  ),
                 ),
               ] else
                 Padding(
@@ -467,9 +527,10 @@ class _InlineField extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _ConfermaButton extends StatelessWidget {
-  const _ConfermaButton({required this.onPressed});
+  const _ConfermaButton({required this.onPressed, this.isLoading = false});
 
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -486,7 +547,16 @@ class _ConfermaButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppSizes.radius16),
           ),
         ),
-        child: Text('Conferma', style: AppTextStyles.buttonCompact),
+        child: isLoading
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.textOnDark,
+                ),
+              )
+            : Text('Conferma', style: AppTextStyles.buttonCompact),
       ),
     );
   }
@@ -495,7 +565,7 @@ class _ConfermaButton extends StatelessWidget {
 class _AnnullaEditButton extends StatelessWidget {
   const _AnnullaEditButton({required this.onPressed});
 
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   static const _red = Color(0xFFFF0202);
   static const _radius = BorderRadius.all(Radius.circular(AppSizes.radius16));
