@@ -40,6 +40,7 @@ import {
   AggiungiInquilinoDto,
   CreaCasaDto,
   HubCasaDto,
+  JoinCasaDto,
   ModificaCasaDto,
   CasaResponseDto,
   ModificaRuoloDto,
@@ -266,6 +267,23 @@ export function casaRoutes(app: FastifyInstance) {
       config: { rateLimit: { max: 1, timeWindow: "1 minute" } },
     },
     casaController.creaCasa,
+  );
+
+  /**
+   * @api  JoinCasaConInviteCode
+   * @route POST /case/join
+   *
+   * @summary Entra in una casa tramite codice invito (formato CX-XXXXXXXX).
+   *
+   * @see {@link JoinCasaDto}
+   * @see {@link CasaResponseDto}
+   */
+  app.post<{ Body: JoinCasaDto }>(
+    "/case/join",
+    {
+      config: { rateLimit: { max: 5, timeWindow: "1 minute" } },
+    },
+    casaController.joinCasaConInviteCode,
   );
   /**
    * @api  GetCase

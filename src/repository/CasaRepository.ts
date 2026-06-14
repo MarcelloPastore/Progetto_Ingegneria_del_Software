@@ -100,6 +100,15 @@ export class CasaRepository {
     });
   }
 
+  async findCasaByInviteCodeOrThrow(
+    inviteCode: string,
+  ): Promise<CasaConRelazioni> {
+    return prisma.casa.findFirstOrThrow({
+      where: { inviteLink: inviteCode },
+      include: INCLUDE_CASA_CON_REL,
+    });
+  }
+
   async findCasaByIdAndInviteLinkOrThrow(
     idCasa: string,
     inviteLink: string,

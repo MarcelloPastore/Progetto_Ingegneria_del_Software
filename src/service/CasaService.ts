@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { Ruolo } from "@prisma/client";
 import {
   AggiungiInquilinoDto,
@@ -8,9 +7,19 @@ import {
   HubCasaDto,
   InquilinoDto,
   InviteLinkDto,
+  JoinCasaDto,
   ModificaCasaDto,
   ModificaRuoloDto,
 } from "../dto/CasaDto";
+
+function generateInviteCode(): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let code = "CX-";
+  for (let i = 0; i < 8; i++) {
+    code += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return code;
+}
 import { CasaConverter } from "../dto/converter/CasaConverter";
 import {
   CasaRepository,
@@ -56,7 +65,7 @@ export class CasaService {
       citta,
       tipoCasa,
       creator: idCreatore,
-      inviteLink: randomUUID(),
+      inviteLink: generateInviteCode(),
     });
 
     return casaConverter.toCasaDto(casa, idCreatore);
@@ -114,6 +123,28 @@ export class CasaService {
     );
 
     return casaConverter.toInquilinoDto(membro);
+  }
+
+  async joinCasaConInviteCode(
+    dto: JoinCasaDto,
+    idUtente: string,
+  ): Promise<CasaResponseDto> {
+    const casa = await casaRepository.findCasaByInviteCodeOrThrow(
+      dto.inviteCode,
+    );
+
+    const giaPresente = await casaRepository.findMembroCasaByCasaAndUtente(
+      casa.id,
+      idUtente,
+    );
+
+    if (giaPresente) {
+      throw new ConflictError("L'utente fa già parte della casa");
+    }
+
+    await casaRepository.addMembroCasa(casa.id, idUtente);
+    const casaAggiornata = await casaRepository.findCasaByIdOrThrow(casa.id);
+    return casaConverter.toCasaDto(casaAggiornata, idUtente);
   }
 
   async aggiungiInquilino(
@@ -193,7 +224,7 @@ export class CasaService {
     }
 
     const aggiornata = await casaRepository.updateCasa(idCasa, {
-      inviteLink: randomUUID(),
+      inviteLink: generateInviteCode(),
     });
 
     return { inviteLink: aggiornata.inviteLink };

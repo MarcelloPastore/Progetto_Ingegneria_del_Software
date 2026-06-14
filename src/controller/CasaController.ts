@@ -4,6 +4,8 @@ import {
   AggiungiInquilinoSchema,
   CreaCasaDto,
   CreaCasaSchema,
+  JoinCasaDto,
+  JoinCasaSchema,
   ModificaCasaDto,
   ModificaCasaSchema,
   ModificaRuoloDto,
@@ -116,6 +118,22 @@ export class CasaController {
         request.user.idUtente,
       );
       return reply.status(200).send(inquilino);
+    } catch (error) {
+      return this.handleFailure(reply, error);
+    }
+  };
+
+  joinCasaConInviteCode = async (
+    request: FastifyRequest<{ Body: JoinCasaDto }>,
+    reply: FastifyReply,
+  ) => {
+    try {
+      const dto = JoinCasaSchema.parse(request.body);
+      const casa = await this.casaService.joinCasaConInviteCode(
+        dto,
+        request.user.idUtente,
+      );
+      return reply.status(200).send(casa);
     } catch (error) {
       return this.handleFailure(reply, error);
     }

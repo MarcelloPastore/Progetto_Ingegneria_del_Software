@@ -52,7 +52,7 @@ class InviteCodeEntryState {
 class InviteCodeEntryController extends StateNotifier<InviteCodeEntryState> {
   InviteCodeEntryController() : super(const InviteCodeEntryState());
 
-  static final RegExp _inviteCodePattern = RegExp(r'^CX-[A-Z0-9]{4,8}$');
+  static final RegExp _inviteCodePattern = RegExp(r'^CX-[A-Z0-9]{8}$');
 
   void codeChanged(String value) {
     state = state.copyWith(code: _normalizeCode(value), clearError: true);
@@ -63,7 +63,7 @@ class InviteCodeEntryController extends StateNotifier<InviteCodeEntryState> {
     if (!_inviteCodePattern.hasMatch(normalizedCode)) {
       state = state.copyWith(
         code: normalizedCode,
-        errorText: 'Inserisci un codice nel formato CX-4821',
+        errorText: 'Inserisci un codice nel formato CX-MDLE4H58',
       );
       return null;
     }
@@ -399,7 +399,7 @@ class _InviteCodeTextField extends StatelessWidget {
         keyboardType: TextInputType.text,
         inputFormatters: [
           FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9\-\s]')),
-          LengthLimitingTextInputFormatter(12),
+          LengthLimitingTextInputFormatter(11),
         ],
         style: const TextStyle(
           color: AppColors.textOnDark,
@@ -410,7 +410,7 @@ class _InviteCodeTextField extends StatelessWidget {
         decoration: InputDecoration(
           filled: true,
           fillColor: fillColor,
-          hintText: 'CX-4821',
+          hintText: 'CX-MDLE4H58',
           hintStyle: TextStyle(
             color: AppColors.textOnDark.withValues(alpha: 0.45),
             fontSize: 28,
