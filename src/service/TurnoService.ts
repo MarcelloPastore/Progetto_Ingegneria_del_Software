@@ -154,6 +154,7 @@ export class TurnoService {
           (oggi.getTime() - t.dataUltimaPulizia!.getTime()) /
             (1000 * 60 * 60 * 24),
         ),
+        cadenzaGiorni: t.cadenzaGiorni,
       }));
   }
 

@@ -63,5 +63,6 @@ export const SaluteCasaSchema = z.object({
   id: z.string(),
   task: z.string(),
   giorniPassati: z.number().int().nonnegative(),
+  cadenzaGiorni: z.number().int().positive(),
 });
 export type SaluteCasaDto = z.infer<typeof SaluteCasaSchema>;
