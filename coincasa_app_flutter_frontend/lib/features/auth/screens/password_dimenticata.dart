@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:coincasa_app/core/theme/app_theme.dart';
 
-import 'inserisci_codice_screen.dart';
+import 'attesa_invio_codice_screen.dart';
 import 'login_screen.dart';
 
 class PasswordDimenticataScreen extends StatefulWidget {
@@ -98,7 +98,7 @@ class _PasswordDimenticataScreenState extends State<PasswordDimenticataScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (context) =>
-                      InserisciCodiceScreen(email: normalizedEmail),
+                      AttesaInvioCodiceScreen(email: normalizedEmail),
                 ),
               );
             },
@@ -141,11 +141,7 @@ class _PasswordDimenticataScreenState extends State<PasswordDimenticataScreen> {
 
   bool _isValidEmail(String email) {
     final normalized = _normalizeEmail(email);
-    if (normalized.isEmpty || !normalized.contains('@')) {
-      return false;
-    }
-
-    return normalized.endsWith('.com') || normalized.endsWith('.it');
+    return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(normalized);
   }
 
   String _normalizeEmail(String email) {

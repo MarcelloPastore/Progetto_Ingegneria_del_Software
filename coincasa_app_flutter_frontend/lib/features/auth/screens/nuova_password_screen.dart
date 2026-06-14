@@ -29,6 +29,8 @@ class _NuovaPasswordScreenState extends State<NuovaPasswordScreen> {
   late final TextEditingController _passwordController;
   late final TextEditingController _confirmPasswordController;
   bool _showPasswordError = false;
+  String _passwordErrorMessage =
+      'Le password inserite non\ncoincidono. Controlla i dati e\nriprova.';
   bool _isSaving = false;
 
   @override
@@ -60,7 +62,7 @@ class _NuovaPasswordScreenState extends State<NuovaPasswordScreen> {
                 context,
                 PageRouteBuilder(
                   pageBuilder: (context, animation, secondaryAnimation) =>
-                      const InserisciCodiceScreen(),
+                      InserisciCodiceScreen(email: widget.email),
                   transitionDuration: const Duration(milliseconds: 250),
                   reverseTransitionDuration: const Duration(milliseconds: 250),
                   transitionsBuilder:
@@ -95,10 +97,7 @@ class _NuovaPasswordScreenState extends State<NuovaPasswordScreen> {
           ),
           const SizedBox(height: AppSizes.p32),
           if (_showPasswordError) ...[
-            const AuthErrorBanner(
-              message:
-                  'Le password inserite non\ncoincidono. Controlla i dati e\nriprova.',
-            ),
+            AuthErrorBanner(message: _passwordErrorMessage),
             const SizedBox(height: AppSizes.p28),
           ],
           AuthField(
@@ -162,8 +161,18 @@ class _NuovaPasswordScreenState extends State<NuovaPasswordScreen> {
   Future<void> _savePassword() async {
     final password = _passwordController.text;
     final confirmPassword = _confirmPasswordController.text;
-    if (password != confirmPassword || password.length < 10) {
+    if (password.length < 10) {
       setState(() {
+        _passwordErrorMessage =
+            'La password deve contenere almeno 10 caratteri.';
+        _showPasswordError = true;
+      });
+      return;
+    }
+    if (password != confirmPassword) {
+      setState(() {
+        _passwordErrorMessage =
+            'Le password inserite non\ncoincidono. Controlla i dati e\nriprova.';
         _showPasswordError = true;
       });
       return;
