@@ -1,4 +1,5 @@
 import '../models/turno.dart';
+import '../models/salute_casa_item.dart';
 import 'api_client.dart';
 
 class TurniApi {
@@ -14,6 +15,12 @@ class TurniApi {
   Future<List<Turno>> listOggi(String casaId) async {
     final data = await _client.getJson('/case/$casaId/turni/oggi');
     return _parseList(data);
+  }
+
+  Future<List<SaluteCasaItem>> saluteCase(String casaId) async {
+    final data = await _client.getJson('/case/$casaId/turni/salute-casa');
+    final list = _asList(data);
+    return list.map(SaluteCasaItem.fromJson).toList();
   }
 
   Future<Turno> create(String casaId, Map<String, dynamic> payload) async {

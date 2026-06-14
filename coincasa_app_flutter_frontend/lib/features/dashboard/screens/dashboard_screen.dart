@@ -9,6 +9,7 @@ import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/scadenza.dart';
 import 'package:coincasa_app/core/models/spesa.dart';
 import 'package:coincasa_app/core/models/turno.dart';
+import 'package:coincasa_app/core/models/salute_casa_item.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/state/active_casa_session.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
@@ -140,6 +141,7 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
     final displayName = nomeCasa.isEmpty ? 'Casa senza nome' : nomeCasa;
     final turniFuture = ApiProvider.turni.list(casa.id);
     final turniOggiFuture = ApiProvider.turni.listOggi(casa.id);
+    final saluteCasaFuture = ApiProvider.turni.saluteCase(casa.id);
 
     final amounts = await Future.wait<double>([
       ApiProvider.spese.getSaldo(casa.id),
@@ -148,12 +150,13 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
     ]);
     final turni = await turniFuture;
     final turniOggi = await turniOggiFuture;
+    final saluteCasa = await saluteCasaFuture;
     final spese = await ApiProvider.spese.list(casa.id);
     List<Scadenza> scadenze = const [];
     try {
       scadenze = await ApiProvider.scadenze.list(casa.id);
     } catch (_) {}
-    final houseHealthBadges = _buildHouseHealthBadges(turni);
+    final houseHealthBadges = _buildHouseHealthBadges(turni, saluteCasa);
 
     return _DashboardData(
       nomeCasa: displayName,
@@ -208,45 +211,51 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
     }
   }
 
-  List<HouseHealthBadgeData> _buildHouseHealthBadges(List<Turno> turni) {
+  List<HouseHealthBadgeData> _buildHouseHealthBadges(
+    List<Turno> turni,
+    List<SaluteCasaItem> saluteCasa,
+  ) {
+    final saluteMap = {for (final s in saluteCasa) s.id: s};
+
     final badges = turni
-        .map(
-          (turno) => HouseHealthBadgeData(
+        .map((turno) {
+          final salute = saluteMap[turno.id];
+          return HouseHealthBadgeData(
             caption: _formatHouseHealthCaption(turno.titolo),
-            lastCleaningDate: turno.dataUltimaPuliziaEffettiva,
-            nextCleaningDate: turno.dataProssimaPulizia,
-            cadenzaGiorni: turno.cadenzaGiorni,
-            completato: turno.completato,
-          ),
-        )
+            giorniRimanenti: salute?.giorniRimanenti,
+          );
+        })
         .where((badge) => badge.caption.trim().isNotEmpty)
         .toList(growable: true);
 
-    // Ordina per priorità cromatica: grigio (0) → rosso (1) → arancione (2) → verde (3)
-    badges.sort((a, b) => _badgeColorOrder(a).compareTo(_badgeColorOrder(b)));
+    badges.sort(_compareBadges);
 
     return badges;
   }
 
-  /// Calcola la priorità di ordinamento in base al colore dell'anello.
-  /// Deve rispecchiare la stessa logica di _HealthBadge._color.
-  static int _badgeColorOrder(HouseHealthBadgeData badge) {
-    final nextDate = badge.nextCleaningDate;
-    if (nextDate == null) return 0; // grigio
-
-    final today = DateTime.now();
-    final todayOnly = DateTime(today.year, today.month, today.day);
-    final nextOnly = DateTime(nextDate.year, nextDate.month, nextDate.day);
-    final daysUntil = nextOnly.difference(todayOnly).inDays;
-
-    if (daysUntil < -3) return 0; // grigio
-    if (!badge.completato && daysUntil >= -3 && daysUntil <= 0) {
-      return 1; // rosso
-    }
-    // Soglia arancione proporzionale alla cadenza, identica a _HealthBadge._color
-    final orangeThreshold = badge.cadenzaGiorni ~/ 3;
-    if (daysUntil <= orangeThreshold) return 2; // arancione
+  static int _colorGroup(HouseHealthBadgeData badge) {
+    final giorni = badge.giorniRimanenti;
+    if (giorni == null || giorni < -3) return 0; // grigio
+    if (giorni <= 0) return 1; // rosso
+    if (giorni <= 2) return 2; // arancione
     return 3; // verde
+  }
+
+  static int _compareBadges(HouseHealthBadgeData a, HouseHealthBadgeData b) {
+    final ga = _colorGroup(a);
+    final gb = _colorGroup(b);
+    if (ga != gb) return ga.compareTo(gb);
+
+    final da = a.giorniRimanenti;
+    final db = b.giorniRimanenti;
+    if (da == null && db == null) return 0;
+    if (da == null) return -1;
+    if (db == null) return 1;
+
+    // Grigio e rosso: decrescente per valore assoluto (più in ritardo → prima)
+    if (ga <= 1) return db.abs().compareTo(da.abs());
+    // Arancione e verde: crescente (meno giorni rimasti → prima)
+    return da.compareTo(db);
   }
 
   String _formatHouseHealthCaption(String title) {

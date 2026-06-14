@@ -5,17 +5,12 @@ import 'package:coincasa_app/core/theme/app_theme.dart';
 class HouseHealthBadgeData {
   const HouseHealthBadgeData({
     required this.caption,
-    this.lastCleaningDate,
-    this.nextCleaningDate,
-    this.cadenzaGiorni = 1,
-    this.completato = false,
+    this.giorniRimanenti,
   });
 
   final String caption;
-  final DateTime? lastCleaningDate;
-  final DateTime? nextCleaningDate;
-  final int cadenzaGiorni;
-  final bool completato;
+  // null = nessuna pulizia registrata (grigio)
+  final int? giorniRimanenti;
 }
 
 class HouseHealthSection extends StatelessWidget {
@@ -117,52 +112,21 @@ class _HealthBadge extends StatelessWidget {
 
   static const double _badgeSize = AppSizes.p68;
 
-  int? get _daysSinceCleaning {
-    final date = data.lastCleaningDate;
-    if (date == null) {
-      return null;
-    }
-
-    final today = DateTime.now();
-    final todayOnly = DateTime(today.year, today.month, today.day);
-    final dateOnly = DateTime(date.year, date.month, date.day);
-    final days = todayOnly.difference(dateOnly).inDays;
-    return days < 0 ? 0 : days;
-  }
-
   String get _label {
-    final days = _daysSinceCleaning;
-    if (days == null) {
-      return '--';
-    }
-    if (days == 0) {
-      return 'Oggi';
-    }
-    return '${days}gg';
+    final giorni = data.giorniRimanenti;
+    if (giorni == null) return '--';
+    if (giorni == 0) return 'Oggi';
+    // Per i turni scaduti (giorni < 0) mostra il modulo senza segno
+    return '${giorni.abs()}gg';
   }
 
   Color get _color {
-    final nextDate = data.nextCleaningDate;
-    if (nextDate == null) return const Color(0xFF9EA5B8); // grigio: nessuna data
-
-    final today = DateTime.now();
-    final todayOnly = DateTime(today.year, today.month, today.day);
-    final nextOnly = DateTime(nextDate.year, nextDate.month, nextDate.day);
-    final daysUntil = nextOnly.difference(todayOnly).inDays;
-
-    // Grigio: scaduto da più di 3 giorni
-    if (daysUntil < -3) return const Color(0xFF9EA5B8);
-    // Rosso: giorno della scadenza e i 3 giorni successivi (se non completato)
-    if (!data.completato && daysUntil >= -3 && daysUntil <= 0) {
-      return const Color(0xFFFF4D4D);
-    }
-    // Soglia arancione proporzionale alla cadenza (1/3 della frequenza).
-    // Per turni giornalieri (cadenzaGiorni=1) la soglia è 0, quindi
-    // non esiste fase arancione: si passa direttamente da verde a rosso.
-    final orangeThreshold = data.cadenzaGiorni ~/ 3;
-    if (daysUntil <= orangeThreshold) return const Color(0xFFFFA62B);
-    // Verde: abbondante margine prima della scadenza
-    return const Color(0xFF38C85A);
+    final giorni = data.giorniRimanenti;
+    if (giorni == null) return const Color(0xFF9EA5B8); // grigio: nessuna pulizia
+    if (giorni < -3) return const Color(0xFF9EA5B8); // grigio: scaduto da più di 3gg
+    if (giorni <= 0) return const Color(0xFFFF4D4D); // rosso: scaduto (entro 3gg) o oggi
+    if (giorni <= 2) return const Color(0xFFFFA62B); // arancione: quasi in scadenza
+    return const Color(0xFF38C85A); // verde: abbondante margine
   }
 
   @override
