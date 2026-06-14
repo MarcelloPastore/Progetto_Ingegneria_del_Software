@@ -136,6 +136,8 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
     final casa = await ensureActiveCasaContext(
       _activeCasaController,
       caseUtente: caseUtente,
+      preferredCasaId:
+          _activeCasaController.selectedCasaId ?? caseUtente.first.id,
     );
     final nomeCasa = _formatNomeCasa(casa);
     final displayName = nomeCasa.isEmpty ? 'Casa senza nome' : nomeCasa;

@@ -27,11 +27,7 @@ Future<Casa> ensureActiveCasaContext(
     orElse: () => caseDisponibili.first,
   );
 
-  final apiRole = ApiProvider.client.currentCasaRuolo?.trim() ?? '';
-  final tokenHasSelectedCasa = apiId == selected.id && apiRole.isNotEmpty;
-  final ruolo = tokenHasSelectedCasa
-      ? apiRole
-      : await SessionManager.selectCasa(casaId: selected.id);
+  final ruolo = await SessionManager.selectCasa(casaId: selected.id);
 
   activeCasa.setCasaContext(casaId: selected.id, ruolo: ruolo);
   activeCasa.resolveCasa(caseDisponibili);
