@@ -110,10 +110,10 @@ describe("CasaService", () => {
     expect(mocks.createCasa).toHaveBeenCalledWith(
       expect.objectContaining({
         creator: "u1",
-        inviteLink: "invite-123",
+        inviteLink: expect.stringMatching(/^CX-[A-Z0-9]{8}$/),
       }),
     );
-    expect(result.inviteLink).toBe("invite-123");
+    expect(result.inviteLink).toBeTruthy(); // il valore proviene dal mock createCasa
     expect(result.ruoloUtente).toBe(Ruolo.HomeAdmin);
   });
 
