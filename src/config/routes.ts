@@ -200,6 +200,14 @@ export function authRoutes(app: FastifyInstance) {
     authController.verificaEmail,
   );
 
+  app.get(
+    "/auth/email-verificata",
+    {
+      config: { rateLimit: { max: 60, timeWindow: "1 minute" } },
+    },
+    authController.emailVerificata,
+  );
+
   // Supporta il click diretto dal link email (querystring token+email)
   app.get(
     "/auth/verifica-email",

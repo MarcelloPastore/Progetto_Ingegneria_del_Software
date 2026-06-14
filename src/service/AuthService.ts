@@ -226,6 +226,11 @@ export class AuthService {
     };
   }
 
+  async checkEmailVerificata(email: string): Promise<{ verificata: boolean }> {
+    const user = await prisma.utente.findUnique({ where: { email } });
+    return { verificata: user?.emailVerificata ?? false };
+  }
+
   async requestPasswordResetWithValidation(
     data: unknown,
   ): Promise<{ ok: boolean; date: string; expiresAt: string }> {

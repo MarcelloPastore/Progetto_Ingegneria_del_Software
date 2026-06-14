@@ -86,6 +86,18 @@ export class AuthController {
       return this.handleAuthFailure(reply, error);
     }
   };
+  emailVerificata = async (
+    request: FastifyRequest<{ Querystring: { email: string } }>,
+    reply: FastifyReply,
+  ) => {
+    try {
+      const result = await authService.checkEmailVerificata(request.query.email);
+      return reply.send(result);
+    } catch (error) {
+      return this.handleAuthFailure(reply, error);
+    }
+  };
+
   verificaEmail = async (
     request: FastifyRequest<{
       Body?: VerifyEmailData;
