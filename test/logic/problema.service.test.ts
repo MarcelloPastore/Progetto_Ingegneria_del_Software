@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   createProblema: vi.fn(),
   updateProblema: vi.fn(),
   deleteProblema: vi.fn(),
+  createStorico: vi.fn(),
 }));
 
 vi.mock("../../src/repository/ProblemaRepository", () => ({
@@ -23,6 +24,7 @@ vi.mock("../../src/repository/ProblemaRepository", () => ({
         createProblema: mocks.createProblema,
         updateProblema: mocks.updateProblema,
         deleteProblema: mocks.deleteProblema,
+        createStorico: mocks.createStorico,
       });
     }
   },
@@ -152,7 +154,7 @@ describe("ProblemaService", () => {
     mocks.updateProblema.mockResolvedValue(baseProblema);
 
     const service = new ProblemaService();
-    await service.assegnaProblema("c1", "p1", { idUtente: null });
+    await service.assegnaProblema("c1", "p1", { idUtente: null }, "u1");
 
     expect(mocks.updateProblema).toHaveBeenCalledWith(
       "p1",
@@ -161,7 +163,7 @@ describe("ProblemaService", () => {
 
     mocks.updateProblema.mockClear();
 
-    await service.assegnaProblema("c1", "p1", { idUtente: "u2" });
+    await service.assegnaProblema("c1", "p1", { idUtente: "u2" }, "u1");
     expect(mocks.updateProblema).toHaveBeenCalledWith(
       "p1",
       expect.objectContaining({ assegnatario: "u2", stato: Stato.Assegnato }),
@@ -180,7 +182,7 @@ describe("ProblemaService", () => {
     });
 
     const service = new ProblemaService();
-    await service.aggiornaStato("c1", "p1", { stato: Stato.Risolto });
+    await service.aggiornaStato("c1", "p1", { stato: Stato.Risolto }, "u1");
 
     expect(mocks.updateProblema).toHaveBeenCalledWith(
       "p1",

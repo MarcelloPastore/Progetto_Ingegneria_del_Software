@@ -191,6 +191,7 @@ export class ProblemaController {
         request.params.idCasa,
         request.params.idProblema,
         dto,
+        request.user.idUtente,
       );
       return reply.status(200).send(problema);
     } catch (error) {
@@ -211,6 +212,7 @@ export class ProblemaController {
         request.params.idCasa,
         request.params.idProblema,
         dto,
+        request.user.idUtente,
       );
       return reply.status(200).send(problema);
     } catch (error) {

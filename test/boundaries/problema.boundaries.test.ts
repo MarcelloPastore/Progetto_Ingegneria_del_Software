@@ -7,6 +7,7 @@ import { Priorita, Stato } from "@prisma/client";
 const mocks = vi.hoisted(() => ({
   findProblemaByIdOrThrow: vi.fn(),
   updateProblema: vi.fn(),
+  createStorico: vi.fn(),
 }));
 
 vi.mock("../../src/repository/ProblemaRepository", () => ({
@@ -15,6 +16,7 @@ vi.mock("../../src/repository/ProblemaRepository", () => ({
       Object.assign(this as any, {
         findProblemaByIdOrThrow: mocks.findProblemaByIdOrThrow,
         updateProblema: mocks.updateProblema,
+        createStorico: mocks.createStorico,
       });
     }
   },
@@ -56,7 +58,7 @@ describe("ProblemaService - boundaries", () => {
     });
 
     const service = new ProblemaService();
-    await service.aggiornaStato("c1", "p1", { stato: Stato.Risolto });
+    await service.aggiornaStato("c1", "p1", { stato: Stato.Risolto }, "u1");
 
     expect(mocks.updateProblema).toHaveBeenCalledWith(
       "p1",
@@ -74,7 +76,7 @@ describe("ProblemaService - boundaries", () => {
       dataRisoluzione: null,
     });
 
-    await service.aggiornaStato("c1", "p1", { stato: Stato.Segnalato });
+    await service.aggiornaStato("c1", "p1", { stato: Stato.Segnalato }, "u1");
 
     expect(mocks.updateProblema).toHaveBeenCalledWith(
       "p1",
@@ -93,7 +95,7 @@ describe("ProblemaService - boundaries", () => {
 
     const service = new ProblemaService();
     // @ts-ignore - boundary: simulate missing property at runtime
-    await service.assegnaProblema("c1", "p1", {});
+    await service.assegnaProblema("c1", "p1", {}, "u1");
 
     expect(mocks.updateProblema).toHaveBeenCalledWith(
       "p1",

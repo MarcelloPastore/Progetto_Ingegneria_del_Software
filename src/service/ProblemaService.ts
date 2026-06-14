@@ -105,13 +105,15 @@ export class ProblemaService {
       );
     }
 
-    const problema = await problemaRepository.updateProblema(idProblema, {
+    await problemaRepository.updateProblema(idProblema, {
       assegnatario: null,
       stato: Stato.Segnalato,
       dataRisoluzione: null,
     });
+    await problemaRepository.createStorico(idProblema, Stato.Segnalato, idUtente);
 
-    return problemaConverter.toDto(problema);
+    const aggiornato = await problemaRepository.findProblemaByIdOrThrow(idCasa, idProblema);
+    return problemaConverter.toDto(aggiornato);
   }
 
   async autoassegnaProblema(
@@ -121,49 +123,57 @@ export class ProblemaService {
   ): Promise<ProblemaResponseDto> {
     await problemaRepository.findProblemaByIdOrThrow(idCasa, idProblema);
 
-    const problema = await problemaRepository.updateProblema(idProblema, {
+    await problemaRepository.updateProblema(idProblema, {
       assegnatario: idUtente,
       stato: Stato.Assegnato,
       dataRisoluzione: null,
     });
+    await problemaRepository.createStorico(idProblema, Stato.Assegnato, idUtente);
 
-    return problemaConverter.toDto(problema);
+    const aggiornato = await problemaRepository.findProblemaByIdOrThrow(idCasa, idProblema);
+    return problemaConverter.toDto(aggiornato);
   }
 
   async assegnaProblema(
     idCasa: string,
     idProblema: string,
     dto: AssegnaProblemaDto,
+    idUtente: string,
   ): Promise<ProblemaResponseDto> {
     await problemaRepository.findProblemaByIdOrThrow(idCasa, idProblema);
 
     const assegnatario = dto.idUtente ?? null;
     const stato = assegnatario ? Stato.Assegnato : Stato.Segnalato;
 
-    const problema = await problemaRepository.updateProblema(idProblema, {
+    await problemaRepository.updateProblema(idProblema, {
       assegnatario,
       stato,
       dataRisoluzione: null,
     });
+    await problemaRepository.createStorico(idProblema, stato, idUtente);
 
-    return problemaConverter.toDto(problema);
+    const aggiornato = await problemaRepository.findProblemaByIdOrThrow(idCasa, idProblema);
+    return problemaConverter.toDto(aggiornato);
   }
 
   async aggiornaStato(
     idCasa: string,
     idProblema: string,
     dto: AggiornaStatoDto,
+    idUtente: string,
   ): Promise<ProblemaResponseDto> {
     await problemaRepository.findProblemaByIdOrThrow(idCasa, idProblema);
 
     const dataRisoluzione = dto.stato === Stato.Risolto ? new Date() : null;
 
-    const problema = await problemaRepository.updateProblema(idProblema, {
+    await problemaRepository.updateProblema(idProblema, {
       stato: dto.stato,
       dataRisoluzione,
     });
+    await problemaRepository.createStorico(idProblema, dto.stato, idUtente);
 
-    return problemaConverter.toDto(problema);
+    const aggiornato = await problemaRepository.findProblemaByIdOrThrow(idCasa, idProblema);
+    return problemaConverter.toDto(aggiornato);
   }
 
   async aggiornaPriorita(

@@ -1,5 +1,11 @@
 import { ProblemaListItemDto, ProblemaResponseDto } from "../ProblemaDto";
 
+interface StoricoForDto {
+  stato: string;
+  data: Date;
+  utenteRel: { id: string; username: string };
+}
+
 interface ProblemaForDto {
   id: string;
   nome: string;
@@ -12,6 +18,7 @@ interface ProblemaForDto {
   assegnatarioRel?: { id: string; username: string } | null;
   dataCreazione: Date;
   dataRisoluzione?: Date | null;
+  storicoStato?: StoricoForDto[];
 }
 
 export class ProblemaConverter {
@@ -65,6 +72,11 @@ export class ProblemaConverter {
       assegnatario,
       dataCreazione: problema.dataCreazione.toISOString(),
       dataRisoluzione: problema.dataRisoluzione?.toISOString() ?? null,
+      storicoStato: (problema.storicoStato ?? []).map((s) => ({
+        stato: s.stato as ProblemaResponseDto["storicoStato"][number]["stato"],
+        data: s.data.toISOString(),
+        utente: { id: s.utenteRel.id, username: s.utenteRel.username },
+      })),
     };
   }
 }
