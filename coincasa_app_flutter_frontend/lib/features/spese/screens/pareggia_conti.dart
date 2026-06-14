@@ -8,6 +8,7 @@ import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
+import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 import 'package:coincasa_app/features/spese/screens/lista_spese_admin.dart';
 
 class PareggiaContiScreen extends ConsumerStatefulWidget {
@@ -388,7 +389,7 @@ class _BalanceTile extends StatelessWidget {
         children: [
           Row(
             children: [
-              _Avatar(initials: row.initials),
+              UserAvatar(userId: row.id, username: row.name, radius: 19),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -543,7 +544,11 @@ class _TransferTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       child: Row(
         children: [
-          _Avatar(initials: transfer.debtorInitials),
+          UserAvatar(
+            userId: transfer.creditorId,
+            username: transfer.creditorName,
+            radius: 19,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: RichText(
@@ -645,33 +650,6 @@ class _TransferTile extends StatelessWidget {
 // ---------------------------------------------------------------------------
 // Shared UI helpers
 // ---------------------------------------------------------------------------
-
-class _Avatar extends StatelessWidget {
-  const _Avatar({required this.initials});
-
-  final String initials;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 38,
-      height: 38,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: _avatarColor(initials),
-      ),
-      child: Text(
-        initials,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 14,
-          fontWeight: FontWeight.w800,
-        ),
-      ),
-    );
-  }
-}
 
 class _Panel extends StatelessWidget {
   const _Panel({required this.child});
@@ -812,17 +790,6 @@ String _initials(String name) {
   if (parts.isEmpty) return 'C';
   if (parts.length == 1) return parts.first[0].toUpperCase();
   return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
-}
-
-Color _avatarColor(String initials) {
-  const colors = [
-    Color(0xFF315173),
-    Color(0xFFEE7274),
-    Color(0xFF17A832),
-    Color(0xFF584036),
-    Color(0xFF2D5E3F),
-  ];
-  return colors[initials.codeUnitAt(0) % colors.length];
 }
 
 String _fmt(double value) => value.toStringAsFixed(2);
