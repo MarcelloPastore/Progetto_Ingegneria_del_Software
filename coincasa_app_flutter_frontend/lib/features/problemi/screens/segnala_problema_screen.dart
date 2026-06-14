@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
-import 'package:coincasa_app/core/state/active_casa_session.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/dashboard/open_problems_section.dart';
@@ -168,9 +167,11 @@ class _SegnalaProblemaScreenState extends ConsumerState<SegnalaProblemaScreen> {
     controller.setSubmitting(true);
 
     try {
-      // Usiamo ref.read invece di context per evitare problemi di lifecycle
-      final casa = await ensureActiveCasaContext(ActiveCasaScope.read(context));
-      final casaId = casa.id;
+      final casaId = ActiveCasaScope.read(context).selectedCasaId ?? '';
+      if (casaId.isEmpty) {
+        controller.setSubmitError('Nessuna casa selezionata.');
+        return;
+      }
 
       // Risolviamo l'id dell'assegnatario prima di procedere
       final assigneeId = await _resolveAssigneeId(form.assignmentMode, casaId);

@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/problema.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
-import 'package:coincasa_app/core/state/active_casa_session.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
@@ -39,14 +38,9 @@ class _ProblemiHomeScreenState extends ConsumerState<ProblemiHomeScreen> {
   }
 
   Future<List<Problema>> _loadProblemi() async {
-    final activeCasa = ActiveCasaScope.read(context);
-    final caseUtente = await ApiProvider.casa.list();
-    if (caseUtente.isEmpty) return const [];
-    final casa = await ensureActiveCasaContext(
-      activeCasa,
-      caseUtente: caseUtente,
-    );
-    final list = await ApiProvider.problemi.listNonRisolti(casa.id);
+    final casaId = ActiveCasaScope.read(context).selectedCasaId;
+    if (casaId == null || casaId.isEmpty) return const [];
+    final list = await ApiProvider.problemi.listNonRisolti(casaId);
     return list..sort(Problema.compareByPriority);
   }
 

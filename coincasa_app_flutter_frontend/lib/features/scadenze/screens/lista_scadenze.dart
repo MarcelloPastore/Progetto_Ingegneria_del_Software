@@ -6,7 +6,6 @@ import 'package:coincasa_app/core/models/scadenza.dart';
 import 'package:coincasa_app/core/models/spesa.dart';
 import 'package:coincasa_app/core/models/turno.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
-import 'package:coincasa_app/core/state/active_casa_session.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
@@ -113,18 +112,13 @@ class _ListaScadenzeState extends State<ListaScadenze> {
   }
 
   Future<_ScadenzeData> _load() async {
-    final activeCasa = ActiveCasaScope.read(context);
-    final caseUtente = await ApiProvider.casa.list();
-    if (caseUtente.isEmpty) throw Exception('Nessuna casa trovata');
-    final casa = await ensureActiveCasaContext(
-      activeCasa,
-      caseUtente: caseUtente,
-    );
+    final casaId = ActiveCasaScope.read(context).selectedCasaId ?? '';
+    if (casaId.isEmpty) throw Exception('Nessuna casa selezionata');
 
     final results = await Future.wait([
-      ApiProvider.turni.list(casa.id),
-      ApiProvider.spese.list(casa.id),
-      ApiProvider.scadenze.list(casa.id),
+      ApiProvider.turni.list(casaId),
+      ApiProvider.spese.list(casaId),
+      ApiProvider.scadenze.list(casaId),
     ]);
 
     final turni = (results[0] as List<Turno>)

@@ -6,7 +6,6 @@ import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/models/spesa.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
-import 'package:coincasa_app/core/state/active_casa_session.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
@@ -88,10 +87,14 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
       throw StateError('Nessuna casa disponibile.');
     }
 
-    final selected = await ensureActiveCasaContext(
-      _activeCasaController,
-      caseUtente: caseUtente,
-      preferredCasaId: widget.casaId,
+    final targetId = (widget.casaId?.trim().isNotEmpty == true
+            ? widget.casaId
+            : _activeCasaController.selectedCasaId)
+        ?.trim();
+
+    final selected = caseUtente.firstWhere(
+      (c) => c.id == targetId,
+      orElse: () => caseUtente.first,
     );
 
     final results = await Future.wait<dynamic>([
@@ -115,12 +118,15 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
     }
 
     final spese = results[2] as List<Spesa>;
+    final isAdmin =
+        selected.ruolo == 'HomeAdmin' || selected.ruolo == 'SysAdmin';
     return _HubCasaData(
       casa: results[0] as Casa,
       inquilini: inquilini,
       speseCount: spese.length,
       turniCount: (results[3] as List).length,
       spese: spese,
+      isAdmin: isAdmin,
     );
   }
 
@@ -288,14 +294,14 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
             final data = snapshot.data!;
             final currentInquilino = _resolveCurrentInquilino(data.inquilini);
             final isCurrentOwner = currentInquilino?.isOwner ?? false;
-            final isAdmin = _activeCasaController.isHomeAdmin;
+            final isAdmin = data.isAdmin;
 
             return RefreshIndicator(
               onRefresh: () async => _reload(),
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 18, 16, 20),
                 children: [
-                  _HouseHeaderCard(data: data),
+                  _HouseHeaderCard(data: data, isAdmin: isAdmin),
                   const SizedBox(height: 20),
                   _ManagementSection(
                     data: data,
@@ -330,6 +336,7 @@ class _HubCasaData {
     required this.speseCount,
     required this.turniCount,
     required this.spese,
+    required this.isAdmin,
   });
 
   final Casa casa;
@@ -337,6 +344,7 @@ class _HubCasaData {
   final int speseCount;
   final int turniCount;
   final List<Spesa> spese;
+  final bool isAdmin;
 }
 
 class _CurrentUserAvatar extends StatelessWidget {
@@ -389,9 +397,10 @@ class _HubErrorState extends StatelessWidget {
 }
 
 class _HouseHeaderCard extends StatelessWidget {
-  const _HouseHeaderCard({required this.data});
+  const _HouseHeaderCard({required this.data, required this.isAdmin});
 
   final _HubCasaData data;
+  final bool isAdmin;
 
   String get _address {
     final parts = [
@@ -401,10 +410,7 @@ class _HouseHeaderCard extends StatelessWidget {
     return '${data.casa.tipoCasa.isEmpty ? 'Casa' : data.casa.tipoCasa} - $parts';
   }
 
-  String _roleLabel(BuildContext context) {
-    final isAdmin = ActiveCasaScope.of(context).isHomeAdmin;
-    return isAdmin ? 'Admin' : 'Membro';
-  }
+  String get _roleLabel => isAdmin ? 'Admin' : 'Membro';
 
   Inquilino? get _owner {
     try {
@@ -482,7 +488,7 @@ class _HouseHeaderCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  _roleLabel(context),
+                  _roleLabel,
                   style: TextStyle(
                     color: Color(0xFF2A5FA8),
                     fontSize: 12,

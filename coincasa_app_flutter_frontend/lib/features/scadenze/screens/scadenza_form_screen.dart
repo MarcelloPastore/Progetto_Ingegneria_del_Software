@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
-import 'package:coincasa_app/core/state/active_casa_session.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 
 class ScadenzaFormScreen extends StatefulWidget {
@@ -329,11 +328,15 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
 
     setState(() => _isSaving = true);
     try {
-      final casa = await ensureActiveCasaContext(
-        activeCasa,
-        preferredCasaId: widget.casaId,
-      );
-      final casaId = casa.id;
+      final casaId =
+          (widget.casaId?.isNotEmpty == true
+              ? widget.casaId
+              : activeCasa.selectedCasaId) ??
+          '';
+      if (casaId.isEmpty) {
+        setState(() => _isSaving = false);
+        return;
+      }
       if (widget.isEditing && widget.idScadenza != null) {
         await ApiProvider.scadenze.update(casaId, widget.idScadenza!, {
           'nome': nome,

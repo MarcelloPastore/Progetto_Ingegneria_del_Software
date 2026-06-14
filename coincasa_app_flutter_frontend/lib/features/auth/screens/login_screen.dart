@@ -4,7 +4,6 @@ import 'package:coincasa_app/core/api/api_client.dart';
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/services/session_manager.dart';
-import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/auth/auth_widgets.dart';
 import 'package:coincasa_app/features/casa/screens/casa_welcome_screen.dart';
@@ -112,15 +111,6 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
 
       if (caseUtente.isNotEmpty) {
-        final prima = caseUtente.first;
-        try {
-          final ruolo = await SessionManager.selectCasa(casaId: prima.id);
-          if (mounted) {
-            ActiveCasaScope.read(context)
-                .setCasaContext(casaId: prima.id, ruolo: ruolo);
-          }
-        } catch (_) {}
-        if (!mounted) return;
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const DashboardScreen()),

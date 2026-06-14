@@ -3,8 +3,6 @@ import 'package:flutter/services.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/casa.dart';
-import 'package:coincasa_app/core/state/active_casa.dart';
-import 'package:coincasa_app/core/state/active_casa_session.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 import 'package:coincasa_app/features/casa/screens/compilazione_form_crea_casa.dart';
@@ -79,27 +77,7 @@ class _ListaCaseScreenState extends State<ListaCaseScreen> {
                                   final casa = caseUtente[index];
                                   return _HouseCard(
                                     casa: casa,
-                                    onTap: () async {
-                                      try {
-                                        await ensureActiveCasaContext(
-                                          ActiveCasaScope.read(context),
-                                          caseUtente: caseUtente,
-                                          preferredCasaId: casa.id,
-                                        );
-                                      } catch (_) {
-                                        if (!context.mounted) return;
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              'Impossibile selezionare la casa. Riprova.',
-                                            ),
-                                          ),
-                                        );
-                                        return;
-                                      }
-                                      if (!context.mounted) return;
+                                    onTap: () {
                                       Navigator.of(context).push(
                                         MaterialPageRoute<void>(
                                           builder: (_) => HubCasaAdminScreen(

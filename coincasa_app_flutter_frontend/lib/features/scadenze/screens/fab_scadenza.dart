@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
-import 'package:coincasa_app/core/state/active_casa_session.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/fab_buttons.dart';
 
@@ -221,7 +220,11 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
     }
 
     // Capture context-dependent values before any async gap
-    final activeCasa = ActiveCasaScope.read(context);
+    final casaId = ActiveCasaScope.read(context).selectedCasaId ?? '';
+    if (casaId.isEmpty) {
+      if (mounted) setState(() => _isSaving = false);
+      return;
+    }
     final cadenzaGiorni = _cadenzaFromFrequenza(_frequenza);
     final isRicorrente = cadenzaGiorni != null;
     final nome = _nomeController.text.trim();
@@ -230,8 +233,7 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
 
     setState(() => _isSaving = true);
     try {
-      final casa = await ensureActiveCasaContext(activeCasa);
-      await ApiProvider.scadenze.create(casa.id, {
+      await ApiProvider.scadenze.create(casaId, {
         'nome': nome,
         'descrizione': descrizione,
         'dataScadenza': dataIso,

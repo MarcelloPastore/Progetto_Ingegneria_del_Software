@@ -6,7 +6,6 @@ import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
-import 'package:coincasa_app/core/state/active_casa_session.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/fab_buttons.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
@@ -260,18 +259,7 @@ class _ProblemiPopupPanelState extends ConsumerState<ProblemiPopupPanel> {
       return;
     }
 
-    late final Casa casa;
-    try {
-      casa = await ensureActiveCasaContext(
-        activeCasaController,
-        preferredCasaId: loadedCasa.id,
-      );
-    } catch (_) {
-      controller.setSubmitError('Impossibile selezionare la casa attiva.');
-      return;
-    }
-
-    final assigneeId = await _resolveAssigneeId(form.assignmentMode, casa.id);
+    final assigneeId = await _resolveAssigneeId(form.assignmentMode, loadedCasa.id);
     if (form.assignmentMode == _ProblemaAssignmentMode.me &&
         (assigneeId == null || assigneeId.isEmpty)) {
       controller.setSubmitError(
@@ -282,13 +270,13 @@ class _ProblemiPopupPanelState extends ConsumerState<ProblemiPopupPanel> {
 
     controller.setSubmitting(true);
     try {
-      final problema = await ApiProvider.problemi.create(casa.id, {
+      final problema = await ApiProvider.problemi.create(loadedCasa.id, {
         'nome': form.nome.trim(),
         'descrizione': form.descrizione.trim(),
         'priorita': _priorityPayload(form.priorita!),
       });
       if (assigneeId != null && assigneeId.isNotEmpty) {
-        await ApiProvider.problemi.autoAssegna(casa.id, problema.id);
+        await ApiProvider.problemi.autoAssegna(loadedCasa.id, problema.id);
       }
 
       ref.read(problemiRevisionProvider.notifier).state++;

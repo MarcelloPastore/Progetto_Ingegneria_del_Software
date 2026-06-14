@@ -211,19 +211,6 @@ class _AppStartupScreenState extends State<_AppStartupScreen> {
     if (!mounted) return;
 
     if (caseUtente.isNotEmpty) {
-      // Se non c'è già una casa selezionata nel token, usa la prima.
-      if (ApiProvider.client.currentCasaId == null) {
-        final prima = caseUtente.first;
-        try {
-          final ruolo = await SessionManager.selectCasa(casaId: prima.id);
-          if (mounted) {
-            ActiveCasaScope.read(
-              context,
-            ).setCasaContext(casaId: prima.id, ruolo: ruolo);
-          }
-        } catch (_) {}
-        if (!mounted) return;
-      }
       Navigator.pushReplacement(
         context,
         MaterialPageRoute<void>(builder: (_) => const DashboardScreen()),
