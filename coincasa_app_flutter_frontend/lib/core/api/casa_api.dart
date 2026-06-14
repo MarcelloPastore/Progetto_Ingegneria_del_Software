@@ -22,9 +22,8 @@ class CasaApi {
     return Casa.fromJson(_asMap(data));
   }
 
-  Future<Casa> update(String casaId, Map<String, dynamic> payload) async {
-    final data = await _client.putJson('/case/$casaId', body: payload);
-    return Casa.fromJson(_asMap(data));
+  Future<void> update(String casaId, Map<String, dynamic> payload) async {
+    await _client.putJson('/case/$casaId', body: payload);
   }
 
   Future<void> delete(String casaId) async {
