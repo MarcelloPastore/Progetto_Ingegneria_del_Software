@@ -81,6 +81,7 @@ class _ProblemaDettaglioPage extends StatefulWidget {
 
 class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
   bool _isProcessing = false;
+  bool _isLoadingDetail = true;
   late String _priorityOverride;
   late Problema _problema;
 
@@ -91,6 +92,22 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
     _priorityOverride = _problema.priorita.isNotEmpty
         ? _problema.priorita
         : 'Media';
+    _fetchDetail();
+  }
+
+  Future<void> _fetchDetail() async {
+    try {
+      final casaId = ActiveCasaScope.read(context).selectedCasaId ?? '';
+      final fresco = await ApiProvider.problemi.getById(casaId, _problema.id);
+      if (!mounted) return;
+      setState(() {
+        _problema = fresco;
+        _priorityOverride = fresco.priorita.isNotEmpty ? fresco.priorita : 'Media';
+        _isLoadingDetail = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _isLoadingDetail = false);
+    }
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────
@@ -112,7 +129,7 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
     return _priorityOverride;
   }
 
-  bool get _isSegnalato => _problema.stato.toLowerCase().contains('segna');
+  bool get _isSegnalato => _problema.stato.toLowerCase() == 'segnalato';
 
   bool get _isCurrentUserAssignee {
     final problema = _problema;
@@ -185,42 +202,51 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
       _problema.raw['segnalatoData']?.toString() ?? '18 apr';
 
   List<_HistoryEvent> get _storicoStati {
-    final events = <_HistoryEvent>[];
-    final raw = _problema.raw;
+    final storico = _problema.storicoStato;
+    if (storico.isNotEmpty) {
+      return storico.map((s) {
+        final Color color;
+        switch (s.stato.toLowerCase()) {
+          case 'segnalato':
+            color = AppColors.statusNegative;
+          case 'assegnato':
+            color = AppColors.problemPriorityMedium;
+          case 'risolto':
+            color = AppColors.statusPositive;
+          default:
+            color = AppColors.textMutedDark;
+        }
+        final day = s.data.day.toString().padLeft(2, '0');
+        final month = s.data.month.toString().padLeft(2, '0');
+        final hour = s.data.hour.toString().padLeft(2, '0');
+        final minute = s.data.minute.toString().padLeft(2, '0');
+        return _HistoryEvent(
+          label: s.stato,
+          color: color,
+          timestamp: '$day/$month - $hour:$minute - ${s.utenteUsername}',
+        );
+      }).toList();
+    }
 
-    // Evento segnalazione
-    final segnalatoDaInitials = _initials(_segnalatoDa);
+    // Fallback sintetico se il backend non ha ancora storico
+    final events = <_HistoryEvent>[];
     events.add(
       _HistoryEvent(
         label: 'Segnalato',
         color: AppColors.statusNegative,
-        timestamp: '$_segnalatoData - $_segnalatoOre - $segnalatoDaInitials',
+        timestamp: '$_segnalatoData - $_segnalatoOre - $_segnalatoDa',
       ),
     );
-
-    // Evento assegnazione (se presente)
     if (!_isSegnalato) {
-      final assegnatoOre = raw['assegnatoOre']?.toString() ?? '11:32';
-      final assegnatoData = raw['assegnatoData']?.toString() ?? '18 apr';
-      final assigneeNote =
-          raw['assegnatoNota']?.toString() ??
-          '${_initials(_responsabileNome ?? 'FP')} ha accettato';
       events.add(
         _HistoryEvent(
           label: 'Assegnato',
           color: AppColors.problemPriorityMedium,
-          timestamp: '$assegnatoData - $assegnatoOre - $assigneeNote',
+          timestamp: _responsabileNome ?? 'Coinquilino',
         ),
       );
     }
-
     return events;
-  }
-
-  String _initials(String name) {
-    final parts = name.trim().split(RegExp(r'\s+'));
-    if (parts.length == 1) return parts[0][0].toUpperCase();
-    return (parts[0][0] + parts[1][0]).toUpperCase();
   }
 
   // ── Actions ─────────────────────────────────────────────────────────────
@@ -501,22 +527,22 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
                     children: [
                       _buildTitleRow(),
                       const SizedBox(height: AppSizes.p20),
-                      // Priorità e azione contestuale in cima
-                      _buildPrioritaSection(),
-                      const SizedBox(height: AppSizes.p16),
-                      _buildContextualActionButton(),
-                      const SizedBox(height: AppSizes.p24),
-                      // Cards informative
                       if (!_isSegnalato && _responsabileNome != null) ...[
                         _buildResponsabileCard(),
-                        const SizedBox(height: AppSizes.p14),
+                        const SizedBox(height: AppSizes.p16),
                       ],
+                      _buildContextualActionButton(),
+                      const SizedBox(height: AppSizes.p24),
                       _buildDescrizioneCard(),
+                      const SizedBox(height: AppSizes.p20),
+                      _buildElegantDivider(),
+                      const SizedBox(height: AppSizes.p20),
+                      _buildPrioritaSection(),
+                      const SizedBox(height: AppSizes.p20),
+                      _buildElegantDivider(),
+                      const SizedBox(height: AppSizes.p20),
+                      _buildSegnalatoInfoCard(),
                       const SizedBox(height: AppSizes.p14),
-                      if (_isSegnalato) ...[
-                        _buildSegnalatoInfoCard(),
-                        const SizedBox(height: AppSizes.p14),
-                      ],
                       _buildStoricoCard(),
                       const SizedBox(height: AppSizes.p8),
                     ],
@@ -595,26 +621,13 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
   // ── Title + chips row ─────────────────────────────────────────────────────
 
   Widget _buildTitleRow() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          _problema.titolo,
-          style: AppTextStyles.screenTitleStrong.copyWith(
-            color: AppColors.textOnDark,
-            fontSize: 26,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: AppSizes.p10),
-        Row(
-          children: [
-            _StatoChip(stato: _problema.stato),
-            const SizedBox(width: AppSizes.p8),
-            _PriorityChip(label: _normalizedPriority),
-          ],
-        ),
-      ],
+    return Text(
+      _problema.titolo,
+      style: AppTextStyles.screenTitleStrong.copyWith(
+        color: AppColors.textOnDark,
+        fontSize: 26,
+        fontWeight: FontWeight.w800,
+      ),
     );
   }
 
@@ -709,30 +722,48 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
   // ── Storico stati card ────────────────────────────────────────────────────
 
   Widget _buildStoricoCard() {
-    final events = _storicoStati;
     return _InfoCard(
       title: 'Storico stato',
-      child: Column(
-        children: [
-          for (var i = 0; i < events.length; i++) ...[
-            _HistoryRow(event: events[i]),
-            if (i < events.length - 1)
-              Padding(
-                padding: const EdgeInsets.only(left: 5),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 2,
-                      height: 14,
-                      margin: const EdgeInsets.symmetric(horizontal: 4.5),
-                      color: AppColors.dividerOnDark,
-                    ),
-                  ],
+      child: _isLoadingDetail
+          ? const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.brandAccent),
+                  ),
                 ),
               ),
-          ],
+            )
+          : _buildStoricoContent(),
+    );
+  }
+
+  Widget _buildStoricoContent() {
+    final events = _storicoStati;
+    return Column(
+      children: [
+        for (var i = 0; i < events.length; i++) ...[
+          _HistoryRow(event: events[i]),
+          if (i < events.length - 1)
+            Padding(
+              padding: const EdgeInsets.only(left: 5),
+              child: Row(
+                children: [
+                  Container(
+                    width: 2,
+                    height: 14,
+                    margin: const EdgeInsets.symmetric(horizontal: 4.5),
+                    color: AppColors.dividerOnDark,
+                  ),
+                ],
+              ),
+            ),
         ],
-      ),
+      ],
     );
   }
 
@@ -782,9 +813,33 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
     );
   }
 
+  // ── Separatore elegante ───────────────────────────────────────────────────
+
+  Widget _buildElegantDivider() {
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            height: 1,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.transparent,
+                  AppColors.brandAccent.withValues(alpha: 0.35),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   // ── Azione contestuale (stato-dipendente) ─────────────────────────────────
 
   Widget _buildContextualActionButton() {
+    // Stato: Segnalato → chiunque può assegnarsi
     if (_isSegnalato) {
       return _ActionButton(
         label: 'Assegna a me',
@@ -796,15 +851,32 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
       );
     }
 
+    // Stato: Assegnato a me → Rinuncia + Risolto
     if (_isCurrentUserAssignee) {
       return Column(
         children: [
+          _ActionButton(
+            label: 'Rinuncia al problema',
+            color: const Color(0xFFBE2C2C),
+            isLoading: _isProcessing,
+            onPressed: _isProcessing
+                ? () {}
+                : () => _showConfirmDialog(
+                    title: 'De-assegnazione',
+                    body:
+                        'Se rinunci al problema, tornerà allo stato Segnalato e tutti i coinquilini verranno avvisati.',
+                    accentColor: AppColors.warning,
+                    confirmLabel: 'Conferma',
+                    onConfirm: _handleDeassign,
+                  ),
+          ),
+          const SizedBox(height: AppSizes.p10),
           _ActionButton(
             label: 'Segna come risolto',
             gradient: const LinearGradient(
               colors: [Color(0xFF4CAF50), Color(0xFF2E7D32)],
             ),
-            isLoading: false,
+            isLoading: _isProcessing,
             onPressed: _isProcessing
                 ? () {}
                 : () => _showConfirmDialog(
@@ -816,22 +888,15 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
                     onConfirm: _handleRisolto,
                   ),
           ),
-          const SizedBox(height: AppSizes.p10),
-          _ActionButton(
-            label: 'Rinuncia al problema',
-            color: const Color(0xFFBE2C2C),
-            isLoading: _isProcessing,
-            onPressed: () => _showConfirmDialog(
-              title: 'De-assegnazione',
-              body:
-                  'Se rinunci al problema, tornerà allo stato Segnalato e tutti i coinquilini verranno avvisati.',
-              accentColor: AppColors.warning,
-              confirmLabel: 'Conferma',
-              onConfirm: _handleDeassign,
-            ),
-          ),
         ],
       );
+    }
+
+    // Stato: Assegnato a qualcun altro → banner informativo
+    final stato = _problema.stato.toLowerCase();
+    if (stato.contains('assegn')) {
+      final nome = _responsabileNome ?? 'un coinquilino';
+      return _GiaPresoInCaricoBanner(nome: nome);
     }
 
     return const SizedBox.shrink();
@@ -841,6 +906,53 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
 // ---------------------------------------------------------------------------
 // Sub-widgets
 // ---------------------------------------------------------------------------
+
+class _GiaPresoInCaricoBanner extends StatelessWidget {
+  const _GiaPresoInCaricoBanner({required this.nome});
+  final String nome;
+
+  @override
+  Widget build(BuildContext context) {
+    const red = Color(0xFFFF3B44);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2A0A0A),
+        borderRadius: BorderRadius.circular(AppSizes.radius16),
+        border: Border.all(color: red, width: 1.8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text('⚡', style: TextStyle(fontSize: 18)),
+              const SizedBox(width: 8),
+              Text(
+                'Già preso in carico',
+                style: AppTextStyles.screenTitleStrong.copyWith(
+                  color: red,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            '$nome si è appena assegnato questo problema. Non puoi assegnartelo mentre è in carico a un coinquilino.',
+            style: AppTextStyles.bodyMutedRelaxed.copyWith(
+              color: Colors.white.withValues(alpha: 0.80),
+              fontSize: 15,
+              height: 1.45,
+            ),
+            textAlign: TextAlign.left,
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _InfoCard extends StatelessWidget {
   const _InfoCard({required this.title, required this.child});
@@ -869,81 +981,6 @@ class _InfoCard extends StatelessWidget {
           const SizedBox(height: AppSizes.p10),
           child,
         ],
-      ),
-    );
-  }
-}
-
-class _StatoChip extends StatelessWidget {
-  const _StatoChip({required this.stato});
-  final String stato;
-
-  @override
-  Widget build(BuildContext context) {
-    final lower = stato.toLowerCase();
-    final Color bg;
-    final Color fg;
-    final String label;
-
-    if (lower.contains('assegn')) {
-      bg = AppColors.warning.withValues(alpha: 0.22);
-      fg = AppColors.warning;
-      label = 'Assegnato';
-    } else if (lower.contains('risolt')) {
-      bg = AppColors.statusPositive.withValues(alpha: 0.22);
-      fg = AppColors.statusPositive;
-      label = 'Risolto';
-    } else {
-      bg = AppColors.statusPositive.withValues(alpha: 0.18);
-      fg = AppColors.statusPositive;
-      label = 'Segnalato';
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(AppSizes.radius16),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(color: fg, fontSize: 14, fontWeight: FontWeight.w800),
-      ),
-    );
-  }
-}
-
-class _PriorityChip extends StatelessWidget {
-  const _PriorityChip({required this.label});
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final Color bg;
-    final Color fg;
-
-    switch (label.toLowerCase()) {
-      case 'urgente':
-        bg = const Color(0xFF6B1B1B);
-        fg = AppColors.problemPriorityUrgent;
-      case 'media':
-        bg = const Color(0xFF7B4508);
-        fg = AppColors.problemPriorityMedium;
-      default:
-        bg = const Color(0xFF806600);
-        fg = AppColors.problemPriorityLow;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(AppSizes.radius16),
-        border: Border.all(color: fg.withValues(alpha: 0.55)),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(color: fg, fontSize: 14, fontWeight: FontWeight.w800),
       ),
     );
   }
@@ -1012,14 +1049,19 @@ class _PriorityButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final brightBg = Color.lerp(bgColor, Colors.white, 0.28)!;
+    final darkBg = Color.lerp(bgColor, Colors.black, 0.18)!;
+
     final gradient = LinearGradient(
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
-      colors: [
-        Color.lerp(bgColor, Colors.white, 0.28)!,
-        bgColor,
-        Color.lerp(bgColor, Colors.black, 0.18)!,
-      ],
+      colors: isSelected
+          ? [
+              Color.lerp(bgColor, Colors.white, 0.50)!,
+              bgColor,
+              darkBg,
+            ]
+          : [brightBg, bgColor, darkBg],
       stops: const [0, 0.62, 1],
     );
 
@@ -1028,38 +1070,55 @@ class _PriorityButton extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppSizes.radius16),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 130),
-          height: 50,
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+          height: isSelected ? 58 : 50,
+          margin: EdgeInsets.symmetric(vertical: isSelected ? 0 : 4),
           decoration: BoxDecoration(
             gradient: gradient,
             borderRadius: BorderRadius.circular(AppSizes.radius16),
             border: Border.all(
-              color: isSelected
-                  ? AppColors.brandAccent
-                  : AppColors.darkBackground,
-              width: 2.5,
+              color: isSelected ? dotColor : Colors.transparent,
+              width: isSelected ? 2.5 : 0,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: isSelected
-                    ? Colors.black.withValues(alpha: 0.4)
-                    : AppColors.shadowStrong,
-                blurRadius: isSelected ? 8 : 4,
-                offset: Offset(0, isSelected ? 4 : 2),
-              ),
-            ],
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: dotColor.withValues(alpha: 0.55),
+                      blurRadius: 18,
+                      spreadRadius: 1,
+                      offset: const Offset(0, 4),
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.35),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : [
+                    BoxShadow(
+                      color: AppColors.shadowStrong,
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.circle, color: dotColor, size: 14),
-              const SizedBox(width: 5),
+              if (isSelected)
+                Icon(Icons.check_circle_rounded, color: dotColor, size: 16)
+              else
+                Icon(Icons.circle, color: dotColor, size: 12),
+              const SizedBox(width: 6),
               Text(
                 label,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : Colors.white70,
+                  fontSize: isSelected ? 15 : 13,
+                  fontWeight:
+                      isSelected ? FontWeight.w900 : FontWeight.w600,
+                  letterSpacing: isSelected ? 0.3 : 0,
                 ),
               ),
             ],

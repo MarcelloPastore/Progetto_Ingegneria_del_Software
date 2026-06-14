@@ -1,3 +1,29 @@
+class StoricoItem {
+  const StoricoItem({
+    required this.stato,
+    required this.data,
+    required this.utenteId,
+    required this.utenteUsername,
+  });
+
+  final String stato;
+  final DateTime data;
+  final String utenteId;
+  final String utenteUsername;
+
+  factory StoricoItem.fromJson(Map<String, dynamic> json) {
+    final utente = json['utente'];
+    return StoricoItem(
+      stato: (json['stato'] ?? '').toString(),
+      data: DateTime.tryParse((json['data'] ?? '').toString())?.toLocal() ??
+          DateTime.now(),
+      utenteId: (utente is Map ? utente['id'] : null)?.toString() ?? '',
+      utenteUsername:
+          (utente is Map ? utente['username'] : null)?.toString() ?? '',
+    );
+  }
+}
+
 class Problema {
   const Problema({
     required this.id,
@@ -5,6 +31,7 @@ class Problema {
     required this.stato,
     required this.priorita,
     required this.raw,
+    this.storicoStato = const [],
   });
 
   final String id;
@@ -12,6 +39,7 @@ class Problema {
   final String stato;
   final String priorita;
   final Map<String, dynamic> raw;
+  final List<StoricoItem> storicoStato;
 
   factory Problema.fromJson(Map<String, dynamic> json) {
     final raw = Map<String, dynamic>.from(json);
@@ -37,6 +65,16 @@ class Problema {
           '${dataCreazione.hour.toString().padLeft(2, '0')}:${dataCreazione.minute.toString().padLeft(2, '0')}';
     }
 
+    final storicoRaw = json['storicoStato'];
+    final storicoStato = <StoricoItem>[];
+    if (storicoRaw is List) {
+      for (final item in storicoRaw) {
+        if (item is Map<String, dynamic>) {
+          storicoStato.add(StoricoItem.fromJson(item));
+        }
+      }
+    }
+
     return Problema(
       id: (json['id'] ?? json['idProblema'] ?? '').toString(),
       titolo:
@@ -45,6 +83,7 @@ class Problema {
       stato: (json['stato'] ?? json['status'] ?? 'Segnalato').toString(),
       priorita: (json['priorita'] ?? json['priority'] ?? 'Media').toString(),
       raw: raw,
+      storicoStato: storicoStato,
     );
   }
 
