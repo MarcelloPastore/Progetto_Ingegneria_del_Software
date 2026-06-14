@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/casa.dart';
+import 'package:coincasa_app/core/services/session_manager.dart';
+import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 import 'package:coincasa_app/features/casa/screens/compilazione_form_crea_casa.dart';
@@ -12,14 +15,14 @@ import 'package:coincasa_app/features/casa/screens/hub_casa_admin.dart';
 // Riferimento globale per il file all'utente corrente per facilitare l'accesso alle variabili di sessione
 final _me = ApiProvider.client;
 
-class ListaCaseScreen extends StatefulWidget {
+class ListaCaseScreen extends ConsumerStatefulWidget {
   const ListaCaseScreen({super.key});
 
   @override
-  State<ListaCaseScreen> createState() => _ListaCaseScreenState();
+  ConsumerState<ListaCaseScreen> createState() => _ListaCaseScreenState();
 }
 
-class _ListaCaseScreenState extends State<ListaCaseScreen> {
+class _ListaCaseScreenState extends ConsumerState<ListaCaseScreen> {
   late Future<List<Casa>> _future;
 
   @override
@@ -36,6 +39,7 @@ class _ListaCaseScreenState extends State<ListaCaseScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final activeCasaState = ref.watch(activeCasaProvider);
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
@@ -75,9 +79,30 @@ class _ListaCaseScreenState extends State<ListaCaseScreen> {
                                     const SizedBox(height: 20),
                                 itemBuilder: (context, index) {
                                   final casa = caseUtente[index];
+                                  final effectiveRuolo =
+                                      casa.id == activeCasaState.selectedCasaId
+                                          ? activeCasaState.ruoloCasa ??
+                                                casa.ruolo
+                                          : casa.ruolo;
                                   return _HouseCard(
                                     casa: casa,
-                                    onTap: () {
+                                    effectiveRuolo: effectiveRuolo,
+                                    onTap: () async {
+                                      try {
+                                        final ruolo = await SessionManager
+                                            .selectCasa(casaId: casa.id);
+                                        if (context.mounted) {
+                                          ActiveCasaScope.read(
+                                            context,
+                                          ).setCasaContext(
+                                            casaId: casa.id,
+                                            ruolo: ruolo,
+                                          );
+                                        }
+                                      } catch (_) {
+                                        // Il token potrebbe già essere valido; si tenta la navigazione comunque.
+                                      }
+                                      if (!context.mounted) return;
                                       Navigator.of(context).push(
                                         MaterialPageRoute<void>(
                                           builder: (_) => HubCasaAdminScreen(
@@ -253,9 +278,14 @@ class _CurrentUserAvatar extends StatelessWidget {
 }
 
 class _HouseCard extends StatelessWidget {
-  const _HouseCard({required this.casa, this.onTap});
+  const _HouseCard({
+    required this.casa,
+    required this.effectiveRuolo,
+    this.onTap,
+  });
 
   final Casa casa;
+  final String effectiveRuolo;
   final VoidCallback? onTap;
 
   String get _address {
@@ -267,10 +297,10 @@ class _HouseCard extends StatelessWidget {
   }
 
   String get _role {
-    if (casa.ruolo == 'HomeAdmin') {
+    if (effectiveRuolo == 'HomeAdmin' || effectiveRuolo == 'SysAdmin') {
       return 'Admin';
     }
-    if (casa.ruolo == 'Inquilino') {
+    if (effectiveRuolo == 'Inquilino') {
       return 'Membro';
     }
     return 'Casa';

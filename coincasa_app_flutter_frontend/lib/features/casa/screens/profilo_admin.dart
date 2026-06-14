@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:coincasa_app/core/api/api_provider.dart';
-import 'package:coincasa_app/features/casa/screens/hub_casa_admin.dart';
+import 'package:coincasa_app/core/state/active_casa.dart';
+import 'package:coincasa_app/features/casa/screens/lista_case.dart';
 import 'package:coincasa_app/features/casa/screens/promuovi_coinquilino.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
@@ -129,20 +130,32 @@ class _AdminProfileCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 9),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
-            decoration: BoxDecoration(
-              color: AppColors.brandPrimary,
-              borderRadius: BorderRadius.circular(5),
-            ),
-            child: const Text(
-              'Admin',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
+          Builder(
+            builder: (context) {
+              final ruolo = ActiveCasaScope.read(context).ruoloCasa ?? '';
+              final label = ruolo == 'HomeAdmin' || ruolo == 'SysAdmin'
+                  ? 'Admin'
+                  : ruolo == 'Inquilino'
+                  ? 'Membro'
+                  : ruolo.isNotEmpty
+                  ? ruolo
+                  : 'Casa';
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+                decoration: BoxDecoration(
+                  color: AppColors.brandPrimary,
+                  borderRadius: BorderRadius.circular(5),
+                ),
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -286,7 +299,7 @@ class _AdminActions extends StatelessWidget {
               onPressed: () {
                 Navigator.of(context).pushReplacement(
                   MaterialPageRoute<void>(
-                    builder: (_) => const HubCasaAdminScreen(),
+                    builder: (_) => const ListaCaseScreen(),
                   ),
                 );
               },

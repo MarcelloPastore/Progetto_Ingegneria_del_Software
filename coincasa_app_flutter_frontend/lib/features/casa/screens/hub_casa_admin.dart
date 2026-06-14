@@ -5,7 +5,6 @@ import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/models/spesa.dart';
-import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
@@ -55,10 +54,21 @@ Inquilino? _resolveCurrentInquilino(List<Inquilino> coinquilini) {
   return null;
 }
 
-class HubCasaAdminScreen extends StatefulWidget {
-  const HubCasaAdminScreen({super.key, this.casaId});
+bool _isOwnerById(List<Inquilino> inquilini) {
+  final currentId = _me.currentUserId?.trim();
+  if (currentId == null || currentId.isEmpty) return false;
+  try {
+    final owner = inquilini.firstWhere((i) => i.isOwner);
+    return owner.id.trim() == currentId;
+  } catch (_) {
+    return false;
+  }
+}
 
-  final String? casaId;
+class HubCasaAdminScreen extends StatefulWidget {
+  const HubCasaAdminScreen({super.key, required this.casaId});
+
+  final String casaId;
 
   @override
   State<HubCasaAdminScreen> createState() => _HubCasaAdminScreenState();
@@ -66,45 +76,27 @@ class HubCasaAdminScreen extends StatefulWidget {
 
 class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
   late Future<_HubCasaData> _future;
-  late ActiveCasaController _activeCasaController;
-  bool _initialized = false;
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_initialized) {
-      return;
-    }
-
-    _activeCasaController = ActiveCasaScope.read(context);
+  void initState() {
+    super.initState();
     _future = _load();
-    _initialized = true;
   }
 
   Future<_HubCasaData> _load() async {
-    final caseUtente = await ApiProvider.casa.list();
-    if (caseUtente.isEmpty) {
-      throw StateError('Nessuna casa disponibile.');
-    }
+    final hub = await ApiProvider.casa.getHub(widget.casaId);
 
-    final targetId = (widget.casaId?.trim().isNotEmpty == true
-            ? widget.casaId
-            : _activeCasaController.selectedCasaId)
-        ?.trim();
+    final casaJson = hub['casa'] as Map<String, dynamic>;
+    final casa = Casa.fromJson(casaJson);
 
-    final selected = caseUtente.firstWhere(
-      (c) => c.id == targetId,
-      orElse: () => caseUtente.first,
-    );
+    final membriJson = casaJson['membri'];
+    final inquilini = (membriJson is List)
+        ? membriJson
+            .cast<Map<String, dynamic>>()
+            .map(Inquilino.fromJson)
+            .toList()
+        : <Inquilino>[];
 
-    final results = await Future.wait<dynamic>([
-      ApiProvider.casa.getById(selected.id),
-      ApiProvider.casa.listInquilini(selected.id),
-      ApiProvider.spese.list(selected.id),
-      ApiProvider.turni.list(selected.id),
-    ]);
-
-    final inquilini = results[1] as List<Inquilino>;
     final current = _resolveCurrentInquilino(inquilini);
     if (current != null) {
       _me.setCurrentUserIdentity(
@@ -117,16 +109,27 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
       );
     }
 
-    final spese = results[2] as List<Spesa>;
-    final isAdmin =
-        selected.ruolo == 'HomeAdmin' || selected.ruolo == 'SysAdmin';
+    final ruolo = hub['ruolo']?.toString() ?? '';
+    final isAdmin = ruolo == 'HomeAdmin' || ruolo == 'SysAdmin';
+
+    final isOwnerFromHub =
+        hub['isOwner'] as bool? ?? hub['isCurrentUserOwner'] as bool?;
+    final isCurrentUserOwner =
+        isOwnerFromHub ?? current?.isOwner ?? _isOwnerById(inquilini);
+
+    // Recupera le spese per la logica di eliminazione/uscita dalla casa
+    final spese = await ApiProvider.spese.list(widget.casaId);
+
     return _HubCasaData(
-      casa: results[0] as Casa,
+      casa: casa,
       inquilini: inquilini,
-      speseCount: spese.length,
-      turniCount: (results[3] as List).length,
+      speseCount: hub['speseCount'] as int? ?? 0,
+      scadenzeCount: hub['scadenzeCount'] as int? ?? 0,
+      problemiCount: hub['problemiCount'] as int? ?? 0,
+      turniCount: hub['turniCount'] as int? ?? 0,
       spese: spese,
       isAdmin: isAdmin,
+      isCurrentUserOwner: isCurrentUserOwner,
     );
   }
 
@@ -292,8 +295,7 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
             }
 
             final data = snapshot.data!;
-            final currentInquilino = _resolveCurrentInquilino(data.inquilini);
-            final isCurrentOwner = currentInquilino?.isOwner ?? false;
+            final isCurrentOwner = data.isCurrentUserOwner;
             final isAdmin = data.isAdmin;
 
             return RefreshIndicator(
@@ -334,17 +336,23 @@ class _HubCasaData {
     required this.casa,
     required this.inquilini,
     required this.speseCount,
+    required this.scadenzeCount,
+    required this.problemiCount,
     required this.turniCount,
     required this.spese,
     required this.isAdmin,
+    required this.isCurrentUserOwner,
   });
 
   final Casa casa;
   final List<Inquilino> inquilini;
   final int speseCount;
+  final int scadenzeCount;
+  final int problemiCount;
   final int turniCount;
   final List<Spesa> spese;
   final bool isAdmin;
+  final bool isCurrentUserOwner;
 }
 
 class _CurrentUserAvatar extends StatelessWidget {
@@ -517,19 +525,19 @@ class _HouseHeaderCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              const Expanded(
+              Expanded(
                 child: _StatisticChip(
-                  value: '0',
+                  value: '${data.scadenzeCount}',
                   label: 'Scadenze',
-                  valueColor: Color(0xFFF9A825),
+                  valueColor: const Color(0xFFF9A825),
                 ),
               ),
               const SizedBox(width: 8),
-              const Expanded(
+              Expanded(
                 child: _StatisticChip(
-                  value: '0',
+                  value: '${data.problemiCount}',
                   label: 'Problemi',
-                  valueColor: Color(0xFF2F9BFF),
+                  valueColor: const Color(0xFF2F9BFF),
                 ),
               ),
               const SizedBox(width: 8),

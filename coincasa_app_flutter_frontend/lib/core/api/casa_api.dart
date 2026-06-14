@@ -92,6 +92,11 @@ class CasaApi {
     throw const FormatException('Expected a token in selectCasa response.');
   }
 
+  Future<Map<String, dynamic>> getHub(String casaId) async {
+    final data = await _client.getJson('/case/$casaId/hub');
+    return _asMap(data);
+  }
+
   Future<String> getInviteLink(String casaId) async {
     final data = await _client.getJson('/case/$casaId/invite-link');
     if (data is String) {
