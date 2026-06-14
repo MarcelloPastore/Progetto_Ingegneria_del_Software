@@ -1136,7 +1136,7 @@ class _AssignMeButton extends StatelessWidget {
       borderRadius: BorderRadius.circular(AppSizes.radius8),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOutBack,
+        curve: Curves.easeOut,
         height: selected ? 48 : 43,
         decoration: BoxDecoration(
           color: selected
@@ -1163,6 +1163,7 @@ class _AssignMeButton extends StatelessWidget {
             AnimatedScale(
               scale: selected ? 1.15 : 1.0,
               duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutBack,
               child: const Image(
                 image: AssetImage('assets/Icons/assegna_a_me_mano.png'),
                 width: 22,
