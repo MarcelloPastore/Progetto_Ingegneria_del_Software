@@ -17,6 +17,7 @@ import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/dashboard/house_health_section.dart';
 import 'package:coincasa_app/core/widgets/dashboard/open_problems_section.dart';
+import 'package:coincasa_app/features/casa/screens/casa_welcome_screen.dart';
 import 'package:coincasa_app/features/icone_fab.dart';
 
 // Riferimento globale per il file all'utente corrente per facilitare l'accesso alle variabili di sessione
@@ -126,11 +127,22 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
   Future<_DashboardData> _fetchFromNetwork() async {
     final caseUtente = await ApiProvider.casa.list();
     if (caseUtente.isEmpty) {
-      return const _DashboardData(
-        nomeCasa: 'Nessuna casa',
-        caseUtente: [],
-        casaSelezionataId: null,
-      );
+      if (mounted) {
+        final client = ApiProvider.client;
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute<void>(
+            builder: (_) => CasaWelcomeScreen(
+              email: client.currentUserEmail ?? '',
+              userId: client.currentUserId,
+              username: client.currentUserUsername,
+              displayName: client.currentUserDisplayName,
+            ),
+          ),
+          (_) => false,
+        );
+      }
+      throw StateError('Nessuna casa disponibile.');
     }
 
     final casa = await ensureActiveCasaContext(
