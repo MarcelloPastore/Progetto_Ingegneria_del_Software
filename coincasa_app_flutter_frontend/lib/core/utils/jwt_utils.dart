@@ -29,4 +29,15 @@ class JwtUtils {
     final value = payload?['idCasa'];
     return value is String && value.isNotEmpty ? value : null;
   }
+
+  /// Restituisce l'ID utente dal token JWT, controllando i claim più comuni.
+  static String? extractUserId(String token) {
+    final payload = decodePayload(token);
+    if (payload == null) return null;
+    for (final key in ['idUtente', 'userId', 'sub', 'id']) {
+      final value = payload[key];
+      if (value is String && value.isNotEmpty) return value;
+    }
+    return null;
+  }
 }

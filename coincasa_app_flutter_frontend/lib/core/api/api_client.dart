@@ -112,6 +112,7 @@ class ApiClient {
     clearCasaContext();
   }
 
+  String? get authToken => _authToken;
   String? get currentUserId => _currentUserId;
   String? get currentUserEmail => _currentUserEmail;
   String? get currentUserName => _currentUserDisplayName;

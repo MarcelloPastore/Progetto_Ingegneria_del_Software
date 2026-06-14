@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
+import 'package:coincasa_app/core/utils/jwt_utils.dart';
 import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/models/spesa.dart';
@@ -55,7 +56,9 @@ Inquilino? _resolveCurrentInquilino(List<Inquilino> coinquilini) {
 }
 
 bool _isOwnerById(List<Inquilino> inquilini) {
-  final currentId = _me.currentUserId?.trim();
+  final token = _me.authToken;
+  final jwtId = token != null ? JwtUtils.extractUserId(token)?.trim() : null;
+  final currentId = (jwtId?.isNotEmpty == true ? jwtId : _me.currentUserId?.trim());
   if (currentId == null || currentId.isEmpty) return false;
   try {
     final owner = inquilini.firstWhere((i) => i.isOwner);
@@ -314,8 +317,8 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
                   if (!isAdmin) const _AdminWarningCard(),
                   if (!isAdmin) const SizedBox(height: 16),
                   _DeleteHouseButton(
-                    isOwner: isCurrentOwner,
-                    onPressed: isCurrentOwner
+                    isOwner: isCurrentOwner || isAdmin,
+                    onPressed: (isCurrentOwner || isAdmin)
                         ? () => _deleteCasa(data)
                         : () => _leaveCasa(data),
                   ),
