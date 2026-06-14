@@ -33,7 +33,6 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
     'Settimanale',
     'Mensile',
     'Annuale',
-    'Custom',
   ];
 
   bool get _hasErrors => _hasNameError || _hasDateError;

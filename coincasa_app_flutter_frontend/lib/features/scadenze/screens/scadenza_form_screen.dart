@@ -63,7 +63,6 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
     'Settimanale',
     'Mensile',
     'Annuale',
-    //'Custom',
   ];
 
   bool get _hasErrors => _hasNameError || _hasDateError;

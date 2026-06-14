@@ -122,11 +122,10 @@ List<Inquilino> _otherHousemates(List<Inquilino> assignees) {
 }
 
 Inquilino? _selectedInquilino(List<Inquilino> inquilini, String? selectedId) {
-  if (selectedId != null) {
-    for (final inquilino in inquilini) {
-      if (inquilino.id == selectedId) {
-        return inquilino;
-      }
+  if (selectedId == null) return inquilini.isEmpty ? null : inquilini.first;
+  for (final inquilino in inquilini) {
+    if (inquilino.id == selectedId) {
+      return inquilino;
     }
   }
   return inquilini.isEmpty ? null : inquilini.first;
@@ -332,7 +331,11 @@ class _TurniPopupPanelState extends ConsumerState<TurniPopupPanel> {
       },
       onAssigneeSelected: (id) {
         setState(() {
-          _selectedInquilinoId = id;
+          if (_selectedInquilinoId == id) {
+            _selectedInquilinoId = null;
+          } else {
+            _selectedInquilinoId = id;
+          }
           _assigneeExpanded = false;
           _errorMessage = null;
         });
@@ -1044,9 +1047,8 @@ class _AssigneeDropdownState extends State<_AssigneeDropdown> {
                   if (!widget.canAssignOthers) ...[
                     _AssignMeButton(
                       selected:
-                          widget.selectedId == null ||
-                          (widget.currentUserId != null &&
-                              widget.selectedId == widget.currentUserId),
+                          widget.currentUserId != null &&
+                          widget.selectedId == widget.currentUserId,
                       onTap: widget.currentUserId == null
                           ? null
                           : () => widget.onSelected(widget.currentUserId!),
@@ -1054,9 +1056,8 @@ class _AssigneeDropdownState extends State<_AssigneeDropdown> {
                   ] else ...[
                     _AssignMeButton(
                       selected:
-                          widget.selectedId == null ||
-                          (widget.currentUserId != null &&
-                              widget.selectedId == widget.currentUserId),
+                          widget.currentUserId != null &&
+                          widget.selectedId == widget.currentUserId,
                       onTap: widget.currentUserId == null
                           ? null
                           : () => widget.onSelected(widget.currentUserId!),
