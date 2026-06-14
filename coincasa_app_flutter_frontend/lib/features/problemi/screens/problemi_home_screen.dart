@@ -84,8 +84,10 @@ class _ProblemiHomeScreenState extends ConsumerState<ProblemiHomeScreen> {
                           )
                         : snapshot.hasError
                         ? _ErrorBody(
-                            onRetry: () =>
-                                setState(() => _future = _loadProblemi()),
+                            onRetry: () {
+                              final next = _loadProblemi();
+                              setState(() { _future = next; });
+                            },
                           )
                         : isEmpty
                         ? const _EmptyBody()
@@ -96,7 +98,8 @@ class _ProblemiHomeScreenState extends ConsumerState<ProblemiHomeScreen> {
                         .pushNamed(SegnalaProblemaScreen.routeName)
                         .then((_) {
                           if (mounted) {
-                            setState(() => _future = _loadProblemi());
+                            final next = _loadProblemi();
+                            setState(() { _future = next; });
                           }
                         }),
                   ),
