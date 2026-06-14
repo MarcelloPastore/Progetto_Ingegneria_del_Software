@@ -163,6 +163,15 @@ Nota: per mantenere la lista leggibile sono esclusi file generati e cache (build
 - `npm run build` compila TypeScript.
 - `npm test` esegue i test con Vitest.
 
+### Per avviare il backend
+
+- `npx tsx index.ts`
+
+per la versione compilata:
+- `npm run build`
+- `node dist/index.js`
+
+
 ## Frontend (Flutter)
 
 - Entry point: lib/main.dart

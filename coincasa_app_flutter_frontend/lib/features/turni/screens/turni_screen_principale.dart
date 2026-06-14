@@ -494,9 +494,7 @@ class _TurnoFormPanel extends StatelessWidget {
               isLoading: isSubmitting,
             ),
             const SizedBox(height: AppSizes.p8),
-            FabCancelButton(
-              onPressed: isSubmitting ? null : onCancel,
-            ),
+            FabCancelButton(onPressed: isSubmitting ? null : onCancel),
           ],
         ),
       ),
@@ -660,10 +658,7 @@ class _TaskField extends StatelessWidget {
 }
 
 class _DatePreviewRow extends StatelessWidget {
-  const _DatePreviewRow({
-    required this.selectedDate,
-    required this.onDateTap,
-  });
+  const _DatePreviewRow({required this.selectedDate, required this.onDateTap});
 
   final DateTime selectedDate;
   final VoidCallback onDateTap;
@@ -725,7 +720,6 @@ class _DatePreviewRow extends StatelessWidget {
     );
   }
 }
-
 
 class _FrequencyDropdown extends StatelessWidget {
   const _FrequencyDropdown({
@@ -1139,36 +1133,64 @@ class _AssignMeButton extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppSizes.radius8),
-      child: Container(
-        height: 43,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutBack,
+        height: selected ? 48 : 43,
         decoration: BoxDecoration(
-          color: AppColors.turniAssignMeSurface,
+          color: selected
+              ? AppColors.statusPositive.withValues(alpha: 0.15)
+              : AppColors.turniAssignMeSurface,
           borderRadius: BorderRadius.circular(AppSizes.radius8),
-          border: selected
-              ? Border.all(color: AppColors.statusPositive, width: 2)
-              : null,
+          border: Border.all(
+            color: selected ? AppColors.statusPositive : AppColors.transparent,
+            width: selected ? 2.5 : 1.5,
+          ),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: AppColors.statusPositive.withValues(alpha: 0.35),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : [],
         ),
         padding: const EdgeInsets.symmetric(horizontal: AppSizes.p18),
         child: Row(
           children: [
-            const Image(
-              image: AssetImage('assets/Icons/assegna_a_me_mano.png'),
-              width: 22,
-              height: 22,
-              fit: BoxFit.contain,
+            AnimatedScale(
+              scale: selected ? 1.15 : 1.0,
+              duration: const Duration(milliseconds: 220),
+              child: const Image(
+                image: AssetImage('assets/Icons/assegna_a_me_mano.png'),
+                width: 22,
+                height: 22,
+                fit: BoxFit.contain,
+              ),
             ),
             Expanded(
-              child: Text(
-                'Assegna a me',
+              child: AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 220),
                 textAlign: TextAlign.center,
                 style: AppTextStyles.bodyStrong.copyWith(
                   color: AppColors.statusPositive,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
+                  fontSize: selected ? 17 : 16,
+                  fontWeight: selected ? FontWeight.w900 : FontWeight.w800,
                 ),
+                child: const Text('Assegna a me'),
               ),
             ),
-            const SizedBox(width: AppSizes.p23),
+            AnimatedOpacity(
+              duration: const Duration(milliseconds: 220),
+              opacity: selected ? 1.0 : 0.0,
+              child: const Icon(
+                Icons.check_circle_rounded,
+                color: AppColors.statusPositive,
+                size: 20,
+              ),
+            ),
+            if (!selected) const SizedBox(width: 20),
           ],
         ),
       ),
@@ -1324,4 +1346,3 @@ OutlineInputBorder _fieldBorder(Color color, {double width = 1}) {
     borderSide: BorderSide(color: color, width: width),
   );
 }
-

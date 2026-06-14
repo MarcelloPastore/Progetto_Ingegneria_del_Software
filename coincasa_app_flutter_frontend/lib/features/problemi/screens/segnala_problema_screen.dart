@@ -534,14 +534,15 @@ class _PriorityChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final brightBg = Color.lerp(bgColor, Colors.white, 0.28)!;
+    final darkBg = Color.lerp(bgColor, Colors.black, 0.18)!;
+
     final gradient = LinearGradient(
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
-      colors: [
-        Color.lerp(bgColor, Colors.white, 0.30)!,
-        bgColor,
-        Color.lerp(bgColor, Colors.black, 0.18)!,
-      ],
+      colors: selected
+          ? [Color.lerp(bgColor, Colors.white, 0.50)!, bgColor, darkBg]
+          : [brightBg, bgColor, darkBg],
       stops: const [0, 0.62, 1],
     );
 
@@ -549,41 +550,58 @@ class _PriorityChip extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppSizes.radius16),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 140),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+        height: selected ? 58 : 50,
+        margin: EdgeInsets.symmetric(vertical: selected ? 0 : 4),
         decoration: BoxDecoration(
           gradient: gradient,
           borderRadius: BorderRadius.circular(AppSizes.radius16),
           border: Border.all(
-            color: selected ? AppColors.brandAccent : AppColors.darkBackground,
-            width: 3,
+            color: selected ? contentColor : Colors.transparent,
+            width: selected ? 2.5 : 0,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: selected
-                  ? Colors.black.withValues(alpha: 0.45)
-                  : AppColors.shadowStrong,
-              blurRadius: selected ? 8 : 6,
-              offset: Offset(0, selected ? 4 : 3),
-            ),
-          ],
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: contentColor.withValues(alpha: 0.55),
+                    blurRadius: 18,
+                    spreadRadius: 1,
+                    offset: const Offset(0, 4),
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.35),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : [
+                  BoxShadow(
+                    color: AppColors.shadowStrong,
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.circle, color: contentColor, size: 18),
-            const SizedBox(width: 2),
+            if (selected)
+              Icon(Icons.check_circle_rounded, color: contentColor, size: 16)
+            else
+              Icon(Icons.circle, color: contentColor, size: 12),
+            const SizedBox(width: 6),
             Flexible(
               child: Text(
                 label,
                 maxLines: 1,
                 softWrap: false,
                 overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.screenTitleStrong.copyWith(
-                  color: AppColors.textOnDark,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
+                style: TextStyle(
+                  color: selected ? Colors.white : Colors.white70,
+                  fontSize: selected ? 15 : 13,
+                  fontWeight: selected ? FontWeight.w900 : FontWeight.w600,
+                  letterSpacing: selected ? 0.3 : 0,
                 ),
               ),
             ),
