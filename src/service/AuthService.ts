@@ -143,14 +143,6 @@ export class AuthService {
       throw new DuplicateUserError("L'email è già in uso.");
     }
 
-    const existingByUsername = await prisma.utente.findFirst({
-      where: { username: data.username },
-    });
-
-    if (existingByUsername) {
-      throw new DuplicateUserError("L'email è già in uso.");
-    }
-
     const hashedPassword = await argon2.hash(data.password, {
       type: argon2.argon2id,
     });
