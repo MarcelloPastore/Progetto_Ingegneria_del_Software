@@ -56,3 +56,13 @@ export const InviteLinkSchema = z.object({
   inviteLink: z.string(),
 });
 export type InviteLinkDto = z.infer<typeof InviteLinkSchema>;
+
+export const HubCasaSchema = z.object({
+  casa: CasaResponseSchema,
+  ruolo: ruoloSchema,
+  speseCount: z.number().int().nonnegative(),
+  scadenzeCount: z.number().int().nonnegative(),
+  problemiCount: z.number().int().nonnegative(),
+  turniCount: z.number().int().nonnegative(),
+});
+export type HubCasaDto = z.infer<typeof HubCasaSchema>;

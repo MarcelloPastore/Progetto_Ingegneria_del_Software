@@ -219,4 +219,19 @@ export class CasaController {
       return this.handleFailure(reply, error);
     }
   };
+
+  getHubCasa = async (
+    request: FastifyRequest<{ Params: CasaParams }>,
+    reply: FastifyReply,
+  ) => {
+    try {
+      const hub = await this.casaService.getHubCasa(
+        request.params.idCasa,
+        request.user.idUtente,
+      );
+      return reply.status(200).send(hub);
+    } catch (error) {
+      return this.handleFailure(reply, error);
+    }
+  };
 }

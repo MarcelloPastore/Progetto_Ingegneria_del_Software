@@ -39,6 +39,7 @@ import {
 import {
   AggiungiInquilinoDto,
   CreaCasaDto,
+  HubCasaDto,
   ModificaCasaDto,
   CasaResponseDto,
   ModificaRuoloDto,
@@ -294,6 +295,22 @@ export function casaRoutes(app: FastifyInstance) {
     casaController.getCasa,
   );
   /**
+   * @api  GetHubCasa
+   * @route GET /case/:idCasa/hub
+   *
+   * @summary Restituisce i dati aggregati dell'hub casa: dettagli, inquilini, ruolo utente e conteggi di spese, scadenze, problemi e turni.
+   *
+   * @see {@link HubCasaDto}
+   *
+   * @version 1.0.0
+   * @author Mauro Cavasinni
+   */
+  app.get<{ Params: CasaParams }>(
+    "/case/:idCasa/hub",
+    { preHandler: requireRole(Ruolo.Inquilino) },
+    casaController.getHubCasa,
+  );
+  /**
    * @api  ModificaCasa
    * @route PUT /case/:idCasa
    *
@@ -433,9 +450,6 @@ export function casaRoutes(app: FastifyInstance) {
    */
   app.post<{ Params: CasaParams }>(
     "/case/:idCasa/select",
-    {
-      config: { rateLimit: { max: 1, timeWindow: "1 minute" } },
-    },
     casaController.selectCasa,
   );
 }

@@ -5,6 +5,7 @@ import {
   CasaResponseDto,
   CasaSummaryDto,
   CreaCasaDto,
+  HubCasaDto,
   InquilinoDto,
   InviteLinkDto,
   ModificaCasaDto,
@@ -204,5 +205,18 @@ export class CasaService {
   ): Promise<{ idCasa: string; ruoloCasa: Ruolo }> {
     const membro = await this.assertMembroCasa(idCasa, idUtente);
     return { idCasa, ruoloCasa: membro.ruolo };
+  }
+
+  async getHubCasa(idCasa: string, idUtente: string): Promise<HubCasaDto> {
+    const membro = await this.assertMembroCasa(idCasa, idUtente);
+    const [casa, counts] = await Promise.all([
+      casaRepository.findCasaByIdOrThrow(idCasa),
+      casaRepository.getHubCounts(idCasa),
+    ]);
+    return {
+      casa: casaConverter.toCasaDto(casa, idUtente),
+      ruolo: membro.ruolo,
+      ...counts,
+    };
   }
 }
