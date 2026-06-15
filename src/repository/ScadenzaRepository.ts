@@ -9,6 +9,7 @@ export const SELECT_SCADENZA_BASE = {
   cadenzaGiorni: true,
   idCasa: true,
   dataCreazione: true,
+  idCreatore: true,
 } as const;
 
 const _scadenzaQuery = () =>
@@ -25,6 +26,7 @@ type ScadenzaCreateData = {
   dataScadenza: Date;
   isRicorrente: boolean;
   cadenzaGiorni?: number | null;
+  idCreatore?: string | null;
 };
 
 type ScadenzaUpdateData = {
@@ -45,6 +47,7 @@ export class ScadenzaRepository {
         dataScadenza: data.dataScadenza,
         isRicorrente: data.isRicorrente,
         cadenzaGiorni: data.cadenzaGiorni ?? undefined,
+        idCreatore: data.idCreatore ?? undefined,
       },
       select: SELECT_SCADENZA_BASE,
     });

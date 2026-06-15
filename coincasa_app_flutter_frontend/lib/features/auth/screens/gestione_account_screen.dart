@@ -32,6 +32,26 @@ class _GestioneAccountScreenState extends State<GestioneAccountScreen> {
 
   bool _isConfirming = false;
 
+  int _avatarTapCount = 0;
+
+  void _onAvatarTap() {
+    _avatarTapCount++;
+    if (_avatarTapCount >= 7) {
+      _avatarTapCount = 0;
+      _showEasterEgg();
+    }
+  }
+
+  void _showEasterEgg() {
+    HapticFeedback.heavyImpact();
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => const _EasterEggSheet(),
+    );
+  }
+
   @override
   void dispose() {
     _newUsernameController.dispose();
@@ -215,10 +235,13 @@ class _GestioneAccountScreenState extends State<GestioneAccountScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      UserAvatar(
-                        radius: 42,
-                        userId: client.currentUserAvatarSeed,
-                        username: username,
+                      GestureDetector(
+                        onTap: _onAvatarTap,
+                        child: UserAvatar(
+                          radius: 42,
+                          userId: client.currentUserAvatarSeed,
+                          username: username,
+                        ),
                       ),
                       const SizedBox(height: 14),
                       Text(
@@ -806,6 +829,59 @@ class _EliminaAccountButton extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Easter egg — popup dal basso con festoni
+// ---------------------------------------------------------------------------
+
+class _EasterEggSheet extends StatelessWidget {
+  const _EasterEggSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFF1A1630),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        boxShadow: [
+          BoxShadow(color: Color(0x66000000), blurRadius: 20, offset: Offset(0, -4)),
+        ],
+      ),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.white24,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 20),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Image.asset(
+              'assets/Icons/festoni.jpeg',
+              fit: BoxFit.contain,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            '🎉 Hai trovato l\'easter egg! 🎉',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -586,6 +586,7 @@ describe("TurnoService - Boundary and Edge Cases", () => {
         "c1",
         {
           task: "Daily task",
+          dataTurno: "2026-07-01T00:00:00.000Z",
           cadenzaGiorni: 1,
           assegnatario: "u1",
           rotazioneTurno: true,
@@ -612,6 +613,7 @@ describe("TurnoService - Boundary and Edge Cases", () => {
         "c1",
         {
           task: "Yearly task",
+          dataTurno: "2026-07-01T00:00:00.000Z",
           cadenzaGiorni: 365,
           assegnatario: "u1",
           rotazioneTurno: true,
@@ -640,6 +642,7 @@ describe("TurnoService - Boundary and Edge Cases", () => {
         "c1",
         {
           task: "Single person task",
+          dataTurno: "2026-07-01T00:00:00.000Z",
           cadenzaGiorni: 7,
           assegnatario: "u1",
           rotazioneTurno: false,
@@ -667,6 +670,7 @@ describe("TurnoService - Boundary and Edge Cases", () => {
         "c1",
         {
           task: "Single member rotation",
+          dataTurno: "2026-07-01T00:00:00.000Z",
           cadenzaGiorni: 7,
           assegnatario: "u1",
           rotazioneTurno: true,
@@ -727,6 +731,7 @@ describe("TurnoService - Boundary and Edge Cases", () => {
         "c1",
         {
           task: "Pulizia 🧹 & igiene ✨",
+          dataTurno: "2026-07-01T00:00:00.000Z",
           cadenzaGiorni: 7,
           assegnatario: "u1",
           rotazioneTurno: true,
@@ -754,6 +759,7 @@ describe("TurnoService - Boundary and Edge Cases", () => {
         "c1",
         {
           task: longTask,
+          dataTurno: "2026-07-01T00:00:00.000Z",
           cadenzaGiorni: 7,
           assegnatario: "u1",
           rotazioneTurno: true,

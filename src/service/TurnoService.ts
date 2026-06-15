@@ -1,3 +1,4 @@
+import { Ruolo } from "@prisma/client";
 import {
   CreaTurnoDto,
   ModificaTurnoDto,
@@ -196,7 +197,13 @@ export class TurnoService {
     idTurno: string,
     idUtente: string,
   ): Promise<void> {
-    await this.assertIdCreatoreTurno(idCasa, idTurno, idUtente);
+    const membro = await casaRepository.findMembroCasaByCasaAndUtenteOrThrow(idCasa, idUtente);
+    const isAdmin = membro.ruolo === Ruolo.HomeAdmin || membro.ruolo === Ruolo.SysAdmin;
+    if (!isAdmin) {
+      await this.assertIdCreatoreTurno(idCasa, idTurno, idUtente);
+    } else {
+      await turnoRepository.findTurnoByIdOrThrow(idCasa, idTurno);
+    }
 
     await turnoRepository.deleteTurno(idCasa, idTurno);
   }

@@ -39,5 +39,6 @@ export const ScadenzaResponseDto = z.object({
   cadenzaGiorni: z.number().int().nullable(),
   idCasa: z.string(),
   dataCreazione: z.coerce.date(),
+  idCreatore: z.string().nullable(),
 });
 export type ScadenzaResponseDto = z.infer<typeof ScadenzaResponseDto>;

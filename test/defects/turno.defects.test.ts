@@ -14,6 +14,7 @@
  * - cambiamento non voluto nei messaggi/condizioni di errore
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { Ruolo } from "@prisma/client";
 import { ForbiddenError } from "../../src/errors/httpErrors";
 
 const mocks = vi.hoisted(() => ({
@@ -32,11 +33,15 @@ vi.mock("../../src/repository/TurnoRepository", () => ({
   },
 }));
 
+const casaMocks = vi.hoisted(() => ({
+  findMembroCasaByCasaAndUtenteOrThrow: vi.fn(),
+  getMembriCasaIds: vi.fn().mockResolvedValue(["u1", "u2", "u3"]),
+}));
+
 vi.mock("../../src/repository/CasaRepository", () => ({
-  // Non usato in questi test (che si fermano sull'autorizzazione prima di chiamare la repo casa),
-  // ma lo mock rimane per evitare di istanziare dipendenze reali durante l'import del service.
   CasaRepository: class {
-    getMembriCasaIds = vi.fn().mockResolvedValue(["u1", "u2", "u3"]);
+    findMembroCasaByCasaAndUtenteOrThrow = casaMocks.findMembroCasaByCasaAndUtenteOrThrow;
+    getMembriCasaIds = casaMocks.getMembriCasaIds;
   },
 }));
 
@@ -77,6 +82,7 @@ describe("TurnoService - Defect Tests (Error Handling)", () => {
 
     it("throws ForbiddenError when non-creator tries to delete turno", async () => {
       mocks.findTurnoByIdOrThrow.mockResolvedValue(baseTurno);
+      casaMocks.findMembroCasaByCasaAndUtenteOrThrow.mockResolvedValue({ ruolo: Ruolo.Inquilino });
 
       const service = new TurnoService();
 

@@ -144,6 +144,7 @@ model Scadenza {
   isRicorrente  Boolean  @default(false)
   cadenzaGiorni Int?
   dataCreazione DateTime @default(now())
+  idCreatore    String?  @db.ObjectId
 
   casaRel Casa    @relation(fields: [idCasa], references: [id])
   idCasa  String  @db.ObjectId

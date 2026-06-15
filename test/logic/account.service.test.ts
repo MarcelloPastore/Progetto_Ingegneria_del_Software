@@ -35,7 +35,7 @@ const mocks = vi.hoisted(() => {
         update: utenteUpdate,
         delete: vi.fn(),
       },
-      $transaction: vi.fn((cb: (tx: typeof tx) => Promise<unknown>) => cb(tx)),
+      $transaction: vi.fn((cb: (tx: unknown) => Promise<unknown>) => cb(tx)),
     },
     tx,
     mail: {

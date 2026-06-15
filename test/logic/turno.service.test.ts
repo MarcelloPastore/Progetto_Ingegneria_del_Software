@@ -63,6 +63,7 @@ describe("TurnoService", () => {
       "c1",
       {
         task: "Pulizia cucina",
+        dataTurno: "2026-07-01T00:00:00.000Z",
         cadenzaGiorni: 7,
         assegnatario: "u1",
         rotazioneTurno: true,
@@ -91,6 +92,7 @@ describe("TurnoService", () => {
       "c1",
       {
         task: "Pulizia cucina",
+        dataTurno: "2026-07-01T00:00:00.000Z",
         cadenzaGiorni: 7,
         assegnatario: "u1",
         rotazioneTurno: false,

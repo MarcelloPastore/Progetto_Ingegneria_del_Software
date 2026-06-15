@@ -455,7 +455,7 @@ export function casaRoutes(app: FastifyInstance) {
     Querystring?: { rigenera?: string | boolean };
   }>(
     "/case/:idCasa/invite-link",
-    { preHandler: requireRole(Ruolo.HomeAdmin) },
+    { preHandler: requireRole(Ruolo.Inquilino) },
     casaController.generaLink,
   );
   /**
@@ -980,7 +980,7 @@ export function problemiRoutes(app: FastifyInstance) {
    */
   app.delete<{ Params: ProblemaParams }>(
     "/case/:idCasa/problemi/:idProblema",
-    { preHandler: requireRole(Ruolo.HomeAdmin) },
+    { preHandler: requireRole(Ruolo.Inquilino) },
     problemaController.eliminaProblema,
   );
   /**

@@ -42,6 +42,7 @@ const baseScadenza = {
   cadenzaGiorni: null,
   idCasa: "c1",
   dataCreazione: new Date("2026-06-01T00:00:00.000Z"),
+  idCreatore: "user1",
 };
 
 describe("ScadenzaService - boundaries", () => {
@@ -76,7 +77,7 @@ describe("ScadenzaService - boundaries", () => {
         dataScadenza: new Date("2026-07-01"),
         isRicorrente: true,
         cadenzaGiorni: 1,
-      });
+      }, "user1");
 
       expect(mocks.createScadenza).toHaveBeenCalledWith(
         expect.objectContaining({ isRicorrente: true, cadenzaGiorni: 1 }),
@@ -93,7 +94,7 @@ describe("ScadenzaService - boundaries", () => {
         dataScadenza: new Date("2026-07-01"),
         isRicorrente: false,
         cadenzaGiorni: 30,
-      });
+      }, "user1");
 
       expect(mocks.createScadenza).toHaveBeenCalledWith(
         expect.objectContaining({ isRicorrente: false, cadenzaGiorni: null }),
@@ -172,7 +173,7 @@ describe("ScadenzaService - boundaries", () => {
       mocks.updateScadenza.mockResolvedValue({ ...baseScadenza, nome: "Bolletta gas" });
 
       const service = new ScadenzaService();
-      await service.modificaScadenza("c1", "s1", { nome: "Bolletta gas" });
+      await service.modificaScadenza("c1", "s1", { nome: "Bolletta gas" }, "user1");
 
       expect(mocks.updateScadenza).toHaveBeenCalledWith("s1", { nome: "Bolletta gas" });
     });
@@ -183,7 +184,7 @@ describe("ScadenzaService - boundaries", () => {
       mocks.updateScadenza.mockResolvedValue({ ...baseScadenza, dataScadenza: newDate });
 
       const service = new ScadenzaService();
-      await service.modificaScadenza("c1", "s1", { dataScadenza: newDate });
+      await service.modificaScadenza("c1", "s1", { dataScadenza: newDate }, "user1");
 
       expect(mocks.updateScadenza).toHaveBeenCalledWith("s1", { dataScadenza: newDate });
     });

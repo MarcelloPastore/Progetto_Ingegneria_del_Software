@@ -105,6 +105,7 @@ export class ProblemaController {
       await this.problemiService.eliminaProblema(
         request.params.idCasa,
         request.params.idProblema,
+        request.user.idUtente,
       );
       return reply.status(204).send();
     } catch (error) {

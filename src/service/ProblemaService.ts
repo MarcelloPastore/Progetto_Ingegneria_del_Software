@@ -10,9 +10,11 @@ import {
 } from "../dto/ProblemaDto";
 import { ProblemaConverter } from "../dto/converter/ProblemaConverter";
 import { ProblemaRepository } from "../repository/ProblemaRepository";
+import { CasaRepository } from "../repository/CasaRepository";
 import { ForbiddenError } from "../errors/httpErrors";
 
 const problemaRepository = new ProblemaRepository();
+const casaRepository = new CasaRepository();
 const problemaConverter = new ProblemaConverter();
 
 export class ProblemaService {
@@ -56,7 +58,13 @@ export class ProblemaService {
     return problemaConverter.toDto(problema);
   }
 
-  async eliminaProblema(idCasa: string, idProblema: string): Promise<void> {
+  async eliminaProblema(idCasa: string, idProblema: string, idUtente: string): Promise<void> {
+    const problema = await problemaRepository.findProblemaByIdOrThrow(idCasa, idProblema);
+    const membro = await casaRepository.findMembroCasaByCasaAndUtenteOrThrow(idCasa, idUtente);
+    const isAdmin = membro.ruolo === Ruolo.HomeAdmin || membro.ruolo === Ruolo.SysAdmin;
+    if (!isAdmin && problema.segnalataDa !== idUtente) {
+      throw new ForbiddenError("Solo chi ha segnalato il problema o un HomeAdmin può eliminarlo");
+    }
     await problemaRepository.deleteProblema(idCasa, idProblema);
   }
 

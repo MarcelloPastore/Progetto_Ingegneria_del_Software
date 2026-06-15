@@ -46,7 +46,7 @@ describe("ScadenzaService - defects", () => {
           descrizione: "",
           dataScadenza: new Date("2026-07-01"),
           isRicorrente: true,
-        }),
+        }, "user1"),
       ).rejects.toBeInstanceOf(ConflictError);
     });
 
@@ -59,7 +59,7 @@ describe("ScadenzaService - defects", () => {
           dataScadenza: new Date("2026-07-01"),
           isRicorrente: true,
           cadenzaGiorni: null as any,
-        }),
+        }, "user1"),
       ).rejects.toBeInstanceOf(ConflictError);
     });
 
@@ -73,6 +73,7 @@ describe("ScadenzaService - defects", () => {
         cadenzaGiorni: null,
         idCasa: "c1",
         dataCreazione: new Date(),
+        idCreatore: "user1",
       });
 
       const service = new ScadenzaService();
@@ -82,7 +83,7 @@ describe("ScadenzaService - defects", () => {
           descrizione: "",
           dataScadenza: new Date("2026-07-01"),
           isRicorrente: false,
-        }),
+        }, "user1"),
       ).resolves.toBeDefined();
     });
   });

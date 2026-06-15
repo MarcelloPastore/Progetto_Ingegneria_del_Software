@@ -485,17 +485,21 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
 
   bool get _isCreator {
     final currentId = ApiProvider.client.currentUserId?.trim();
-    final rawCreatorId = _firstString([
-      _problema.raw['creatoreId'],
-      _problema.raw['autoreId'],
-      _problema.raw['segnalatoDaId'],
-      _problema.raw['createdBy'],
-    ]);
-    if (currentId != null &&
-        currentId.isNotEmpty &&
-        rawCreatorId == currentId) {
-      return true;
+    if (currentId == null || currentId.isEmpty) return false;
+
+    // Prova prima il campo pre-estratto da fromJson
+    final segnalatoDaId = _problema.raw['segnalatoDaId']?.toString().trim();
+    if (segnalatoDaId != null && segnalatoDaId.isNotEmpty) {
+      return segnalatoDaId == currentId;
     }
+
+    // Fallback: estrai id dall'oggetto segnalataDa se ancora presente nel raw
+    final segnalataDa = _problema.raw['segnalataDa'];
+    if (segnalataDa is Map<String, dynamic>) {
+      final id = segnalataDa['id']?.toString().trim();
+      if (id != null && id.isNotEmpty) return id == currentId;
+    }
+
     return false;
   }
 
@@ -503,7 +507,7 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
 
   @override
   Widget build(BuildContext context) {
-    final canDelete = ActiveCasaScope.of(context).isHomeAdmin;
+    final canDelete = ActiveCasaScope.of(context).isHomeAdmin || _isCreator;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
