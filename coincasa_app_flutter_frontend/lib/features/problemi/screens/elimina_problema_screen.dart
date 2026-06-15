@@ -63,6 +63,61 @@ class _EliminaProblemaScreenState extends State<EliminaProblemaScreen> {
       );
     }
 
+    final currentUserId = ApiProvider.client.currentUserId?.trim() ?? '';
+    final segnalatoDaId =
+        problema.raw['segnalatoDaId']?.toString().trim() ?? '';
+    final isCreator =
+        currentUserId.isNotEmpty &&
+        segnalatoDaId.isNotEmpty &&
+        segnalatoDaId == currentUserId;
+    final canDelete =
+        ActiveCasaScope.of(context).isHomeAdmin || isCreator;
+
+    if (!canDelete) {
+      return AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle.light,
+        child: Scaffold(
+          backgroundColor: AppColors.darkBackground,
+          bottomNavigationBar: const HouseQuickNav(currentRoute: '/problemi'),
+          body: SafeArea(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.lock_rounded,
+                      color: AppColors.brandAccent,
+                      size: 56,
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Non autorizzato',
+                      style: AppTextStyles.screenTitleStrong,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Solo l\'admin o chi ha segnalato il problema può eliminarlo.',
+                      style: AppTextStyles.bodyMutedRelaxed,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 32),
+                    _PurpleOutlineButton(
+                      label: 'Torna ai problemi',
+                      onPressed: () =>
+                          Navigator.of(context).pushReplacementNamed('/problemi'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(

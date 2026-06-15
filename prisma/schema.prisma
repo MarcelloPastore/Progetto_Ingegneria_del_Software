@@ -203,7 +203,7 @@ model Storico {
   stato Stato
   data  DateTime @default(now())
 
-  problemaRel Problema @relation(fields: [idProblema], references: [id])
+  problemaRel Problema @relation(fields: [idProblema], references: [id], onDelete: Cascade)
   idProblema  String   @db.ObjectId
   utenteRel   Utente   @relation(fields: [utente], references: [id])
   utente      String   @db.ObjectId

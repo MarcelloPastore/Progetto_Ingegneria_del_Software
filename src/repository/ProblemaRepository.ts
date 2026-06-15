@@ -91,6 +91,7 @@ export class ProblemaRepository {
   }
 
   async deleteProblema(idCasa: string, idProblema: string): Promise<void> {
+    await prisma.storico.deleteMany({ where: { idProblema } });
     await prisma.problema.delete({ where: { id: idProblema, idCasa } });
   }
 
