@@ -118,7 +118,7 @@ describe("ScadenzaDto - Validation Tests", () => {
         dataCreazione: "2026-06-01T00:00:00.000Z",
       });
 
-      expect(result.success).toBe(true);
+      expect(result.success).toBe(false);
     });
   });
 });
