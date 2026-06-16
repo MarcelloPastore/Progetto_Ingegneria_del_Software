@@ -11,7 +11,7 @@ class SaluteCasaItem {
   final int giorniPassati;
   final int cadenzaGiorni;
 
-  int get giorniRimanenti => cadenzaGiorni - giorniPassati - 1;
+  int get giorniRimanenti => cadenzaGiorni - giorniPassati;
 
   factory SaluteCasaItem.fromJson(Map<String, dynamic> json) {
     return SaluteCasaItem(
