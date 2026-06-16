@@ -795,7 +795,7 @@ class _CalendarDayCell extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: AppSizes.p4),
+        const SizedBox(height: 2),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,

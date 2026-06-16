@@ -177,6 +177,7 @@ class _TurniPopupPanelState extends ConsumerState<TurniPopupPanel> {
   bool _frequencyExpanded = false;
   bool _assigneeExpanded = false;
   bool _isSubmitting = false;
+  bool _assigneeAutoSelected = false;
   String? _errorMessage;
 
   @override
@@ -291,6 +292,17 @@ class _TurniPopupPanelState extends ConsumerState<TurniPopupPanel> {
       error: (error, stackTrace) =>
           AsyncValue<List<Inquilino>>.error(error, stackTrace),
     );
+    if (!_assigneeAutoSelected && inquiliniAsync.hasValue) {
+      final assignees = _validAssignees(inquiliniAsync.value!);
+      final me = _currentUser(assignees);
+      if (me != null) {
+        _assigneeAutoSelected = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) setState(() => _selectedInquilinoId = me.id);
+        });
+      }
+    }
+
     final canSubmit = _taskController.text.trim().isNotEmpty;
 
     final body = _TurnoFormPanel(
@@ -1080,24 +1092,50 @@ class _AssigneeDropdownState extends State<_AssigneeDropdown> {
           ),
           const SizedBox(height: AppSizes.p14),
           Row(
-            mainAxisAlignment: MainAxisAlignment.end,
             children: [
               Flexible(
-                child: Text(
-                  'Rotazione automatica',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.bodyStrong.copyWith(
-                    color: widget.canAssignOthers
-                        ? AppColors.textMutedLight
-                        : AppColors.textMutedDark,
-                    decoration: widget.canAssignOthers
-                        ? TextDecoration.underline
-                        : TextDecoration.none,
-                    decorationColor: widget.canAssignOthers
-                        ? AppColors.textMutedLight
-                        : AppColors.textMutedDark,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Rotazione automatica',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.bodyStrong.copyWith(
+                        color: widget.canAssignOthers
+                            ? AppColors.textMutedLight
+                            : AppColors.textMutedDark,
+                        decoration: widget.canAssignOthers
+                            ? TextDecoration.underline
+                            : TextDecoration.none,
+                        decorationColor: widget.canAssignOthers
+                            ? AppColors.textMutedLight
+                            : AppColors.textMutedDark,
+                      ),
+                    ),
+                    if (!widget.canAssignOthers) ...[
+                      const SizedBox(height: 3),
+                      const Row(
+                        children: [
+                          Text(
+                            '( solo HomeAdmin )',
+                            style: TextStyle(
+                              color: Color(0xFFC09A00),
+                              fontSize: 12,
+                              fontFamily: 'Inter',
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          SizedBox(width: 4),
+                          Icon(
+                            Icons.warning,
+                            color: Color(0xFFC09A00),
+                            size: 13,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
                 ),
               ),
               const SizedBox(width: AppSizes.p10),

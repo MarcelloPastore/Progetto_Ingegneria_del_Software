@@ -152,6 +152,11 @@ class _TurnoCreateScreenState extends ConsumerState<TurnoCreateScreen> {
     final inquilini = await ApiProvider.casa.listInquilini(casa.id);
     if (turno != null) {
       _hydrateFromTurno(turno);
+    } else {
+      final me = _resolveCurrentInquilino(inquilini);
+      if (me != null) {
+        ref.read(turnoCreateFormProvider.notifier).setAssignee(me.id);
+      }
     }
 
     return _TurnoCreateData(casa: casa, inquilini: inquilini, turno: turno);
@@ -1142,16 +1147,39 @@ class _AutoRotationRow extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: Text(
-            'Rotazione automatica assegnatario',
-            maxLines: 1,
-            overflow: TextOverflow.clip,
-            style: AppTextStyles.bodyStrong.copyWith(
-              color: enabled
-                  ? AppColors.textMutedLight
-                  : AppColors.textMutedDark,
-              fontSize: 16,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Rotazione automatica assegnatario',
+                maxLines: 1,
+                overflow: TextOverflow.clip,
+                style: AppTextStyles.bodyStrong.copyWith(
+                  color: enabled
+                      ? AppColors.textMutedLight
+                      : AppColors.textMutedDark,
+                  fontSize: 16,
+                ),
+              ),
+              if (!enabled) ...[
+                const SizedBox(height: 3),
+                const Row(
+                  children: [
+                    Text(
+                      '( solo HomeAdmin )',
+                      style: TextStyle(
+                        color: Color(0xFFC09A00),
+                        fontSize: 12,
+                        fontFamily: 'Inter',
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    SizedBox(width: 4),
+                    Icon(Icons.warning, color: Color(0xFFC09A00), size: 13),
+                  ],
+                ),
+              ],
+            ],
           ),
         ),
         Switch(
