@@ -82,8 +82,8 @@ class _ProblemiCreateFormState {
   const _ProblemiCreateFormState({
     this.nome = '',
     this.descrizione = '',
-    this.priorita,
-    this.assignmentMode,
+    this.priorita = _ProblemaPriority.medium,
+    this.assignmentMode = _ProblemaAssignmentMode.everyone,
     this.isSubmitting = false,
     this.showErrors = false,
     this.submitError,
@@ -98,22 +98,13 @@ class _ProblemiCreateFormState {
   final String? submitError;
 
   bool get canSubmit =>
-      nome.trim().isNotEmpty &&
-      descrizione.trim().isNotEmpty &&
-      priorita != null &&
-      assignmentMode != null &&
-      !isSubmitting;
+      nome.trim().isNotEmpty && descrizione.trim().isNotEmpty && !isSubmitting;
 
   bool get hasNomeError => showErrors && nome.trim().isEmpty;
   bool get hasDescrizioneError => showErrors && descrizione.trim().isEmpty;
-  bool get hasPrioritaError => showErrors && priorita == null;
-  bool get hasAssignmentError => showErrors && assignmentMode == null;
-  bool get hasBannerError =>
-      submitError != null ||
-      hasNomeError ||
-      hasDescrizioneError ||
-      hasPrioritaError ||
-      hasAssignmentError;
+  bool get hasPrioritaError => false;
+  bool get hasAssignmentError => false;
+  bool get hasBannerError => submitError != null || hasNomeError;
 
   _ProblemiCreateFormState copyWith({
     String? nome,
@@ -545,6 +536,28 @@ class _ProblemiFormContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSizes.p12),
+        Row(
+          children: [
+            Text(
+              'Nome problema',
+              style: AppTextStyles.screenTitleStrong.copyWith(
+                color: AppColors.textMutedLight,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: 3),
+            const Text(
+              '*',
+              style: TextStyle(
+                color: AppColors.errorStrong,
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSizes.p4),
         _ProblemTextField(
           controller: nomeController,
           hintText: 'Nome problema...',

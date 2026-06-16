@@ -33,8 +33,8 @@ class _SegnalaFormState {
   const _SegnalaFormState({
     this.nome = '',
     this.descrizione = '',
-    this.priorita,
-    this.assignmentMode,
+    this.priorita = _Priorita.medium,
+    this.assignmentMode = _AssignmentMode.everyone,
     this.isSubmitting = false,
     this.showErrors = false,
     this.submitError,
@@ -49,22 +49,13 @@ class _SegnalaFormState {
   final String? submitError;
 
   bool get canSubmit =>
-      nome.trim().isNotEmpty &&
-      descrizione.trim().isNotEmpty &&
-      priorita != null &&
-      assignmentMode != null &&
-      !isSubmitting;
+      nome.trim().isNotEmpty && descrizione.trim().isNotEmpty && !isSubmitting;
 
   bool get hasNomeError => showErrors && nome.trim().isEmpty;
   bool get hasDescrizioneError => showErrors && descrizione.trim().isEmpty;
-  bool get hasPrioritaError => showErrors && priorita == null;
-  bool get hasAssignmentError => showErrors && assignmentMode == null;
-  bool get hasAnyError =>
-      submitError != null ||
-      hasNomeError ||
-      hasDescrizioneError ||
-      hasPrioritaError ||
-      hasAssignmentError;
+  bool get hasPrioritaError => false;
+  bool get hasAssignmentError => false;
+  bool get hasAnyError => submitError != null || hasNomeError;
 
   _SegnalaFormState copyWith({
     String? nome,
@@ -289,6 +280,28 @@ class _SegnalaProblemaScreenState extends ConsumerState<SegnalaProblemaScreen> {
                   const SizedBox(height: AppSizes.p24),
 
                   // Nome field
+                  Row(
+                    children: [
+                      Text(
+                        'Nome problema',
+                        style: AppTextStyles.screenTitleStrong.copyWith(
+                          color: AppColors.textMutedLight,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Text(
+                        '*',
+                        style: TextStyle(
+                          color: AppColors.errorStrong,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSizes.p6),
                   _SegnalaTextField(
                     controller: _nomeCtrl,
                     hintText: 'Nome problema...',
