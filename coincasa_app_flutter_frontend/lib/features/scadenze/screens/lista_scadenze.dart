@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/scadenza.dart';
@@ -83,14 +84,45 @@ class ListaScadenze extends StatefulWidget {
   State<ListaScadenze> createState() => _ListaScadenzeState();
 }
 
+const _kFilterPrefKey = 'scadenze_active_filters';
+
 class _ListaScadenzeState extends State<ListaScadenze> {
   late Future<_ScadenzeData> _future;
   bool _initialized = false;
-  final Set<ScadenzaTipo> _activeFilters = {
-    ScadenzaTipo.turno,
+  // Default: Turni deselezionato
+  Set<ScadenzaTipo> _activeFilters = {
     ScadenzaTipo.spesa,
     ScadenzaTipo.scadenza,
   };
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFilters();
+  }
+
+  Future<void> _loadFilters() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getStringList(_kFilterPrefKey);
+    if (saved != null) {
+      setState(() {
+        _activeFilters = saved
+            .map((s) => ScadenzaTipo.values.firstWhere(
+                  (e) => e.name == s,
+                  orElse: () => ScadenzaTipo.scadenza,
+                ))
+            .toSet();
+      });
+    }
+  }
+
+  Future<void> _saveFilters() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(
+      _kFilterPrefKey,
+      _activeFilters.map((e) => e.name).toList(),
+    );
+  }
 
   void _toggleFilter(ScadenzaTipo tipo) {
     setState(() {
@@ -101,6 +133,7 @@ class _ListaScadenzeState extends State<ListaScadenze> {
         _activeFilters.add(tipo);
       }
     });
+    _saveFilters();
   }
 
   @override
@@ -606,28 +639,48 @@ class _Legend extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Column(
       children: [
-        _LegendDot(
-          color: _colorTurno,
-          label: 'Turni',
-          active: activeFilters.contains(ScadenzaTipo.turno),
-          onTap: () => onToggle(ScadenzaTipo.turno),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            Icon(Icons.filter_list, color: Color(0xFF8C8CA0), size: 18),
+            SizedBox(width: 6),
+            Text(
+              'Filtra per',
+              style: TextStyle(
+                color: Color(0xFF8C8CA0),
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 16),
-        _LegendDot(
-          color: _colorSpesa,
-          label: 'Spese',
-          active: activeFilters.contains(ScadenzaTipo.spesa),
-          onTap: () => onToggle(ScadenzaTipo.spesa),
-        ),
-        const SizedBox(width: 16),
-        _LegendDot(
-          color: _colorScadenza,
-          label: 'Scadenze',
-          active: activeFilters.contains(ScadenzaTipo.scadenza),
-          onTap: () => onToggle(ScadenzaTipo.scadenza),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _LegendDot(
+              color: _colorTurno,
+              label: 'Turni',
+              active: activeFilters.contains(ScadenzaTipo.turno),
+              onTap: () => onToggle(ScadenzaTipo.turno),
+            ),
+            const SizedBox(width: 16),
+            _LegendDot(
+              color: _colorSpesa,
+              label: 'Spese',
+              active: activeFilters.contains(ScadenzaTipo.spesa),
+              onTap: () => onToggle(ScadenzaTipo.spesa),
+            ),
+            const SizedBox(width: 16),
+            _LegendDot(
+              color: _colorScadenza,
+              label: 'Scadenze',
+              active: activeFilters.contains(ScadenzaTipo.scadenza),
+              onTap: () => onToggle(ScadenzaTipo.scadenza),
+            ),
+          ],
         ),
       ],
     );
