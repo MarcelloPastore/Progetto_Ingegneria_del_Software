@@ -545,13 +545,6 @@ class _SpesaFormImportoCardState extends State<SpesaFormImportoCard> {
     super.dispose();
   }
 
-  String get _displayAmount {
-    final raw = widget.controller.text.trim().replaceAll(',', '.');
-    final n = double.tryParse(raw);
-    if (n == null || n == 0) return '€ 0,00';
-    return '€ ${n.toStringAsFixed(2).replaceAll('.', ',')}';
-  }
-
   @override
   Widget build(BuildContext context) {
     return GestureDetector(

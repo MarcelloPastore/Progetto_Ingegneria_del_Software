@@ -58,7 +58,7 @@ class StatoVuoto extends StatelessWidget {
 									width: double.infinity,
 									child: ElevatedButton(
 										onPressed: () {
-											// TODO: collegare la navigazione per aggiungere una scadenza
+											
 										},
 										style: ElevatedButton.styleFrom(
 											backgroundColor: const Color(0xFF5228AD),
