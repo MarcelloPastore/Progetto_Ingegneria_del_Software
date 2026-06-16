@@ -130,6 +130,7 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
   }
 
   bool get _isSegnalato => _problema.stato.toLowerCase() == 'segnalato';
+  bool get _isRisolto => _problema.stato.toLowerCase().contains('risolt');
 
   bool get _isCurrentUserAssignee {
     final problema = _problema;
@@ -321,6 +322,31 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
     }
   }
 
+  Future<void> _handleRiapri() async {
+    if (_isProcessing) return;
+    setState(() => _isProcessing = true);
+    try {
+      final casaId = ActiveCasaScope.read(context).selectedCasaId ?? '';
+      final updated = await ApiProvider.problemi.aggiornaStato(casaId, _problema.id, {
+        'stato': 'Segnalato',
+      });
+      if (mounted) {
+        setState(() {
+          _problema = updated;
+          _priorityOverride = updated.priorita;
+          _isProcessing = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isProcessing = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Impossibile riaprire il problema.')),
+        );
+      }
+    }
+  }
+
   Future<void> _handleRisolto() async {
     if (_isProcessing) return;
     setState(() => _isProcessing = true);
@@ -507,7 +533,9 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
 
   @override
   Widget build(BuildContext context) {
-    final canDelete = ActiveCasaScope.of(context).isHomeAdmin || _isCreator;
+    final isAdmin = ActiveCasaScope.of(context).isHomeAdmin;
+    final canDelete = _isRisolto ? isAdmin : (isAdmin || _isCreator);
+    final canModify = !_isRisolto && _isCreator;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -558,7 +586,7 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
                 modifyLabel: 'Modifica problema',
                 deleteLabel: 'Elimina problema',
                 backLabel: 'Torna ai problemi',
-                isCreator: _isCreator,
+                isCreator: canModify,
                 canDelete: canDelete,
                 onModify: () async {
                   final updated = await Navigator.of(context).pushNamed(
@@ -774,6 +802,16 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
   // ── Modifica priorità ─────────────────────────────────────────────────────
 
   Widget _buildPrioritaSection() {
+    return IgnorePointer(
+      ignoring: _isRisolto,
+      child: Opacity(
+        opacity: _isRisolto ? 0.4 : 1.0,
+        child: _buildPrioritaContent(),
+      ),
+    );
+  }
+
+  Widget _buildPrioritaContent() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -843,6 +881,27 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
   // ── Azione contestuale (stato-dipendente) ─────────────────────────────────
 
   Widget _buildContextualActionButton() {
+    // Stato: Risolto → solo admin può riaprire, nessun altro vede azioni
+    if (_isRisolto) {
+      final isAdmin = ActiveCasaScope.of(context).isHomeAdmin;
+      if (!isAdmin) return const SizedBox.shrink();
+      return _ActionButton(
+        label: 'Riapri problema',
+        color: const Color(0xFFBE2C2C),
+        isLoading: _isProcessing,
+        onPressed: _isProcessing
+            ? () {}
+            : () => _showConfirmDialog(
+                title: 'Riapri problema',
+                body:
+                    'Il problema tornerà allo stato Segnalato e sarà nuovamente visibile come aperto.',
+                accentColor: AppColors.warning,
+                confirmLabel: 'Riapri',
+                onConfirm: _handleRiapri,
+              ),
+      );
+    }
+
     // Stato: Segnalato → chiunque può assegnarsi
     if (_isSegnalato) {
       return _ActionButton(
@@ -896,11 +955,34 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
       );
     }
 
-    // Stato: Assegnato a qualcun altro → banner informativo
+    // Stato: Assegnato a qualcun altro
     final stato = _problema.stato.toLowerCase();
     if (stato.contains('assegn')) {
       final nome = _responsabileNome ?? 'un coinquilino';
-      return _GiaPresoInCaricoBanner(nome: nome);
+      final isAdmin = ActiveCasaScope.of(context).isHomeAdmin;
+      return Column(
+        children: [
+          _GiaPresoInCaricoBanner(nome: nome),
+          if (isAdmin) ...[
+            const SizedBox(height: AppSizes.p10),
+            _ActionButton(
+              label: 'De-assegna $nome',
+              color: const Color(0xFF7B2020),
+              isLoading: _isProcessing,
+              onPressed: _isProcessing
+                  ? () {}
+                  : () => _showConfirmDialog(
+                      title: 'De-assegna utente',
+                      body:
+                          'Vuoi rimuovere $nome da questo problema? Il problema tornerà allo stato Segnalato.',
+                      accentColor: AppColors.warning,
+                      confirmLabel: 'De-assegna',
+                      onConfirm: _handleDeassign,
+                    ),
+            ),
+          ],
+        ],
+      );
     }
 
     return const SizedBox.shrink();

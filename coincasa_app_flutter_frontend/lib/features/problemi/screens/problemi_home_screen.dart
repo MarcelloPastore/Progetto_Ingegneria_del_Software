@@ -29,6 +29,7 @@ class ProblemiHomeScreen extends ConsumerStatefulWidget {
 class _ProblemiHomeScreenState extends ConsumerState<ProblemiHomeScreen> {
   late Future<List<Problema>> _future;
   int _loadedRevision = -1;
+  bool _showTutti = false;
 
   @override
   void initState() {
@@ -40,8 +41,21 @@ class _ProblemiHomeScreenState extends ConsumerState<ProblemiHomeScreen> {
   Future<List<Problema>> _loadProblemi() async {
     final casaId = ActiveCasaScope.read(context).selectedCasaId;
     if (casaId == null || casaId.isEmpty) return const [];
-    final list = await ApiProvider.problemi.listNonRisolti(casaId);
+    final list = _showTutti
+        ? await ApiProvider.problemi.list(casaId)
+        : await ApiProvider.problemi.listNonRisolti(casaId);
     return list..sort(Problema.compareByPriority);
+  }
+
+  void _refresh() {
+    if (!mounted) return;
+    final next = _loadProblemi();
+    setState(() => _future = next);
+  }
+
+  void _toggleShowTutti() {
+    setState(() => _showTutti = !_showTutti);
+    _refresh();
   }
 
   @override
@@ -68,7 +82,11 @@ class _ProblemiHomeScreenState extends ConsumerState<ProblemiHomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _ProblemiHomeHeader(isEmpty: isEmpty),
+                  _ProblemiHomeHeader(
+                    isEmpty: isEmpty,
+                    showTutti: _showTutti,
+                    onToggleShowTutti: _toggleShowTutti,
+                  ),
                   Expanded(
                     child: isLoading
                         ? const Center(
@@ -77,25 +95,15 @@ class _ProblemiHomeScreenState extends ConsumerState<ProblemiHomeScreen> {
                             ),
                           )
                         : snapshot.hasError
-                        ? _ErrorBody(
-                            onRetry: () {
-                              final next = _loadProblemi();
-                              setState(() { _future = next; });
-                            },
-                          )
+                        ? _ErrorBody(onRetry: _refresh)
                         : isEmpty
-                        ? const _EmptyBody()
-                        : _ListBody(problemi: problemi),
+                        ? _EmptyBody(showTutti: _showTutti)
+                        : _ListBody(problemi: problemi, onBack: _refresh),
                   ),
                   _SegnalaButton(
                     onPressed: () => Navigator.of(context)
                         .pushNamed(SegnalaProblemaScreen.routeName)
-                        .then((_) {
-                          if (mounted) {
-                            final next = _loadProblemi();
-                            setState(() { _future = next; });
-                          }
-                        }),
+                        .then((_) => _refresh()),
                   ),
                 ],
               ),
@@ -112,9 +120,15 @@ class _ProblemiHomeScreenState extends ConsumerState<ProblemiHomeScreen> {
 // ---------------------------------------------------------------------------
 
 class _ProblemiHomeHeader extends StatelessWidget {
-  const _ProblemiHomeHeader({required this.isEmpty});
+  const _ProblemiHomeHeader({
+    required this.isEmpty,
+    required this.showTutti,
+    required this.onToggleShowTutti,
+  });
 
   final bool isEmpty;
+  final bool showTutti;
+  final VoidCallback onToggleShowTutti;
 
   @override
   Widget build(BuildContext context) {
@@ -122,30 +136,51 @@ class _ProblemiHomeHeader extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(top: AppSizes.p12, bottom: AppSizes.p12),
-      child: Center(
-        child: Column(
-          children: [
-            Text(
-              nomeCasa,
-              style: const TextStyle(
-                color: Color(0xFF8C8CA0),
-                fontSize: 20,
-                fontFamily: 'Inter',
-                fontWeight: FontWeight.w600,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Column(
+            children: [
+              Text(
+                nomeCasa,
+                style: const TextStyle(
+                  color: Color(0xFF8C8CA0),
+                  fontSize: 20,
+                  fontFamily: 'Inter',
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Problemi',
+                textAlign: TextAlign.center,
+                style: AppTextStyles.screenTitleStrong.copyWith(
+                  color: AppColors.brandAccent,
+                  fontSize: 40,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+          Positioned(
+            right: AppSizes.p16,
+            top: 0,
+            bottom: 0,
+            child: Tooltip(
+              message: showTutti ? 'Nascondi risolti' : 'Mostra tutti',
+              child: IconButton(
+                onPressed: onToggleShowTutti,
+                icon: Icon(
+                  Icons.assignment_outlined,
+                  size: 28,
+                  color: showTutti
+                      ? AppColors.brandAccent
+                      : const Color(0xFF8C8CA0),
+                ),
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              'Problemi',
-              textAlign: TextAlign.center,
-              style: AppTextStyles.screenTitleStrong.copyWith(
-                color: AppColors.brandAccent,
-                fontSize: 40,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -156,7 +191,9 @@ class _ProblemiHomeHeader extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _EmptyBody extends StatelessWidget {
-  const _EmptyBody();
+  const _EmptyBody({required this.showTutti});
+
+  final bool showTutti;
 
   @override
   Widget build(BuildContext context) {
@@ -166,13 +203,13 @@ class _EmptyBody extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Emoji illustration
-            const Text('🥱', style: TextStyle(fontSize: 96, height: 1)),
-            const SizedBox(height: AppSizes.p32),
-
-            // Title
             Text(
-              'Nessun problema aperto',
+              showTutti ? '✅' : '🥱',
+              style: const TextStyle(fontSize: 96, height: 1),
+            ),
+            const SizedBox(height: AppSizes.p32),
+            Text(
+              showTutti ? 'Nessun problema registrato' : 'Nessun problema aperto',
               textAlign: TextAlign.center,
               style: AppTextStyles.screenTitleStrong.copyWith(
                 color: AppColors.textOnDark,
@@ -181,10 +218,10 @@ class _EmptyBody extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AppSizes.p12),
-
-            // Subtitle
             Text(
-              'La casa è in ottimo stato.\nSegnala un problema se qualcosa non funziona.',
+              showTutti
+                  ? 'Non è ancora stato segnalato nessun problema.'
+                  : 'La casa è in ottimo stato.\nSegnala un problema se qualcosa non funziona.',
               textAlign: TextAlign.center,
               style: AppTextStyles.bodyMuted.copyWith(
                 color: AppColors.textMutedDark,
@@ -235,9 +272,10 @@ class _ErrorBody extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _ListBody extends StatelessWidget {
-  const _ListBody({required this.problemi});
+  const _ListBody({required this.problemi, required this.onBack});
 
   final List<Problema> problemi;
+  final VoidCallback onBack;
 
   @override
   Widget build(BuildContext context) {
@@ -252,7 +290,7 @@ class _ListBody extends StatelessWidget {
       separatorBuilder: (context, _) =>
           Divider(height: 1, thickness: 1, color: AppColors.dividerOnDark),
       itemBuilder: (ctx, index) {
-        return _ProblemaCard(problema: problemi[index]);
+        return _ProblemaCard(problema: problemi[index], onBack: onBack);
       },
     );
   }
@@ -263,9 +301,10 @@ class _ListBody extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _ProblemaCard extends StatelessWidget {
-  const _ProblemaCard({required this.problema});
+  const _ProblemaCard({required this.problema, required this.onBack});
 
   final Problema problema;
+  final VoidCallback onBack;
 
   @override
   Widget build(BuildContext context) {
@@ -278,9 +317,9 @@ class _ProblemaCard extends StatelessWidget {
     return Material(
       color: AppColors.transparent,
       child: InkWell(
-        onTap: () => Navigator.of(
-          context,
-        ).pushNamed(ProblemaDettaglioScreen.routeName, arguments: problema),
+        onTap: () => Navigator.of(context)
+            .pushNamed(ProblemaDettaglioScreen.routeName, arguments: problema)
+            .then((_) => onBack()),
         borderRadius: BorderRadius.circular(AppSizes.radius12),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: AppSizes.p14),
