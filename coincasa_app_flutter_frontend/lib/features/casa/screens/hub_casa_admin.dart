@@ -58,7 +58,9 @@ Inquilino? _resolveCurrentInquilino(List<Inquilino> coinquilini) {
 bool _isOwnerById(List<Inquilino> inquilini) {
   final token = _me.authToken;
   final jwtId = token != null ? JwtUtils.extractUserId(token)?.trim() : null;
-  final currentId = (jwtId?.isNotEmpty == true ? jwtId : _me.currentUserId?.trim());
+  final currentId = (jwtId?.isNotEmpty == true
+      ? jwtId
+      : _me.currentUserId?.trim());
   if (currentId == null || currentId.isEmpty) return false;
   try {
     final owner = inquilini.firstWhere((i) => i.isOwner);
@@ -95,9 +97,9 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
     final membriJson = casaJson['membri'];
     final inquilini = (membriJson is List)
         ? membriJson
-            .cast<Map<String, dynamic>>()
-            .map(Inquilino.fromJson)
-            .toList()
+              .cast<Map<String, dynamic>>()
+              .map(Inquilino.fromJson)
+              .toList()
         : <Inquilino>[];
 
     final current = _resolveCurrentInquilino(inquilini);
@@ -846,8 +848,8 @@ class _DeleteHouseButton extends StatelessWidget {
             begin: const Alignment(0.50, 0.00),
             end: const Alignment(0.50, 1.00),
             colors: [
-              Colors.white.withValues(alpha: 0.18),
-              Colors.white.withValues(alpha: 0.00),
+              const Color(0xFF510808).withValues(alpha: 0.9),
+              const Color(0xFF510808).withValues(alpha: 1.0),
             ],
           ),
           shape: const RoundedRectangleBorder(

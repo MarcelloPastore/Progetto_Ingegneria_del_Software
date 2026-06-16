@@ -162,6 +162,7 @@ Nota: per mantenere la lista leggibile sono esclusi file generati e cache (build
 
 - `npm run build` compila TypeScript.
 - `npm test` esegue i test con Vitest.
+- `npx prisma generate` riavvia il database.
 
 ### Per avviare il backend
 

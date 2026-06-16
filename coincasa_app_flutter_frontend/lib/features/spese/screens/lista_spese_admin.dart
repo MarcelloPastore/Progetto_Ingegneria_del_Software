@@ -388,7 +388,7 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
         ),
         child: Padding(
           padding: const EdgeInsets.symmetric(
-            horizontal: AppSizes.p24,
+            horizontal: AppSizes.p12,
             vertical: AppSizes.p16,
           ),
           child: Column(
@@ -417,7 +417,7 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
                     ),
                     const VerticalDivider(
                       color: Color(0xFFB8B5C1),
-                      width: AppSizes.p18,
+                      width: AppSizes.p8,
                       thickness: 1,
                     ),
                     Expanded(
@@ -429,7 +429,7 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
                     ),
                     const VerticalDivider(
                       color: Color(0xFFB8B5C1),
-                      width: AppSizes.p18,
+                      width: AppSizes.p8,
                       thickness: 1,
                     ),
                     Expanded(
@@ -845,14 +845,17 @@ class _BalanceMetric extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSizes.p8),
-        Text(
-          value,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: valueColor,
-            fontSize: 23,
-            fontFamily: 'Inter',
-            fontWeight: FontWeight.w800,
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            value,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: valueColor,
+              fontSize: 22,
+              fontFamily: 'Inter',
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ),
       ],
