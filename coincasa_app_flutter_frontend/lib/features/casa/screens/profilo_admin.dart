@@ -136,7 +136,7 @@ class _AdminProfileCard extends StatelessWidget {
               final label = ruolo == 'HomeAdmin' || ruolo == 'SysAdmin'
                   ? 'Admin'
                   : ruolo == 'Inquilino'
-                  ? 'Membro'
+                  ? 'Inquilino'
                   : ruolo.isNotEmpty
                   ? ruolo
                   : 'Casa';

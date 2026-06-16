@@ -301,7 +301,7 @@ class _HouseCard extends StatelessWidget {
       return 'Admin';
     }
     if (effectiveRuolo == 'Inquilino') {
-      return 'Membro';
+      return 'Inquilino';
     }
     return 'Casa';
   }

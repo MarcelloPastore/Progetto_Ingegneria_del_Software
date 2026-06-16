@@ -455,7 +455,7 @@ export function casaRoutes(app: FastifyInstance) {
     Querystring?: { rigenera?: string | boolean };
   }>(
     "/case/:idCasa/invite-link",
-    { preHandler: requireRole(Ruolo.Inquilino) },
+    { preHandler: requireRole(Ruolo.HomeAdmin) },
     casaController.generaLink,
   );
   /**

@@ -65,8 +65,7 @@ class HouseHealthSection extends StatelessWidget {
                       ),
                     ],
                   )
-                : badges.length > 4
-                    ? SingleChildScrollView(
+                : SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -82,21 +81,6 @@ class HouseHealthSection extends StatelessWidget {
                             );
                           }),
                         ),
-                      )
-                    : Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: List.generate(badges.length, (index) {
-                          final badge = badges[index];
-                          return Padding(
-                            padding: EdgeInsets.only(
-                              right: index == badges.length - 1
-                                  ? 0
-                                  : AppSizes.p18,
-                            ),
-                            child: _HealthBadge(data: badge),
-                          );
-                        }),
                       ),
           ),
         ),

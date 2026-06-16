@@ -423,7 +423,7 @@ class _HouseHeaderCard extends StatelessWidget {
     return '${data.casa.tipoCasa.isEmpty ? 'Casa' : data.casa.tipoCasa} - $parts';
   }
 
-  String get _roleLabel => isAdmin ? 'Admin' : 'Membro';
+  String get _roleLabel => isAdmin ? 'Admin' : 'Inquilino';
 
   Inquilino? get _owner {
     try {
@@ -695,18 +695,20 @@ class _ManagementSection extends StatelessWidget {
           },
         ),
         const SizedBox(height: 12),
-        _ManagementAction(
-          icon: Icons.link,
-          title: 'Condividi codice d\'invito',
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => CondividiCodiceScreen(casaId: data.casa.id),
-              ),
-            );
-          },
-        ),
-        const SizedBox(height: 12),
+        if (isAdmin) ...[
+          _ManagementAction(
+            icon: Icons.link,
+            title: 'Condividi codice d\'invito',
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => CondividiCodiceScreen(casaId: data.casa.id),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+        ],
         _ManagementAction(
           icon: Icons.house_siding,
           title: 'Lista case',

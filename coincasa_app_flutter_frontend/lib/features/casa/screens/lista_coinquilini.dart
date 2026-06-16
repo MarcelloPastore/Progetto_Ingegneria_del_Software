@@ -260,6 +260,7 @@ class _ListaCoinquiliniScreenState extends State<ListaCoinquiliniScreen> {
                     ),
                   ),
                 ),
+                if (isAdmin)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 18, 16, 20),
                   child: Center(
@@ -365,7 +366,7 @@ class _CoinquilinoTile extends StatelessWidget {
   final VoidCallback? onRetrocedi;
   final VoidCallback? onRimuovi;
 
-  String get _roleLabel => coinquilino.isHomeAdmin ? 'Admin' : 'Membro';
+  String get _roleLabel => coinquilino.isHomeAdmin ? 'Admin' : 'Inquilino';
 
   String get _joinDate {
     final date = coinquilino.dataIngresso;

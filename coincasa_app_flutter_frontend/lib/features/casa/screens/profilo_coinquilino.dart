@@ -126,7 +126,7 @@ class _ProfileCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(4),
             ),
             child: const Text(
-              'Membro',
+              'Inquilino',
               style: TextStyle(
                 color: Color(0xFF1C4A87),
                 fontSize: 12,
