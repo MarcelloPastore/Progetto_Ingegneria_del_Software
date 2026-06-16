@@ -22,7 +22,6 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
   String _frequenza = 'Non ripetere';
   bool _showFrequencyOptions = false;
   bool _hasNameError = false;
-  bool _hasDateError = false;
   bool _isCreated = false;
   bool _isSaving = false;
 
@@ -35,7 +34,7 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
     'Annuale',
   ];
 
-  bool get _hasErrors => _hasNameError || _hasDateError;
+  bool get _hasErrors => _hasNameError;
 
   @override
   void initState() {
@@ -76,7 +75,7 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
         const SizedBox(height: 12),
         _LabeledField(
           label: 'Nome scadenza',
-          required: _hasNameError,
+          required: true,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -110,26 +109,12 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
         const SizedBox(height: 8),
         _LabeledField(
           label: 'Data di scadenza',
-          required: _hasDateError,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextFormField(
-                controller: _dataController,
-                readOnly: true,
-                onTap: _pickDate,
-                style: TextStyle(
-                  color: _hasDateError ? _danger : Colors.white,
-                  fontSize: 18,
-                ),
-                decoration: _inputDecoration(
-                  'GG/MM/AAAA',
-                  hasError: _hasDateError,
-                ),
-              ),
-              if (_hasDateError)
-                const _ErrorMessage(text: 'La data deve essere futura'),
-            ],
+          child: TextFormField(
+            controller: _dataController,
+            readOnly: true,
+            onTap: _pickDate,
+            style: const TextStyle(color: Colors.white, fontSize: 18),
+            decoration: _inputDecoration('GG/MM/AAAA'),
           ),
         ),
         const SizedBox(height: 8),
@@ -201,22 +186,19 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
 
     setState(() {
       _dataController.text = '$day/$month/$year';
-      _hasDateError = !_isFutureDate(selected);
     });
   }
 
   Future<void> _save() async {
-    final selectedDate = _parseDate(_dataController.text);
-    final hasNameError = _nomeController.text.trim().isEmpty;
-    final hasDateError = selectedDate == null || !_isFutureDate(selectedDate);
-
-    if (hasNameError || hasDateError) {
-      setState(() {
-        _hasNameError = hasNameError;
-        _hasDateError = hasDateError;
-      });
+    if (_nomeController.text.trim().isEmpty) {
+      setState(() => _hasNameError = true);
       return;
     }
+
+    final selectedDate = _parseDate(_dataController.text);
+    final validDate = selectedDate != null && _isFutureDate(selectedDate)
+        ? selectedDate
+        : null;
 
     // Capture context-dependent values before any async gap
     final casaId = ActiveCasaScope.read(context).selectedCasaId ?? '';
@@ -228,14 +210,14 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
     final isRicorrente = cadenzaGiorni != null;
     final nome = _nomeController.text.trim();
     final descrizione = _descrizioneController.text.trim();
-    final dataIso = _payloadDate(selectedDate).toIso8601String();
+    final dataIso = validDate != null ? _payloadDate(validDate).toIso8601String() : null;
 
     setState(() => _isSaving = true);
     try {
       await ApiProvider.scadenze.create(casaId, {
         'nome': nome,
         'descrizione': descrizione,
-        'dataScadenza': dataIso,
+        if (dataIso != null) 'dataScadenza': dataIso,
         'isRicorrente': isRicorrente,
         if (cadenzaGiorni != null) 'cadenzaGiorni': cadenzaGiorni,
       });
@@ -282,7 +264,6 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
       _frequenza = 'Non ripetere';
       _showFrequencyOptions = false;
       _hasNameError = false;
-      _hasDateError = false;
       _isCreated = false;
     });
   }

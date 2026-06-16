@@ -49,7 +49,6 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
   late String _frequenza;
   bool _showFrequencyOptions = false;
   bool _hasNameError = false;
-  bool _hasDateError = false;
   bool _isSaving = false;
 
   static const _primary = Color(0xFF5A2BBF);
@@ -65,7 +64,7 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
     'Annuale',
   ];
 
-  bool get _hasErrors => _hasNameError || _hasDateError;
+  bool get _hasErrors => _hasNameError;
 
   @override
   void initState() {
@@ -126,6 +125,7 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
             children: [
               _LabeledField(
                 label: 'Nome scadenza',
+                showRequired: true,
                 hasError: _hasNameError,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -149,7 +149,7 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
               ),
               const SizedBox(height: 12),
               _LabeledField(
-                label: 'Descrizione (opzionale)',
+                label: 'Descrizione',
                 child: TextFormField(
                   controller: _descrizioneController,
                   minLines: 1,
@@ -161,26 +161,12 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
               const SizedBox(height: 12),
               _LabeledField(
                 label: 'Data di scadenza',
-                hasError: _hasDateError,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    TextFormField(
-                      controller: _dataController,
-                      readOnly: true,
-                      onTap: _pickDate,
-                      style: TextStyle(
-                        color: _hasDateError ? _danger : Colors.white,
-                        fontSize: 18,
-                      ),
-                      decoration: _inputDecoration(
-                        'GG/MM/AAAA',
-                        hasError: _hasDateError,
-                      ),
-                    ),
-                    if (_hasDateError)
-                      const _ErrorMessage(text: 'La data deve essere futura'),
-                  ],
+                child: TextFormField(
+                  controller: _dataController,
+                  readOnly: true,
+                  onTap: _pickDate,
+                  style: const TextStyle(color: Colors.white, fontSize: 18),
+                  decoration: _inputDecoration('GG/MM/AAAA'),
                 ),
               ),
               const SizedBox(height: 12),
@@ -300,22 +286,20 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
     if (selected == null) return;
     setState(() {
       _dataController.text = _formatDate(selected);
-      _hasDateError = !_isFutureDate(selected);
     });
   }
 
   Future<void> _save() async {
-    final selectedDate = _parseDate(_dataController.text);
     final hasNameError = _nomeController.text.trim().isEmpty;
-    final hasDateError = selectedDate == null || !_isFutureDate(selectedDate);
-
-    if (hasNameError || hasDateError) {
-      setState(() {
-        _hasNameError = hasNameError;
-        _hasDateError = hasDateError;
-      });
+    if (hasNameError) {
+      setState(() => _hasNameError = true);
       return;
     }
+
+    final selectedDate = _parseDate(_dataController.text);
+    final validDate = selectedDate != null && _isFutureDate(selectedDate)
+        ? selectedDate
+        : null;
 
     // Capture context-dependent values before any async gap
     final activeCasa = ActiveCasaScope.read(context);
@@ -323,7 +307,7 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
     final isRicorrente = cadenzaGiorni != null;
     final nome = _nomeController.text.trim();
     final descrizione = _descrizioneController.text.trim();
-    final dataIso = _payloadDate(selectedDate).toIso8601String();
+    final dataIso = validDate != null ? _payloadDate(validDate).toIso8601String() : null;
 
     setState(() => _isSaving = true);
     try {
@@ -340,7 +324,7 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
         await ApiProvider.scadenze.update(casaId, widget.idScadenza!, {
           'nome': nome,
           'descrizione': descrizione,
-          'dataScadenza': dataIso,
+          if (dataIso != null) 'dataScadenza': dataIso,
         });
         await ApiProvider.scadenze
             .updateRicorrenza(casaId, widget.idScadenza!, {
@@ -351,7 +335,7 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
         await ApiProvider.scadenze.create(casaId, {
           'nome': nome,
           'descrizione': descrizione,
-          'dataScadenza': dataIso,
+          if (dataIso != null) 'dataScadenza': dataIso,
           'isRicorrente': isRicorrente,
           if (cadenzaGiorni != null) 'cadenzaGiorni': cadenzaGiorni,
         });
@@ -534,14 +518,17 @@ class _LabeledField extends StatelessWidget {
     required this.label,
     required this.child,
     this.hasError = false,
+    this.showRequired = false,
   });
 
   final String label;
   final Widget child;
   final bool hasError;
+  final bool showRequired;
 
   @override
   Widget build(BuildContext context) {
+    final showAsterisk = showRequired || hasError;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -555,10 +542,10 @@ class _LabeledField extends StatelessWidget {
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
               ),
-              children: hasError
+              children: showAsterisk
                   ? const [
                       TextSpan(
-                        text: '*',
+                        text: ' *',
                         style: TextStyle(color: Color(0xFFFF1744)),
                       ),
                     ]
