@@ -298,8 +298,8 @@ class _DettaglioTurnoAdminScreenState
             currentUser != null &&
             data != null &&
             data.turno.isCreatedBy(currentUser.id);
-        final canDeleteTurno =
-            isCreator || ActiveCasaScope.of(context).isHomeAdmin;
+        final isAdmin = ActiveCasaScope.of(context).isHomeAdmin;
+        final canDeleteTurno = isCreator || isAdmin;
 
         return Scaffold(
           backgroundColor: AppColors.darkBackground,
@@ -366,7 +366,7 @@ class _DettaglioTurnoAdminScreenState
                                     ? null
                                     : () => _handleAssignMe(data),
                               ),
-                              if (assignees.isNotEmpty) ...[
+                              if (isAdmin && assignees.isNotEmpty) ...[
                                 const SizedBox(height: AppSizes.p10),
                                 _AssigneeSelector(
                                   assignees: assignees,
@@ -886,13 +886,17 @@ class _CreatorRow extends StatelessWidget {
           ),
         ),
         const SizedBox(width: AppSizes.p10),
-        Text(
-          '${nome.isNotEmpty ? nome : 'Coinquilino'} ha creato questo turno',
-          style: const TextStyle(
-            color: Color(0xFFAFAEAE),
-            fontSize: 15,
-            fontFamily: 'Inter',
-            fontWeight: FontWeight.w500,
+        Expanded(
+          child: Text(
+            '${nome.isNotEmpty ? nome : 'Coinquilino'} ha creato questo turno',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Color(0xFFAFAEAE),
+              fontSize: 15,
+              fontFamily: 'Inter',
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
       ],

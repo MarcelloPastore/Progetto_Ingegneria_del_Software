@@ -303,30 +303,30 @@ class _TurnoCreateScreenState extends ConsumerState<TurnoCreateScreen> {
                       hasError: form.showErrors && form.task.trim().isEmpty,
                       onChanged: controller.setTask,
                     ),
-                    const SizedBox(height: 25),
-                    _AssigneeSection(
-                      inquilini: assignees,
-                      canAssignOthers:
-                          ActiveCasaScope.of(context).isHomeAdmin && !isEditing,
-                      currentUserId: currentUser?.id,
-                      selectedId: form.selectedInquilinoId,
-                      showError:
-                          form.showErrors && form.selectedInquilinoId == null,
-                      onSelected: controller.setAssignee,
-                    ),
-                    const SizedBox(height: 20),
-                    _DateRow(
-                      selectedDate: form.turnoDate,
-                      hasError: form.showErrors && !form.hasValidDate,
-                      onPickDate: isEditing
-                          ? () {}
-                          : () => _pickDate(form.turnoDate),
-                    ),
-                    if (form.showDatePastError) ...[
-                      const SizedBox(height: 12),
-                      const _ErrorLine(
-                        message: 'Data errata: seleziona una data futura',
+                    if (!isEditing) ...[
+                      const SizedBox(height: 25),
+                      _AssigneeSection(
+                        inquilini: assignees,
+                        canAssignOthers:
+                            ActiveCasaScope.of(context).isHomeAdmin,
+                        currentUserId: currentUser?.id,
+                        selectedId: form.selectedInquilinoId,
+                        showError:
+                            form.showErrors && form.selectedInquilinoId == null,
+                        onSelected: controller.setAssignee,
                       ),
+                      const SizedBox(height: 20),
+                      _DateRow(
+                        selectedDate: form.turnoDate,
+                        hasError: form.showErrors && !form.hasValidDate,
+                        onPickDate: () => _pickDate(form.turnoDate),
+                      ),
+                      if (form.showDatePastError) ...[
+                        const SizedBox(height: 12),
+                        const _ErrorLine(
+                          message: 'Data errata: seleziona una data futura',
+                        ),
+                      ],
                     ],
                     const SizedBox(height: 25),
                     Padding(
@@ -355,7 +355,7 @@ class _TurnoCreateScreenState extends ConsumerState<TurnoCreateScreen> {
                     Builder(
                       builder: (context) {
                         final canToggleRotation =
-                            ActiveCasaScope.of(context).isHomeAdmin && !isEditing;
+                            ActiveCasaScope.of(context).isHomeAdmin;
                         return _AutoRotationRow(
                           value: form.autoRotation,
                           onChanged: canToggleRotation
