@@ -225,6 +225,29 @@ xcrun simctl boot "iPhone 14"
 
 avvia l'app con run & debug su main.dart
 
-```
+# iOS Deploy Quick Guide
 
-```
+## Configurazione Iniziale
+1. **Firma Xcode**: `open ios/Runner.xcworkspace` -> **Runner** -> **Signing & Capabilities** -> Selezionare **Team** (Apple ID).
+2. **Autorizzazione**: iPhone -> **Impostazioni > Generali > VPN e gestione dispositivi** -> Autorizza Apple ID.
+3. **Developer Mode**: iPhone -> **Impostazioni > Privacy e sicurezza > Modalità Sviluppatore** -> Attiva e riavvia.
+
+---
+
+## Sviluppo Quotidiano
+* **Requisiti**: iPhone collegato via **cavo USB**, Mac e iPhone sulla **stessa rete Wi-Fi**.
+* **Comando di avvio**:
+  ```bash
+  flutter run --dart-define=API_BASE_URL=[http://192.168.0.00:23109/api/v1](http://192.168.0.00:23109/api/v1)
+
+## Troubleshooting
+Se l'app non si avvia correttamente, eseguire i seguenti comandi:
+  ```bash
+flutter clean
+rm -rf ios/Pods ios/Podfile.lock ios/.symlinks
+flutter pub get
+cd ios
+pod cache clean --all
+pod install --repo-update
+cd ..
+flutter run --dart-define=API_BASE_URL=[http://192.168.0.00:23109/api/v1](http://192.168.0.00:23109/api/v1)

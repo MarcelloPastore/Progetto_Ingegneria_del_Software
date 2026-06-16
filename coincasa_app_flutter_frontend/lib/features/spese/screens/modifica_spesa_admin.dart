@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
@@ -16,10 +17,11 @@ import 'package:coincasa_app/features/spese/screens/lista_spese_admin.dart';
 // Provider
 // ---------------------------------------------------------------------------
 
-final modificaSpesaFormProvider = StateNotifierProvider.autoDispose<
-    SpesaEditFormController, SpesaEditFormState>(
-  (_) => SpesaEditFormController(),
-);
+final modificaSpesaFormProvider =
+    StateNotifierProvider.autoDispose<
+      SpesaEditFormController,
+      SpesaEditFormState
+    >((_) => SpesaEditFormController());
 
 // ---------------------------------------------------------------------------
 // Screen
@@ -114,8 +116,11 @@ class _ModificaSpesaAdminScreenState
           'cadenzaGiorni': _cadenzaGiorniFor(form.frequenza),
         },
       };
-      final updatedSpesa =
-          await ApiProvider.spese.update(casa.id, spesaId, payload);
+      final updatedSpesa = await ApiProvider.spese.update(
+        casa.id,
+        spesaId,
+        payload,
+      );
       if (!mounted) return;
       Navigator.of(context).pushReplacementNamed(
         DettaglioSpesaAdminScreen.routeName,
@@ -135,9 +140,7 @@ class _ModificaSpesaAdminScreenState
 
     final inquiliniAsync = form.casa == null
         ? const AsyncValue<List<Inquilino>>.loading()
-        : ref.watch(
-            _inquiliniProvider(form.casa!.id),
-          );
+        : ref.watch(_inquiliniProvider(form.casa!.id));
 
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
@@ -155,8 +158,8 @@ class _ModificaSpesaAdminScreenState
                         children: [
                           // Breadcrumb
                           GestureDetector(
-                            onTap: () => Navigator.of(context)
-                                .pushReplacementNamed(
+                            onTap: () =>
+                                Navigator.of(context).pushReplacementNamed(
                                   ListaSpeseAdminScreen.routeName,
                                 ),
                             child: Row(
@@ -169,11 +172,12 @@ class _ModificaSpesaAdminScreenState
                                 const SizedBox(width: 4),
                                 Text(
                                   'Spese',
-                                  style: AppTextStyles.screenTitleStrong.copyWith(
-                                    color: AppColors.brandAccent,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
-                                  ),
+                                  style: AppTextStyles.screenTitleStrong
+                                      .copyWith(
+                                        color: AppColors.brandAccent,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                      ),
                                 ),
                               ],
                             ),
@@ -200,7 +204,8 @@ class _ModificaSpesaAdminScreenState
                               Expanded(
                                 child: SpesaFormDescrizioneField(
                                   controller: _descCtrl,
-                                  hasError: form.showErrors &&
+                                  hasError:
+                                      form.showErrors &&
                                       form.descrizione.trim().isEmpty,
                                   onChanged: ctrl.setDescrizione,
                                 ),
@@ -217,7 +222,8 @@ class _ModificaSpesaAdminScreenState
                               selectedIds: form.selectedInquiliniIds,
                               lockedId: form.creatoreId,
                               importo: form.importo,
-                              showError: form.showErrors &&
+                              showError:
+                                  form.showErrors &&
                                   form.selectedInquiliniIds.isEmpty,
                               onSelected: ctrl.toggleInquilino,
                             ),
@@ -226,7 +232,8 @@ class _ModificaSpesaAdminScreenState
                               selectedIds: form.selectedInquiliniIds,
                               lockedId: form.creatoreId,
                               importo: form.importo,
-                              showError: form.showErrors &&
+                              showError:
+                                  form.showErrors &&
                                   form.selectedInquiliniIds.isEmpty,
                               onSelected: ctrl.toggleInquilino,
                             ),
@@ -241,7 +248,9 @@ class _ModificaSpesaAdminScreenState
                                 onChanged: ctrl.setHoAnticipatoPerTutti,
                               ),
                               const Divider(
-                                  height: 1, color: Color(0xFF3A3555)),
+                                height: 1,
+                                color: Color(0xFF3A3555),
+                              ),
                               SpesaFormRecurringRow(
                                 value: form.spesaRicorrente,
                                 isAdmin: isAdmin,
@@ -308,10 +317,10 @@ class _ModificaSpesaAdminScreenState
 // Provider inquilini per casa (lazy)
 // ---------------------------------------------------------------------------
 
-final _inquiliniProvider =
-    FutureProvider.autoDispose.family<List<Inquilino>, String>(
-  (ref, casaId) => ApiProvider.casa.listInquilini(casaId),
-);
+final _inquiliniProvider = FutureProvider.autoDispose
+    .family<List<Inquilino>, String>(
+      (ref, casaId) => ApiProvider.casa.listInquilini(casaId),
+    );
 
 // ---------------------------------------------------------------------------
 // Form State
@@ -458,8 +467,7 @@ class SpesaEditFormController extends StateNotifier<SpesaEditFormState> {
   void clearDataSpesa() => state = state.copyWith(clearDataSpesa: true);
   void setHoAnticipatoPerTutti(bool v) =>
       state = state.copyWith(hoAnticipatoPerTutti: v);
-  void setSpesaRicorrente(bool v) =>
-      state = state.copyWith(spesaRicorrente: v);
+  void setSpesaRicorrente(bool v) => state = state.copyWith(spesaRicorrente: v);
   void setFrequenza(String v) => state = state.copyWith(frequenza: v);
 
   void toggleInquilino(String id) {
@@ -489,10 +497,10 @@ class SpesaEditFormController extends StateNotifier<SpesaEditFormState> {
 
   void setSubmitting(bool v) => state = state.copyWith(isSubmitting: v);
   void setSubmitError(String e) => state = state.copyWith(
-        submitError: e,
-        showErrors: true,
-        isSubmitting: false,
-      );
+    submitError: e,
+    showErrors: true,
+    isSubmitting: false,
+  );
 }
 
 // ============================================================================
@@ -576,38 +584,42 @@ class _SpesaFormImportoCardState extends State<SpesaFormImportoCard> {
               ),
             ),
             const SizedBox(height: 4),
-            Stack(
-              alignment: Alignment.centerRight,
+            Row(
               children: [
-                // Display del valore formattato
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: ValueListenableBuilder(
-                    valueListenable: widget.controller,
-                    builder: (_, a, b) => Text(
-                      _displayAmount,
-                      style: AppTextStyles.screenTitleStrong.copyWith(
-                        color: AppColors.brandPrimary,
-                        fontSize: 32,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                ),
-                // TextField trasparente per catturare input
-                Opacity(
-                  opacity: 0,
+                Expanded(
                   child: TextField(
                     controller: widget.controller,
                     focusNode: _focus,
+                    autofocus: true,
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
+                    inputFormatters: [LengthLimitingTextInputFormatter(13)],
+                    textAlign: TextAlign.right,
+                    cursorColor: AppColors.brandPrimary,
                     onChanged: widget.onChanged,
-                    style: const TextStyle(fontSize: 32),
-                    decoration: const InputDecoration(
+                    style: AppTextStyles.screenTitleStrong.copyWith(
+                      color: AppColors.brandAccent,
+                      fontSize: 32,
+                      fontWeight: FontWeight.w800,
+                    ),
+                    decoration: InputDecoration(
+                      isDense: true,
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.zero,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      hintText: '0,00',
+                      prefixText: '€ ',
+                      prefixStyle: AppTextStyles.screenTitleStrong.copyWith(
+                        color: AppColors.brandAccent,
+                        fontSize: 32,
+                        fontWeight: FontWeight.w800,
+                      ),
+                      hintStyle: AppTextStyles.screenTitleStrong.copyWith(
+                        color: AppColors.brandAccent.withValues(alpha: 0.35),
+                        fontSize: 32,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
                 ),
@@ -820,7 +832,10 @@ class SpesaFormDescrizioneField extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppSizes.radius8),
           borderSide: const BorderSide(color: AppColors.brandAccent, width: 2),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 13,
+        ),
       ),
     );
   }
@@ -862,8 +877,7 @@ class SpesaFormDivisioneSection extends StatelessWidget {
 
   double? get _quotaPerPerson {
     if (selectedIds.isEmpty) return null;
-    final total =
-        double.tryParse(importo.trim().replaceAll(',', '.'));
+    final total = double.tryParse(importo.trim().replaceAll(',', '.'));
     if (total == null || total <= 0) return null;
     return total / selectedIds.length;
   }
@@ -994,9 +1008,10 @@ class SpesaFormInquilinoRow extends StatelessWidget {
                 ),
               ),
             ),
+            const SizedBox(width: 8),
             if (quota != null && isSelected) ...[
               Text(
-                '€${quota!.toStringAsFixed(0)}',
+                '€ ${quota!.toStringAsFixed(2).replaceAll('.', ',')}',
                 style: AppTextStyles.screenTitleStrong.copyWith(
                   color: Colors.white,
                   fontSize: 14,
@@ -1055,7 +1070,10 @@ class SpesaFormTogglePanel extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surfaceDarkElevated,
         borderRadius: BorderRadius.circular(AppSizes.radius8),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.28), width: 1.5),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.28),
+          width: 1.5,
+        ),
       ),
       child: Column(children: children),
     );
@@ -1111,9 +1129,17 @@ class SpesaFormPaidForAllRow extends StatelessWidget {
             inactiveTrackColor: const Color(0xFF3A3555),
             thumbIcon: WidgetStateProperty.resolveWith<Icon?>((states) {
               if (states.contains(WidgetState.selected)) {
-                return const Icon(Icons.check_rounded, size: 14, color: Color(0xFF7B5DC8));
+                return const Icon(
+                  Icons.check_rounded,
+                  size: 14,
+                  color: Color(0xFF7B5DC8),
+                );
               }
-              return const Icon(Icons.close_rounded, size: 14, color: Color(0xFF888888));
+              return const Icon(
+                Icons.close_rounded,
+                size: 14,
+                color: Color(0xFF888888),
+              );
             }),
           ),
         ],
@@ -1191,9 +1217,17 @@ class SpesaFormRecurringRow extends StatelessWidget {
               inactiveTrackColor: const Color(0xFF3A3555),
               thumbIcon: WidgetStateProperty.resolveWith<Icon?>((states) {
                 if (states.contains(WidgetState.selected)) {
-                  return const Icon(Icons.check_rounded, size: 14, color: Color(0xFF7B5DC8));
+                  return const Icon(
+                    Icons.check_rounded,
+                    size: 14,
+                    color: Color(0xFF7B5DC8),
+                  );
                 }
-                return const Icon(Icons.close_rounded, size: 14, color: Color(0xFF888888));
+                return const Icon(
+                  Icons.close_rounded,
+                  size: 14,
+                  color: Color(0xFF888888),
+                );
               }),
             ),
           ],
@@ -1293,8 +1327,11 @@ class SpesaFormErrorLine extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const Icon(Icons.warning_rounded,
-            color: AppColors.statusNegative, size: 18),
+        const Icon(
+          Icons.warning_rounded,
+          color: AppColors.statusNegative,
+          size: 18,
+        ),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
@@ -1409,7 +1446,9 @@ class _AnnullaButton extends StatelessWidget {
           shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.all(Radius.circular(22)),
           ),
-          disabledForegroundColor: AppColors.statusNegative.withValues(alpha: 0.4),
+          disabledForegroundColor: AppColors.statusNegative.withValues(
+            alpha: 0.4,
+          ),
         ),
         child: const Text(
           'Annulla',
@@ -1434,8 +1473,12 @@ String? _resolveCurrentUserId(List<Inquilino> inquilini) {
   final email = ApiProvider.client.currentUserEmail?.trim().toLowerCase();
   final name = ApiProvider.client.currentUserName?.trim().toLowerCase();
   for (final inq in inquilini) {
-    final values = [inq.email, inq.username, inq.nome, inq.nomeCompleto]
-        .map((v) => v.trim().toLowerCase());
+    final values = [
+      inq.email,
+      inq.username,
+      inq.nome,
+      inq.nomeCompleto,
+    ].map((v) => v.trim().toLowerCase());
     if ((email != null && values.contains(email)) ||
         (name != null && values.contains(name))) {
       return inq.id;
@@ -1454,11 +1497,11 @@ List<String> _buildPartecipantiIds({
 }
 
 int _cadenzaGiorniFor(String frequenza) => switch (frequenza) {
-      'Bimestrale' => 60,
-      'Trimestrale' => 90,
-      'Annuale' => 365,
-      _ => 30,
-    };
+  'Bimestrale' => 60,
+  'Trimestrale' => 90,
+  'Annuale' => 365,
+  _ => 30,
+};
 
 String _frequenzaFromCadenza(dynamic cadenza) {
   final n = cadenza is num ? cadenza.toInt() : int.tryParse('$cadenza') ?? 30;

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
@@ -150,159 +151,168 @@ class _InserisciSpesaScreenState extends ConsumerState<InserisciSpesaScreen> {
       backgroundColor: AppColors.darkBackground,
       bottomNavigationBar: const HouseQuickNav(currentRoute: '/spese'),
       body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Breadcrumb
-                    GestureDetector(
-                      onTap: () => Navigator.of(context).pop(),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.arrow_back_ios_new_rounded,
-                            color: AppColors.brandAccent,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Spese',
-                            style: AppTextStyles.screenTitleStrong.copyWith(
+        child: GestureDetector(
+          onTap: () => FocusScope.of(context).unfocus(),
+          behavior: HitTestBehavior.opaque,
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Breadcrumb
+                      GestureDetector(
+                        onTap: () => Navigator.of(context).pop(),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.arrow_back_ios_new_rounded,
                               color: AppColors.brandAccent,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Spese',
+                              style: AppTextStyles.screenTitleStrong.copyWith(
+                                color: AppColors.brandAccent,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Importo — shared widget
+                      SpesaFormImportoCard(
+                        controller: _importoCtrl,
+                        hasError: form.showErrors && !form.hasValidImporto,
+                        onChanged: controller.setImporto,
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Data + Descrizione — shared widgets
+                      Row(
+                        children: [
+                          SpesaFormDateField(
+                            value: form.dataSpesa,
+                            onChanged: controller.setDataSpesa,
+                            onCleared: () => controller.clearDataSpesa(),
+                            minDate: DateTime.now(),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: SpesaFormDescrizioneField(
+                              controller: _descCtrl,
+                              hasError:
+                                  form.showErrors &&
+                                  form.descrizione.trim().isEmpty,
+                              onChanged: controller.setDescrizione,
                             ),
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(height: 16),
+                      const SizedBox(height: 24),
 
-                    // Importo — shared widget
-                    SpesaFormImportoCard(
-                      controller: _importoCtrl,
-                      hasError: form.showErrors && !form.hasValidImporto,
-                      onChanged: controller.setImporto,
-                    ),
-                    const SizedBox(height: 10),
-
-                    // Data + Descrizione — shared widgets
-                    Row(
-                      children: [
-                        SpesaFormDateField(
-                          value: form.dataSpesa,
-                          onChanged: controller.setDataSpesa,
-                          onCleared: () => controller.clearDataSpesa(),
-                          minDate: DateTime.now(),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: SpesaFormDescrizioneField(
-                            controller: _descCtrl,
-                            hasError:
-                                form.showErrors &&
-                                form.descrizione.trim().isEmpty,
-                            onChanged: controller.setDescrizione,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Dividi tra — shared widget
-                    inquiliniAsync.when(
-                      loading: () => const SpesaFormDivisioneLoading(),
-                      error: (_, _) => SpesaFormDivisioneSection(
-                        inquilini: const [],
-                        selectedIds: form.selectedInquiliniIds,
-                        lockedId: form.currentUserId,
-                        importo: form.importo,
-                        showError:
-                            form.showErrors &&
-                            form.selectedInquiliniIds.isEmpty,
-                        onSelected: controller.toggleInquilino,
-                      ),
-                      data: (inquilini) {
-                        final currentUserId = _resolveCurrentUserId(inquilini);
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          if (!mounted) return;
-                          controller.ensureSelected(currentUserId);
-                        });
-                        return SpesaFormDivisioneSection(
-                          inquilini: inquilini,
+                      // Dividi tra — shared widget
+                      inquiliniAsync.when(
+                        loading: () => const SpesaFormDivisioneLoading(),
+                        error: (_, _) => SpesaFormDivisioneSection(
+                          inquilini: const [],
                           selectedIds: form.selectedInquiliniIds,
-                          lockedId: currentUserId,
+                          lockedId: form.currentUserId,
                           importo: form.importo,
                           showError:
                               form.showErrors &&
                               form.selectedInquiliniIds.isEmpty,
                           onSelected: controller.toggleInquilino,
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Toggle panel — shared widgets
-                    SpesaFormTogglePanel(
-                      children: [
-                        SpesaFormPaidForAllRow(
-                          value: form.hoAnticipatoPerTutti,
-                          onChanged: controller.setHoAnticipatoPerTutti,
                         ),
-                        const Divider(height: 1, color: Color(0xFF3A3555)),
-                        SpesaFormRecurringRow(
-                          value: form.spesaRicorrente,
-                          isAdmin: isAdmin,
-                          onChanged: isAdmin
-                              ? controller.setSpesaRicorrente
-                              : null,
+                        data: (inquilini) {
+                          final currentUserId = _resolveCurrentUserId(
+                            inquilini,
+                          );
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (!mounted) return;
+                            controller.prepopulateInquilini(
+                              inquilini,
+                              currentUserId,
+                            );
+                          });
+                          return SpesaFormDivisioneSection(
+                            inquilini: inquilini,
+                            selectedIds: form.selectedInquiliniIds,
+                            lockedId: currentUserId,
+                            importo: form.importo,
+                            showError:
+                                form.showErrors &&
+                                form.selectedInquiliniIds.isEmpty,
+                            onSelected: controller.toggleInquilino,
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Toggle panel — shared widgets
+                      SpesaFormTogglePanel(
+                        children: [
+                          SpesaFormPaidForAllRow(
+                            value: form.hoAnticipatoPerTutti,
+                            onChanged: controller.setHoAnticipatoPerTutti,
+                          ),
+                          const Divider(height: 1, color: Color(0xFF3A3555)),
+                          SpesaFormRecurringRow(
+                            value: form.spesaRicorrente,
+                            isAdmin: isAdmin,
+                            onChanged: isAdmin
+                                ? controller.setSpesaRicorrente
+                                : null,
+                          ),
+                        ],
+                      ),
+
+                      // Frequenza
+                      if (isAdmin && form.spesaRicorrente) ...[
+                        const SizedBox(height: 16),
+                        Text(
+                          'Frequenza',
+                          style: AppTextStyles.screenTitleStrong.copyWith(
+                            color: AppColors.brandPrimary,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        SpesaFormFrequencyDropdown(
+                          value: form.frequenza,
+                          onChanged: controller.setFrequenza,
                         ),
                       ],
-                    ),
 
-                    // Frequenza
-                    if (isAdmin && form.spesaRicorrente) ...[
-                      const SizedBox(height: 16),
-                      Text(
-                        'Frequenza',
-                        style: AppTextStyles.screenTitleStrong.copyWith(
-                          color: AppColors.brandPrimary,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
+                      if (form.showMissingError) ...[
+                        const SizedBox(height: 16),
+                        SpesaFormErrorLine(message: form.submitError),
+                      ],
                       const SizedBox(height: 8),
-                      SpesaFormFrequencyDropdown(
-                        value: form.frequenza,
-                        onChanged: controller.setFrequenza,
-                      ),
                     ],
-
-                    if (form.showMissingError) ...[
-                      const SizedBox(height: 16),
-                      SpesaFormErrorLine(message: form.submitError),
-                    ],
-                    const SizedBox(height: 8),
-                  ],
+                  ),
                 ),
               ),
-            ),
 
-            // CTA pinned — shared widget
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
-              child: SpesaFormConfermaButton(
-                label: 'Conferma e aggiungi',
-                enabled: form.canSubmit,
-                submitting: form.isSubmitting,
-                onPressed: _submit,
+              // CTA pinned — shared widget
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
+                child: SpesaFormConfermaButton(
+                  label: 'Conferma e aggiungi',
+                  enabled: form.canSubmit,
+                  submitting: form.isSubmitting,
+                  onPressed: _submit,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -411,78 +421,82 @@ class _InserisciSpesaPopupContentState
       error: (e, s) => AsyncValue<List<Inquilino>>.error(e, s),
     );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          'Nuova Spesa',
-          style: AppTextStyles.screenTitleStrong.copyWith(
-            color: AppColors.brandPrimary,
-            fontSize: 23,
-            fontWeight: FontWeight.w800,
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Nuova Spesa',
+            style: AppTextStyles.screenTitleStrong.copyWith(
+              color: AppColors.brandPrimary,
+              fontSize: 23,
+              fontWeight: FontWeight.w800,
+            ),
           ),
-        ),
-        const SizedBox(height: 10),
-        // Importo card con display grande
-        _ImportoCard(
-          value: form.importo,
-          hasError: form.showErrors && !form.hasValidImporto,
-          onChanged: controller.setImporto,
-        ),
-        const SizedBox(height: 8),
-        _PopupDescrizioneField(
-          controller: _descrizioneController,
-          onChanged: controller.setDescrizione,
-        ),
-        const SizedBox(height: 18),
-        inquiliniAsync.when(
-          loading: () => const _DivisioneLoading(),
-          error: (_, _) => _PopupDivisioneSection(
-            inquilini: const [],
-            selectedIds: form.selectedInquiliniIds,
-            currentUserId: null,
-            importo: form.importo,
-            showError: form.showErrors && form.selectedInquiliniIds.isEmpty,
-            onSelected: controller.toggleInquilino,
+          const SizedBox(height: 10),
+          // Importo card con display grande
+          _ImportoCard(
+            value: form.importo,
+            hasError: form.showErrors && !form.hasValidImporto,
+            onChanged: controller.setImporto,
           ),
-          data: (inquilini) {
-            final currentUserId = _resolveCurrentUserId(inquilini);
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (!mounted) return;
-              controller.ensureSelected(currentUserId);
-            });
-            return _PopupDivisioneSection(
-              inquilini: inquilini,
+          const SizedBox(height: 8),
+          _PopupDescrizioneField(
+            controller: _descrizioneController,
+            onChanged: controller.setDescrizione,
+          ),
+          const SizedBox(height: 18),
+          inquiliniAsync.when(
+            loading: () => const _DivisioneLoading(),
+            error: (_, _) => _PopupDivisioneSection(
+              inquilini: const [],
               selectedIds: form.selectedInquiliniIds,
-              currentUserId: currentUserId,
+              currentUserId: null,
               importo: form.importo,
               showError: form.showErrors && form.selectedInquiliniIds.isEmpty,
               onSelected: controller.toggleInquilino,
-            );
-          },
-        ),
-        const SizedBox(height: 8),
-        _PopupPaidForAllRow(
-          value: form.hoAnticipatoPerTutti,
-          onChanged: controller.setHoAnticipatoPerTutti,
-        ),
-        if (form.showMissingError) ...[
-          const SizedBox(height: 10),
-          _ErrorLine(message: 'Dati mancanti: compila i campi necessari'),
+            ),
+            data: (inquilini) {
+              final currentUserId = _resolveCurrentUserId(inquilini);
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                controller.prepopulateInquilini(inquilini, currentUserId);
+              });
+              return _PopupDivisioneSection(
+                inquilini: inquilini,
+                selectedIds: form.selectedInquiliniIds,
+                currentUserId: currentUserId,
+                importo: form.importo,
+                showError: form.showErrors && form.selectedInquiliniIds.isEmpty,
+                onSelected: controller.toggleInquilino,
+              );
+            },
+          ),
+          const SizedBox(height: 8),
+          _PopupPaidForAllRow(
+            value: form.hoAnticipatoPerTutti,
+            onChanged: controller.setHoAnticipatoPerTutti,
+          ),
+          if (form.showMissingError) ...[
+            const SizedBox(height: 10),
+            _ErrorLine(message: 'Dati mancanti: compila i campi necessari'),
+          ],
+          const SizedBox(height: 14),
+          FabSaveButton(
+            label: 'Salva spesa',
+            onPressed: form.canSubmit ? _submit : null,
+            isLoading: form.isSubmitting,
+          ),
+          const SizedBox(height: 8),
+          FabCancelButton(
+            onPressed: form.isSubmitting
+                ? null
+                : () => Navigator.of(context).pop(),
+          ),
         ],
-        const SizedBox(height: 14),
-        FabSaveButton(
-          label: 'Salva spesa',
-          onPressed: form.canSubmit ? _submit : null,
-          isLoading: form.isSubmitting,
-        ),
-        const SizedBox(height: 8),
-        FabCancelButton(
-          onPressed: form.isSubmitting
-              ? null
-              : () => Navigator.of(context).pop(),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -574,7 +588,7 @@ class _PopupDivisioneSection extends StatelessWidget {
           final isSelected = selectedIds.contains(inq.id);
           final isCurrentUser = inq.id == currentUserId;
           final quotaLabel = isSelected && quota > 0
-              ? '€ ${quota.toStringAsFixed(0)}'
+              ? '€ ${quota.toStringAsFixed(2).replaceAll('.', ',')}'
               : '–';
           return Padding(
             padding: const EdgeInsets.only(bottom: 2),
@@ -640,13 +654,13 @@ class _PopupInquilinoCheckbox extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   isCurrentUser ? '$name (Tu)' : name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
+                  textAlign: TextAlign.left,
                   style: AppTextStyles.screenTitleStrong.copyWith(
                     color: const Color(
                       0xFF7A7490,
@@ -655,8 +669,9 @@ class _PopupInquilinoCheckbox extends StatelessWidget {
                   ),
                 ),
               ),
+              const SizedBox(width: 8),
               Transform.scale(
-                scale: 1.25,
+                scale: 1.2,
                 child: Checkbox(
                   value: isSelected,
                   onChanged: isCurrentUser ? null : (_) => onChanged(),
@@ -664,18 +679,16 @@ class _PopupInquilinoCheckbox extends StatelessWidget {
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
               ),
-              SizedBox(
-                width: 36,
-                child: Text(
-                  quotaLabel,
-                  textAlign: TextAlign.right,
-                  style: AppTextStyles.screenTitleStrong.copyWith(
-                    color: isSelected
-                        ? AppColors.brandAccent
-                        : AppColors.textOnDark.withValues(alpha: 0.3),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
+              const SizedBox(width: 8),
+              Text(
+                quotaLabel,
+                textAlign: TextAlign.right,
+                style: AppTextStyles.screenTitleStrong.copyWith(
+                  color: isSelected
+                      ? AppColors.brandAccent
+                      : AppColors.textOnDark.withValues(alpha: 0.3),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],
@@ -824,6 +837,17 @@ class _SpesaCreateFormController extends StateNotifier<_SpesaCreateFormState> {
   void setSpesaRicorrente(bool v) => state = state.copyWith(spesaRicorrente: v);
   void setFrequenza(String v) => state = state.copyWith(frequenza: v);
 
+  void prepopulateInquilini(List<Inquilino> inquilini, String? currentUserId) {
+    if (state.selectedInquiliniIds.isNotEmpty && state.currentUserId != null) {
+      return;
+    }
+    final allIds = inquilini.map((e) => e.id).toSet();
+    state = state.copyWith(
+      selectedInquiliniIds: allIds,
+      currentUserId: currentUserId,
+    );
+  }
+
   void toggleInquilino(String id) {
     // L'utente corrente non può essere rimosso
     if (id == state.currentUserId) return;
@@ -837,14 +861,7 @@ class _SpesaCreateFormController extends StateNotifier<_SpesaCreateFormState> {
   }
 
   void ensureSelected(String? id) {
-    if (id == null || id.isEmpty) return;
-    if (state.selectedInquiliniIds.contains(id) && state.currentUserId == id) {
-      return;
-    }
-    state = state.copyWith(
-      selectedInquiliniIds: {...state.selectedInquiliniIds, id},
-      currentUserId: id,
-    );
+    // Rimosso a favore di prepopulateInquilini
   }
 
   bool validateBeforeSubmit() {
@@ -892,6 +909,7 @@ class _ImportoCardState extends State<_ImportoCard> {
   void initState() {
     super.initState();
     _ctrl = TextEditingController(text: widget.value);
+    _ctrl.selection = TextSelection.collapsed(offset: _ctrl.text.length);
     _focus = FocusNode();
     _focus.addListener(() {
       if (mounted) {
@@ -967,29 +985,33 @@ class _ImportoCardState extends State<_ImportoCard> {
                   child: TextField(
                     controller: _ctrl,
                     focusNode: _focus,
+                    autofocus: true,
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
+                    inputFormatters: [LengthLimitingTextInputFormatter(13)],
                     textAlign: TextAlign.right,
                     cursorColor: AppColors.brandAccent,
                     onChanged: widget.onChanged,
                     style: AppTextStyles.screenTitleStrong.copyWith(
-                      color: AppColors.textOnDark,
+                      color: AppColors.brandAccent,
                       fontSize: 28,
                       fontWeight: FontWeight.w800,
                     ),
                     decoration: InputDecoration(
                       isDense: true,
                       border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
                       hintText: '0,00',
                       prefixText: '€ ',
                       prefixStyle: AppTextStyles.screenTitleStrong.copyWith(
-                        color: AppColors.textOnDark,
+                        color: AppColors.brandAccent,
                         fontSize: 28,
                         fontWeight: FontWeight.w800,
                       ),
                       hintStyle: AppTextStyles.screenTitleStrong.copyWith(
-                        color: AppColors.textOnDark.withValues(alpha: 0.34),
+                        color: AppColors.brandAccent.withValues(alpha: 0.34),
                         fontSize: 28,
                         fontWeight: FontWeight.w800,
                       ),

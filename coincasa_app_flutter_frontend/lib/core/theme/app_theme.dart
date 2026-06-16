@@ -9,12 +9,12 @@ export '../constants/app_sizes.dart';
 abstract final class AppColors {
   static const transparent = Color(0x00000000);
 
-  static const brandPrimary = Color(0xFF5228AD);
-  static const brandPrimaryDark = Color(0xFF4C2A9E);
-  static const brandSecondary = Color(0xFF6E41D1);
-  static const brandAccent = Color(0xFF996CFA);
-  static const focus = Color(0xFF8A72D9);
-  static const primaryBorder = Color(0xFF9C8BF0);
+  static const brandPrimary = Color(0xFF6436D1);
+  static const brandPrimaryDark = Color(0xFF552EA8);
+  static const brandSecondary = Color(0xFF8256E5);
+  static const brandAccent = Color(0xFFAC86FC);
+  static const focus = Color(0xFF9E86E3);
+  static const primaryBorder = Color(0xFFB0A2F4);
 
   static const pageBackground = Color(0xFFF6F5FB);
   static const darkBackground = Color(0xFF151127);
