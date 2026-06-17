@@ -197,7 +197,7 @@ class _GestioneAccountScreenState extends State<GestioneAccountScreen> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: const Color(0xFF100D22),
+        backgroundColor:  AppColors.darkBackground,
         body: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,

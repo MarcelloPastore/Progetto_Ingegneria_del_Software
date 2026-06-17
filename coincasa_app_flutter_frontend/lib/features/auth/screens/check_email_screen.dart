@@ -9,6 +9,8 @@ import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/features/auth/screens/login_screen.dart';
 
+import '../../../core/widgets/auth/auth_widgets.dart';
+
 class CheckEmailScreen extends StatefulWidget {
   final String email;
 
@@ -38,8 +40,9 @@ class _CheckEmailScreenState extends State<CheckEmailScreen> {
   void _startPolling() {
     _pollTimer = Timer.periodic(_pollInterval, (_) async {
       try {
-        final verified = await ApiProvider.auth
-            .checkEmailVerificata(widget.email.trim().toLowerCase());
+        final verified = await ApiProvider.auth.checkEmailVerificata(
+          widget.email.trim().toLowerCase(),
+        );
         if (verified && mounted) {
           _pollTimer?.cancel();
           Navigator.of(context).pushAndRemoveUntil(

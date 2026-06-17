@@ -4,6 +4,7 @@ import 'package:coincasa_app/core/api/api_client.dart';
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 
+import '../../../core/widgets/auth/auth_widgets.dart';
 import 'check_email_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -109,9 +110,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (!mounted) return;
 
       Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => CheckEmailScreen(email: email),
-        ),
+        MaterialPageRoute(builder: (context) => CheckEmailScreen(email: email)),
       );
     } on ApiException catch (error) {
       if (!mounted) return;

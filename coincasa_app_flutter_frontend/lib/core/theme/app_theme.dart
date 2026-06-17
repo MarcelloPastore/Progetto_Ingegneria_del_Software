@@ -6,9 +6,10 @@ import '../constants/app_sizes.dart';
 
 export '../constants/app_sizes.dart';
 
+/// Centralizzazione di tutti i colori del brand e dell'interfaccia.
+/// Utilizzare preferibilmente via Theme.of(context).colorScheme.
 abstract final class AppColors {
-  static const transparent = Color(0x00000000);
-
+  // Brand Colors
   static const brandPrimary = Color(0xFF6436D1);
   static const brandPrimaryDark = Color(0xFF552EA8);
   static const brandSecondary = Color(0xFF8256E5);
@@ -16,21 +17,19 @@ abstract final class AppColors {
   static const focus = Color(0xFF9E86E3);
   static const primaryBorder = Color(0xFFB0A2F4);
 
+  // Surface & Background
+  static const transparent = Color(0x00000000);
+  static const surface = Color(0xFFFFFFFF);
   static const pageBackground = Color(0xFFF6F5FB);
   static const darkBackground = Color(0xFF151127);
-  static const surface = Color(0xFFFFFFFF);
   static const surfaceDark = Color(0xFF151528);
   static const surfaceDarkElevated = Color(0xFF1F2848);
   static const surfaceTint = Color(0xFFF1EBFF);
   static const badgeSurface = Color(0xFF202468);
-  static const inputFillDark = Color(0xFF171B35);
-  static const inputBorder = Color(0xFFD6D2E6);
-  static const inputBorderDark = Color(0xFFA7A9D8);
-  static const dividerDark = Color(0xFF3B3B54);
-  static const dividerOnDark = Color(0xFF3F4A72);
   static const shadowStrong = Color(0x19000000);
   static const shadowSoft = Color(0x12000000);
 
+  // Text Colors
   static const textPrimary = Color(0xFF1E1B2E);
   static const textSecondary = Color(0xFF5B5668);
   static const textMuted = Color(0xFF8D889C);
@@ -39,6 +38,14 @@ abstract final class AppColors {
   static const textMutedSoft = Color(0xFFB0A9B8);
   static const textOnDark = Color(0xFFFFFFFF);
 
+  // Form & Inputs
+  static const inputFillDark = Color(0xFF171B35);
+  static const inputBorder = Color(0xFFD6D2E6);
+  static const inputBorderDark = Color(0xFFA7A9D8);
+  static const dividerDark = Color(0xFF3B3B54);
+  static const dividerOnDark = Color(0xFF3F4A72);
+
+  // Status & Alerts
   static const error = Color(0xFFD32F2F);
   static const errorStrong = Color(0xFFFF333B);
   static const errorContainerDark = Color(0xFF3A0B0B);
@@ -48,6 +55,8 @@ abstract final class AppColors {
   static const success = Color(0xFF2E7D32);
   static const successBright = Color(0xFF3EAE4F);
   static const info = Color(0xFF1565C0);
+
+  // Semantic/Feature Status
   static const problemPriorityUrgent = Color(0xFFFF0005);
   static const problemPriorityMedium = Color(0xFFFF8D28);
   static const problemPriorityLow = Color(0xFFFFCC00);
@@ -58,12 +67,14 @@ abstract final class AppColors {
   static const statusInfo = Color(0xFF3E80FF);
   static const statusNeutral = Color(0xFFA77F74);
 
+  // Assets/Illustration Colors
   static const keyYellow = Color(0xFFFFD31A);
   static const lockOrange = Color(0xFFFF9800);
   static const lockHole = Color(0xFFB86800);
   static const lockShackle = Color(0xFFB9B4C0);
   static const envelopeRed = Color(0xFFE84545);
 
+  // Feature specific (Legacy/Migration)
   static const turniTabSurface = Color(0xFFE1E0E7);
   static const turniDropdownSelectedText = Color(0xFFD98DFF);
   static const turniAssigneeMenuSurface = Color(0xFF4B3A2B);
@@ -74,6 +85,8 @@ abstract final class AppColors {
   static const turniAssigneeSelectedSurface = Color(0xFF7B6B57);
 }
 
+/// Centralizzazione degli stili tipografici.
+/// Da utilizzare preferibilmente tramite Theme.of(context).textTheme.
 abstract final class AppTextStyles {
   static const brandTitle = TextStyle(
     color: AppColors.textOnDark,
@@ -335,7 +348,64 @@ abstract final class AppTextStyles {
   );
 }
 
+/// Definizione dei temi dell'applicazione.
 abstract final class AppTheme {
+  /// ColorScheme per il tema chiaro mappato sui colori brand.
+  static final ColorScheme lightColorScheme =
+      ColorScheme.fromSeed(
+        seedColor: AppColors.brandPrimary,
+        brightness: Brightness.light,
+      ).copyWith(
+        primary: AppColors.brandPrimary,
+        onPrimary: AppColors.textOnDark,
+        primaryContainer: AppColors.surfaceTint,
+        onPrimaryContainer: AppColors.brandPrimaryDark,
+        secondary: AppColors.brandSecondary,
+        onSecondary: AppColors.textOnDark,
+        tertiary: AppColors.brandAccent,
+        onTertiary: AppColors.textPrimary,
+        error: AppColors.error,
+        onError: AppColors.textOnDark,
+        errorContainer: AppColors.errorContainerStrong,
+        onErrorContainer: AppColors.textOnDark,
+        surface: AppColors.pageBackground,
+        onSurface: AppColors.textPrimary,
+        surfaceContainerHighest: AppColors.surface,
+        onSurfaceVariant: AppColors.textSecondary,
+        outline: AppColors.inputBorder,
+        shadow: AppColors.shadowSoft,
+        inverseSurface: AppColors.darkBackground,
+        onInverseSurface: AppColors.textOnDark,
+      );
+
+  /// ColorScheme per il tema scuro mappato sui colori brand.
+  static final ColorScheme darkColorScheme =
+      ColorScheme.fromSeed(
+        seedColor: AppColors.brandPrimary,
+        brightness: Brightness.dark,
+      ).copyWith(
+        primary: AppColors.brandAccent,
+        onPrimary: AppColors.darkBackground,
+        primaryContainer: AppColors.brandPrimaryDark,
+        onPrimaryContainer: AppColors.brandAccent,
+        secondary: AppColors.brandSecondary,
+        onSecondary: AppColors.textOnDark,
+        tertiary: AppColors.focus,
+        onTertiary: AppColors.textOnDark,
+        error: AppColors.errorStrong,
+        onError: AppColors.textOnDark,
+        errorContainer: AppColors.errorContainerDark,
+        onErrorContainer: AppColors.textOnDark,
+        surface: AppColors.darkBackground,
+        onSurface: AppColors.textOnDark,
+        surfaceContainerHighest: AppColors.surfaceDark,
+        onSurfaceVariant: AppColors.textMutedSoft,
+        outline: AppColors.inputBorderDark,
+        shadow: AppColors.shadowStrong,
+        inverseSurface: AppColors.pageBackground,
+        onInverseSurface: AppColors.textPrimary,
+      );
+
   static final TextTheme _textTheme = GoogleFonts.interTextTheme()
       .apply(
         bodyColor: AppColors.textPrimary,
@@ -352,59 +422,34 @@ abstract final class AppTheme {
         labelLarge: AppTextStyles.button,
       );
 
-  /// Transizione istantanea: usata dalla navbar per switch tra sezioni.
-  static const pageTransitionsTheme = PageTransitionsTheme(
-    builders: {
-      TargetPlatform.android: _InstantPageTransition(),
-      TargetPlatform.iOS: _InstantPageTransition(),
-      TargetPlatform.windows: _InstantPageTransition(),
-      TargetPlatform.macOS: _InstantPageTransition(),
-      TargetPlatform.linux: _InstantPageTransition(),
-      TargetPlatform.fuchsia: _InstantPageTransition(),
-    },
-  );
-
   static final ThemeData lightTheme = ThemeData(
     useMaterial3: true,
-    colorScheme:
-        ColorScheme.fromSeed(
-          seedColor: AppColors.brandPrimary,
-          brightness: Brightness.light,
-        ).copyWith(
-          primary: AppColors.brandPrimary,
-          onPrimary: AppColors.textOnDark,
-          secondary: AppColors.brandSecondary,
-          onSecondary: AppColors.textOnDark,
-          error: AppColors.error,
-          onError: AppColors.textOnDark,
-          surface: AppColors.surface,
-          onSurface: AppColors.textPrimary,
-        ),
-    scaffoldBackgroundColor: AppColors.pageBackground,
+    colorScheme: lightColorScheme,
+    scaffoldBackgroundColor: lightColorScheme.surface,
     textTheme: _textTheme,
-    pageTransitionsTheme: pageTransitionsTheme,
-    appBarTheme: const AppBarTheme(
-      backgroundColor: AppColors.pageBackground,
-      foregroundColor: AppColors.textPrimary,
+    pageTransitionsTheme: _pageTransitionsTheme,
+    appBarTheme: AppBarTheme(
+      backgroundColor: lightColorScheme.surface,
+      foregroundColor: lightColorScheme.onSurface,
       elevation: 0,
       systemOverlayStyle: SystemUiOverlayStyle.dark,
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: false,
-      fillColor: AppColors.surface,
-      labelStyle: const TextStyle(color: AppColors.textSecondary),
+      fillColor: lightColorScheme.surfaceContainerHighest,
+      labelStyle: TextStyle(color: lightColorScheme.onSurfaceVariant),
       prefixIconColor: AppColors.textMuted,
       suffixIconColor: AppColors.textMuted,
-      border: _inputBorder(AppColors.inputBorder),
-      enabledBorder: _inputBorder(AppColors.inputBorder),
-      focusedBorder: _inputBorder(AppColors.brandPrimary, width: 1.5),
-      errorBorder: _inputBorder(AppColors.error),
-      focusedErrorBorder: _inputBorder(AppColors.error, width: 1.5),
+      border: _inputBorder(lightColorScheme.outline),
+      enabledBorder: _inputBorder(lightColorScheme.outline),
+      focusedBorder: _inputBorder(lightColorScheme.primary, width: 1.5),
+      errorBorder: _inputBorder(lightColorScheme.error),
+      focusedErrorBorder: _inputBorder(lightColorScheme.error, width: 1.5),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        backgroundColor: AppColors.brandPrimary,
-        foregroundColor: AppColors.textOnDark,
+        backgroundColor: lightColorScheme.primary,
+        foregroundColor: lightColorScheme.onPrimary,
         padding: AppSizes.buttonPadding,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppSizes.radius12),
@@ -412,7 +457,31 @@ abstract final class AppTheme {
       ),
     ),
     textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(foregroundColor: AppColors.brandPrimary),
+      style: TextButton.styleFrom(foregroundColor: lightColorScheme.primary),
+    ),
+  );
+
+  static final ThemeData darkTheme = ThemeData(
+    useMaterial3: true,
+    colorScheme: darkColorScheme,
+    scaffoldBackgroundColor: darkColorScheme.surface,
+    textTheme: _textTheme.apply(
+      bodyColor: darkColorScheme.onSurface,
+      displayColor: darkColorScheme.onSurface,
+    ),
+    pageTransitionsTheme: _pageTransitionsTheme,
+    appBarTheme: AppBarTheme(
+      backgroundColor: darkColorScheme.surface,
+      foregroundColor: darkColorScheme.onSurface,
+      elevation: 0,
+      systemOverlayStyle: SystemUiOverlayStyle.light,
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: darkColorScheme.surfaceContainerHighest,
+      border: _inputBorder(darkColorScheme.outline),
+      enabledBorder: _inputBorder(darkColorScheme.outline),
+      focusedBorder: _inputBorder(darkColorScheme.primary, width: 1.5),
     ),
   );
 
@@ -422,10 +491,19 @@ abstract final class AppTheme {
       borderSide: BorderSide(color: color, width: width),
     );
   }
+
+  static const _pageTransitionsTheme = PageTransitionsTheme(
+    builders: {
+      TargetPlatform.android: _InstantPageTransition(),
+      TargetPlatform.iOS: _InstantPageTransition(),
+      TargetPlatform.windows: _InstantPageTransition(),
+      TargetPlatform.macOS: _InstantPageTransition(),
+      TargetPlatform.linux: _InstantPageTransition(),
+      TargetPlatform.fuchsia: _InstantPageTransition(),
+    },
+  );
 }
 
-/// Transizione senza animazione: la nuova schermata appare istantaneamente.
-/// Usata per lo switch tra sezioni della navbar principale.
 class _InstantPageTransition extends PageTransitionsBuilder {
   const _InstantPageTransition();
 
@@ -438,711 +516,5 @@ class _InstantPageTransition extends PageTransitionsBuilder {
     Widget child,
   ) {
     return child;
-  }
-}
-
-class AuthRecoveryScaffold extends StatelessWidget {
-  const AuthRecoveryScaffold({
-    super.key,
-    required this.child,
-    this.padding = AppSizes.pageHorizontal,
-  });
-
-  final Widget child;
-  final EdgeInsets padding;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
-      child: GestureDetector(
-        onTap: () => FocusScope.of(context).unfocus(),
-        child: Scaffold(
-          backgroundColor: AppColors.darkBackground,
-          body: SafeArea(
-            child: SingleChildScrollView(
-              child: Padding(padding: padding, child: child),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class AuthBackHeader extends StatelessWidget {
-  const AuthBackHeader({super.key, required this.title, this.onBack});
-
-  final String title;
-  final VoidCallback? onBack;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(AppSizes.radius8),
-      onTap: onBack ?? () => Navigator.maybePop(context),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.arrow_back, color: AppColors.brandAccent, size: 24),
-          const SizedBox(width: AppSizes.p4),
-          Text(title, style: AppTextStyles.backHeader),
-        ],
-      ),
-    );
-  }
-}
-
-enum AuthRecoveryBadgeIcon { key, email, lock }
-
-class AuthRecoveryBadge extends StatelessWidget {
-  const AuthRecoveryBadge({
-    super.key,
-    required this.icon,
-    this.size = AppSizes.p100,
-  });
-
-  final AuthRecoveryBadgeIcon icon;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: const BoxDecoration(
-        color: AppColors.badgeSurface,
-        shape: BoxShape.circle,
-      ),
-      child: Center(child: _buildIcon()),
-    );
-  }
-
-  Widget _buildIcon() {
-    switch (icon) {
-      case AuthRecoveryBadgeIcon.key:
-        return Transform.rotate(
-          angle: -0.72,
-          child: const Icon(
-            Icons.key_rounded,
-            color: AppColors.keyYellow,
-            size: 58,
-          ),
-        );
-      case AuthRecoveryBadgeIcon.email:
-        return const Stack(
-          clipBehavior: Clip.none,
-          alignment: Alignment.center,
-          children: [
-            _EnvelopeIcon(),
-            Positioned(
-              right: AppSizes.p15,
-              bottom: AppSizes.p22,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: AppColors.successBright,
-                  shape: BoxShape.circle,
-                ),
-                child: SizedBox(
-                  width: AppSizes.p14,
-                  height: AppSizes.p14,
-                  child: Icon(Icons.check, color: Colors.white, size: 11),
-                ),
-              ),
-            ),
-          ],
-        );
-      case AuthRecoveryBadgeIcon.lock:
-        return const _LockIcon();
-    }
-  }
-}
-
-class _EnvelopeIcon extends StatelessWidget {
-  const _EnvelopeIcon();
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 62,
-      height: 46,
-      child: CustomPaint(painter: _EnvelopePainter()),
-    );
-  }
-}
-
-class _EnvelopePainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final bodyPaint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.fill;
-    final redPaint = Paint()
-      ..color = AppColors.envelopeRed
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 6
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    final rect = RRect.fromRectAndRadius(
-      Offset.zero & size,
-      const Radius.circular(AppSizes.radius5),
-    );
-    canvas.drawRRect(rect, bodyPaint);
-
-    final flap = Path()
-      ..moveTo(AppSizes.p4, AppSizes.p5)
-      ..lineTo(size.width / 2, size.height * 0.56)
-      ..lineTo(size.width - AppSizes.p4, AppSizes.p5);
-    canvas.drawPath(flap, redPaint);
-
-    final leftSide = Path()
-      ..moveTo(AppSizes.p5, AppSizes.p6)
-      ..lineTo(AppSizes.p5, size.height - AppSizes.p5);
-    final rightSide = Path()
-      ..moveTo(size.width - AppSizes.p5, AppSizes.p6)
-      ..lineTo(size.width - AppSizes.p5, size.height - AppSizes.p5);
-    canvas.drawPath(leftSide, redPaint);
-    canvas.drawPath(rightSide, redPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _LockIcon extends StatelessWidget {
-  const _LockIcon();
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: AppSizes.p56,
-      height: 62,
-      child: Stack(
-        alignment: Alignment.bottomCenter,
-        children: [
-          Positioned(
-            top: AppSizes.p2,
-            child: Container(
-              width: AppSizes.p28,
-              height: 34,
-              decoration: BoxDecoration(
-                border: Border.all(color: AppColors.lockShackle, width: 5),
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(AppSizes.radius16),
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: AppSizes.p2,
-            child: Container(
-              width: 42,
-              height: 34,
-              decoration: BoxDecoration(
-                color: AppColors.lockOrange,
-                borderRadius: BorderRadius.circular(AppSizes.radius5),
-              ),
-              child: Center(
-                child: Container(
-                  width: 7,
-                  height: 7,
-                  decoration: const BoxDecoration(
-                    color: AppColors.lockHole,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class AuthErrorBanner extends StatelessWidget {
-  const AuthErrorBanner({
-    super.key,
-    required this.message,
-    this.margin = AppSizes.zero,
-    this.onAction,
-    this.actionText,
-    this.trailingMessage,
-    this.compact = false,
-  });
-
-  final String message;
-  final EdgeInsets margin;
-  final VoidCallback? onAction;
-  final String? actionText;
-  final String? trailingMessage;
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      margin: margin,
-      padding: compact
-          ? const EdgeInsets.symmetric(
-              horizontal: AppSizes.p16,
-              vertical: AppSizes.p12,
-            )
-          : const EdgeInsets.fromLTRB(
-              AppSizes.p18,
-              AppSizes.p13,
-              AppSizes.p16,
-              AppSizes.p13,
-            ),
-      decoration: BoxDecoration(
-        color: compact
-            ? AppColors.errorContainerDark
-            : AppColors.errorContainerStrong,
-        border: Border.all(
-          color: compact ? AppColors.error : AppColors.errorStrong,
-          width: compact ? 1.5 : 2.5,
-        ),
-        borderRadius: BorderRadius.circular(
-          compact ? AppSizes.radius12 : AppSizes.radius13,
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: AppSizes.p4),
-            child: Icon(
-              Icons.warning_rounded,
-              color: compact ? AppColors.warningSoft : AppColors.warning,
-              size: compact ? 27 : 25,
-            ),
-          ),
-          const SizedBox(width: AppSizes.p14),
-          Expanded(child: _messageText()),
-        ],
-      ),
-    );
-  }
-
-  Widget _messageText() {
-    if (actionText == null || onAction == null) {
-      return Text(
-        message,
-        style: compact ? AppTextStyles.errorCompact : AppTextStyles.error,
-      );
-    }
-
-    return Wrap(
-      children: [
-        Text(
-          message,
-          style: compact ? AppTextStyles.errorCompact : AppTextStyles.error,
-        ),
-        GestureDetector(
-          onTap: onAction,
-          child: Text(
-            actionText!,
-            style: AppTextStyles.link.copyWith(
-              decoration: TextDecoration.underline,
-            ),
-          ),
-        ),
-        if (trailingMessage != null)
-          Text(
-            trailingMessage!,
-            style: compact ? AppTextStyles.errorCompact : AppTextStyles.error,
-          ),
-      ],
-    );
-  }
-}
-
-class AuthField extends StatelessWidget {
-  const AuthField({
-    super.key,
-    required this.label,
-    required this.hint,
-    this.controller,
-    this.obscureText = false,
-    this.hasError = false,
-    this.height = 44,
-    this.labelBottomSpacing = AppSizes.p2,
-    this.suffixIcon,
-    this.errorText,
-    this.contentPadding = AppSizes.inputContent,
-    this.recoveryStyle = true,
-  });
-
-  final String label;
-  final String hint;
-  final TextEditingController? controller;
-  final bool obscureText;
-  final bool hasError;
-  final double height;
-  final double labelBottomSpacing;
-  final Widget? suffixIcon;
-  final String? errorText;
-  final EdgeInsets contentPadding;
-  final bool recoveryStyle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: errorText == null
-          ? CrossAxisAlignment.start
-          : CrossAxisAlignment.end,
-      children: [
-        Align(
-          alignment: Alignment.centerLeft,
-          child: Text(
-            label,
-            style: recoveryStyle
-                ? AppTextStyles.recoveryLabel
-                : AppTextStyles.label,
-          ),
-        ),
-        SizedBox(height: labelBottomSpacing),
-        SizedBox(
-          height: height,
-          child: TextField(
-            controller: controller,
-            obscureText: obscureText,
-            style: recoveryStyle
-                ? AppTextStyles.input
-                : AppTextStyles.inputCompact,
-            cursorColor: AppColors.focus,
-            decoration: InputDecoration(
-              isDense: true,
-              hintText: hint,
-              hintStyle: recoveryStyle
-                  ? AppTextStyles.inputHint
-                  : TextStyle(color: Colors.white.withValues(alpha: 0.3)),
-              suffixIcon: suffixIcon,
-              filled: true,
-              fillColor: recoveryStyle
-                  ? AppColors.inputFillDark
-                  : Colors.transparent,
-              contentPadding: contentPadding,
-              enabledBorder: _border(hasError),
-              focusedBorder: _border(hasError, focused: true),
-            ),
-          ),
-        ),
-        if (errorText != null)
-          Padding(
-            padding: const EdgeInsets.only(
-              top: AppSizes.p4,
-              right: AppSizes.p4,
-            ),
-            child: Text(errorText!, style: AppTextStyles.fieldError),
-          ),
-      ],
-    );
-  }
-
-  OutlineInputBorder _border(bool hasError, {bool focused = false}) {
-    final color = hasError
-        ? AppColors.error
-        : focused
-        ? AppColors.focus
-        : recoveryStyle
-        ? AppColors.inputBorderDark
-        : AppColors.dividerDark;
-
-    return OutlineInputBorder(
-      borderRadius: BorderRadius.circular(
-        recoveryStyle ? AppSizes.radius14 : AppSizes.radius12,
-      ),
-      borderSide: BorderSide(color: color, width: hasError ? 2 : 1.5),
-    );
-  }
-}
-
-class AuthPasswordToggle extends StatelessWidget {
-  const AuthPasswordToggle({
-    super.key,
-    required this.obscured,
-    required this.onTap,
-    this.compact = false,
-  });
-
-  final bool obscured;
-  final VoidCallback onTap;
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Padding(
-        padding: compact
-            ? const EdgeInsets.symmetric(
-                horizontal: AppSizes.p16,
-                vertical: AppSizes.p10,
-              )
-            : AppSizes.inputContentTall,
-        child: Text(
-          obscured ? 'Mostra' : 'Nascondi',
-          style: AppTextStyles.link.copyWith(fontWeight: FontWeight.w600),
-        ),
-      ),
-    );
-  }
-}
-
-class AuthPrimaryButton extends StatelessWidget {
-  const AuthPrimaryButton({
-    super.key,
-    required this.text,
-    this.onPressed,
-    this.compact = false,
-  });
-
-  final String text;
-  final VoidCallback? onPressed;
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: compact ? AppSizes.p56 : AppSizes.p56,
-      child: ElevatedButton(
-        onPressed: onPressed ?? () {},
-        style: ElevatedButton.styleFrom(
-          backgroundColor: compact
-              ? AppColors.brandPrimaryDark
-              : AppColors.brandPrimary,
-          foregroundColor: AppColors.textOnDark,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(
-              compact ? AppSizes.radius16 : AppSizes.radius15,
-            ),
-            side: compact
-                ? BorderSide.none
-                : const BorderSide(color: AppColors.primaryBorder, width: 2),
-          ),
-        ),
-        child: Text(
-          text,
-          textAlign: TextAlign.center,
-          style: compact ? AppTextStyles.buttonCompact : AppTextStyles.button,
-        ),
-      ),
-    );
-  }
-}
-
-class AuthDivider extends StatelessWidget {
-  const AuthDivider({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Row(
-      children: [
-        Expanded(child: Divider(color: AppColors.dividerDark, thickness: 1)),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: AppSizes.p16),
-          child: Text('oppure', style: AppTextStyles.divider),
-        ),
-        Expanded(child: Divider(color: AppColors.dividerDark, thickness: 1)),
-      ],
-    );
-  }
-}
-
-class VerificationCodeBox extends StatelessWidget {
-  const VerificationCodeBox({super.key, this.hasError = false});
-
-  final bool hasError;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      height: 102,
-      decoration: BoxDecoration(
-        color: AppColors.inputFillDark,
-        border: Border.all(
-          color: hasError ? AppColors.errorStrong : AppColors.inputBorderDark,
-          width: 2,
-        ),
-        borderRadius: BorderRadius.circular(AppSizes.radius15),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: List.generate(
-          6,
-          (_) => Container(
-            width: 9,
-            height: 9,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(AppSizes.p2),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class RecoveryProgressDots extends StatelessWidget {
-  const RecoveryProgressDots({super.key, this.activeIndex = 0});
-
-  final int activeIndex;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(
-        3,
-        (index) => Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSizes.p6),
-          child: Container(
-            width: AppSizes.p14,
-            height: AppSizes.p14,
-            decoration: BoxDecoration(
-              color: index == activeIndex
-                  ? AppColors.brandPrimary
-                  : AppColors.surface,
-              shape: BoxShape.circle,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class AuthPageDots extends StatelessWidget {
-  const AuthPageDots({super.key, required this.activeIndex});
-
-  final int activeIndex;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(
-        3,
-        (index) => Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSizes.p4),
-          child: Container(
-            width: index == activeIndex ? AppSizes.p12 : AppSizes.p8,
-            height: AppSizes.p8,
-            decoration: BoxDecoration(
-              color: index == activeIndex
-                  ? AppColors.brandAccent
-                  : AppColors.textMutedDark.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(AppSizes.radius4),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class AuthRegisterFields extends StatelessWidget {
-  const AuthRegisterFields({
-    super.key,
-    required this.hasError,
-    required this.passwordHasError,
-    required this.confirmPasswordHasError,
-    required this.obscurePassword,
-    required this.obscureConfirmPassword,
-    required this.usernameController,
-    required this.nomeController,
-    required this.cognomeController,
-    required this.emailController,
-    required this.passwordController,
-    required this.confirmPasswordController,
-    required this.onTogglePassword,
-    required this.onToggleConfirmPassword,
-    this.confirmPasswordErrorText,
-  });
-
-  final bool hasError;
-  final bool passwordHasError;
-  final bool confirmPasswordHasError;
-  final bool obscurePassword;
-  final bool obscureConfirmPassword;
-  final TextEditingController usernameController;
-  final TextEditingController nomeController;
-  final TextEditingController cognomeController;
-  final TextEditingController emailController;
-  final TextEditingController passwordController;
-  final TextEditingController confirmPasswordController;
-  final VoidCallback onTogglePassword;
-  final VoidCallback onToggleConfirmPassword;
-  final String? confirmPasswordErrorText;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        _field('Nome Utente', 'Marco_Rossi', usernameController),
-        _field('Nome', 'Marco', nomeController),
-        _field('Cognome', 'Rossi', cognomeController),
-        _field('Email', 'marco@gmail.com', emailController),
-        _field(
-          'Password',
-          '••••••••',
-          passwordController,
-          obscureText: obscurePassword,
-          fieldHasError: passwordHasError,
-          suffixIcon: AuthPasswordToggle(
-            compact: true,
-            obscured: obscurePassword,
-            onTap: onTogglePassword,
-          ),
-        ),
-        _field(
-          'Conferma password',
-          '••••••••',
-          confirmPasswordController,
-          obscureText: obscureConfirmPassword,
-          fieldHasError: confirmPasswordHasError,
-          errorText: confirmPasswordErrorText,
-          suffixIcon: AuthPasswordToggle(
-            compact: true,
-            obscured: obscureConfirmPassword,
-            onTap: onToggleConfirmPassword,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _field(
-    String label,
-    String hint,
-    TextEditingController controller, {
-    bool obscureText = false,
-    Widget? suffixIcon,
-    String? errorText,
-    bool? fieldHasError,
-  }) {
-    final effectiveError = fieldHasError ?? hasError;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSizes.p12),
-      child: AuthField(
-        label: label,
-        hint: hint,
-        controller: controller,
-        obscureText: obscureText,
-        suffixIcon: suffixIcon,
-        hasError: effectiveError,
-        errorText:
-            errorText ?? (effectiveError ? 'Campo obbligatorio *' : null),
-        recoveryStyle: false,
-        labelBottomSpacing: AppSizes.p8,
-      ),
-    );
   }
 }

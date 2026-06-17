@@ -6,7 +6,7 @@ Il presente piano delinea la strategia di refactoring per il progetto **CoinCasa
 
 ## 1. Obiettivi Chiave del Refactoring
 
-- **Centralizzazione Design System**: Migrazione di tutti i colori in `AppColors` all'interno di `app_theme.dart` e utilizzo esclusivo tramite `Theme.of(context)`.
+- **Centralizzazione Design System**: Migrazione di tutti i colori in `AppColors` all'interno di `app_theme.dart`, utilizziamo solo AppColors nelle schermate, eliminando "Theme.of(context).colorScheme".
 
 - **Migrazione a Riverpod**: Sostituzione della gestione dello stato locale (`StatefulWidget`) con `Notifier` o `AsyncNotifier`.
 

@@ -6,6 +6,8 @@ import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/services/session_manager.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 
+import '../../../core/widgets/auth/auth_widgets.dart';
+
 class ModificaPasswordScreen extends StatefulWidget {
   const ModificaPasswordScreen({super.key});
 

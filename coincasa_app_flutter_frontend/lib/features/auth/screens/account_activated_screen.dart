@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/features/auth/screens/login_screen.dart';
 
+import '../../../core/widgets/auth/auth_widgets.dart';
+
 class AccountActivatedScreen extends StatelessWidget {
   const AccountActivatedScreen({super.key, required this.email});
 
