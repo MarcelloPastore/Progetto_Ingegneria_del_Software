@@ -44,7 +44,11 @@ export const ModificaSpesaSchema = z
     cadenzaGiorni: z.number().int().positive().optional(),
   })
   .superRefine((data, ctx) => {
-    if (data.dataScadenza && data.isRicorrente === true && !data.cadenzaGiorni) {
+    if (
+      data.dataScadenza &&
+      data.isRicorrente === true &&
+      !data.cadenzaGiorni
+    ) {
       ctx.addIssue({
         code: "custom",
         path: ["cadenzaGiorni"],

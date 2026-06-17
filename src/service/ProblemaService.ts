@@ -58,12 +58,25 @@ export class ProblemaService {
     return problemaConverter.toDto(problema);
   }
 
-  async eliminaProblema(idCasa: string, idProblema: string, idUtente: string): Promise<void> {
-    const problema = await problemaRepository.findProblemaByIdOrThrow(idCasa, idProblema);
-    const membro = await casaRepository.findMembroCasaByCasaAndUtenteOrThrow(idCasa, idUtente);
-    const isAdmin = membro.ruolo === Ruolo.HomeAdmin || membro.ruolo === Ruolo.SysAdmin;
+  async eliminaProblema(
+    idCasa: string,
+    idProblema: string,
+    idUtente: string,
+  ): Promise<void> {
+    const problema = await problemaRepository.findProblemaByIdOrThrow(
+      idCasa,
+      idProblema,
+    );
+    const membro = await casaRepository.findMembroCasaByCasaAndUtenteOrThrow(
+      idCasa,
+      idUtente,
+    );
+    const isAdmin =
+      membro.ruolo === Ruolo.HomeAdmin || membro.ruolo === Ruolo.SysAdmin;
     if (!isAdmin && problema.segnalataDa !== idUtente) {
-      throw new ForbiddenError("Solo chi ha segnalato il problema o un HomeAdmin può eliminarlo");
+      throw new ForbiddenError(
+        "Solo chi ha segnalato il problema o un HomeAdmin può eliminarlo",
+      );
     }
     await problemaRepository.deleteProblema(idCasa, idProblema);
   }
@@ -118,9 +131,16 @@ export class ProblemaService {
       stato: Stato.Segnalato,
       dataRisoluzione: null,
     });
-    await problemaRepository.createStorico(idProblema, Stato.Segnalato, idUtente);
+    await problemaRepository.createStorico(
+      idProblema,
+      Stato.Segnalato,
+      idUtente,
+    );
 
-    const aggiornato = await problemaRepository.findProblemaByIdOrThrow(idCasa, idProblema);
+    const aggiornato = await problemaRepository.findProblemaByIdOrThrow(
+      idCasa,
+      idProblema,
+    );
     return problemaConverter.toDto(aggiornato);
   }
 
@@ -136,9 +156,16 @@ export class ProblemaService {
       stato: Stato.Assegnato,
       dataRisoluzione: null,
     });
-    await problemaRepository.createStorico(idProblema, Stato.Assegnato, idUtente);
+    await problemaRepository.createStorico(
+      idProblema,
+      Stato.Assegnato,
+      idUtente,
+    );
 
-    const aggiornato = await problemaRepository.findProblemaByIdOrThrow(idCasa, idProblema);
+    const aggiornato = await problemaRepository.findProblemaByIdOrThrow(
+      idCasa,
+      idProblema,
+    );
     return problemaConverter.toDto(aggiornato);
   }
 
@@ -160,7 +187,10 @@ export class ProblemaService {
     });
     await problemaRepository.createStorico(idProblema, stato, idUtente);
 
-    const aggiornato = await problemaRepository.findProblemaByIdOrThrow(idCasa, idProblema);
+    const aggiornato = await problemaRepository.findProblemaByIdOrThrow(
+      idCasa,
+      idProblema,
+    );
     return problemaConverter.toDto(aggiornato);
   }
 
@@ -180,7 +210,10 @@ export class ProblemaService {
     });
     await problemaRepository.createStorico(idProblema, dto.stato, idUtente);
 
-    const aggiornato = await problemaRepository.findProblemaByIdOrThrow(idCasa, idProblema);
+    const aggiornato = await problemaRepository.findProblemaByIdOrThrow(
+      idCasa,
+      idProblema,
+    );
     return problemaConverter.toDto(aggiornato);
   }
 

@@ -11,21 +11,23 @@ import {
   ModificaCasaDto,
   ModificaRuoloDto,
 } from "../dto/CasaDto";
-
-function generateInviteCode(): string {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let code = "CX-";
-  for (let i = 0; i < 8; i++) {
-    code += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return code;
-}
 import { CasaConverter } from "../dto/converter/CasaConverter";
 import {
   CasaRepository,
   MembroCasaConUtente,
 } from "../repository/CasaRepository";
 import { ConflictError, ForbiddenError } from "../errors/httpErrors";
+import { randomInt } from "node:crypto";
+
+function generateInviteCode(): string {
+  // eslint-disable-next-line no-secrets/no-secrets
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let code = "CX-";
+  for (let i = 0; i < 8; i++) {
+    code += chars[randomInt(0, chars.length)];
+  }
+  return code;
+}
 
 const casaRepository = new CasaRepository();
 const casaConverter = new CasaConverter();

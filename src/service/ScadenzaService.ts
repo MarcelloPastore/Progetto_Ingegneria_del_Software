@@ -88,7 +88,10 @@ export class ScadenzaService {
     idUtente: string,
     ruoloCasa?: Ruolo,
   ): Promise<ScadenzaResponseDto> {
-    const esistente = await scadenzaRepository.findScadenzaByIdOrThrow(idCasa, idScadenza);
+    const esistente = await scadenzaRepository.findScadenzaByIdOrThrow(
+      idCasa,
+      idScadenza,
+    );
 
     if (
       esistente.idCreatore !== idUtente &&
@@ -111,12 +114,25 @@ export class ScadenzaService {
     return toDto(scadenza);
   }
 
-  async eliminaScadenza(idCasa: string, idScadenza: string, idUtente: string): Promise<void> {
-    const scadenza = await scadenzaRepository.findScadenzaByIdOrThrow(idCasa, idScadenza);
-    const membro = await casaRepository.findMembroCasaByCasaAndUtenteOrThrow(idCasa, idUtente);
-    const isAdmin = membro.ruolo === Ruolo.HomeAdmin || membro.ruolo === Ruolo.SysAdmin;
+  async eliminaScadenza(
+    idCasa: string,
+    idScadenza: string,
+    idUtente: string,
+  ): Promise<void> {
+    const scadenza = await scadenzaRepository.findScadenzaByIdOrThrow(
+      idCasa,
+      idScadenza,
+    );
+    const membro = await casaRepository.findMembroCasaByCasaAndUtenteOrThrow(
+      idCasa,
+      idUtente,
+    );
+    const isAdmin =
+      membro.ruolo === Ruolo.HomeAdmin || membro.ruolo === Ruolo.SysAdmin;
     if (!isAdmin && scadenza.idCreatore !== idUtente) {
-      throw new ForbiddenError("Solo chi ha creato la scadenza o un HomeAdmin può eliminarla");
+      throw new ForbiddenError(
+        "Solo chi ha creato la scadenza o un HomeAdmin può eliminarla",
+      );
     }
     await scadenzaRepository.deleteScadenza(idCasa, idScadenza);
   }

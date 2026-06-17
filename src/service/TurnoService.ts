@@ -197,8 +197,12 @@ export class TurnoService {
     idTurno: string,
     idUtente: string,
   ): Promise<void> {
-    const membro = await casaRepository.findMembroCasaByCasaAndUtenteOrThrow(idCasa, idUtente);
-    const isAdmin = membro.ruolo === Ruolo.HomeAdmin || membro.ruolo === Ruolo.SysAdmin;
+    const membro = await casaRepository.findMembroCasaByCasaAndUtenteOrThrow(
+      idCasa,
+      idUtente,
+    );
+    const isAdmin =
+      membro.ruolo === Ruolo.HomeAdmin || membro.ruolo === Ruolo.SysAdmin;
     if (!isAdmin) {
       await this.assertIdCreatoreTurno(idCasa, idTurno, idUtente);
     } else {

@@ -1,6 +1,6 @@
 import { Ruolo } from "@prisma/client";
 import { prisma } from "../config/db";
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomInt } from "node:crypto";
 import argon2 from "argon2";
 import {
   ModificaUsernameDto,
@@ -235,8 +235,7 @@ export class AccountService {
               const altriMembri = allMembers.filter(
                 (m) => m.idUtente !== idUtente,
               );
-              const nuovoAdmin =
-                altriMembri[Math.floor(Math.random() * altriMembri.length)];
+              const nuovoAdmin = altriMembri[randomInt(0, altriMembri.length)];
               await tx.membroCasa.update({
                 where: { id: nuovoAdmin.id },
                 data: { ruolo: Ruolo.HomeAdmin },

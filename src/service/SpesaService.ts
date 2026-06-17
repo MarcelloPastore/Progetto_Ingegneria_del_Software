@@ -250,8 +250,12 @@ export class SpesaService {
     idSpesa: string,
     idUtente: string,
   ): Promise<void> {
-    const membro = await casaRepository.findMembroCasaByCasaAndUtenteOrThrow(idCasa, idUtente);
-    const isAdmin = membro.ruolo === Ruolo.HomeAdmin || membro.ruolo === Ruolo.SysAdmin;
+    const membro = await casaRepository.findMembroCasaByCasaAndUtenteOrThrow(
+      idCasa,
+      idUtente,
+    );
+    const isAdmin =
+      membro.ruolo === Ruolo.HomeAdmin || membro.ruolo === Ruolo.SysAdmin;
     const spesa = isAdmin
       ? await spesaRepository.findSpesaByIdOrThrow(idCasa, idSpesa)
       : await this.assertIdCreatoreSpesa(idCasa, idSpesa, idUtente);
