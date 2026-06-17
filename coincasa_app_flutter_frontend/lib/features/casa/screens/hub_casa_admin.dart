@@ -111,6 +111,7 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
     }
 
     final ruolo = hub['ruolo']?.toString() ?? '';
+    _me.setCasaContext(casaId: widget.casaId, ruolo: ruolo);
     final isAdmin = ruolo == 'HomeAdmin' || ruolo == 'SysAdmin';
 
     final isOwnerFromHub =
