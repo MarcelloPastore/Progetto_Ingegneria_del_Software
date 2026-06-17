@@ -1,5 +1,5 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:coincasa_app/core/config/env.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 
@@ -35,9 +35,10 @@ class _NoConnectionScreenState extends State<NoConnectionScreen> {
     });
 
     try {
-      final response = await http
-          .get(Uri.parse('${Env.baseUrl}/health'))
-          .timeout(const Duration(seconds: 4));
+      final response = await Dio().get<void>(
+        '${Env.baseUrl}/health',
+        options: Options(receiveTimeout: const Duration(seconds: 4)),
+      );
 
       if (response.statusCode == 200) {
         if (mounted) {

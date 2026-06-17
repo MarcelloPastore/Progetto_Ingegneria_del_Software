@@ -1,7 +1,4 @@
-import 'dart:convert';
-import 'dart:io';
-
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import 'package:coincasa_app/app.dart';
 import 'package:coincasa_app/core/widgets/common/no_connection_screen.dart';
 import 'package:coincasa_app/core/widgets/common/no_internet_dialog.dart';
@@ -19,12 +16,25 @@ class ApiException implements Exception {
 }
 
 class ApiClient {
-  ApiClient({String? baseUrl, http.Client? httpClient})
-    : baseUrl = baseUrl ?? Env.baseUrl,
-      _httpClient = httpClient ?? http.Client();
+  ApiClient({String? baseUrl, Dio? dio})
+      : baseUrl = baseUrl ?? Env.baseUrl {
+    _dio = dio ??
+        Dio(
+          BaseOptions(
+            baseUrl: this.baseUrl,
+            connectTimeout: const Duration(seconds: 15),
+            receiveTimeout: const Duration(seconds: 30),
+            headers: const {'Accept': 'application/json'},
+            // Accetta tutti i codici di stato: li gestiamo manualmente
+            validateStatus: (_) => true,
+          ),
+        );
+    _dio.interceptors.add(_authInterceptor());
+  }
 
   final String baseUrl;
-  final http.Client _httpClient;
+  late final Dio _dio;
+
   String? _authToken;
   String? _currentUserId;
   String? _currentUserEmail;
@@ -36,9 +46,35 @@ class ApiClient {
   String? _currentCasaId;
   String? _currentCasaRuolo;
 
-  void setAuthToken(String? token) {
-    _authToken = token;
+  // ── Interceptor autenticazione ───────────────────────────────────────────
+
+  InterceptorsWrapper _authInterceptor() {
+    return InterceptorsWrapper(
+      onRequest: (options, handler) {
+        if (_authToken != null && _authToken!.isNotEmpty) {
+          options.headers['Authorization'] = 'Bearer $_authToken';
+        }
+        handler.next(options);
+      },
+      onError: (DioException error, handler) {
+        switch (error.type) {
+          case DioExceptionType.connectionError:
+            NoInternetDialog.show();
+          case DioExceptionType.connectionTimeout:
+          case DioExceptionType.sendTimeout:
+          case DioExceptionType.receiveTimeout:
+            _handleConnectionError();
+          default:
+            break;
+        }
+        handler.next(error);
+      },
+    );
   }
+
+  // ── Sessione ─────────────────────────────────────────────────────────────
+
+  void setAuthToken(String? token) => _authToken = token;
 
   void setCurrentUserIdentity({
     String? id,
@@ -70,24 +106,25 @@ class ApiClient {
       _currentUserUsername = normalized.isEmpty ? null : normalized;
     }
 
-    final fullName = [
-      _currentUserFirstName,
-      _currentUserLastName,
-    ].whereType<String>().where((part) => part.isNotEmpty).join(' ').trim();
+    final fullName = [_currentUserFirstName, _currentUserLastName]
+        .whereType<String>()
+        .where((p) => p.isNotEmpty)
+        .join(' ')
+        .trim();
 
     if (fullName.isNotEmpty) {
       _currentUserDisplayName = fullName;
       return;
     }
 
-    final normalizedDisplayName = displayName?.trim() ?? '';
-    if (normalizedDisplayName.isNotEmpty) {
-      _currentUserDisplayName = normalizedDisplayName;
+    final normalizedDisplay = displayName?.trim() ?? '';
+    if (normalizedDisplay.isNotEmpty) {
+      _currentUserDisplayName = normalizedDisplay;
       return;
     }
 
-    final emailLocalPart = _currentUserEmail?.split('@').first.trim() ?? '';
-    _currentUserDisplayName = emailLocalPart.isNotEmpty ? emailLocalPart : null;
+    final emailLocal = _currentUserEmail?.split('@').first.trim() ?? '';
+    _currentUserDisplayName = emailLocal.isNotEmpty ? emailLocal : null;
   }
 
   void setCasaContext({required String casaId, required String ruolo}) {
@@ -125,55 +162,43 @@ class ApiClient {
   String? get currentCasaRuolo => _currentCasaRuolo;
   bool get isHomeAdmin => _currentCasaRuolo == 'HomeAdmin';
 
-  Uri buildUri(String path, [Map<String, String>? queryParameters]) {
-    final merged = _mergePath(baseUrl, path);
-    final uri = Uri.parse(merged);
-
-    if (queryParameters == null || queryParameters.isEmpty) {
-      return uri;
-    }
-
-    return uri.replace(queryParameters: queryParameters);
-  }
+  // ── Metodi HTTP pubblici ─────────────────────────────────────────────────
 
   Future<dynamic> getJson(
     String path, {
     Map<String, String>? queryParameters,
-  }) async {
-    return _send('GET', path, queryParameters: queryParameters);
-  }
+  }) =>
+      _send('GET', path, queryParameters: queryParameters);
 
   Future<dynamic> postJson(
     String path, {
     Object? body,
     Map<String, String>? queryParameters,
-  }) async {
-    return _send('POST', path, body: body, queryParameters: queryParameters);
-  }
+  }) =>
+      _send('POST', path, body: body, queryParameters: queryParameters);
 
   Future<dynamic> putJson(
     String path, {
     Object? body,
     Map<String, String>? queryParameters,
-  }) async {
-    return _send('PUT', path, body: body, queryParameters: queryParameters);
-  }
+  }) =>
+      _send('PUT', path, body: body, queryParameters: queryParameters);
 
   Future<dynamic> patchJson(
     String path, {
     Object? body,
     Map<String, String>? queryParameters,
-  }) async {
-    return _send('PATCH', path, body: body, queryParameters: queryParameters);
-  }
+  }) =>
+      _send('PATCH', path, body: body, queryParameters: queryParameters);
 
   Future<dynamic> deleteJson(
     String path, {
     Object? body,
     Map<String, String>? queryParameters,
-  }) async {
-    return _send('DELETE', path, body: body, queryParameters: queryParameters);
-  }
+  }) =>
+      _send('DELETE', path, body: body, queryParameters: queryParameters);
+
+  // ── Internals ────────────────────────────────────────────────────────────
 
   Future<dynamic> _send(
     String method,
@@ -181,74 +206,48 @@ class ApiClient {
     Object? body,
     Map<String, String>? queryParameters,
   }) async {
-    final uri = buildUri(path, queryParameters);
-    final headers = <String, String>{'Accept': 'application/json'};
-
-    if (body != null) {
-      headers['Content-Type'] = 'application/json';
-    }
-    if (_authToken != null && _authToken!.isNotEmpty) {
-      headers['Authorization'] = 'Bearer ${_authToken!}';
-    }
-
-    final encodedBody = body == null ? null : jsonEncode(body);
-    late http.Response response;
-
     try {
-      switch (method) {
-        case 'GET':
-          response = await _httpClient.get(uri, headers: headers);
-          break;
-        case 'POST':
-          response = await _httpClient.post(
-            uri,
-            headers: headers,
-            body: encodedBody,
-          );
-          break;
-        case 'PUT':
-          response = await _httpClient.put(
-            uri,
-            headers: headers,
-            body: encodedBody,
-          );
-          break;
-        case 'PATCH':
-          response = await _httpClient.patch(
-            uri,
-            headers: headers,
-            body: encodedBody,
-          );
-          break;
-        case 'DELETE':
-          response = await _httpClient.delete(
-            uri,
-            headers: headers,
-            body: encodedBody,
-          );
-          break;
-        default:
-          throw ArgumentError('Unsupported method: $method');
-      }
-    } catch (e) {
-      if (e is SocketException) {
-        NoInternetDialog.show();
-      } else {
-        _handleConnectionError();
+      final response = await _dio.request<dynamic>(
+        path,
+        data: body,
+        queryParameters: queryParameters,
+        options: Options(
+          method: method,
+          contentType:
+              body != null ? 'application/json' : null,
+        ),
+      );
+      return _processResponse(response);
+    } on DioException catch (e) {
+      // L'interceptor onError ha già gestito no-internet / timeout.
+      // Rilanciamo come ApiException se c'è una risposta HTTP.
+      if (e.response != null) {
+        throw ApiException(
+          statusCode: e.response!.statusCode ?? 0,
+          body: e.response!.data?.toString(),
+        );
       }
       rethrow;
     }
+  }
 
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException(statusCode: response.statusCode, body: response.body);
+  dynamic _processResponse(Response<dynamic> response) {
+    final status = response.statusCode ?? 0;
+    if (status < 200 || status >= 300) {
+      throw ApiException(
+        statusCode: status,
+        body: response.data?.toString(),
+      );
     }
+    if (response.data == null) return null;
+    return _extractData(response.data);
+  }
 
-    if (response.body.isEmpty) {
-      return null;
+  dynamic _extractData(dynamic data) {
+    if (data is Map<String, dynamic> && data.containsKey('data')) {
+      return data['data'];
     }
-
-    final decoded = jsonDecode(response.body);
-    return _extractData(decoded);
+    return data;
   }
 
   void _handleConnectionError() {
@@ -257,20 +256,12 @@ class ApiClient {
     }
   }
 
-  dynamic _extractData(dynamic decoded) {
-    if (decoded is Map<String, dynamic> && decoded.containsKey('data')) {
-      return decoded['data'];
-    }
-    return decoded;
-  }
-
-  String _mergePath(String base, String path) {
-    if (base.endsWith('/') && path.startsWith('/')) {
-      return base + path.substring(1);
-    }
-    if (!base.endsWith('/') && !path.startsWith('/')) {
-      return '$base/$path';
-    }
-    return base + path;
+  /// Esposto per compatibilità con codice esistente che costruisce URI custom.
+  Uri buildUri(String path, [Map<String, String>? queryParameters]) {
+    final base = baseUrl.endsWith('/') ? baseUrl : '$baseUrl/';
+    final p = path.startsWith('/') ? path.substring(1) : path;
+    final uri = Uri.parse('$base$p');
+    if (queryParameters == null || queryParameters.isEmpty) return uri;
+    return uri.replace(queryParameters: queryParameters);
   }
 }

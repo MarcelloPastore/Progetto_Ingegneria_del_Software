@@ -1,9 +1,9 @@
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:coincasa_app/app.dart';
 import 'package:coincasa_app/core/config/env.dart';
-import 'package:http/http.dart' as http;
 
 class NoInternetDialog {
   static bool isShowing = false;
@@ -40,9 +40,10 @@ class _NoInternetDialogContentState extends State<_NoInternetDialogContent> {
       await InternetAddress.lookup('google.com')
           .timeout(const Duration(seconds: 4));
       // Verify also that our server is reachable
-      final response = await http
-          .get(Uri.parse('${Env.baseUrl}/health'))
-          .timeout(const Duration(seconds: 4));
+      final response = await Dio().get<void>(
+        '${Env.baseUrl}/health',
+        options: Options(receiveTimeout: const Duration(seconds: 4)),
+      );
       if (response.statusCode == 200 && mounted) {
         Navigator.of(context).pop();
       } else {
