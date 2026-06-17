@@ -15,6 +15,7 @@ import {
   InvalidEmailVerificationTokenError,
   DatabaseCleanupError,
   InvalidCurrentPasswordError,
+  EmailVerifyedError,
 } from "./appErrors";
 import { HttpError } from "./httpErrors";
 
@@ -76,6 +77,7 @@ function mapAuthError(error: unknown): HttpErrorPayload | null {
     ],
     [DatabaseCleanupError, 500, "DATABASE_CLEANUP_ERROR"],
     [InvalidCurrentPasswordError, 401, "INVALID_CURRENT_PASSWORD"],
+    [EmailVerifyedError, 400, "EMAIL_NOT_VERIFIED"],
   ] as const;
 
   for (const [ErrorClass, statusCode, code] of authErrors) {

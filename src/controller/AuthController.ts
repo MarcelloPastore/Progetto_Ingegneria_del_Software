@@ -91,7 +91,9 @@ export class AuthController {
     reply: FastifyReply,
   ) => {
     try {
-      const result = await authService.checkEmailVerificata(request.query.email);
+      const result = await authService.checkEmailVerificata(
+        request.query.email,
+      );
       return reply.send(result);
     } catch (error) {
       return this.handleAuthFailure(reply, error);

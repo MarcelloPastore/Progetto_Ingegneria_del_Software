@@ -61,6 +61,13 @@ export class EmailDeliveryError extends Error {
   }
 }
 
+export class EmailVerifyedError extends Error {
+  constructor() {
+    super("Email non verificata");
+    this.name = "EmailVerifyedError";
+  }
+}
+
 export class PasswordResetEmailDeliveryError extends Error {
   constructor() {
     super("Impossibile inviare l'email di recupero password");

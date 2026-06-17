@@ -19,6 +19,7 @@ import {
   PasswordResetEmailDeliveryError,
   InvalidEmailVerificationTokenError,
   DatabaseCleanupError,
+  EmailVerifyedError,
 } from "../errors/appErrors";
 import type { VerificationMailInput } from "../utils/mail";
 import {
@@ -128,6 +129,10 @@ export class AuthService {
       throw new InvalidCredentialsError();
     }
 
+    if (!user.emailVerificata) {
+      throw new EmailVerifyedError();
+    }
+
     return {
       user,
       shouldSign: true,
@@ -176,6 +181,7 @@ export class AuthService {
       username: user.username,
       nome: user.nome,
       cognome: user.cognome,
+      emailVerificata: user.emailVerificata,
     };
   }
 
