@@ -16,22 +16,61 @@ class _ArchivioDocumentiScreenState extends State<ArchivioDocumentiScreen> {
     _Documento(
       nome: 'Contratto affitto',
       tipo: 'PDF',
-      icona: 'assets/Icons/reminder.png',
+      icona: '',
     ),
     _Documento(
       nome: 'Bolletta gas',
       tipo: 'PDF',
-      icona: 'assets/Icons/reminder.png',
+      icona: '',
     ),
     _Documento(
       nome: 'Scontrino spesa',
       tipo: 'IMG',
-      icona: 'assets/Icons/home_auth_icon.png',
+      icona: '',
     ),
   ];
 
-  void _elimina(int index) {
-    setState(() => _documenti.removeAt(index));
+  Future<void> _elimina(int index) async {
+    final confermato = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF151127),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        title: const Text(
+          'Elimina documento',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          'Sei sicuro di voler eliminare "${_documenti[index].nome}"? Questa azione non può essere annullata.',
+          style: const TextStyle(color: Color(0xFFD7D3E8)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text(
+              'Annulla',
+              style: TextStyle(color: AppColors.brandAccent),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              'Elimina',
+              style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confermato == true) {
+      setState(() => _documenti.removeAt(index));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Documento eliminato correttamente')),
+        );
+      }
+    }
   }
 
   @override
@@ -178,33 +217,25 @@ class _DocRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isPdf = doc.tipo == 'PDF';
+    final mainColor = isPdf ? Colors.red : Colors.blue;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       child: Row(
         children: [
-          Image.asset(
-            doc.icona,
+          Container(
             width: 44,
             height: 44,
-            fit: BoxFit.contain,
-            errorBuilder: (context, error, stackTrace) => Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: doc.tipo == 'PDF'
-                    ? Colors.red.withValues(alpha: 0.15)
-                    : Colors.blue.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Center(
-                child: Text(
-                  doc.tipo,
-                  style: TextStyle(
-                    color: doc.tipo == 'PDF' ? Colors.red : Colors.blue,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
+            decoration: BoxDecoration(
+              color: mainColor.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Center(
+              child: Icon(
+                isPdf ? Icons.picture_as_pdf_rounded : Icons.image_rounded,
+                color: mainColor,
+                size: 24,
               ),
             ),
           ),
@@ -233,18 +264,12 @@ class _DocRow extends StatelessWidget {
               ],
             ),
           ),
-          GestureDetector(
-            onTap: onElimina,
-            child: Image.asset(
-              'assets/Icons/problemi.png',
-              width: 28,
-              height: 28,
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) => const Icon(
-                Icons.delete_outline_rounded,
-                color: Color(0xFF8B8B8B),
-                size: 24,
-              ),
+          IconButton(
+            onPressed: onElimina,
+            icon: const Icon(
+              Icons.delete_outline_rounded,
+              color: Color(0xFFF75C6C), // Rosso coordinato con il resto dell'app
+              size: 24,
             ),
           ),
         ],
