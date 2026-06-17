@@ -33,4 +33,7 @@ abstract interface class ICasaRepository {
   Future<String> getInviteLink(String casaId);
 
   Future<String> regenerateInviteLink(String casaId);
+
+  /// Rimuove l'utente corrente dalla casa (lascia casa).
+  Future<void> lasciaCasa(String casaId, String currentUserId);
 }

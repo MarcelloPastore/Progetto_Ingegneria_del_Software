@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
+import 'package:coincasa_app/core/services/session_manager.dart';
 import 'package:coincasa_app/domain/repositories/i_casa_repository.dart';
 
 class CasaRepositoryImpl implements ICasaRepository {
@@ -28,9 +29,11 @@ class CasaRepositoryImpl implements ICasaRepository {
   Future<Casa> joinCasa(String inviteCodeOrLink) =>
       ApiProvider.casa.joinWithInviteCode(inviteCodeOrLink);
 
+  /// Effettua il cambio casa completo: chiamata HTTP, aggiornamento del token
+  /// JWT nel client e persistenza della sessione tramite SessionManager.
   @override
   Future<String> selectCasa(String casaId) =>
-      ApiProvider.casa.selectCasa(casaId);
+      SessionManager.selectCasa(casaId: casaId);
 
   @override
   Future<Map<String, dynamic>> getHub(String casaId) =>
@@ -63,6 +66,10 @@ class CasaRepositoryImpl implements ICasaRepository {
   @override
   Future<String> regenerateInviteLink(String casaId) =>
       ApiProvider.casa.regenerateInviteLink(casaId);
+
+  @override
+  Future<void> lasciaCasa(String casaId, String currentUserId) =>
+      ApiProvider.casa.removeInquilino(casaId, currentUserId);
 }
 
 final casaRepositoryProvider = Provider<ICasaRepository>(
