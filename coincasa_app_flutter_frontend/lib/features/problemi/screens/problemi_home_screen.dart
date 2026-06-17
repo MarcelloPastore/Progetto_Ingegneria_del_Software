@@ -50,7 +50,7 @@ class _ProblemiHomeScreenState extends ConsumerState<ProblemiHomeScreen> {
   void _refresh() {
     if (!mounted) return;
     final next = _loadProblemi();
-    setState(() => _future = next);
+    setState(() { _future = next; });
   }
 
   void _toggleShowTutti() {

@@ -12,6 +12,8 @@ import 'package:coincasa_app/features/casa/screens/elimina_casa.dart';
 import 'package:coincasa_app/features/casa/screens/lista_case.dart';
 import 'package:coincasa_app/features/casa/screens/lista_coinquilini.dart';
 import 'package:coincasa_app/features/casa/screens/lascia_casa.dart';
+import 'package:coincasa_app/features/casa/screens/modifica_casa.dart';
+import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 
 // Riferimento globale per il file all'utente corrente per facilitare l'accesso alle variabili di sessione
 final _me = ApiProvider.client;
@@ -229,7 +231,12 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
         elevation: 0,
         backgroundColor: const Color(0xFF5D35B0),
         centerTitle: true,
-        automaticallyImplyLeading: false,
+        leading: Navigator.of(context).canPop()
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+                onPressed: () => Navigator.of(context).pop(),
+              )
+            : null,
         title: const Text(
           'Hub Casa',
           style: TextStyle(fontWeight: FontWeight.w700, color: Colors.white, fontSize: 20),
@@ -237,40 +244,16 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16),
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                GestureDetector(
-                  onTap: () => Navigator.of(context).pushNamed('/account'),
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF1B5E20),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Center(
-                      child: Text(
-                        'M',
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  right: -2,
-                  top: -2,
-                  child: Container(
-                    width: 10,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF75C6C),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFF5D35B0), width: 1.5),
-                    ),
-                  ),
-                ),
-              ],
+            child: GestureDetector(
+              onTap: () => Navigator.of(context).pushNamed('/account'),
+              child: UserAvatar(
+                radius: 18,
+                userId: _me.currentUserAvatarSeed,
+                username: _me.currentUserUsername,
+                displayName: _me.currentUserDisplayName,
+                showPresenceDot: true,
+                presenceDotColor: const Color(0xFFF75C6C),
+              ),
             ),
           ),
         ],
@@ -336,6 +319,26 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
+                    _ManagementAction(
+                      iconData: Icons.edit_outlined,
+                      iconColor: const Color(0xFF7C4DFF),
+                      title: 'Modifica informazioni casa',
+                      onTap: () async {
+                        final updated = await Navigator.of(context).push<bool>(
+                          MaterialPageRoute<bool>(
+                            builder: (_) => ModificaCasaScreen(
+                              casaId: data.casa.id,
+                              name: data.casa.nome,
+                              city: data.casa.citta,
+                              address: data.casa.indirizzo,
+                              type: data.casa.tipoCasa,
+                            ),
+                          ),
+                        );
+                        if (updated == true) _reload();
+                      },
+                    ),
+                    const SizedBox(height: 12),
                   ],
                   _ManagementAction(
                     iconData: Icons.folder_open,
@@ -367,12 +370,6 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
             );
           },
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        backgroundColor: const Color(0xFF9E86E3),
-        shape: const CircleBorder(),
-        child: const Icon(Icons.add, color: Colors.white, size: 36),
       ),
       bottomNavigationBar: const HouseQuickNav(currentRoute: '/dashboard'),
     );
