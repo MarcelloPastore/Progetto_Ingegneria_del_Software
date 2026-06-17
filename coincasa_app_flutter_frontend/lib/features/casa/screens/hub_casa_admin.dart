@@ -1,21 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/utils/jwt_utils.dart';
 import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/models/spesa.dart';
-import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
-import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 import 'package:coincasa_app/features/casa/screens/archivio_documenti_vuoto.dart';
 import 'package:coincasa_app/features/casa/screens/condividi_codice.dart';
 import 'package:coincasa_app/features/casa/screens/elimina_casa.dart';
 import 'package:coincasa_app/features/casa/screens/lista_case.dart';
 import 'package:coincasa_app/features/casa/screens/lista_coinquilini.dart';
 import 'package:coincasa_app/features/casa/screens/lascia_casa.dart';
-import 'package:coincasa_app/features/casa/screens/modifica_casa.dart';
 
 // Riferimento globale per il file all'utente corrente per facilitare l'accesso alle variabili di sessione
 final _me = ApiProvider.client;
@@ -144,24 +140,8 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
     });
   }
 
-  Future<void> _navigateToModificaCasa(_HubCasaData data) async {
-    final result = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (_) => ModificaCasaScreen(
-          casaId: data.casa.id,
-          name: data.casa.nome,
-          city: data.casa.citta,
-          address: data.casa.indirizzo,
-          type: data.casa.tipoCasa,
-        ),
-      ),
-    );
-    if (result == true) _reload();
-  }
 
   Future<void> _deleteCasa(_HubCasaData data) async {
-    // Conta le spese con almeno una quota esplicitamente non pagata.
-    // Spese con tutte le quote saldate (o senza partecipanti) non vengono conteggiate.
     final speseNonSaldate = data.spese.where((s) {
       if (s.partecipanti.isEmpty) return false;
       return s.partecipanti.any((q) {
@@ -176,22 +156,16 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
       nomeCasa: data.casa.nome,
       speseCount: speseNonSaldate,
     );
-    if (confirmed != true) {
-      return;
-    }
+    if (confirmed != true) return;
 
     try {
       await ApiProvider.casa.delete(data.casa.id);
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(builder: (_) => const ListaCaseScreen()),
       );
     } catch (_) {
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Eliminazione casa non riuscita.')),
       );
@@ -205,19 +179,11 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
     );
     if (confirmed != true) return;
 
-    // Filtra le spese in cui l'utente corrente ha almeno una quota esplicitamente non pagata.
     final currentId = _me.currentUserId?.trim() ?? '';
     final spesePendenti = data.spese.where((spesa) {
       if (spesa.partecipanti.isEmpty) return false;
       return spesa.partecipanti.any((q) {
-        final uid =
-            (q['utenteId'] ??
-                    q['idUtente'] ??
-                    q['inquilinoId'] ??
-                    (q['utente'] as Map?)?['id'])
-                ?.toString()
-                .trim() ??
-            '';
+        final uid = (q['utenteId'] ?? q['idUtente'] ?? q['inquilinoId'] ?? (q['utente'] as Map?)?['id'])?.toString().trim() ?? '';
         final raw = q['pagata'] ?? q['pagato'] ?? q['isPaid'];
         final pagata = raw == true || raw?.toString().toLowerCase() == 'true';
         return uid == currentId && !pagata;
@@ -257,33 +223,53 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.pageBackground,
+      backgroundColor: Colors.white,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: AppColors.brandPrimary,
+        backgroundColor: const Color(0xFF5D35B0),
         centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: Colors.white,
-            size: 20,
-          ),
-          onPressed: () => Navigator.of(context).pushReplacement(
-            MaterialPageRoute<void>(builder: (_) => const ListaCaseScreen()),
-          ),
-        ),
+        automaticallyImplyLeading: false,
         title: const Text(
           'Hub Casa',
-          style: TextStyle(fontWeight: FontWeight.w700, color: Colors.white),
+          style: TextStyle(fontWeight: FontWeight.w700, color: Colors.white, fontSize: 20),
         ),
         actions: [
-          IconButton(onPressed: _reload, icon: const Icon(Icons.refresh)),
           Padding(
             padding: const EdgeInsets.only(right: 16),
-            child: InkWell(
-              onTap: () => Navigator.of(context).pushNamed('/account'),
-              customBorder: const CircleBorder(),
-              child: _CurrentUserAvatar(future: _future),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                GestureDetector(
+                  onTap: () => Navigator.of(context).pushNamed('/account'),
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF1B5E20),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Center(
+                      child: Text(
+                        'M',
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: -2,
+                  top: -2,
+                  child: Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF75C6C),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFF5D35B0), width: 1.5),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -296,7 +282,18 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
               return const Center(child: CircularProgressIndicator());
             }
             if (snapshot.hasError) {
-              return _HubErrorState(onRetry: _reload);
+              return Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.wifi_off, size: 44),
+                    const SizedBox(height: 12),
+                    const Text('Non è possibile caricare i dati della casa.'),
+                    const SizedBox(height: 16),
+                    FilledButton(onPressed: _reload, child: const Text('Riprova')),
+                  ],
+                ),
+              );
             }
 
             final data = snapshot.data!;
@@ -306,18 +303,57 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
             return RefreshIndicator(
               onRefresh: () async => _reload(),
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 18, 16, 20),
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
                 children: [
                   _HouseHeaderCard(data: data, isAdmin: isAdmin),
-                  const SizedBox(height: 20),
-                  _ManagementSection(
-                    data: data,
-                    isAdmin: isAdmin,
-                    onModificaCasa: () => _navigateToModificaCasa(data),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Gestione',
+                    style: TextStyle(
+                      color: Color(0xFF333333),
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                  const SizedBox(height: 20),
-                  if (!isAdmin) const _AdminWarningCard(),
-                  if (!isAdmin) const SizedBox(height: 16),
+                  const SizedBox(height: 16),
+                  _ManagementAction(
+                    iconData: Icons.group_outlined,
+                    iconColor: Colors.blue,
+                    title: 'Coinquilini e ruoli',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => ListaCoinquiliniScreen(casaId: data.casa.id)),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  if (isAdmin) ...[
+                    _ManagementAction(
+                      iconData: Icons.share_outlined,
+                      iconColor: Colors.orange,
+                      title: 'Condividi link invito',
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(builder: (_) => CondividiCodiceScreen(casaId: data.casa.id)),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  _ManagementAction(
+                    iconData: Icons.folder_open,
+                    iconColor: Colors.redAccent,
+                    title: 'Documenti condivisi',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(builder: (_) => const ArchivioDocumentiVuotoScreen()),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _ManagementAction(
+                    iconData: Icons.list_alt_rounded,
+                    iconColor: Colors.green,
+                    title: 'Lista case',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const ListaCaseScreen()),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
                   _DeleteHouseButton(
                     isOwner: isCurrentOwner || isAdmin,
                     onPressed: (isCurrentOwner || isAdmin)
@@ -330,6 +366,12 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
             );
           },
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {},
+        backgroundColor: const Color(0xFF9E86E3),
+        shape: const CircleBorder(),
+        child: const Icon(Icons.add, color: Colors.white, size: 36),
       ),
       bottomNavigationBar: const HouseQuickNav(currentRoute: '/dashboard'),
     );
@@ -360,111 +402,38 @@ class _HubCasaData {
   final bool isCurrentUserOwner;
 }
 
-class _CurrentUserAvatar extends StatelessWidget {
-  const _CurrentUserAvatar({required this.future});
-
-  final Future<_HubCasaData> future;
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<_HubCasaData>(
-      future: future,
-      builder: (context, snapshot) {
-        final current = snapshot.hasData
-            ? _resolveCurrentInquilino(snapshot.data!.inquilini)
-            : null;
-
-        return UserAvatar(
-          radius: 18,
-          userId: current?.id ?? _me.currentUserAvatarSeed,
-          username: current?.username ?? _me.currentUserUsername,
-        );
-      },
-    );
-  }
-}
-
-class _HubErrorState extends StatelessWidget {
-  const _HubErrorState({required this.onRetry});
-
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.wifi_off, size: 44),
-            const SizedBox(height: 12),
-            const Text('Non e possibile caricare i dati della casa.'),
-            const SizedBox(height: 16),
-            FilledButton(onPressed: onRetry, child: const Text('Riprova')),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _HouseHeaderCard extends StatelessWidget {
   const _HouseHeaderCard({required this.data, required this.isAdmin});
 
   final _HubCasaData data;
   final bool isAdmin;
 
-  String get _address {
-    final parts = [
-      data.casa.indirizzo,
-      data.casa.citta,
-    ].where((part) => part.trim().isNotEmpty).join(' - ');
-    return '${data.casa.tipoCasa.isEmpty ? 'Casa' : data.casa.tipoCasa} - $parts';
-  }
-
-  String get _roleLabel => isAdmin ? 'Admin' : 'Inquilino';
-
-  Inquilino? get _owner {
-    try {
-      return data.inquilini.firstWhere((i) => i.isOwner);
-    } catch (_) {
-      return data.inquilini.isNotEmpty ? data.inquilini.first : null;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: AppColors.surfaceDarkElevated,
-        borderRadius: BorderRadius.circular(18),
+        color: const Color(0xFF151B33),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x26000000),
-            blurRadius: 16,
-            offset: Offset(0, 8),
+            color: Color(0x40000000),
+            blurRadius: 10,
+            offset: Offset(0, 4),
           ),
         ],
       ),
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
+      padding: const EdgeInsets.all(20),
       child: Column(
         children: [
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 68,
-                height: 68,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1D254E),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Image.asset(
-                  'assets/Icons/casa_colorata.png',
-                  fit: BoxFit.contain,
-                ),
+              Image.asset(
+                'assets/Icons/casa_colorata.png',
+                width: 70,
+                height: 70,
+                fit: BoxFit.contain,
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -479,118 +448,67 @@ class _HouseHeaderCard extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     Text(
-                      _address,
+                      data.casa.tipoCasa.isEmpty ? 'Appartamento' : data.casa.tipoCasa,
                       style: const TextStyle(
                         color: Color(0xFFB6B6D2),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFD5E6FF),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  _roleLabel,
-                  style: TextStyle(
-                    color: Color(0xFF2A5FA8),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
+              if (isAdmin)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF5E35B1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Text(
+                    'Admin',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 32),
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: _StatisticChip(
-                  value: '${data.inquilini.length}',
-                  label: 'Membri',
-                  valueColor: const Color(0xFF9B5BFF),
-                ),
+              _StatisticChip(
+                value: '${data.inquilini.length}',
+                label: 'Membri',
+                valueColor: const Color(0xFF9B5BFF),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _StatisticChip(
-                  value: '${data.speseCount}',
-                  label: 'Spese',
-                  valueColor: const Color(0xFF53D86A),
-                ),
+              _StatisticChip(
+                value: '${data.speseCount}',
+                label: 'Spese',
+                valueColor: const Color(0xFF53D86A),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _StatisticChip(
-                  value: '${data.scadenzeCount}',
-                  label: 'Scadenze',
-                  valueColor: const Color(0xFFF9A825),
-                ),
+              _StatisticChip(
+                value: '${data.scadenzeCount}',
+                label: 'Scadenze',
+                valueColor: const Color(0xFFF9A825),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _StatisticChip(
-                  value: '${data.problemiCount}',
-                  label: 'Problemi',
-                  valueColor: const Color(0xFF2F9BFF),
-                ),
+              _StatisticChip(
+                value: '${data.problemiCount}',
+                label: 'Problemi',
+                valueColor: const Color(0xFF2F9BFF),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _StatisticChip(
-                  value: '${data.turniCount}',
-                  label: 'Turni',
-                  valueColor: const Color(0xFFB15CFF),
-                ),
+              _StatisticChip(
+                value: '${data.turniCount}',
+                label: 'Turni',
+                valueColor: const Color(0xFFB15CFF),
               ),
             ],
           ),
-
-          // ── Owner row ────────────────────────────────────────────────
-          if (_owner != null) ...[
-            const SizedBox(height: 14),
-            const Divider(color: Color(0xFF2A2F52), height: 1),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                const Text(
-                  'Proprietario',
-                  style: TextStyle(
-                    color: Color(0xFF8A8AB0),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const Spacer(),
-                UserAvatar(
-                  radius: 13,
-                  userId: _owner!.id,
-                  username: _owner!.username,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  _owner!.username.isNotEmpty
-                      ? _owner!.username
-                      : _owner!.nomeCompleto,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ],
         ],
       ),
     );
@@ -610,113 +528,24 @@ class _StatisticChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: TextStyle(
-              color: valueColor,
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Color(0xFFD8D7E6),
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ManagementSection extends StatelessWidget {
-  const _ManagementSection({
-    required this.data,
-    required this.isAdmin,
-    required this.onModificaCasa,
-  });
-
-  final _HubCasaData data;
-  final bool isAdmin;
-  final VoidCallback onModificaCasa;
-
-  @override
-  Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Gestione',
+        Text(
+          value,
           style: TextStyle(
-            color: Color(0xFF3B3B46),
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
+            color: valueColor,
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
           ),
         ),
-        const SizedBox(height: 16),
-        if (isAdmin) ...[
-          _ManagementAction(
-            icon: Icons.settings_outlined,
-            title: 'Impostazioni casa',
-            onTap: onModificaCasa,
+        const SizedBox(height: 8),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
           ),
-          const SizedBox(height: 12),
-        ],
-        _ManagementAction(
-          icon: Icons.group_outlined,
-          title: 'Coinquilini e ruoli',
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => ListaCoinquiliniScreen(casaId: data.casa.id),
-              ),
-            );
-          },
-        ),
-        const SizedBox(height: 12),
-        _ManagementAction(
-          icon: Icons.folder_open,
-          title: 'Documenti condivisi',
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const ArchivioDocumentiVuotoScreen(),
-              ),
-            );
-          },
-        ),
-        const SizedBox(height: 12),
-        if (isAdmin) ...[
-          _ManagementAction(
-            icon: Icons.link,
-            title: 'Condividi codice d\'invito',
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => CondividiCodiceScreen(casaId: data.casa.id),
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 12),
-        ],
-        _ManagementAction(
-          icon: Icons.house_siding,
-          title: 'Lista case',
-          onTap: () {
-            Navigator.of(
-              context,
-            ).push(MaterialPageRoute(builder: (_) => const ListaCaseScreen()));
-          },
         ),
       ],
     );
@@ -725,12 +554,14 @@ class _ManagementSection extends StatelessWidget {
 
 class _ManagementAction extends StatelessWidget {
   const _ManagementAction({
-    required this.icon,
+    required this.iconData,
+    required this.iconColor,
     required this.title,
     this.onTap,
   });
 
-  final IconData icon;
+  final IconData iconData;
+  final Color iconColor;
   final String title;
   final VoidCallback? onTap;
 
@@ -738,90 +569,51 @@ class _ManagementAction extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF1A2341),
-        borderRadius: BorderRadius.circular(14),
+        color: const Color(0xFF151B33),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: const [
           BoxShadow(
             color: Color(0x22000000),
-            blurRadius: 10,
-            offset: Offset(0, 6),
+            blurRadius: 8,
+            offset: Offset(0, 4),
           ),
         ],
       ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
               Container(
-                width: 36,
-                height: 36,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0F1734),
+                  color: const Color(0xFF2A3155),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(icon, color: Colors.white, size: 20),
+                child: Icon(iconData, color: iconColor, size: 28),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 16),
               Expanded(
                 child: Text(
                   title,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 14.5,
+                    fontSize: 17,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
               const Icon(
                 Icons.arrow_forward_ios,
-                size: 16,
+                size: 18,
                 color: Colors.white,
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _AdminWarningCard extends StatelessWidget {
-  const _AdminWarningCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF8F5A26),
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x1F000000),
-            blurRadius: 10,
-            offset: Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.warning_amber_rounded, color: Colors.white),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'Solo l\'Amministratore puo modificare le impostazioni della casa',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -833,59 +625,36 @@ class _DeleteHouseButton extends StatelessWidget {
   final VoidCallback onPressed;
   final bool isOwner;
 
-  static const _radius = BorderRadius.all(Radius.circular(12));
-  static const _color = AppColors.errorStrong;
-
   @override
   Widget build(BuildContext context) {
     final label = isOwner ? 'Elimina la casa' : 'Lascia la casa';
-    final icon = isOwner ? Icons.cancel_outlined : Icons.logout_rounded;
 
-    return SizedBox(
-      height: 52,
-      width: double.infinity,
-      child: DecoratedBox(
-        decoration: ShapeDecoration(
-          gradient: LinearGradient(
-            begin: const Alignment(0.50, 0.00),
-            end: const Alignment(0.50, 1.00),
-            colors: [
-              const Color(0xFF510808).withValues(alpha: 0.9),
-              const Color(0xFF510808).withValues(alpha: 1.0),
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF3A1111),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFF75C6C), width: 2),
+      ),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          child: Row(
+            children: [
+              const Icon(Icons.delete_outline, color: Color(0xFFF75C6C), size: 30),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    color: Color(0xFFF75C6C),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
             ],
-          ),
-          shape: const RoundedRectangleBorder(
-            side: BorderSide(
-              width: 2,
-              strokeAlign: BorderSide.strokeAlignOutside,
-              color: _color,
-            ),
-            borderRadius: _radius,
-          ),
-          shadows: const [
-            BoxShadow(
-              color: Color(0x3F000000),
-              blurRadius: 4,
-              offset: Offset(0, 4),
-            ),
-          ],
-        ),
-        child: OutlinedButton.icon(
-          onPressed: onPressed,
-          style: OutlinedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            side: BorderSide.none,
-            padding: EdgeInsets.zero,
-            shape: const RoundedRectangleBorder(borderRadius: _radius),
-          ),
-          icon: Icon(icon, size: 20, color: _color),
-          label: Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              color: _color,
-            ),
           ),
         ),
       ),
