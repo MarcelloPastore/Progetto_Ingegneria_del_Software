@@ -38,8 +38,34 @@ class CasaRepositoryImpl implements ICasaRepository {
 
   @override
   Future<HubCasaAggregato> getHub(String casaId) async {
-    final map = await ApiProvider.casa.getHub(casaId);
-    return HubCasaAggregato.fromMap(map);
+    final hub = await ApiProvider.casa.getHub(casaId);
+    final casaJson = hub['casa'] as Map<String, dynamic>? ?? {};
+    final casa = Casa.fromJson(casaJson);
+
+    final membriJson = casaJson['membri'];
+    final inquilini = (membriJson is List)
+        ? membriJson
+              .cast<Map<String, dynamic>>()
+              .map(Inquilino.fromJson)
+              .toList()
+        : <Inquilino>[];
+
+    final ruolo = hub['ruolo']?.toString() ?? '';
+    final isOwner =
+        hub['isOwner'] as bool? ?? hub['isCurrentUserOwner'] as bool?;
+    final isCurrentUserOwner =
+        isOwner ?? inquilini.where((i) => i.isOwner).firstOrNull?.isOwner ?? false;
+
+    return HubCasaAggregato(
+      casa: casa,
+      inquilini: inquilini,
+      ruolo: ruolo,
+      isCurrentUserOwner: isCurrentUserOwner,
+      speseCount: hub['speseCount'] as int? ?? 0,
+      scadenzeCount: hub['scadenzeCount'] as int? ?? 0,
+      problemiCount: hub['problemiCount'] as int? ?? 0,
+      turniCount: hub['turniCount'] as int? ?? 0,
+    );
   }
 
   @override

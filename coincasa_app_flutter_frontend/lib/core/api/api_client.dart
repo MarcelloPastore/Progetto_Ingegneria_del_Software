@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:coincasa_app/app.dart';
 import 'package:coincasa_app/core/widgets/common/no_connection_screen.dart';
 import 'package:coincasa_app/core/widgets/common/no_internet_dialog.dart';
+import 'package:coincasa_app/domain/value_objects/ruolo_casa.dart';
 
 import '../config/env.dart';
 
@@ -160,7 +161,7 @@ class ApiClient {
   String? get currentUserUsername => _currentUserUsername;
   String? get currentCasaId => _currentCasaId;
   String? get currentCasaRuolo => _currentCasaRuolo;
-  bool get isHomeAdmin => _currentCasaRuolo == 'HomeAdmin';
+  bool get isHomeAdmin => RuoloCasa.isAdmin(_currentCasaRuolo);
 
   // ── Metodi HTTP pubblici ─────────────────────────────────────────────────
 

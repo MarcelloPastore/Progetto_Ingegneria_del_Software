@@ -1,3 +1,5 @@
+import 'package:coincasa_app/domain/value_objects/ruolo_casa.dart';
+
 class Inquilino {
   const Inquilino({
     required this.id,
@@ -25,7 +27,7 @@ class Inquilino {
     return fullName.isEmpty ? username : fullName;
   }
 
-  bool get isHomeAdmin => ruolo == 'HomeAdmin' || ruolo == 'SysAdmin';
+  bool get isHomeAdmin => RuoloCasa.isAdmin(ruolo);
 
   factory Inquilino.fromJson(Map<String, dynamic> json) {
     // Il backend nidifica i dati anagrafici sotto la chiave 'utente'.
