@@ -3,6 +3,7 @@ import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/services/session_manager.dart';
+import 'package:coincasa_app/domain/entities/hub_casa_aggregato.dart';
 import 'package:coincasa_app/domain/repositories/i_casa_repository.dart';
 
 class CasaRepositoryImpl implements ICasaRepository {
@@ -36,8 +37,10 @@ class CasaRepositoryImpl implements ICasaRepository {
       SessionManager.selectCasa(casaId: casaId);
 
   @override
-  Future<Map<String, dynamic>> getHub(String casaId) =>
-      ApiProvider.casa.getHub(casaId);
+  Future<HubCasaAggregato> getHub(String casaId) async {
+    final map = await ApiProvider.casa.getHub(casaId);
+    return HubCasaAggregato.fromMap(map);
+  }
 
   @override
   Future<List<Inquilino>> getInquilini(String casaId) =>

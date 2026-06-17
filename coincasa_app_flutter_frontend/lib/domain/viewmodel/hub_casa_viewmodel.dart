@@ -4,9 +4,10 @@ import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/models/spesa.dart';
 import 'package:coincasa_app/data/repository/casa_repository_impl.dart';
 import 'package:coincasa_app/data/repository/dashboard_repository_impl.dart';
+import 'package:coincasa_app/domain/entities/hub_casa_aggregato.dart';
 import 'package:coincasa_app/domain/repositories/i_casa_repository.dart';
 import 'package:coincasa_app/domain/repositories/i_dashboard_repository.dart';
-import 'package:coincasa_app/domain/usecases/casa/get_casa_by_id_usecase.dart';
+import 'package:coincasa_app/domain/usecases/casa/get_hub_usecase.dart';
 import 'package:coincasa_app/domain/usecases/casa/update_casa_usecase.dart';
 import 'package:coincasa_app/domain/usecases/casa/delete_casa_usecase.dart';
 import 'package:coincasa_app/domain/usecases/casa/get_inquilini_usecase.dart';
@@ -18,26 +19,32 @@ import 'package:coincasa_app/domain/usecases/casa/regenerate_invite_link_usecase
 
 class HubCasaState {
   const HubCasaState({
-    required this.casa,
-    required this.inquilini,
+    required this.hub,
     required this.spese,
     this.inviteLink,
   });
 
-  final Casa casa;
-  final List<Inquilino> inquilini;
+  final HubCasaAggregato hub;
   final List<Spesa> spese;
   final String? inviteLink;
 
+  Casa get casa => hub.casa;
+  List<Inquilino> get inquilini => hub.inquilini;
+  String get ruolo => hub.ruolo;
+  bool get isAdmin => hub.isAdmin;
+  bool get isCurrentUserOwner => hub.isCurrentUserOwner;
+  int get speseCount => hub.speseCount;
+  int get scadenzeCount => hub.scadenzeCount;
+  int get problemiCount => hub.problemiCount;
+  int get turniCount => hub.turniCount;
+
   HubCasaState copyWith({
-    Casa? casa,
-    List<Inquilino>? inquilini,
+    HubCasaAggregato? hub,
     List<Spesa>? spese,
     String? inviteLink,
   }) {
     return HubCasaState(
-      casa: casa ?? this.casa,
-      inquilini: inquilini ?? this.inquilini,
+      hub: hub ?? this.hub,
       spese: spese ?? this.spese,
       inviteLink: inviteLink ?? this.inviteLink,
     );
@@ -47,7 +54,7 @@ class HubCasaState {
 class HubCasaViewModel extends FamilyAsyncNotifier<HubCasaState, String> {
   late ICasaRepository _casaRepo;
   late IDashboardRepository _dashboardRepo;
-  late GetCasaByIdUseCase _getCasaById;
+  late GetHubUseCase _getHub;
   late UpdateCasaUseCase _updateCasa;
   late DeleteCasaUseCase _deleteCasa;
   late GetInquiliniUseCase _getInquilini;
@@ -61,7 +68,7 @@ class HubCasaViewModel extends FamilyAsyncNotifier<HubCasaState, String> {
   Future<HubCasaState> build(String casaId) async {
     _casaRepo = ref.read(casaRepositoryProvider);
     _dashboardRepo = ref.read(dashboardRepositoryProvider);
-    _getCasaById = GetCasaByIdUseCase(_casaRepo);
+    _getHub = GetHubUseCase(_casaRepo);
     _updateCasa = UpdateCasaUseCase(_casaRepo);
     _deleteCasa = DeleteCasaUseCase(_casaRepo);
     _getInquilini = GetInquiliniUseCase(_casaRepo);
@@ -71,16 +78,16 @@ class HubCasaViewModel extends FamilyAsyncNotifier<HubCasaState, String> {
     _getInviteLink = GetInviteLinkUseCase(_casaRepo);
     _regenerateInviteLink = RegenerateInviteLinkUseCase(_casaRepo);
 
+    // Due chiamate in parallelo: getHub (include casa + inquilini + contatori)
+    // e getSpese (necessaria per la logica di eliminazione/uscita dalla casa).
     final results = await Future.wait([
-      _getCasaById(casaId),
-      _getInquilini(casaId),
+      _getHub(casaId),
       _dashboardRepo.getSpese(casaId),
     ]);
 
     return HubCasaState(
-      casa: results[0] as Casa,
-      inquilini: results[1] as List<Inquilino>,
-      spese: results[2] as List<Spesa>,
+      hub: results[0] as HubCasaAggregato,
+      spese: results[1] as List<Spesa>,
     );
   }
 
@@ -90,18 +97,28 @@ class HubCasaViewModel extends FamilyAsyncNotifier<HubCasaState, String> {
     ref.invalidateSelf();
   }
 
-  /// Elimina la casa. Dopo l'eliminazione il chiamante deve navigare via.
+  /// Elimina la casa. Il chiamante deve navigare via dopo la risoluzione.
   Future<void> deleteCasa() async {
     final casaId = state.requireValue.casa.id;
     await _deleteCasa(casaId);
   }
 
-  /// Rimuove un coinquilino dalla casa e aggiorna la lista localmente.
+  /// Rimuove un coinquilino e aggiorna la lista localmente.
   Future<void> removeInquilino(String inquilinoId) async {
     final casaId = state.requireValue.casa.id;
     await _removeInquilino(casaId, inquilinoId);
     final inquilini = await _getInquilini(casaId);
-    state = AsyncData(state.requireValue.copyWith(inquilini: inquilini));
+    final updatedHub = HubCasaAggregato(
+      casa: state.requireValue.casa,
+      inquilini: inquilini,
+      ruolo: state.requireValue.ruolo,
+      isCurrentUserOwner: state.requireValue.isCurrentUserOwner,
+      speseCount: state.requireValue.speseCount,
+      scadenzeCount: state.requireValue.scadenzeCount,
+      problemiCount: state.requireValue.problemiCount,
+      turniCount: state.requireValue.turniCount,
+    );
+    state = AsyncData(state.requireValue.copyWith(hub: updatedHub));
   }
 
   /// Rimuove l'utente corrente dalla casa (lascia casa).
@@ -117,7 +134,17 @@ class HubCasaViewModel extends FamilyAsyncNotifier<HubCasaState, String> {
     final casaId = state.requireValue.casa.id;
     await _updateRuolo(casaId, inquilinoId, payload);
     final inquilini = await _getInquilini(casaId);
-    state = AsyncData(state.requireValue.copyWith(inquilini: inquilini));
+    final updatedHub = HubCasaAggregato(
+      casa: state.requireValue.casa,
+      inquilini: inquilini,
+      ruolo: state.requireValue.ruolo,
+      isCurrentUserOwner: state.requireValue.isCurrentUserOwner,
+      speseCount: state.requireValue.speseCount,
+      scadenzeCount: state.requireValue.scadenzeCount,
+      problemiCount: state.requireValue.problemiCount,
+      turniCount: state.requireValue.turniCount,
+    );
+    state = AsyncData(state.requireValue.copyWith(hub: updatedHub));
   }
 
   Future<String> loadInviteLink() async {

@@ -2,11 +2,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/salute_casa_item.dart';
 import 'package:coincasa_app/core/models/turno.dart';
-import 'package:coincasa_app/core/services/session_manager.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
+import 'package:coincasa_app/data/repository/casa_repository_impl.dart';
 import 'package:coincasa_app/data/repository/dashboard_repository_impl.dart';
 import 'package:coincasa_app/domain/entities/dashboard_data.dart';
 import 'package:coincasa_app/domain/repositories/i_dashboard_repository.dart';
+import 'package:coincasa_app/domain/usecases/casa/select_casa_usecase.dart';
 import 'package:coincasa_app/domain/usecases/dashboard/get_dashboard_data_usecase.dart';
 import 'package:coincasa_app/domain/usecases/dashboard/completa_turno_usecase.dart';
 import 'package:coincasa_app/domain/usecases/dashboard/get_case_per_dashboard_usecase.dart';
@@ -94,6 +95,7 @@ class DashboardViewModel extends AsyncNotifier<DashboardState> {
   late GetDashboardDataUseCase _getDashboardData;
   late CompletaTurnoUseCase _completaTurno;
   late GetCasePerDashboardUseCase _getCase;
+  late SelectCasaUseCase _selectCasa;
 
   @override
   Future<DashboardState> build() async {
@@ -101,6 +103,7 @@ class DashboardViewModel extends AsyncNotifier<DashboardState> {
     _getDashboardData = GetDashboardDataUseCase(_repository);
     _completaTurno = CompletaTurnoUseCase(_repository);
     _getCase = GetCasePerDashboardUseCase(_repository);
+    _selectCasa = SelectCasaUseCase(ref.read(casaRepositoryProvider));
     return _fetch();
   }
 
@@ -127,12 +130,13 @@ class DashboardViewModel extends AsyncNotifier<DashboardState> {
     );
   }
 
-  /// Seleziona una casa e aggiorna il JWT di sessione.
+  /// Seleziona una casa: aggiorna JWT e sessione tramite il repository,
+  /// poi aggiorna lo stato Riverpod e ricarica i dati.
   Future<void> selectCasa(String casaId) async {
     final previousState = state;
     state = const AsyncLoading();
     try {
-      final ruolo = await SessionManager.selectCasa(casaId: casaId);
+      final ruolo = await _selectCasa(casaId);
       ref.read(activeCasaProvider.notifier).update(
             (s) => s.copyWith(selectedCasaId: casaId, ruoloCasa: ruolo),
           );
