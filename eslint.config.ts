@@ -8,7 +8,14 @@ import eslintConfigPrettier from "eslint-config-prettier";
 
 export default [
   {
-    ignores: ["dist/", "node_modules/", "prisma/", "scripts/", "test/**/*.ts"],
+    ignores: [
+      "dist/",
+      "node_modules/",
+      "prisma/",
+      "scripts/",
+      "test/**/*.ts",
+      ".dependency-cruiser.js",
+    ],
   },
 
   ...tseslint.configs.recommendedTypeChecked,
