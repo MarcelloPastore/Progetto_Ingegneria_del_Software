@@ -53,7 +53,7 @@ class DetailActionsBar extends StatelessWidget {
                 Expanded(
                   child: _DetailActionButton(
                     label: modifyLabel,
-                    color: AppColors.problemPriorityMedium,
+                    color: AppColors.brandAccent,
                     onPressed: isCreator ? onModify : null,
                   ),
                 ),
