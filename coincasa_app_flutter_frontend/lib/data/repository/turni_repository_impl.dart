@@ -1,73 +1,80 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/salute_casa_item.dart';
 import 'package:coincasa_app/core/models/turno.dart';
-import 'package:coincasa_app/data/service/turni_service.dart';
-import 'package:coincasa_app/domain/repository/turni_repository.dart';
+import 'package:coincasa_app/data/services/turni_service.dart';
+import 'package:coincasa_app/domain/repositories/i_turni_repository.dart';
 
-class TurniRepositoryImpl implements TurniRepository {
+class TurniRepositoryImpl implements ITurniRepository {
   const TurniRepositoryImpl(this._service);
 
   final TurniService _service;
 
   @override
-  Future<List<Turno>> list(String casaId) {
-    return _service.list(casaId);
+  Future<List<Turno>> getTurni(String casaId) {
+    return _service.getTurni(casaId);
   }
 
   @override
-  Future<List<Turno>> listOggi(String casaId) {
-    return _service.listOggi(casaId);
+  Future<List<Turno>> getTurniOggi(String casaId) {
+    return _service.getTurniOggi(casaId);
   }
 
   @override
-  Future<List<SaluteCasaItem>> saluteCase(String casaId) {
-    return _service.saluteCase(casaId);
+  Future<List<SaluteCasaItem>> getSaluteCasa(String casaId) {
+    return _service.getSaluteCasa(casaId);
   }
 
   @override
-  Future<Turno> create(String casaId, Map<String, dynamic> payload) {
-    return _service.create(casaId, payload);
+  Future<Turno> createTurno(String casaId, Map<String, dynamic> payload) {
+    return _service.createTurno(casaId, payload);
   }
 
   @override
-  Future<Turno> getById(String casaId, String turnoId) {
-    return _service.getById(casaId, turnoId);
+  Future<Turno> getTurnoById(String casaId, String idTurno) {
+    return _service.getTurnoById(casaId, idTurno);
   }
 
   @override
-  Future<Turno> update(
+  Future<Turno> updateTurno(
     String casaId,
-    String turnoId,
+    String idTurno,
     Map<String, dynamic> payload,
   ) {
-    return _service.update(casaId, turnoId, payload);
+    return _service.updateTurno(casaId, idTurno, payload);
   }
 
   @override
-  Future<void> delete(String casaId, String turnoId) {
-    return _service.delete(casaId, turnoId);
+  Future<void> deleteTurno(String casaId, String idTurno) {
+    return _service.deleteTurno(casaId, idTurno);
   }
 
   @override
-  Future<void> autoAssegna(String casaId, String turnoId) {
-    return _service.autoAssegna(casaId, turnoId);
+  Future<void> autoAssegnaTurno(String casaId, String idTurno) {
+    return _service.autoAssegnaTurno(casaId, idTurno);
   }
 
   @override
-  Future<void> assegna(
+  Future<void> assegnaTurno(
     String casaId,
-    String turnoId,
+    String idTurno,
     Map<String, dynamic> payload,
   ) {
-    return _service.assegna(casaId, turnoId, payload);
+    return _service.assegnaTurno(casaId, idTurno, payload);
   }
 
   @override
-  Future<void> toggleRotazione(String casaId, String turnoId) {
-    return _service.toggleRotazione(casaId, turnoId);
+  Future<void> toggleRotazioneTurno(String casaId, String idTurno) {
+    return _service.toggleRotazioneTurno(casaId, idTurno);
   }
 
   @override
-  Future<void> completa(String casaId, String turnoId) {
-    return _service.completa(casaId, turnoId);
+  Future<void> completaTurno(String casaId, String idTurno) {
+    return _service.completaTurno(casaId, idTurno);
   }
 }
+
+final turniRepositoryProvider = Provider<ITurniRepository>(
+  (_) => TurniRepositoryImpl(TurniService(ApiProvider.turni)),
+);

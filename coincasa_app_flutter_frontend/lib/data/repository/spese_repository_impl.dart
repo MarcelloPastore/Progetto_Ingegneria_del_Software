@@ -1,58 +1,61 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/quota.dart';
 import 'package:coincasa_app/core/models/spesa.dart';
-import 'package:coincasa_app/data/service/spese_service.dart';
-import 'package:coincasa_app/domain/repository/spese_repository.dart';
+import 'package:coincasa_app/data/services/spese_service.dart';
+import 'package:coincasa_app/domain/repositories/i_spese_repository.dart';
 
-class SpeseRepositoryImpl implements SpeseRepository {
+class SpeseRepositoryImpl implements ISpeseRepository {
   const SpeseRepositoryImpl(this._service);
 
   final SpeseService _service;
 
   @override
-  Future<List<Spesa>> list(
+  Future<List<Spesa>> getSpese(
     String casaId, {
     Map<String, String>? queryParameters,
   }) {
-    return _service.list(casaId, queryParameters: queryParameters);
+    return _service.getSpese(casaId, queryParameters: queryParameters);
   }
 
   @override
-  Future<Spesa> getById(String casaId, String spesaId) {
-    return _service.getById(casaId, spesaId);
+  Future<Spesa> getSpesaById(String casaId, String idSpesa) {
+    return _service.getSpesaById(casaId, idSpesa);
   }
 
   @override
-  Future<Spesa> create(String casaId, Map<String, dynamic> payload) {
-    return _service.create(casaId, payload);
+  Future<Spesa> createSpesa(String casaId, Map<String, dynamic> payload) {
+    return _service.createSpesa(casaId, payload);
   }
 
   @override
-  Future<Spesa> update(
+  Future<Spesa> updateSpesa(
     String casaId,
-    String spesaId,
+    String idSpesa,
     Map<String, dynamic> payload,
   ) {
-    return _service.update(casaId, spesaId, payload);
+    return _service.updateSpesa(casaId, idSpesa, payload);
   }
 
   @override
-  Future<void> delete(String casaId, String spesaId) {
-    return _service.delete(casaId, spesaId);
+  Future<void> deleteSpesa(String casaId, String idSpesa) {
+    return _service.deleteSpesa(casaId, idSpesa);
   }
 
   @override
-  Future<List<Quota>> getQuote(String casaId, String spesaId) {
-    return _service.getQuote(casaId, spesaId);
+  Future<List<Quota>> getQuoteSpesa(String casaId, String idSpesa) {
+    return _service.getQuoteSpesa(casaId, idSpesa);
   }
 
   @override
-  Future<void> pagaQuota(String casaId, String spesaId, String quotaId) {
-    return _service.pagaQuota(casaId, spesaId, quotaId);
+  Future<void> pagaQuota(String casaId, String idSpesa, String idQuota) {
+    return _service.pagaQuota(casaId, idSpesa, idQuota);
   }
 
   @override
-  Future<void> pareggia(String casaId, List<String> idUtentiCreditori) {
-    return _service.pareggia(casaId, idUtentiCreditori);
+  Future<void> pareggiaConti(String casaId, List<String> idUtentiCreditori) {
+    return _service.pareggiaConti(casaId, idUtentiCreditori);
   }
 
   @override
@@ -61,22 +64,26 @@ class SpeseRepositoryImpl implements SpeseRepository {
   }
 
   @override
-  Future<double> getCreditoTot(String casaId) {
-    return _service.getCreditoTot(casaId);
+  Future<double> getCreditoTotale(String casaId) {
+    return _service.getCreditoTotale(casaId);
   }
 
   @override
-  Future<double> getDebitoTot(String casaId) {
-    return _service.getDebitoTot(casaId);
+  Future<double> getDebitoTotale(String casaId) {
+    return _service.getDebitoTotale(casaId);
   }
 
   @override
-  Future<double> getCreditoVerso(String casaId, String inquilinoId) {
-    return _service.getCreditoVerso(casaId, inquilinoId);
+  Future<double> getCreditoVerso(String casaId, String idInquilino) {
+    return _service.getCreditoVerso(casaId, idInquilino);
   }
 
   @override
-  Future<double> getDebitoVerso(String casaId, String inquilinoId) {
-    return _service.getDebitoVerso(casaId, inquilinoId);
+  Future<double> getDebitoVerso(String casaId, String idInquilino) {
+    return _service.getDebitoVerso(casaId, idInquilino);
   }
 }
+
+final speseRepositoryProvider = Provider<ISpeseRepository>(
+  (_) => SpeseRepositoryImpl(SpeseService(ApiProvider.spese)),
+);
