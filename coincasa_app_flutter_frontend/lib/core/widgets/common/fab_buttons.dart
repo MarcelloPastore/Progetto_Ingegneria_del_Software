@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 
-const _kSaveColor = Color(0xFF5228AD);
-const _kSaveDisabledColor = Color(0xFF9D9D9D);
-const _kCancelBgColor = Color(0xFF501C26);
-const _kCancelBorderColor = Color(0xFFFF1744);
-const _kCancelTextColor = Color(0xFFFF1744);
+import '../../theme/app_theme.dart';
 
 class FabSaveButton extends StatelessWidget {
   const FabSaveButton({
@@ -21,33 +17,31 @@ class FabSaveButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 54,
+      height: AppSizes.p56,
       child: ElevatedButton(
         onPressed: isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: _kSaveColor,
-          disabledBackgroundColor: _kSaveDisabledColor,
-          disabledForegroundColor: Colors.white,
+          backgroundColor: AppColors.brandPrimaryDark,
+          disabledBackgroundColor: AppColors.textMutedDark,
+          disabledForegroundColor: AppColors.textOnDark,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(AppSizes.radius18),
           ),
-          elevation: 4,
+          elevation: AppSizes.p4,
         ),
         child: isLoading
             ? const SizedBox(
-                width: 24,
-                height: 24,
+                width: AppSizes.p24,
+                height: AppSizes.p24,
                 child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2,
+                  color: AppColors.textOnDark,
+                  strokeWidth: AppSizes.p2,
                 ),
               )
             : Text(
                 label,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
+                style: AppTextStyles.buttonCompact.copyWith(
+                  color: AppColors.textOnDark,
                 ),
               ),
       ),
@@ -63,24 +57,22 @@ class FabCancelButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 30),
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.p30),
       child: SizedBox(
-        height: 54,
+        height: AppSizes.p56,
         child: OutlinedButton(
           onPressed: onPressed,
           style: OutlinedButton.styleFrom(
-            backgroundColor: _kCancelBgColor,
-            side: const BorderSide(color: _kCancelBorderColor, width: 2),
+            backgroundColor: AppColors.errorContainerStrong,
+            side: const BorderSide(color: AppColors.errorStrong, width: AppSizes.p2),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(AppSizes.radius18),
             ),
           ),
-          child: const Text(
+          child: Text(
             'Annulla',
-            style: TextStyle(
-              color: _kCancelTextColor,
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
+            style: AppTextStyles.buttonCompact.copyWith(
+              color: AppColors.errorStrong,
             ),
           ),
         ),

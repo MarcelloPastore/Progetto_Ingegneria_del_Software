@@ -16,9 +16,9 @@ class InfoCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: Theme.of(context).textTheme.titleMedium),
+            Text(title, style: AppTextStyles.strongTitle),
             const SizedBox(height: AppSizes.p8),
-            Text(subtitle),
+            Text(subtitle, style: AppTextStyles.bodyMuted),
           ],
         ),
       ),

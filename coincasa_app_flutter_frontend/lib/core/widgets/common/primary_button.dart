@@ -24,18 +24,18 @@ class PrimaryButton extends StatelessWidget {
               SizedBox(
                 width: AppSizes.p16,
                 height: AppSizes.p16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
+                child: const CircularProgressIndicator(
+                  strokeWidth: AppSizes.p2,
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    Theme.of(context).colorScheme.onPrimary,
+                    AppColors.textOnDark,
                   ),
                 ),
               ),
               const SizedBox(width: AppSizes.p8),
-              Text(label),
+              Text(label, style: AppTextStyles.button),
             ],
           )
-        : Text(label);
+        : Text(label, style: AppTextStyles.button);
 
     return FilledButton(onPressed: canPress ? onPressed : null, child: content);
   }

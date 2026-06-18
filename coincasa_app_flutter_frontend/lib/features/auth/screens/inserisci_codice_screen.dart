@@ -6,6 +6,7 @@ import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 
 import '../../../core/widgets/auth/auth_widgets.dart';
+import '../../../core/widgets/common/common_widgets.dart';
 import 'attesa_invio_codice_screen.dart';
 import 'login_screen.dart';
 import 'nuova_password_screen.dart';
@@ -101,43 +102,10 @@ class _InserisciCodiceScreenState extends State<InserisciCodiceScreen> {
           ],
           const Text('Codice di verifica', style: AppTextStyles.recoveryLabel),
           const SizedBox(height: AppSizes.p4),
-          Container(
-            width: double.infinity,
-            height: 102,
-            decoration: BoxDecoration(
-              color: AppColors.inputFillDark,
-              border: Border.all(color: codeBorderColor, width: 2),
-              borderRadius: BorderRadius.circular(AppSizes.radius15),
-            ),
-            child: Center(
-              child: TextField(
-                controller: _codeController,
-                focusNode: _codeFocusNode,
-                keyboardType: TextInputType.number,
-                textAlign: TextAlign.center,
-                textAlignVertical: TextAlignVertical.center,
-                style: AppTextStyles.input.copyWith(
-                  fontSize: 34,
-                  letterSpacing: AppSizes.p24,
-                ),
-                cursorColor: AppColors.focus,
-                maxLength: 6,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  LengthLimitingTextInputFormatter(6),
-                ],
-                decoration: const InputDecoration(
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  disabledBorder: InputBorder.none,
-                  errorBorder: InputBorder.none,
-                  focusedErrorBorder: InputBorder.none,
-                  counterText: '',
-                  isCollapsed: true,
-                ),
-              ),
-            ),
+          AppOtpInput(
+            controller: _codeController,
+            focusNode: _codeFocusNode,
+            hasError: _showCodeError,
           ),
           const SizedBox(height: AppSizes.p23),
           Center(

@@ -61,13 +61,13 @@ class _NoConnectionScreenState extends State<NoConnectionScreen> {
   void _showError() {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
+      SnackBar(
         content: Text(
           'Il server non è ancora raggiungibile. Riprova tra qualche minuto.',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          style: AppTextStyles.bodyStrong.copyWith(color: AppColors.textOnDark),
         ),
         backgroundColor: AppColors.error,
-        duration: Duration(seconds: 3),
+        duration: const Duration(seconds: 3),
       ),
     );
   }
@@ -82,7 +82,6 @@ class _NoConnectionScreenState extends State<NoConnectionScreen> {
           child: Column(
             children: [
               const Spacer(),
-              // Icon stack (Globe with gradient and a red circular X badge)
               Stack(
                 alignment: Alignment.center,
                 children: [
@@ -91,30 +90,30 @@ class _NoConnectionScreenState extends State<NoConnectionScreen> {
                         AppGradients.globeIcon.createShader(bounds),
                     child: const Icon(
                       Icons.language_rounded,
-                      size: 150,
-                      color: Colors.white,
+                      size: AppSizes.p132,
+                      color: AppColors.textOnDark,
                     ),
                   ),
                   Positioned(
-                    bottom: 8,
-                    right: 8,
+                    bottom: AppSizes.p8,
+                    right: AppSizes.p8,
                     child: Container(
                       decoration: const BoxDecoration(
                         color: AppColors.darkBackground,
                         shape: BoxShape.circle,
                       ),
-                      padding: const EdgeInsets.all(4),
+                      padding: const EdgeInsets.all(AppSizes.p4),
                       child: Container(
-                        width: 44,
-                        height: 44,
+                        width: AppSizes.p42,
+                        height: AppSizes.p42,
                         decoration: const BoxDecoration(
-                          color: Color(0xFFD32F2F), // Red matching theme
+                          color: AppColors.error,
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
                           Icons.close_rounded,
-                          color: Colors.white,
-                          size: 28,
+                          color: AppColors.textOnDark,
+                          size: AppSizes.p28,
                         ),
                       ),
                     ),
@@ -122,70 +121,51 @@ class _NoConnectionScreenState extends State<NoConnectionScreen> {
                 ],
               ),
               const SizedBox(height: AppSizes.p40),
-              // Title text
-              const Text(
+              Text(
                 'Servizio\ntemporaneamente non disponibile',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: AppColors.textOnDark,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  height: 1.25,
-                ),
+                style: AppTextStyles.screenTitle.copyWith(height: 1.25),
               ),
               const SizedBox(height: AppSizes.p24),
-              // Description/Subtitle text
-              const Text(
+              Text(
                 'I nostri server stanno riscontrando problemi tecnici. Riprova tra qualche minuto.',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: AppColors.textMutedSoft,
-                  fontSize: 17,
-                  height: 1.35,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: AppTextStyles.bodyMutedLarge.copyWith(height: 1.35),
               ),
               const Spacer(),
-              // Buttons
               Column(
                 children: [
-                  // Retry Button
                   SizedBox(
                     width: double.infinity,
-                    height: 58,
+                    height: AppSizes.p58,
                     child: FilledButton(
                       style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFFB72B2B), // Darker red matching screenshot
+                        backgroundColor: AppColors.errorStrong,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(24),
+                          borderRadius: BorderRadius.circular(AppSizes.radius24),
                         ),
                       ),
                       onPressed: _isLoading ? null : _checkHealth,
                       child: _isLoading
                           ? const CircularProgressIndicator(
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor: AlwaysStoppedAnimation<Color>(AppColors.textOnDark),
                             )
-                          : const Text(
+                          : Text(
                               'Riprova',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
+                              style: AppTextStyles.button.copyWith(color: AppColors.textOnDark),
                             ),
                     ),
                   ),
                   const SizedBox(height: AppSizes.p16),
-                  // Cancel Button
                   SizedBox(
                     width: double.infinity,
-                    height: 58,
+                    height: AppSizes.p58,
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Color(0xFF6E41D1), width: 2.0),
-                        backgroundColor: const Color(0xFF141324), // Matches cancel button fill
+                        side: const BorderSide(color: AppColors.brandPrimary, width: AppSizes.p2),
+                        backgroundColor: AppColors.surfaceDarkElevated,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(24),
+                          borderRadius: BorderRadius.circular(AppSizes.radius24),
                         ),
                       ),
                       onPressed: _isLoading
@@ -193,13 +173,9 @@ class _NoConnectionScreenState extends State<NoConnectionScreen> {
                           : () {
                               Navigator.of(context).pop();
                             },
-                      child: const Text(
+                      child: Text(
                         'Annulla',
-                        style: TextStyle(
-                          color: Color(0xFF996CFA), // Purple/indigo matching cancel button text
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: AppTextStyles.button.copyWith(color: AppColors.brandAccent),
                       ),
                     ),
                   ),
