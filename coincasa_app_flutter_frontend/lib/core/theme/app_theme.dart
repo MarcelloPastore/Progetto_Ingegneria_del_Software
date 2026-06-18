@@ -348,6 +348,191 @@ abstract final class AppTextStyles {
   );
 }
 
+/// Centralizzazione di tutti i gradienti dell'applicazione.
+abstract final class AppGradients {
+  // --- Brand & Purple Gradients ---
+
+  /// Gradiente viola brand (da AppColors.brandAccent a AppColors.brandPrimary).
+  static const brandPurple = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [AppColors.brandAccent, AppColors.brandPrimary],
+  );
+
+  /// Gradiente viola primario (da Color(0xFF7B55E0) a Color(0xFF4A2BAE)).
+  static const primaryPurple = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Color(0xFF7B55E0), Color(0xFF4A2BAE)],
+  );
+
+  /// Gradiente a 3 stop per la conferma spesa in modifica spesa admin.
+  static const spesaFormConfirm = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      Color(0xFF9B7FE8),
+      Color(0xFF7B5DC8),
+      Color(0xFF5C3FA8),
+    ],
+    stops: [0.0, 0.55, 1.0],
+  );
+
+  /// Gradiente a 2 stop per conferma/inserimento spesa membro.
+  static const inserisciSpesaConfirm = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Color(0xFF834BE0), Color(0xFF5526BA)],
+  );
+
+  /// Gradiente dinamico per il pulsante di logout.
+  static final logoutButton = LinearGradient(
+    begin: const Alignment(0.50, 0.00),
+    end: const Alignment(0.50, 1.00),
+    colors: [
+      Color.lerp(const Color(0xFF6F4DBB), AppColors.brandPrimary, 0.15)!,
+      AppColors.brandPrimary,
+      const Color(0xFF5228AD),
+    ],
+    stops: const [0.0, 0.5, 1.0],
+  );
+
+  // --- Other UI Gradients ---
+
+  /// Gradiente blu per i pulsanti primari CTA.
+  static const blueCta = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      Color(0xFF5A7EEE),
+      Color(0xFF2B5CE6),
+      Color(0xFF2145B0),
+    ],
+    stops: [0.0, 0.60, 1.0],
+  );
+
+  /// Gradiente per l'icona del globo nella schermata no connection.
+  static const globeIcon = LinearGradient(
+    colors: [
+      Color(0xFF3E80FF),
+      Color(0xFF8D8DFF),
+      Color(0xFFE84545),
+    ],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  /// Gradiente di sfondo per l'icona wifi warning.
+  static const wifiWarningBackground = LinearGradient(
+    colors: [Color(0xFF2A1A5E), Color(0xFF3B1F7A)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  /// Gradiente per l'icona wifi warning.
+  static const wifiWarningIcon = LinearGradient(
+    colors: [Color(0xFF00E5FF), Color(0xFF7B61FF)],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+  );
+
+  /// Divisore orizzontale sfumato per i dettagli dei problemi.
+  static const horizontalDivider = LinearGradient(
+    colors: [
+      Color(0x00000000),
+      Color(0x59AC86FC),
+      Color(0x00000000),
+    ],
+  );
+
+  /// Gradiente dorato per il badge admin nella dashboard.
+  static const goldBadge = LinearGradient(
+    colors: [
+      Color(0xFFFFD700),
+      Color(0xFFFFA500),
+      Color(0xFFFFD700),
+    ],
+    stops: [0.0, 0.5, 1.0],
+  );
+
+  /// Gradiente Instagram per la condivisione del codice invito.
+  static const instagram = LinearGradient(
+    colors: [Color(0xFFF58529), Color(0xFFDD2A7B), Color(0xFF8134AF)],
+    begin: Alignment.bottomLeft,
+    end: Alignment.topRight,
+  );
+
+  /// Gradiente di intestazione del form di creazione/modifica della casa.
+  static const formHeaderBackground = LinearGradient(
+    colors: [Color(0xFF21154C), Color(0xFF0F0A27)],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+  );
+
+  /// Gradiente verde per le azioni di successo/assegnazione.
+  static const greenAction = LinearGradient(
+    colors: [Color(0xFF4CAF50), Color(0xFF2E7D32)],
+  );
+
+  // --- Dynamic Helper Methods ---
+
+  /// Helper per il gradiente dei chip di priorità.
+  static LinearGradient priorityChip({required Color bgColor, bool isSelected = false}) {
+    final darkBg = Color.lerp(bgColor, Colors.black, 0.18)!;
+    final topColor = Color.lerp(bgColor, Colors.white, isSelected ? 0.50 : 0.28)!;
+    return LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [topColor, bgColor, darkBg],
+      stops: const [0, 0.62, 1],
+    );
+  }
+
+  /// Helper per il gradiente del pulsante di assegnazione turno "Assegna a me".
+  static LinearGradient assignMeButton({required bool selected, required bool pressed}) {
+    Color topColor;
+    Color bottomColor;
+    if (pressed) {
+      topColor = selected ? const Color(0xFF7BE47E) : const Color(0xFF77C879);
+      bottomColor = selected ? const Color(0xFF2C7D34) : const Color(0xFF256A2D);
+    } else {
+      topColor = selected ? const Color(0xFF53C95B) : const Color(0xFF68B86C);
+      bottomColor = selected ? const Color(0xFF2E9F3D) : const Color(0xFF2E7736);
+    }
+    return LinearGradient(
+      colors: [topColor, bottomColor],
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+    );
+  }
+
+  /// Helper per l'overlay bianco semi-trasparente (shimmer/overlay dei pulsanti).
+  static LinearGradient whiteOverlay({double topAlpha = 0.18}) {
+    return LinearGradient(
+      begin: const Alignment(0.50, 0.00),
+      end: const Alignment(0.50, 1.00),
+      colors: [
+        Colors.white.withValues(alpha: topAlpha),
+        Colors.white.withValues(alpha: 0.00),
+      ],
+    );
+  }
+
+  /// Helper per creare un gradiente basato su un colore base con lerping standard.
+  static LinearGradient buttonGradient(Color baseColor) {
+    return LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [
+        Color.lerp(baseColor, Colors.white, 0.30)!,
+        baseColor,
+        Color.lerp(baseColor, Colors.black, 0.18)!,
+      ],
+      stops: const [0, 0.62, 1],
+    );
+  }
+}
+
 /// Definizione dei temi dell'applicazione.
 abstract final class AppTheme {
   /// ColorScheme per il tema chiaro mappato sui colori brand.

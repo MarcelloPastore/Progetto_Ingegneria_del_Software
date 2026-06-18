@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:coincasa_app/core/theme/app_theme.dart';
+
 
 // ---------------------------------------------------------------------------
 // Shared action bar for detail screens (Modifica / Elimina / Torna)
@@ -102,16 +104,7 @@ class _DetailActionButton extends StatelessWidget {
       width: double.infinity,
       child: DecoratedBox(
         decoration: ShapeDecoration(
-          gradient: LinearGradient(
-            begin: const Alignment(0.50, 0.00),
-            end: const Alignment(0.50, 1.00),
-            colors: [
-              isDisabled
-                  ? Colors.white.withValues(alpha: 0.04)
-                  : Colors.white.withValues(alpha: 0.18),
-              Colors.white.withValues(alpha: 0.00),
-            ],
-          ),
+          gradient: AppGradients.whiteOverlay(topAlpha: isDisabled ? 0.04 : 0.18),
           shape: RoundedRectangleBorder(
             side: BorderSide(
               width: 2,
@@ -196,12 +189,7 @@ class MainCtaButton extends StatelessWidget {
       width: double.infinity,
       child: DecoratedBox(
         decoration: const ShapeDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [_ctaTop, _ctaBase, _ctaBottom],
-            stops: [0.0, 0.60, 1.0],
-          ),
+          gradient: AppGradients.blueCta,
           shape: RoundedRectangleBorder(borderRadius: _borderRadius),
           shadows: [
             BoxShadow(

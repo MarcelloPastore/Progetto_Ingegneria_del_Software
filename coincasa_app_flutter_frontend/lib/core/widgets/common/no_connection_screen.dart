@@ -87,15 +87,8 @@ class _NoConnectionScreenState extends State<NoConnectionScreen> {
                 alignment: Alignment.center,
                 children: [
                   ShaderMask(
-                    shaderCallback: (bounds) => const LinearGradient(
-                      colors: [
-                        Color(0xFF3E80FF), // Blue
-                        Color(0xFF8D8DFF), // Light purple/blue
-                        Color(0xFFE84545), // Red/Pink
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ).createShader(bounds),
+                    shaderCallback: (bounds) =>
+                        AppGradients.globeIcon.createShader(bounds),
                     child: const Icon(
                       Icons.language_rounded,
                       size: 150,

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/app.dart';
 import 'package:coincasa_app/core/config/env.dart';
 
@@ -188,22 +189,15 @@ class _WifiWarningIcon extends StatelessWidget {
       width: 110,
       height: 90,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF2A1A5E), Color(0xFF3B1F7A)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        gradient: AppGradients.wifiWarningBackground,
         borderRadius: BorderRadius.circular(18),
       ),
       child: Stack(
         alignment: Alignment.center,
         children: [
           ShaderMask(
-            shaderCallback: (bounds) => const LinearGradient(
-              colors: [Color(0xFF00E5FF), Color(0xFF7B61FF)],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ).createShader(bounds),
+            shaderCallback: (bounds) =>
+                AppGradients.wifiWarningIcon.createShader(bounds),
             child: const Icon(
               Icons.wifi_off_rounded,
               size: 56,

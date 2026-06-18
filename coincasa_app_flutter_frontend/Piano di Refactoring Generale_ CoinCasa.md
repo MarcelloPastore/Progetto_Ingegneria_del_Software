@@ -36,13 +36,13 @@ La divisione è strutturata per feature e livelli architettonici per evitare sov
 
 *Responsabile delle fondamenta e della coerenza visiva.*
 
-- **Task 1.1**: Consolidare `lib/core/theme/app_theme.dart`. Mappare tutti i colori esistenti in `ColorScheme` di Material 3.
+- [x] **Task 1.1**: Consolidare `lib/core/theme/app_theme.dart`. Mappare tutti i colori esistenti in `ColorScheme` di Material 3.
 
-- **Task 1.2**: Aggiornare `AppSizes` in `lib/core/constants/app_sizes.dart` per coprire ogni necessità di padding/radius.
+- [x] **Task 1.2**: Aggiornare `AppSizes` in `lib/core/constants/app_sizes.dart` per coprire ogni necessità di padding/radius.
 
-- **Task 1.3**: Creare i widget atomici globali in `lib/core/widgets/common/` (Bottoni, Input, Card standard).
+- [] **Task 1.3**: Creare i widget atomici globali in `lib/core/widgets/common/` (Bottoni, Input, Card standard), utilizzando i colori e sizes definiti in AppColors e AppSizes, in modo tale che ogni widget abbia le dimensioni minime e massime corrette in base al sistema di design.
 
-- **Task 1.4**: Configurare il `ProviderScope` nel `main.dart` e il `MaterialApp` per usare il nuovo tema.
+- []**Task 1.4**: Configurare il `ProviderScope` nel `main.dart` e il `MaterialApp` per usare il nuovo tema.
 
 ### **Sviluppatore 2: Auth & Session Specialist (Lorenzo?)**
 
