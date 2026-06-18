@@ -306,6 +306,7 @@ describe("TurnoDto - Validation Tests", () => {
         cadenzaGiorni: 7,
         rotazioneAttiva: true,
         assegnatario: { id: "u1", username: "mario" },
+        creatore: { id: "u2", username: "luigi" },
         ordineRotazione: ["u1", "u2"],
         indiceRotazioneCorrente: 0,
         dataUltimaPulizia: null,
@@ -324,6 +325,7 @@ describe("TurnoDto - Validation Tests", () => {
         cadenzaGiorni: 7,
         rotazioneAttiva: true,
         assegnatario: { id: "u1", username: "mario" },
+        creatore: { id: "u2", username: "luigi" },
         ordineRotazione: [],
         indiceRotazioneCorrente: 0,
         dataUltimaPulizia: null,
@@ -342,6 +344,7 @@ describe("TurnoDto - Validation Tests", () => {
         cadenzaGiorni: 7,
         rotazioneAttiva: true,
         assegnatario: { id: "u1", username: "mario" },
+        creatore: { id: "u2", username: "luigi" },
         ordineRotazione: [],
         indiceRotazioneCorrente: 0,
         dataUltimaPulizia: null,
@@ -402,4 +405,3 @@ describe("TurnoDto - Validation Tests", () => {
     });
   });
 });
-
