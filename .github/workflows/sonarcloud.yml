@@ -1,5 +1,8 @@
 name: SonarCloud
 
+permissions:
+  contents: read
+  packages: write 
 on:
   push:
     branches:
@@ -10,6 +13,8 @@ on:
 jobs:
   sonarqube:
     runs-on: ubuntu-latest
+    env:
+      MONGODB_URI: mongodb://localhost:27017/coincasa_ci
     steps:
       - uses: actions/checkout@v4
         with:
@@ -23,8 +28,11 @@ jobs:
       - name: Install dependencies
         run: npm install --legacy-peer-deps
 
+      - name: Generate Prisma client
+        run: npx prisma generate
+
       - name: Run tests with coverage
-        run: npm run test:coverage || true
+        run: npm run test:coverage
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
