@@ -9,6 +9,7 @@ import 'package:coincasa_app/core/models/spesa.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/core/widgets/common/screen_back_header.dart';
 import 'package:coincasa_app/features/spese/screens/modifiche_spese_successo.dart';
 
 class ModificheSpeseNegataScreen extends ConsumerStatefulWidget {
@@ -259,7 +260,7 @@ class _EditFormContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _BackTitle(title: 'Spese', onBack: () => Navigator.of(context).pop()),
+          ScreenBackHeader(title: 'Spese', onBack: () => Navigator.of(context).pop()),
           const SizedBox(height: 16),
           const _WarningBox(),
           const SizedBox(height: 14),
@@ -392,7 +393,7 @@ class _ProtectedEditContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _BackTitle(
+          ScreenBackHeader(
             title: 'Dettaglio spesa',
             onBack: () => Navigator.of(context).pop(),
           ),
@@ -427,39 +428,6 @@ class _ProtectedEditContent extends StatelessWidget {
   }
 }
 
-class _BackTitle extends StatelessWidget {
-  const _BackTitle({required this.title, required this.onBack});
-
-  final String title;
-  final VoidCallback onBack;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        IconButton(
-          onPressed: onBack,
-          icon: const Icon(
-            Icons.arrow_back,
-            color: AppColors.brandAccent,
-            size: 28,
-          ),
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-        ),
-        const SizedBox(width: 4),
-        Text(
-          title,
-          style: AppTextStyles.screenTitleStrong.copyWith(
-            color: AppColors.brandAccent,
-            fontSize: 23,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 class _WarningBox extends StatelessWidget {
   const _WarningBox();

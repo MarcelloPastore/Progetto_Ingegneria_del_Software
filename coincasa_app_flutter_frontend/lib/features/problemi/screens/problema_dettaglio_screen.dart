@@ -5,6 +5,7 @@ import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/problema.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/widgets/common/delete_confirm_dialog.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
 import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
@@ -601,13 +602,16 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
                   }
                 },
                 onDelete: canDelete
-                    ? () => _showConfirmDialog(
-                        title: 'Elimina problema',
-                        body:
+                    ? () => showDeleteConfirmDialog(
+                        context: context,
+                        title: 'Eliminare il problema?',
+                        description:
                             '"${_problema.titolo}" verrà rimosso definitivamente. Tutti i coinquilini verranno avvisati.',
-                        accentColor: const Color(0xFFFF3B44),
-                        confirmLabel: 'Elimina',
-                        onConfirm: _handleElimina,
+                        onConfirm: () async {
+                          final casaId = ActiveCasaScope.read(context).selectedCasaId ?? '';
+                          await ApiProvider.problemi.delete(casaId, _problema.id);
+                        },
+                        onSuccess: () => Navigator.of(context).pushReplacementNamed('/problemi'),
                       )
                     : null,
                 onBack: () => Navigator.of(context).maybePop(),

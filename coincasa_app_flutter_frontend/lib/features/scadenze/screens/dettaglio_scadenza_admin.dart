@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
+import 'package:coincasa_app/core/widgets/common/delete_confirm_dialog.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
 import 'scadenza_form_screen.dart';
@@ -177,40 +178,21 @@ class DettaglioScadenzaAdminScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              onDelete: () async {
-                final confirm = await showDialog<bool>(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    title: const Text('Conferma eliminazione'),
-                    content: const Text(
-                      'Sei sicuro di voler eliminare questa scadenza?',
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(ctx).pop(false),
-                        child: const Text('Annulla'),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.of(ctx).pop(true),
-                        child: const Text('Elimina'),
-                      ),
-                    ],
-                  ),
-                );
-                if (confirm == true && context.mounted) {
+              onDelete: () => showDeleteConfirmDialog(
+                context: context,
+                title: 'Eliminare la scadenza?',
+                description:
+                    '"$titolo" verrà rimossa definitivamente. Tutti i coinquilini verranno avvisati.',
+                onConfirm: () {
                   final id = idScadenza;
                   final cId = casaId;
-                  if (id != null &&
-                      cId != null &&
-                      id.isNotEmpty &&
-                      cId.isNotEmpty) {
-                    try {
-                      await ApiProvider.scadenze.delete(cId, id);
-                    } catch (_) {}
+                  if (id == null || cId == null || id.isEmpty || cId.isEmpty) {
+                    return Future.value();
                   }
-                  if (context.mounted) Navigator.of(context).maybePop();
-                }
-              },
+                  return ApiProvider.scadenze.delete(cId, id);
+                },
+                onSuccess: () => Navigator.of(context).maybePop(),
+              ),
               onBack: () => Navigator.of(context).maybePop(),
             ),
           ],

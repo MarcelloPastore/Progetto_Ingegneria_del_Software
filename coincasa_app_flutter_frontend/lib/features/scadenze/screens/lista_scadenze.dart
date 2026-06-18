@@ -608,22 +608,18 @@ class _EmptyState extends StatelessWidget {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        children: const [
-          Icon(Icons.event_available, color: Color(0xFF5A2BBF), size: 64),
-          SizedBox(height: 16),
+        children: [
+          const Icon(Icons.event_available, color: AppColors.brandPrimary, size: 64),
+          const SizedBox(height: AppSizes.p16),
           Text(
             'Nessuna scadenza',
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
+            style: AppTextStyles.bodyStrong.copyWith(color: AppColors.textMutedLight),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: AppSizes.p8),
           Text(
             'Turni e spese con data di scadenza\nappariranno qui.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white38, fontSize: 14),
+            style: AppTextStyles.bodyMuted.copyWith(color: AppColors.textMutedDark),
           ),
         ],
       ),

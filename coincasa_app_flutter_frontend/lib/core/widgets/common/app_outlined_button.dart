@@ -37,7 +37,10 @@ class AppOutlinedButton extends StatelessWidget {
               Text(label, style: AppTextStyles.buttonCompact),
             ],
           )
-        : Text(label, style: AppTextStyles.buttonCompact);
+        : FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(label, style: AppTextStyles.buttonCompact),
+          );
 
     return OutlinedButton(
       onPressed: canPress ? onPressed : null,

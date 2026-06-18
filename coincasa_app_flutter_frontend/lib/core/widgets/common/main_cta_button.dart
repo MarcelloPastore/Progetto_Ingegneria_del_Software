@@ -124,18 +124,22 @@ class _DetailActionButton extends StatelessWidget {
             padding: EdgeInsets.zero,
             shape: const RoundedRectangleBorder(borderRadius: _radius),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (isDisabled) ...[
-                Icon(Icons.lock_outline_rounded, color: effectiveColor, size: AppSizes.p14),
-                const SizedBox(width: AppSizes.p5),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isDisabled) ...[
+                  Icon(Icons.lock_outline_rounded, color: effectiveColor, size: AppSizes.p14),
+                  const SizedBox(width: AppSizes.p5),
+                ],
+                Text(
+                  label,
+                  style: AppTextStyles.buttonCompact.copyWith(color: effectiveColor),
+                ),
               ],
-              Text(
-                label,
-                style: AppTextStyles.buttonCompact.copyWith(color: effectiveColor),
-              ),
-            ],
+            ),
           ),
         ),
       ),

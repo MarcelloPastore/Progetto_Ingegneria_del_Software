@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/widgets/common/coinquilini_notified_banner.dart';
 
 class TurnoSaveResultArguments {
   const TurnoSaveResultArguments({required this.isEditing});
@@ -88,7 +89,7 @@ class _TurnoSuccessScaffold extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: AppSizes.p56),
-              const _NotifiedBanner(),
+              const CoinquiliniNotifiedBanner(),
               const SizedBox(height: AppSizes.p18),
               _PurpleActionButton(
                 label: 'Ritorna ai turni',
@@ -165,24 +166,3 @@ class _PurpleActionButtonState extends State<_PurpleActionButton> {
   }
 }
 
-class _NotifiedBanner extends StatelessWidget {
-  const _NotifiedBanner();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: AppSizes.p56,
-      alignment: Alignment.center,
-
-      child: Text(
-        'Tutti i coinquilini sono stati avvisati',
-        textAlign: TextAlign.center,
-        style: AppTextStyles.bodyStrong.copyWith(
-          color: AppColors.statusPositive,
-          fontSize: 16,
-          fontWeight: FontWeight.w900,
-        ),
-      ),
-    );
-  }
-}

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/widgets/common/coinquilini_notified_banner.dart';
 
 Future<void> showProblemaSuccessoFABDialog(
   BuildContext context, {
@@ -75,32 +76,7 @@ class ProblemaSuccessoFABDialog extends StatelessWidget {
 
                 const SizedBox(height: AppSizes.p42),
 
-                // Green notification box
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.p14,
-                    vertical: AppSizes.p20,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.successBright.withValues(alpha: 0.72),
-                    borderRadius: BorderRadius.circular(AppSizes.radius14),
-                    border: Border.all(
-                      color: AppColors.statusPositive,
-                      width: 2,
-                    ),
-                  ),
-                  child: Text(
-                    'Tutti i coinquilini sono stati avvisati.',
-                    textAlign: TextAlign.center,
-                    style: AppTextStyles.screenTitleStrong.copyWith(
-                      color: AppColors.textOnDark,
-                      fontSize: 17,
-                      fontStyle: FontStyle.italic,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
+                const CoinquiliniNotifiedBanner(),
 
                 const Spacer(),
 

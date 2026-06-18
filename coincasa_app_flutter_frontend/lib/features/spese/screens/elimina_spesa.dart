@@ -8,7 +8,9 @@ import 'package:coincasa_app/core/models/quota.dart';
 import 'package:coincasa_app/core/models/spesa.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/widgets/common/app_outlined_button.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/core/widgets/common/screen_back_header.dart';
 import 'package:coincasa_app/features/spese/screens/lista_spese_admin.dart';
 import 'package:coincasa_app/features/spese/screens/modifiche_spese_negata.dart';
 
@@ -148,7 +150,7 @@ class _DeleteContent extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _BackTitle(title: 'Dettaglio spesa', onBack: onCancel),
+              ScreenBackHeader(title: 'Dettaglio spesa', onBack: onCancel),
               const SizedBox(height: 50),
               Text(
                 _formatCurrency(data.spesa.importo),
@@ -320,12 +322,14 @@ class _ConfirmDeleteCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 26),
-          _DangerButton(
-            label: deleting ? 'Eliminazione...' : 'Sì, elimina definitivamente',
-            onPressed: deleting ? null : onDelete,
+          AppOutlinedButton(
+            label: 'Sì, elimina definitivamente',
+            onPressed: onDelete,
+            color: AppColors.errorStrong,
+            isLoading: deleting,
           ),
           const SizedBox(height: 10),
-          _PurpleOutlineButton(label: 'Annulla', onPressed: onCancel),
+          AppOutlinedButton(label: 'Annulla', onPressed: onCancel),
         ],
       ),
     );
@@ -368,11 +372,9 @@ class _DeleteSuccessCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 56),
-          _PurpleOutlineButton(
+          AppOutlinedButton(
             label: 'Torna alle spese',
-            onPressed: () => Navigator.of(
-              context,
-            ).pushReplacementNamed(ListaSpeseAdminScreen.routeName),
+            onPressed: () => Navigator.of(context).pushReplacementNamed(ListaSpeseAdminScreen.routeName),
           ),
         ],
       ),
@@ -537,106 +539,7 @@ class _SummaryRow extends StatelessWidget {
   }
 }
 
-class _BackTitle extends StatelessWidget {
-  const _BackTitle({required this.title, required this.onBack});
 
-  final String title;
-  final VoidCallback onBack;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        IconButton(
-          onPressed: onBack,
-          icon: const Icon(
-            Icons.arrow_back,
-            color: AppColors.brandAccent,
-            size: 28,
-          ),
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          title,
-          style: AppTextStyles.screenTitleStrong.copyWith(
-            color: AppColors.brandAccent,
-            fontSize: 23,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _DangerButton extends StatelessWidget {
-  const _DangerButton({required this.label, required this.onPressed});
-
-  final String label;
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton(
-        onPressed: onPressed,
-        style: OutlinedButton.styleFrom(
-          side: const BorderSide(color: Color(0xFFFF3B44), width: 2),
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            label,
-            style: const TextStyle(
-              color: Color(0xFFFF3B44),
-              fontSize: 21,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PurpleOutlineButton extends StatelessWidget {
-  const _PurpleOutlineButton({required this.label, required this.onPressed});
-
-  final String label;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton(
-        onPressed: onPressed,
-        style: OutlinedButton.styleFrom(
-          side: const BorderSide(color: AppColors.brandPrimary, width: 2),
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-        child: Text(
-          label,
-          style: const TextStyle(
-            color: AppColors.brandPrimary,
-            fontSize: 23,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class _DeleteData {
   const _DeleteData({

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:coincasa_app/core/models/spesa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/widgets/common/coinquilini_notified_banner.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/features/spese/screens/dettaglio_spesa_admin.dart';
 
@@ -64,30 +65,8 @@ class ModificheSpeseSuccessoScreen extends StatelessWidget {
                     const SizedBox(height: 42),
                     _SummaryTable(spesa: spesa),
                     const SizedBox(height: 84),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 14,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF3C8B45),
-                        border: Border.all(
-                          color: const Color(0xFF42FF58),
-                          width: 2,
-                        ),
-                        borderRadius: BorderRadius.circular(9),
-                      ),
-                      child: const Text(
-                        'Tutti i coinquilini sono stati\nnotificati delle modifiche.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontStyle: FontStyle.italic,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
+                    const CoinquiliniNotifiedBanner(
+                      message: 'Tutti i coinquilini sono stati notificati delle modifiche.',
                     ),
                     const SizedBox(height: 26),
                     SizedBox(
