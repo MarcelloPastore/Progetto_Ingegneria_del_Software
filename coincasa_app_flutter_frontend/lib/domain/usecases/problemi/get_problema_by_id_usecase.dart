@@ -1,0 +1,11 @@
+import 'package:coincasa_app/core/models/problema.dart';
+import 'package:coincasa_app/domain/repositories/i_problemi_repository.dart';
+
+class GetProblemaByIdUseCase {
+  const GetProblemaByIdUseCase(this._repository);
+
+  final IProblemiRepository _repository;
+
+  Future<Problema> call(String casaId, String problemaId) =>
+      _repository.getProblemaById(casaId, problemaId);
+}
