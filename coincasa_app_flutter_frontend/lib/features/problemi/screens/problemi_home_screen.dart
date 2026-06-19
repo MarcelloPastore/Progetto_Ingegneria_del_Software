@@ -30,6 +30,7 @@ class _ProblemiHomeScreenState extends ConsumerState<ProblemiHomeScreen> {
   late Future<List<Problema>> _future;
   int _loadedRevision = -1;
   bool _showTutti = false;
+  bool _hasRisolti = false;
 
   @override
   void initState() {
@@ -41,9 +42,17 @@ class _ProblemiHomeScreenState extends ConsumerState<ProblemiHomeScreen> {
   Future<List<Problema>> _loadProblemi() async {
     final casaId = ActiveCasaScope.read(context).selectedCasaId;
     if (casaId == null || casaId.isEmpty) return const [];
+    
+    final allList = await ApiProvider.problemi.list(casaId);
+    
+    if (mounted) {
+      _hasRisolti = allList.any((p) => p.stato.toLowerCase() == 'risolto');
+    }
+
     final list = _showTutti
-        ? await ApiProvider.problemi.list(casaId)
-        : await ApiProvider.problemi.listNonRisolti(casaId);
+        ? allList
+        : allList.where((p) => p.stato.toLowerCase() != 'risolto').toList();
+        
     return list..sort(Problema.compareByPriority);
   }
 
@@ -86,6 +95,7 @@ class _ProblemiHomeScreenState extends ConsumerState<ProblemiHomeScreen> {
                     isEmpty: isEmpty,
                     showTutti: _showTutti,
                     onToggleShowTutti: _toggleShowTutti,
+                    hasRisolti: _hasRisolti,
                   ),
                   Expanded(
                     child: isLoading
@@ -124,11 +134,13 @@ class _ProblemiHomeHeader extends StatelessWidget {
     required this.isEmpty,
     required this.showTutti,
     required this.onToggleShowTutti,
+    required this.hasRisolti,
   });
 
   final bool isEmpty;
   final bool showTutti;
   final VoidCallback onToggleShowTutti;
+  final bool hasRisolti;
 
   @override
   Widget build(BuildContext context) {
@@ -144,7 +156,7 @@ class _ProblemiHomeHeader extends StatelessWidget {
               Text(
                 nomeCasa,
                 style: const TextStyle(
-                  color: Color(0xFF8C8CA0),
+                  color: AppColors.textMutedDark,
                   fontSize: 20,
                   fontFamily: 'Inter',
                   fontWeight: FontWeight.w600,
@@ -162,24 +174,45 @@ class _ProblemiHomeHeader extends StatelessWidget {
               ),
             ],
           ),
-          Positioned(
-            right: AppSizes.p16,
-            top: 0,
-            bottom: 0,
-            child: Tooltip(
-              message: showTutti ? 'Nascondi risolti' : 'Mostra tutti',
-              child: IconButton(
-                onPressed: onToggleShowTutti,
-                icon: Icon(
-                  Icons.assignment_outlined,
-                  size: 28,
-                  color: showTutti
-                      ? AppColors.brandAccent
-                      : const Color(0xFF8C8CA0),
+          if (hasRisolti)
+            Positioned(
+              right: AppSizes.p16,
+              top: 0,
+              bottom: 0,
+              child: Tooltip(
+                message: showTutti ? 'Nascondi risolti' : 'Mostra risolti',
+                child: InkWell(
+                  onTap: onToggleShowTutti,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.assignment_outlined,
+                          size: 28,
+                          color: showTutti
+                              ? AppColors.brandAccent
+                              : AppColors.textMutedDark,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          showTutti ? 'Nascondi risolti' : 'Mostra risolti',
+                          style: TextStyle(
+                            color: showTutti
+                                ? AppColors.brandAccent
+                                : AppColors.textMutedDark,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );

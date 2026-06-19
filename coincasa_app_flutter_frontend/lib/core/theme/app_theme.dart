@@ -34,7 +34,7 @@ abstract final class AppColors {
   static const textSecondary = Color(0xFF5B5668);
   static const textMuted = Color(0xFF8D889C);
   static const textMutedLight = Color(0xFFC6C1CC);
-  static const textMutedDark = Color(0xFF8C8C96);
+  static const textMutedDark = Color(0xFF8C8CA0);
   static const textMutedSoft = Color(0xFFB0A9B8);
   static const textOnDark = Color(0xFFFFFFFF);
   static const textOnDarkMuted = Color(0xB3FFFFFF);
