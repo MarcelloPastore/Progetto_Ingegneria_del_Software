@@ -1318,23 +1318,33 @@ class _SummaryRow extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 String? _resolveCurrentUserId(List<Inquilino> inquilini) {
+  // 1. Usa l'ID utente — è il modo più affidabile.
   final userId = ApiProvider.client.currentUserId;
   if (userId != null && userId.trim().isNotEmpty) return userId.trim();
+
+  // 2. Fallback sicuro: confronta solo per email (univoca).
   final email = ApiProvider.client.currentUserEmail?.trim().toLowerCase();
-  final name = ApiProvider.client.currentUserName?.trim().toLowerCase();
-  for (final inquilino in inquilini) {
-    final values = [
-      inquilino.email,
-      inquilino.username,
-      inquilino.nome,
-      inquilino.nomeCompleto,
-    ].map((v) => v.trim().toLowerCase());
-    if ((email != null && values.contains(email)) ||
-        (name != null && values.contains(name))) {
-      return inquilino.id;
+  if (email != null && email.isNotEmpty) {
+    for (final inquilino in inquilini) {
+      if (inquilino.email.trim().toLowerCase() == email) {
+        return inquilino.id;
+      }
     }
   }
-  return inquilini.isNotEmpty ? inquilini.first.id : null;
+
+  // 3. Fallback per username (univoco nell'app).
+  final username = ApiProvider.client.currentUserUsername?.trim().toLowerCase();
+  if (username != null && username.isNotEmpty) {
+    for (final inquilino in inquilini) {
+      if (inquilino.username.trim().toLowerCase() == username) {
+        return inquilino.id;
+      }
+    }
+  }
+
+  // Non usiamo nome/nomeCompleto: non sono univoci e causano falsi positivi
+  // quando due utenti condividono lo stesso nome anagrafico.
+  return null;
 }
 
 List<String> _buildPartecipantiIds({

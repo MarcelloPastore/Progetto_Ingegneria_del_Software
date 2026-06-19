@@ -844,21 +844,39 @@ String _displayName(Inquilino inquilino) {
 }
 
 Inquilino? _resolveCurrentUser(List<Inquilino> inquilini) {
-  final email = ApiProvider.client.currentUserEmail?.trim().toLowerCase();
-  final name = ApiProvider.client.currentUserName?.trim().toLowerCase();
-  for (final inquilino in inquilini) {
-    final values = [
-      inquilino.email,
-      inquilino.username,
-      inquilino.nome,
-      inquilino.nomeCompleto,
-    ].map((value) => value.trim().toLowerCase());
-    if ((email != null && values.contains(email)) ||
-        (name != null && values.contains(name))) {
-      return inquilino;
+  // 1. Usa l'ID utente dalla sessione — identificatore univoco, non ambiguo.
+  final userId = ApiProvider.client.currentUserId?.trim();
+  if (userId != null && userId.isNotEmpty) {
+    for (final inquilino in inquilini) {
+      if (inquilino.id == userId) {
+        return inquilino;
+      }
     }
   }
-  return inquilini.isNotEmpty ? inquilini.first : null;
+
+  // 2. Fallback: email (univoca per definizione).
+  final email = ApiProvider.client.currentUserEmail?.trim().toLowerCase();
+  if (email != null && email.isNotEmpty) {
+    for (final inquilino in inquilini) {
+      if (inquilino.email.trim().toLowerCase() == email) {
+        return inquilino;
+      }
+    }
+  }
+
+  // 3. Fallback: username (univoco nell'app).
+  final username = ApiProvider.client.currentUserUsername?.trim().toLowerCase();
+  if (username != null && username.isNotEmpty) {
+    for (final inquilino in inquilini) {
+      if (inquilino.username.trim().toLowerCase() == username) {
+        return inquilino;
+      }
+    }
+  }
+
+  // Non usiamo nome/nomeCompleto: non sono univoci e causano falsi positivi
+  // quando due utenti condividono lo stesso nome anagrafico.
+  return null;
 }
 
 String _nameForPartecipante(Map<String, dynamic> partecipante) {
