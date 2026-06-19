@@ -40,9 +40,9 @@ La divisione è strutturata per feature e livelli architettonici per evitare sov
 
 - [x] **Task 1.2**: Aggiornare `AppSizes` in `lib/core/constants/app_sizes.dart` per coprire ogni necessità di padding/radius.
 
-- [] **Task 1.3**: Creare i widget atomici globali in `lib/core/widgets/common/` (Bottoni, Input, Card standard), utilizzando i colori e sizes definiti in AppColors e AppSizes, in modo tale che ogni widget abbia le dimensioni minime e massime corrette in base al sistema di design.
+- [x] **Task 1.3**: Creare i widget atomici globali in `lib/core/widgets/common/` (Bottoni, Input, Card standard), utilizzando i colori e sizes definiti in AppColors e AppSizes, in modo tale che ogni widget abbia le dimensioni minime e massime corrette in base al sistema di design.
 
-- []**Task 1.4**: Configurare il `ProviderScope` nel `main.dart` e il `MaterialApp` per usare il nuovo tema.
+- [x]**Task 1.4**: Configurare il `ProviderScope` nel `main.dart` e il `MaterialApp` per usare il nuovo tema.
 
 ### **Sviluppatore 2: Auth & Session Specialist (Lorenzo?)**
 

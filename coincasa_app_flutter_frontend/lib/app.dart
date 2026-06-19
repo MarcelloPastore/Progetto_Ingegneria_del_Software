@@ -34,6 +34,8 @@ class CoinCasaApp extends StatelessWidget {
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: ThemeMode.system,
         navigatorKey: navigatorKey,
         navigatorObservers: [appRouteObserver],
         home: const _AppStartupScreen(),
