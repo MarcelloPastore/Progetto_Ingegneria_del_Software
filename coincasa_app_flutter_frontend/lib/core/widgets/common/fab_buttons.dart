@@ -48,35 +48,3 @@ class FabSaveButton extends StatelessWidget {
     );
   }
 }
-
-class FabCancelButton extends StatelessWidget {
-  const FabCancelButton({super.key, required this.onPressed});
-
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSizes.p30),
-      child: SizedBox(
-        height: AppSizes.p56,
-        child: OutlinedButton(
-          onPressed: onPressed,
-          style: OutlinedButton.styleFrom(
-            backgroundColor: AppColors.errorContainerStrong,
-            side: const BorderSide(color: AppColors.errorStrong, width: AppSizes.p2),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppSizes.radius18),
-            ),
-          ),
-          child: Text(
-            'Annulla',
-            style: AppTextStyles.buttonCompact.copyWith(
-              color: AppColors.errorStrong,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}

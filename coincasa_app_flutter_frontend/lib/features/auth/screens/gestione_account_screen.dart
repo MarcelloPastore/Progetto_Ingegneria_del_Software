@@ -11,6 +11,7 @@ import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 import 'package:coincasa_app/features/auth/screens/check_email_screen.dart';
 import 'package:coincasa_app/features/auth/screens/elimina_account_success_screen.dart';
 import 'package:coincasa_app/features/auth/screens/modifica_password_screen.dart';
+import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
 
 class GestioneAccountScreen extends StatefulWidget {
   const GestioneAccountScreen({super.key});
@@ -353,7 +354,7 @@ class _GestioneAccountScreenState extends State<GestioneAccountScreen> {
                 ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(52, 0, 52, 24),
-                  child: _AnnullaEditButton(
+                  child: AppCancelButton(
                     onPressed: _isConfirming ? null : _cancelEditUsername,
                   ),
                 ),
@@ -371,7 +372,7 @@ class _GestioneAccountScreenState extends State<GestioneAccountScreen> {
                 ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(52, 0, 52, 24),
-                  child: _AnnullaEditButton(
+                  child: AppCancelButton(
                     onPressed: _isConfirming ? null : _cancelEditEmail,
                   ),
                 ),
@@ -585,49 +586,7 @@ class _ConfermaButton extends StatelessWidget {
   }
 }
 
-class _AnnullaEditButton extends StatelessWidget {
-  const _AnnullaEditButton({required this.onPressed});
 
-  final VoidCallback? onPressed;
-
-  static const _red = Color(0xFFFF0202);
-  static const _radius = BorderRadius.all(Radius.circular(AppSizes.radius16));
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 48.0,
-      child: DecoratedBox(
-        decoration: const ShapeDecoration(
-          color: AppColors.errorContainerDark,
-          shape: RoundedRectangleBorder(
-            side: BorderSide(
-              width: 2,
-              strokeAlign: BorderSide.strokeAlignOutside,
-              color: _red,
-            ),
-            borderRadius: _radius,
-          ),
-        ),
-        child: ElevatedButton(
-          onPressed: onPressed,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            shadowColor: Colors.transparent,
-            foregroundColor: _red,
-            elevation: 0,
-            shape: const RoundedRectangleBorder(borderRadius: _radius),
-          ),
-          child: Text(
-            'Annulla',
-            style: AppTextStyles.buttonCompact.copyWith(color: _red),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Componenti schermata principale

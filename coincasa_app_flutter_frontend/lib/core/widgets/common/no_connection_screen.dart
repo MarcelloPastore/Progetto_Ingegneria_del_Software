@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:coincasa_app/core/config/env.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/widgets/common/app_cancel_button_primary.dart';
 
 class NoConnectionScreen extends StatefulWidget {
   const NoConnectionScreen({super.key});
@@ -157,27 +158,11 @@ class _NoConnectionScreenState extends State<NoConnectionScreen> {
                     ),
                   ),
                   const SizedBox(height: AppSizes.p16),
-                  SizedBox(
-                    width: double.infinity,
-                    height: AppSizes.p58,
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: AppColors.brandPrimary, width: AppSizes.p2),
-                        backgroundColor: AppColors.surfaceDarkElevated,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppSizes.radius24),
-                        ),
-                      ),
-                      onPressed: _isLoading
-                          ? null
-                          : () {
-                              Navigator.of(context).pop();
-                            },
-                      child: Text(
-                        'Annulla',
-                        style: AppTextStyles.button.copyWith(color: AppColors.brandAccent),
-                      ),
-                    ),
+                  AppCancelButtonPrimary(
+                    enabled: !_isLoading,
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
                   ),
                 ],
               ),

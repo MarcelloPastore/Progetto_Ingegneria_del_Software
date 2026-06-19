@@ -7,7 +7,7 @@ import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
-import 'package:coincasa_app/core/widgets/common/fab_buttons.dart';
+import 'package:coincasa_app/core/widgets/common/app_cancel_button.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
 import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
@@ -606,7 +606,7 @@ class _ProblemiFormContent extends StatelessWidget {
           isLoading: form.isSubmitting,
         ),
         const SizedBox(height: AppSizes.p8),
-        FabCancelButton(onPressed: form.isSubmitting ? null : onCancel),
+        AppCancelButton(onPressed: form.isSubmitting ? null : onCancel),
       ],
     );
   }

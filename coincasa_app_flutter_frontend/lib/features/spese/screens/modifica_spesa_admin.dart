@@ -10,6 +10,7 @@ import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/utils/user_initials.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
 import 'package:coincasa_app/features/spese/screens/dettaglio_spesa_admin.dart';
 import 'package:coincasa_app/features/spese/screens/lista_spese_admin.dart';
 
@@ -301,7 +302,7 @@ class _ModificaSpesaAdminScreenState
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-              child: _AnnullaButton(
+              child: AppCancelButton(
                 enabled: !form.isSubmitting,
                 onPressed: () => Navigator.of(context).pop(),
               ),
@@ -1416,45 +1417,7 @@ class SpesaFormConfermaButton extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Annulla button
-// ---------------------------------------------------------------------------
 
-class _AnnullaButton extends StatelessWidget {
-  const _AnnullaButton({required this.enabled, required this.onPressed});
-
-  final bool enabled;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 44,
-      width: double.infinity,
-      child: OutlinedButton(
-        onPressed: enabled ? onPressed : null,
-        style: OutlinedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          foregroundColor: AppColors.statusNegative,
-          side: const BorderSide(color: AppColors.statusNegative, width: 1.5),
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(22)),
-          ),
-          disabledForegroundColor: AppColors.statusNegative.withValues(
-            alpha: 0.4,
-          ),
-        ),
-        child: const Text(
-          'Annulla',
-          style: TextStyle(
-            fontSize: 16,
-            fontFamily: 'Inter',
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Helpers

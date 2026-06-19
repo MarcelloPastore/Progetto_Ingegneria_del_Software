@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
-import 'package:coincasa_app/core/widgets/common/fab_buttons.dart';
+import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
 
 import 'fab_sacdenza_creata.dart';
 
@@ -142,7 +142,7 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
           isLoading: _isSaving,
         ),
         const SizedBox(height: 14),
-        FabCancelButton(onPressed: () => Navigator.of(context).maybePop()),
+        AppCancelButton(onPressed: () => Navigator.of(context).maybePop()),
       ],
     );
   }

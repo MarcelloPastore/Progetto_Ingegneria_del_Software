@@ -365,9 +365,7 @@ class _ModificaProblemaScreenState
                   const SizedBox(height: AppSizes.p12),
 
                   // Annulla
-                  AppOutlinedButton(
-                    label: 'Annulla',
-                    color: AppColors.errorStrong,
+                  AppCancelButton(
                     onPressed: () => Navigator.of(context).maybePop(),
                   ),
                 ],

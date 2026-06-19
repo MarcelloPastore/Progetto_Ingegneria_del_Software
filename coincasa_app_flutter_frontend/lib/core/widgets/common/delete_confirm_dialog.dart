@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../theme/app_theme.dart';
+import 'app_cancel_button_primary.dart';
 
 Future<void> showDeleteConfirmDialog({
   required BuildContext context,
@@ -146,7 +147,7 @@ class _DeleteConfirmDialogState extends State<_DeleteConfirmDialog> {
                           color: AppColors.errorStrong,
                           width: AppSizes.p2,
                         ),
-                        padding: const EdgeInsets.symmetric(vertical: AppSizes.p14),
+                        padding: const EdgeInsets.symmetric(horizontal: AppSizes.p16, vertical: AppSizes.p14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(AppSizes.radius16),
                         ),
@@ -160,40 +161,22 @@ class _DeleteConfirmDialogState extends State<_DeleteConfirmDialog> {
                                 strokeWidth: 2.4,
                               ),
                             )
-                          : Text(
-                              'Sì, elimina definitivamente',
-                              style: AppTextStyles.buttonCompact.copyWith(
-                                color: AppColors.errorStrong,
-                                fontWeight: FontWeight.w800,
+                          : FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                'Sì, elimina definitivamente',
+                                style: AppTextStyles.buttonCompact.copyWith(
+                                  color: AppColors.errorStrong,
+                                  fontWeight: FontWeight.w800,
+                                ),
                               ),
                             ),
                     ),
                   ),
                   const SizedBox(height: AppSizes.p10),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton(
-                      onPressed: _loading
-                          ? null
-                          : () => Navigator.of(context).pop(),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(
-                          color: AppColors.brandPrimary,
-                          width: AppSizes.p2,
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: AppSizes.p14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppSizes.radius16),
-                        ),
-                      ),
-                      child: Text(
-                        'Annulla',
-                        style: AppTextStyles.buttonCompact.copyWith(
-                          color: AppColors.brandPrimary,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
+                  AppCancelButtonPrimary(
+                    enabled: !_loading,
+                    onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
               ),

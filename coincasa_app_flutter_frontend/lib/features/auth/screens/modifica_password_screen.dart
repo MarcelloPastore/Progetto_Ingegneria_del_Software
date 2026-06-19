@@ -7,6 +7,7 @@ import 'package:coincasa_app/core/services/session_manager.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 
 import '../../../core/widgets/auth/auth_widgets.dart';
+import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
 
 class ModificaPasswordScreen extends StatefulWidget {
   const ModificaPasswordScreen({super.key});
@@ -206,7 +207,7 @@ class _ModificaPasswordScreenState extends State<ModificaPasswordScreen> {
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(52, 0, 52, 24),
-                child: _AnnullaButton(
+                child: AppCancelButton(
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ),
@@ -222,46 +223,4 @@ class _ModificaPasswordScreenState extends State<ModificaPasswordScreen> {
 // Pulsante Annulla rosso (bordo + testo rosso, sfondo scuro)
 // ---------------------------------------------------------------------------
 
-class _AnnullaButton extends StatelessWidget {
-  const _AnnullaButton({required this.onPressed});
 
-  final VoidCallback onPressed;
-
-  static const _red = Color(0xFFFF0202);
-  static const _radius = BorderRadius.all(Radius.circular(AppSizes.radius16));
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 48.0,
-      child: DecoratedBox(
-        decoration: const ShapeDecoration(
-          color: AppColors.errorContainerDark,
-          shape: RoundedRectangleBorder(
-            side: BorderSide(
-              width: 2,
-              strokeAlign: BorderSide.strokeAlignOutside,
-              color: _red,
-            ),
-            borderRadius: _radius,
-          ),
-        ),
-        child: ElevatedButton(
-          onPressed: onPressed,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            shadowColor: Colors.transparent,
-            foregroundColor: _red,
-            elevation: 0,
-            shape: const RoundedRectangleBorder(borderRadius: _radius),
-          ),
-          child: Text(
-            'Annulla',
-            style: AppTextStyles.buttonCompact.copyWith(color: _red),
-          ),
-        ),
-      ),
-    );
-  }
-}

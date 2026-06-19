@@ -8,7 +8,7 @@ import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/utils/user_initials.dart';
-import 'package:coincasa_app/core/widgets/common/fab_buttons.dart';
+import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
 import 'package:coincasa_app/features/spese/screens/lista_spese_admin.dart';
@@ -490,7 +490,7 @@ class _InserisciSpesaPopupContentState
             isLoading: form.isSubmitting,
           ),
           const SizedBox(height: 8),
-          FabCancelButton(
+          AppCancelButton(
             onPressed: form.isSubmitting
                 ? null
                 : () => Navigator.of(context).pop(),

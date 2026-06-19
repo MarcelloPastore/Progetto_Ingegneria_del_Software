@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
 
 class ScadenzaFormScreen extends StatefulWidget {
   final bool isEditing;
@@ -223,29 +224,8 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
                 ),
               ),
               const SizedBox(height: 14),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 30),
-                child: SizedBox(
-                  height: 54,
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.of(context).maybePop(),
-                    style: OutlinedButton.styleFrom(
-                      backgroundColor: const Color(0xFF501C26),
-                      side: const BorderSide(color: _danger, width: 2),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                    ),
-                    child: const Text(
-                      'Annulla',
-                      style: TextStyle(
-                        color: _danger,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
+              AppCancelButton(
+                onPressed: () => Navigator.of(context).maybePop(),
               ),
               const SizedBox(height: 24),
             ],

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/app.dart';
 import 'package:coincasa_app/core/config/env.dart';
+import 'package:coincasa_app/core/widgets/common/app_cancel_button_primary.dart';
 
 class NoInternetDialog {
   static bool isShowing = false;
@@ -137,24 +138,9 @@ class _NoInternetDialogContentState extends State<_NoInternetDialogContent> {
               ),
             ),
             const SizedBox(height: AppSizes.p12),
-            SizedBox(
-              width: double.infinity,
-              height: AppSizes.p52,
-              child: OutlinedButton(
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppColors.brandPrimary, width: AppSizes.p2),
-                  backgroundColor: AppColors.darkBackground,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppSizes.radius20),
-                  ),
-                ),
-                onPressed:
-                    _isLoading ? null : () => Navigator.of(context).pop(),
-                child: Text(
-                  'Annulla',
-                  style: AppTextStyles.buttonCompact.copyWith(color: AppColors.brandAccent),
-                ),
-              ),
+            AppCancelButtonPrimary(
+              enabled: !_isLoading,
+              onPressed: () => Navigator.of(context).pop(),
             ),
           ],
         ),

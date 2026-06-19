@@ -6,7 +6,7 @@ import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
-import 'package:coincasa_app/core/widgets/common/fab_buttons.dart';
+import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
 import 'package:coincasa_app/features/turni/screens/turno_salvato_con_successo.dart';
 
 Future<void> showTurniScreenPrincipaleDialog(BuildContext context) {
@@ -509,7 +509,7 @@ class _TurnoFormPanel extends StatelessWidget {
               isLoading: isSubmitting,
             ),
             const SizedBox(height: AppSizes.p8),
-            FabCancelButton(onPressed: isSubmitting ? null : onCancel),
+            AppCancelButton(onPressed: isSubmitting ? null : onCancel),
           ],
         ),
       ),
