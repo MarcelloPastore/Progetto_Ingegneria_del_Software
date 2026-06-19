@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
-import 'package:coincasa_app/core/utils/jwt_utils.dart';
-import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
-import 'package:coincasa_app/core/models/spesa.dart';
+import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/domain/viewmodel/dashboard_viewmodel.dart';
+import 'package:coincasa_app/domain/viewmodel/hub_casa_viewmodel.dart';
+import 'package:coincasa_app/domain/viewmodel/lista_case_viewmodel.dart';
 import 'package:coincasa_app/features/casa/screens/archivio_documenti_vuoto.dart';
 import 'package:coincasa_app/features/casa/screens/condividi_codice.dart';
 import 'package:coincasa_app/features/casa/screens/elimina_casa.dart';
@@ -15,154 +17,30 @@ import 'package:coincasa_app/features/casa/screens/lascia_casa.dart';
 import 'package:coincasa_app/features/casa/screens/modifica_casa.dart';
 import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 
-// Riferimento globale per il file all'utente corrente per facilitare l'accesso alle variabili di sessione
-final _me = ApiProvider.client;
-
-Inquilino? _resolveCurrentInquilino(List<Inquilino> coinquilini) {
-  final currentId = _me.currentUserId?.trim();
-  if (currentId != null && currentId.isNotEmpty) {
-    for (final coinquilino in coinquilini) {
-      if (coinquilino.id.trim() == currentId) {
-        return coinquilino;
-      }
-    }
-  }
-
-  final currentEmail = _me.currentUserEmail?.trim().toLowerCase();
-  if (currentEmail != null && currentEmail.isNotEmpty) {
-    for (final coinquilino in coinquilini) {
-      if (coinquilino.email.trim().toLowerCase() == currentEmail) {
-        return coinquilino;
-      }
-    }
-  }
-
-  final currentDisplayName = _me.currentUserDisplayName?.trim().toLowerCase();
-  if (currentDisplayName != null && currentDisplayName.isNotEmpty) {
-    for (final coinquilino in coinquilini) {
-      final values = [
-        coinquilino.nomeCompleto,
-        coinquilino.username,
-      ].map((value) => value.trim().toLowerCase());
-      if (values.contains(currentDisplayName)) {
-        return coinquilino;
-      }
-    }
-  }
-
-  return null;
-}
-
-bool _isOwnerById(List<Inquilino> inquilini) {
-  final token = _me.authToken;
-  final jwtId = token != null ? JwtUtils.extractUserId(token)?.trim() : null;
-  final currentId = (jwtId?.isNotEmpty == true
-      ? jwtId
-      : _me.currentUserId?.trim());
-  if (currentId == null || currentId.isEmpty) return false;
-  try {
-    final owner = inquilini.firstWhere((i) => i.isOwner);
-    return owner.id.trim() == currentId;
-  } catch (_) {
-    return false;
-  }
-}
-
-class HubCasaAdminScreen extends StatefulWidget {
+class HubCasaAdminScreen extends ConsumerStatefulWidget {
   const HubCasaAdminScreen({super.key, required this.casaId});
 
   final String casaId;
 
   @override
-  State<HubCasaAdminScreen> createState() => _HubCasaAdminScreenState();
+  ConsumerState<HubCasaAdminScreen> createState() => _HubCasaAdminScreenState();
 }
 
-class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
-  late Future<_HubCasaData> _future;
-
-  @override
-  void initState() {
-    super.initState();
-    _future = _load();
-  }
-
-  Future<_HubCasaData> _load() async {
-    final hub = await ApiProvider.casa.getHub(widget.casaId);
-
-    final casaJson = hub['casa'] as Map<String, dynamic>;
-    final casa = Casa.fromJson(casaJson);
-
-    final membriJson = casaJson['membri'];
-    final inquilini = (membriJson is List)
-        ? membriJson
-              .cast<Map<String, dynamic>>()
-              .map(Inquilino.fromJson)
-              .toList()
-        : <Inquilino>[];
-
-    final current = _resolveCurrentInquilino(inquilini);
-    if (current != null) {
-      _me.setCurrentUserIdentity(
-        id: current.id,
-        email: current.email,
-        name: current.nome,
-        surname: current.cognome,
-        displayName: current.nomeCompleto,
-        username: current.username,
-      );
-    }
-
-    final ruolo = hub['ruolo']?.toString() ?? '';
-    _me.setCasaContext(casaId: widget.casaId, ruolo: ruolo);
-    final isAdmin = ruolo == 'HomeAdmin' || ruolo == 'SysAdmin';
-
-    final isOwnerFromHub =
-        hub['isOwner'] as bool? ?? hub['isCurrentUserOwner'] as bool?;
-    final isCurrentUserOwner =
-        isOwnerFromHub ?? current?.isOwner ?? _isOwnerById(inquilini);
-
-    // Recupera le spese per la logica di eliminazione/uscita dalla casa
-    final spese = await ApiProvider.spese.list(widget.casaId);
-
-    return _HubCasaData(
-      casa: casa,
-      inquilini: inquilini,
-      speseCount: hub['speseCount'] as int? ?? 0,
-      scadenzeCount: hub['scadenzeCount'] as int? ?? 0,
-      problemiCount: hub['problemiCount'] as int? ?? 0,
-      turniCount: hub['turniCount'] as int? ?? 0,
-      spese: spese,
-      isAdmin: isAdmin,
-      isCurrentUserOwner: isCurrentUserOwner,
-    );
-  }
-
-  void _reload() {
-    setState(() {
-      _future = _load();
-    });
-  }
-
-
-  Future<void> _deleteCasa(_HubCasaData data) async {
-    final speseNonSaldate = data.spese.where((s) {
-      if (s.partecipanti.isEmpty) return false;
-      return s.partecipanti.any((q) {
-        final raw = q['pagata'] ?? q['pagato'] ?? q['isPaid'];
-        final pagata = raw == true || raw?.toString().toLowerCase() == 'true';
-        return !pagata;
-      });
-    }).length;
-
+class _HubCasaAdminScreenState extends ConsumerState<HubCasaAdminScreen> {
+  Future<void> _deleteCasa(HubCasaState state) async {
     final confirmed = await showEliminaCasaDialog(
       context,
-      nomeCasa: data.casa.nome,
-      speseCount: speseNonSaldate,
+      nomeCasa: state.casa.nome,
+      speseCount: state.speseNonSaldateCount,
     );
     if (confirmed != true) return;
 
     try {
-      await ApiProvider.casa.delete(data.casa.id);
+      await ref
+          .read(hubCasaViewModelProvider(widget.casaId).notifier)
+          .deleteCasa();
+      ref.invalidate(listaCaseViewModelProvider);
+      ref.invalidate(dashboardViewModelProvider);
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(builder: (_) => const ListaCaseScreen()),
@@ -175,25 +53,16 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
     }
   }
 
-  Future<void> _leaveCasa(_HubCasaData data) async {
+  Future<void> _leaveCasa(HubCasaState state) async {
     final confirmed = await showLasciaCasaDialog(
       context,
-      nomeCasa: data.casa.nome,
+      nomeCasa: state.casa.nome,
     );
     if (confirmed != true) return;
 
-    final currentId = _me.currentUserId?.trim() ?? '';
-    final spesePendenti = data.spese.where((spesa) {
-      if (spesa.partecipanti.isEmpty) return false;
-      return spesa.partecipanti.any((q) {
-        final uid = (q['utenteId'] ?? q['idUtente'] ?? q['inquilinoId'] ?? (q['utente'] as Map?)?['id'])?.toString().trim() ?? '';
-        final raw = q['pagata'] ?? q['pagato'] ?? q['isPaid'];
-        final pagata = raw == true || raw?.toString().toLowerCase() == 'true';
-        return uid == currentId && !pagata;
-      });
-    }).toList();
+    final currentId = ApiProvider.client.currentUserId?.trim() ?? '';
+    final currentInquilino = _resolveCurrentInquilino(state.inquilini);
 
-    final currentInquilino = _resolveCurrentInquilino(data.inquilini);
     if (currentInquilino == null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -203,7 +72,9 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
     }
 
     try {
-      await ApiProvider.casa.removeInquilino(data.casa.id, currentInquilino.id);
+      await ref
+          .read(hubCasaViewModelProvider(widget.casaId).notifier)
+          .lasciaCasa(currentInquilino.id);
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -211,25 +82,45 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
       );
       return;
     }
-
+    ref.invalidate(listaCaseViewModelProvider);
+    ref.invalidate(dashboardViewModelProvider);
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(
         builder: (_) => LasciaCasaSuccessScreen(
-          nomeCasa: data.casa.nome,
-          spesePendenti: spesePendenti,
+          nomeCasa: state.casa.nome,
+          spesePendenti: state.spesePendentiPer(currentId),
         ),
       ),
     );
   }
 
+  Inquilino? _resolveCurrentInquilino(List<Inquilino> coinquilini) {
+    final currentId = ApiProvider.client.currentUserId?.trim();
+    if (currentId != null && currentId.isNotEmpty) {
+      for (final i in coinquilini) {
+        if (i.id.trim() == currentId) return i;
+      }
+    }
+    final currentEmail =
+        ApiProvider.client.currentUserEmail?.trim().toLowerCase();
+    if (currentEmail != null && currentEmail.isNotEmpty) {
+      for (final i in coinquilini) {
+        if (i.email.trim().toLowerCase() == currentEmail) return i;
+      }
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final vmAsync = ref.watch(hubCasaViewModelProvider(widget.casaId));
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: const Color(0xFF5D35B0),
+        backgroundColor: AppColors.brandPrimaryDark,
         centerTitle: true,
         leading: Navigator.of(context).canPop()
             ? IconButton(
@@ -239,7 +130,11 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
             : null,
         title: const Text(
           'Hub Casa',
-          style: TextStyle(fontWeight: FontWeight.w700, color: Colors.white, fontSize: 20),
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+            fontSize: 20,
+          ),
         ),
         actions: [
           Padding(
@@ -248,53 +143,48 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
               onTap: () => Navigator.of(context).pushNamed('/account'),
               child: UserAvatar(
                 radius: 18,
-                userId: _me.currentUserAvatarSeed,
-                username: _me.currentUserUsername,
-                displayName: _me.currentUserDisplayName,
+                userId: ApiProvider.client.currentUserAvatarSeed,
+                username: ApiProvider.client.currentUserUsername,
+                displayName: ApiProvider.client.currentUserDisplayName,
                 showPresenceDot: true,
-                presenceDotColor: const Color(0xFFF75C6C),
+                presenceDotColor: AppColors.statusNegative,
               ),
             ),
           ),
         ],
       ),
       body: SafeArea(
-        child: FutureBuilder<_HubCasaData>(
-          future: _future,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState != ConnectionState.done) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (snapshot.hasError) {
-              return Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.wifi_off, size: 44),
-                    const SizedBox(height: 12),
-                    const Text('Non è possibile caricare i dati della casa.'),
-                    const SizedBox(height: 16),
-                    FilledButton(onPressed: _reload, child: const Text('Riprova')),
-                  ],
+        child: vmAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (_, _) => Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.wifi_off, size: 44),
+                const SizedBox(height: 12),
+                const Text('Non è possibile caricare i dati della casa.'),
+                const SizedBox(height: 16),
+                FilledButton(
+                  onPressed: () =>
+                      ref.invalidate(hubCasaViewModelProvider(widget.casaId)),
+                  child: const Text('Riprova'),
                 ),
-              );
-            }
-
-            final data = snapshot.data!;
-            final isCurrentOwner = data.isCurrentUserOwner;
-            final isAdmin = data.isAdmin;
-
+              ],
+            ),
+          ),
+          data: (state) {
             return RefreshIndicator(
-              onRefresh: () async => _reload(),
+              onRefresh: () async =>
+                  ref.invalidate(hubCasaViewModelProvider(widget.casaId)),
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
                 children: [
-                  _HouseHeaderCard(data: data, isAdmin: isAdmin),
+                  _HouseHeaderCard(state: state),
                   const SizedBox(height: 24),
-                  const Text(
+                  Text(
                     'Gestione',
                     style: TextStyle(
-                      color: Color(0xFF333333),
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
                     ),
@@ -302,67 +192,81 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
                   const SizedBox(height: 16),
                   _ManagementAction(
                     iconData: Icons.group_outlined,
-                    iconColor: Colors.blue,
+                    iconColor: AppColors.statusInfo,
                     title: 'Coinquilini e ruoli',
                     onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => ListaCoinquiliniScreen(casaId: data.casa.id)),
+                      MaterialPageRoute<void>(
+                        builder: (_) =>
+                            ListaCoinquiliniScreen(casaId: state.casa.id),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
-                  if (isAdmin) ...[
+                  if (state.isAdmin) ...[
                     _ManagementAction(
                       iconData: Icons.share_outlined,
-                      iconColor: Colors.orange,
+                      iconColor: AppColors.lockOrange,
                       title: 'Condividi link invito',
                       onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(builder: (_) => CondividiCodiceScreen(casaId: data.casa.id)),
+                        MaterialPageRoute<void>(
+                          builder: (_) =>
+                              CondividiCodiceScreen(casaId: state.casa.id),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 12),
                     _ManagementAction(
                       iconData: Icons.edit_outlined,
-                      iconColor: const Color(0xFF7C4DFF),
+                      iconColor: AppColors.featureAccent,
                       title: 'Modifica informazioni casa',
                       onTap: () async {
                         final updated = await Navigator.of(context).push<bool>(
                           MaterialPageRoute<bool>(
                             builder: (_) => ModificaCasaScreen(
-                              casaId: data.casa.id,
-                              name: data.casa.nome,
-                              city: data.casa.citta,
-                              address: data.casa.indirizzo,
-                              type: data.casa.tipoCasa,
+                              casaId: state.casa.id,
+                              name: state.casa.nome,
+                              city: state.casa.citta,
+                              address: state.casa.indirizzo,
+                              type: state.casa.tipoCasa,
                             ),
                           ),
                         );
-                        if (updated == true) _reload();
+                        if (updated == true) {
+                          ref.invalidate(hubCasaViewModelProvider(widget.casaId));
+                          ref.invalidate(listaCaseViewModelProvider);
+                          ref.invalidate(dashboardViewModelProvider);
+                        }
                       },
                     ),
                     const SizedBox(height: 12),
                   ],
                   _ManagementAction(
                     iconData: Icons.folder_open,
-                    iconColor: Colors.redAccent,
+                    iconColor: AppColors.statusNegative,
                     title: 'Documenti condivisi',
                     onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(builder: (_) => const ArchivioDocumentiVuotoScreen()),
+                      MaterialPageRoute<void>(
+                        builder: (_) => const ArchivioDocumentiVuotoScreen(),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
                   _ManagementAction(
                     iconData: Icons.list_alt_rounded,
-                    iconColor: Colors.green,
+                    iconColor: AppColors.statusPositive,
                     title: 'Lista case',
                     onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const ListaCaseScreen()),
+                      MaterialPageRoute<void>(
+                        builder: (_) => const ListaCaseScreen(),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 24),
                   _DeleteHouseButton(
-                    isOwner: isCurrentOwner || isAdmin,
-                    onPressed: (isCurrentOwner || isAdmin)
-                        ? () => _deleteCasa(data)
-                        : () => _leaveCasa(data),
+                    isOwner: state.isCurrentUserOwner || state.isAdmin,
+                    onPressed: (state.isCurrentUserOwner || state.isAdmin)
+                        ? () => _deleteCasa(state)
+                        : () => _leaveCasa(state),
                   ),
                   const SizedBox(height: 20),
                 ],
@@ -376,46 +280,21 @@ class _HubCasaAdminScreenState extends State<HubCasaAdminScreen> {
   }
 }
 
-class _HubCasaData {
-  const _HubCasaData({
-    required this.casa,
-    required this.inquilini,
-    required this.speseCount,
-    required this.scadenzeCount,
-    required this.problemiCount,
-    required this.turniCount,
-    required this.spese,
-    required this.isAdmin,
-    required this.isCurrentUserOwner,
-  });
-
-  final Casa casa;
-  final List<Inquilino> inquilini;
-  final int speseCount;
-  final int scadenzeCount;
-  final int problemiCount;
-  final int turniCount;
-  final List<Spesa> spese;
-  final bool isAdmin;
-  final bool isCurrentUserOwner;
-}
-
 class _HouseHeaderCard extends StatelessWidget {
-  const _HouseHeaderCard({required this.data, required this.isAdmin});
+  const _HouseHeaderCard({required this.state});
 
-  final _HubCasaData data;
-  final bool isAdmin;
+  final HubCasaState state;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      decoration: BoxDecoration(
-        color: const Color(0xFF151B33),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: const [
+      decoration: const BoxDecoration(
+        color: AppColors.surfaceDark,
+        borderRadius: BorderRadius.all(Radius.circular(20)),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x40000000),
+            color: AppColors.shadowOverlay,
             blurRadius: 10,
             offset: Offset(0, 4),
           ),
@@ -439,7 +318,7 @@ class _HouseHeaderCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      data.casa.nome,
+                      state.casa.nome,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 24,
@@ -448,9 +327,11 @@ class _HouseHeaderCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      data.casa.tipoCasa.isEmpty ? 'Appartamento' : data.casa.tipoCasa,
+                      state.casa.tipoCasa.isEmpty
+                          ? 'Appartamento'
+                          : state.casa.tipoCasa,
                       style: const TextStyle(
-                        color: Color(0xFFB6B6D2),
+                        color: AppColors.textOnDarkMuted,
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                       ),
@@ -458,12 +339,15 @@ class _HouseHeaderCard extends StatelessWidget {
                   ],
                 ),
               ),
-              if (isAdmin)
+              if (state.isAdmin)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF5E35B1),
-                    borderRadius: BorderRadius.circular(10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 6,
+                  ),
+                  decoration: const BoxDecoration(
+                    color: AppColors.brandPrimaryDark,
+                    borderRadius: BorderRadius.all(Radius.circular(10)),
                   ),
                   child: const Text(
                     'Admin',
@@ -481,29 +365,29 @@ class _HouseHeaderCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _StatisticChip(
-                value: '${data.inquilini.length}',
+                value: '${state.inquilini.length}',
                 label: 'Membri',
-                valueColor: const Color(0xFF9B5BFF),
+                valueColor: AppColors.featureAccent,
               ),
               _StatisticChip(
-                value: '${data.speseCount}',
+                value: '${state.speseCount}',
                 label: 'Spese',
-                valueColor: const Color(0xFF53D86A),
+                valueColor: AppColors.statusPositive,
               ),
               _StatisticChip(
-                value: '${data.scadenzeCount}',
+                value: '${state.scadenzeCount}',
                 label: 'Scadenze',
-                valueColor: const Color(0xFFF9A825),
+                valueColor: AppColors.warningSoft,
               ),
               _StatisticChip(
-                value: '${data.problemiCount}',
+                value: '${state.problemiCount}',
                 label: 'Problemi',
-                valueColor: const Color(0xFF2F9BFF),
+                valueColor: AppColors.statusInfo,
               ),
               _StatisticChip(
-                value: '${data.turniCount}',
+                value: '${state.turniCount}',
                 label: 'Turni',
-                valueColor: const Color(0xFFB15CFF),
+                valueColor: AppColors.brandAccent,
               ),
             ],
           ),
@@ -566,12 +450,12 @@ class _ManagementAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF151B33),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: const [
+      decoration: const BoxDecoration(
+        color: AppColors.surfaceDark,
+        borderRadius: BorderRadius.all(Radius.circular(12)),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x22000000),
+            color: AppColors.shadowSoft,
             blurRadius: 8,
             offset: Offset(0, 4),
           ),
@@ -587,9 +471,9 @@ class _ManagementAction extends StatelessWidget {
               Container(
                 width: 44,
                 height: 44,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2A3155),
-                  borderRadius: BorderRadius.circular(10),
+                decoration: const BoxDecoration(
+                  color: AppColors.surfaceDarkMuted,
+                  borderRadius: BorderRadius.all(Radius.circular(10)),
                 ),
                 child: Icon(iconData, color: iconColor, size: 28),
               ),
@@ -629,9 +513,9 @@ class _DeleteHouseButton extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF3A1111),
+        color: AppColors.errorContainerDark,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFF75C6C), width: 2),
+        border: Border.all(color: AppColors.statusNegative, width: 2),
       ),
       child: InkWell(
         onTap: onPressed,
@@ -640,13 +524,17 @@ class _DeleteHouseButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           child: Row(
             children: [
-              const Icon(Icons.delete_outline, color: Color(0xFFF75C6C), size: 30),
+              const Icon(
+                Icons.delete_outline,
+                color: AppColors.statusNegative,
+                size: 30,
+              ),
               const SizedBox(width: 16),
               Expanded(
                 child: Text(
                   label,
                   style: const TextStyle(
-                    color: Color(0xFFF75C6C),
+                    color: AppColors.statusNegative,
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                   ),

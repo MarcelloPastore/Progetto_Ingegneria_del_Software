@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:coincasa_app/core/api/api_client.dart';
-import 'package:coincasa_app/core/api/api_provider.dart';
-import 'package:coincasa_app/core/services/session_manager.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
+import 'package:coincasa_app/domain/viewmodel/dashboard_viewmodel.dart';
+import 'package:coincasa_app/domain/viewmodel/lista_case_viewmodel.dart';
 import 'package:coincasa_app/features/casa/screens/casa_creata_successo.dart';
-import 'package:coincasa_app/features/casa/screens/compilazione_form_crea_casa.dart'; 
+import 'package:coincasa_app/features/casa/screens/compilazione_form_crea_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 
-class RiepilogoCasaScreen extends StatefulWidget {
+class RiepilogoCasaScreen extends ConsumerStatefulWidget {
   final String name;
   final String city;
   final String address;
@@ -25,10 +26,11 @@ class RiepilogoCasaScreen extends StatefulWidget {
   });
 
   @override
-  State<RiepilogoCasaScreen> createState() => _RiepilogoCasaScreenState();
+  ConsumerState<RiepilogoCasaScreen> createState() =>
+      _RiepilogoCasaScreenState();
 }
 
-class _RiepilogoCasaScreenState extends State<RiepilogoCasaScreen> {
+class _RiepilogoCasaScreenState extends ConsumerState<RiepilogoCasaScreen> {
   late String name;
   late String city;
   late String address;
@@ -237,7 +239,8 @@ class _RiepilogoCasaScreenState extends State<RiepilogoCasaScreen> {
     });
 
     try {
-      final casa = await ApiProvider.casa.create({
+      // Crea la casa tramite ViewModel (invalida automaticamente listaCaseViewModelProvider).
+      final casa = await ref.read(listaCaseViewModelProvider.notifier).createCasa({
         'nome': name.trim(),
         'citta': city.trim(),
         'indirizzo': address.trim(),
@@ -246,14 +249,22 @@ class _RiepilogoCasaScreenState extends State<RiepilogoCasaScreen> {
 
       // Chi crea la casa diventa HomeAdmin: aggiorna il token con idCasa+ruolo.
       try {
-        final ruolo = await SessionManager.selectCasa(casaId: casa.id);
-        if (mounted) {
-          ActiveCasaScope.read(context)
-              .setCasaContext(casaId: casa.id, ruolo: ruolo);
-        }
+        final ruolo = await ref
+            .read(listaCaseViewModelProvider.notifier)
+            .selectCasa(casa.id);
+        ref.read(activeCasaProvider.notifier).update(
+          (s) => s.copyWith(
+            selectedCasaId: casa.id,
+            ruoloCasa: ruolo,
+            selectedCasa: casa,
+          ),
+        );
       } catch (_) {
         // Non bloccare la navigazione se selectCasa fallisce.
       }
+
+      // Invalida la dashboard così al ritorno mostrerà la nuova casa.
+      ref.invalidate(dashboardViewModelProvider);
 
       if (!mounted) return;
       await Navigator.of(context).pushReplacement(

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/state/active_casa_session.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/domain/viewmodel/dashboard_viewmodel.dart';
+import 'package:coincasa_app/domain/viewmodel/lista_case_viewmodel.dart';
 import 'package:coincasa_app/features/dashboard/screens/dashboard_screen.dart';
 
 class CasaPreSchermataHubCasaScreen extends StatelessWidget {
@@ -190,13 +193,13 @@ class _HousePreviewCard extends StatelessWidget {
   }
 }
 
-class _PrimaryEnterButton extends StatelessWidget {
+class _PrimaryEnterButton extends ConsumerWidget {
   const _PrimaryEnterButton({required this.houseName, this.casaId});
 
   final String houseName;
   final String? casaId;
 
-  Future<void> _onEnter(BuildContext context) async {
+  Future<void> _onEnter(BuildContext context, WidgetRef ref) async {
     final id = casaId;
     if (id != null && id.isNotEmpty) {
       try {
@@ -214,6 +217,9 @@ class _PrimaryEnterButton extends StatelessWidget {
         return;
       }
     }
+    // Invalida lista case e dashboard così mostrano la nuova casa.
+    ref.invalidate(listaCaseViewModelProvider);
+    ref.invalidate(dashboardViewModelProvider);
     if (!context.mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute<void>(builder: (_) => const DashboardScreen()),
@@ -222,11 +228,11 @@ class _PrimaryEnterButton extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return SizedBox(
       height: AppSizes.p58,
       child: FilledButton(
-        onPressed: () => _onEnter(context),
+        onPressed: () => _onEnter(context, ref),
         style: FilledButton.styleFrom(
           backgroundColor: AppColors.brandSecondary,
           foregroundColor: AppColors.textOnDark,

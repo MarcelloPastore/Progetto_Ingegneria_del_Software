@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/models/spesa.dart';
@@ -37,6 +38,33 @@ class HubCasaState {
   int get scadenzeCount => hub.scadenzeCount;
   int get problemiCount => hub.problemiCount;
   int get turniCount => hub.turniCount;
+
+  int get speseNonSaldateCount {
+    return spese.where((s) {
+      if (s.partecipanti.isEmpty) return false;
+      return s.partecipanti.any((q) {
+        final raw = q['pagata'] ?? q['pagato'] ?? q['isPaid'];
+        final pagata = raw == true || raw?.toString().toLowerCase() == 'true';
+        return !pagata;
+      });
+    }).length;
+  }
+
+  List<Spesa> spesePendentiPer(String userId) {
+    return spese.where((spesa) {
+      if (spesa.partecipanti.isEmpty) return false;
+      return spesa.partecipanti.any((q) {
+        final uid = (q['utenteId'] ?? q['idUtente'] ?? q['inquilinoId'] ??
+                    (q['utente'] as Map?)?['id'])
+                ?.toString()
+                .trim() ??
+            '';
+        final raw = q['pagata'] ?? q['pagato'] ?? q['isPaid'];
+        final pagata = raw == true || raw?.toString().toLowerCase() == 'true';
+        return uid == userId && !pagata;
+      });
+    }).toList();
+  }
 
   HubCasaState copyWith({
     HubCasaAggregato? hub,
@@ -85,10 +113,37 @@ class HubCasaViewModel extends FamilyAsyncNotifier<HubCasaState, String> {
       _dashboardRepo.getSpese(casaId),
     ]);
 
-    return HubCasaState(
-      hub: results[0] as HubCasaAggregato,
-      spese: results[1] as List<Spesa>,
-    );
+    final hub = results[0] as HubCasaAggregato;
+    final spese = results[1] as List<Spesa>;
+    final current = _resolveCurrentInquilino(hub.inquilini);
+    if (current != null) {
+      ApiProvider.client.setCurrentUserIdentity(
+        id: current.id,
+        email: current.email,
+        name: current.nome,
+        surname: current.cognome,
+        displayName: current.nomeCompleto,
+        username: current.username,
+      );
+    }
+    return HubCasaState(hub: hub, spese: spese);
+  }
+
+  Inquilino? _resolveCurrentInquilino(List<Inquilino> coinquilini) {
+    final currentId = ApiProvider.client.currentUserId?.trim();
+    if (currentId != null && currentId.isNotEmpty) {
+      for (final c in coinquilini) {
+        if (c.id.trim() == currentId) return c;
+      }
+    }
+    final currentEmail =
+        ApiProvider.client.currentUserEmail?.trim().toLowerCase();
+    if (currentEmail != null && currentEmail.isNotEmpty) {
+      for (final c in coinquilini) {
+        if (c.email.trim().toLowerCase() == currentEmail) return c;
+      }
+    }
+    return null;
   }
 
   Future<void> updateCasa(Map<String, dynamic> payload) async {

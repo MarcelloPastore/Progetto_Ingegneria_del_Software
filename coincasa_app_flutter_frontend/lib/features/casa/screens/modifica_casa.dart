@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/domain/viewmodel/hub_casa_viewmodel.dart';
 
-class ModificaCasaScreen extends StatefulWidget {
+class ModificaCasaScreen extends ConsumerStatefulWidget {
   final String casaId;
   final String name;
   final String city;
@@ -21,10 +22,10 @@ class ModificaCasaScreen extends StatefulWidget {
   });
 
   @override
-  State<ModificaCasaScreen> createState() => _ModificaCasaScreenState();
+  ConsumerState<ModificaCasaScreen> createState() => _ModificaCasaScreenState();
 }
 
-class _ModificaCasaScreenState extends State<ModificaCasaScreen> {
+class _ModificaCasaScreenState extends ConsumerState<ModificaCasaScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _cityController;
@@ -73,7 +74,7 @@ class _ModificaCasaScreenState extends State<ModificaCasaScreen> {
 
     setState(() => _isSaving = true);
     try {
-      await ApiProvider.casa.update(widget.casaId, {
+      await ref.read(hubCasaViewModelProvider(widget.casaId).notifier).updateCasa({
         'nome': _nameController.text.trim(),
         'citta': _cityController.text.trim(),
         'indirizzo': _addressController.text.trim(),

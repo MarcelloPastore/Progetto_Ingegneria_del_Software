@@ -4,169 +4,144 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/casa.dart';
-import 'package:coincasa_app/core/services/session_manager.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
+import 'package:coincasa_app/domain/viewmodel/dashboard_viewmodel.dart';
+import 'package:coincasa_app/domain/viewmodel/lista_case_viewmodel.dart';
 import 'package:coincasa_app/features/casa/screens/compilazione_form_crea_casa.dart';
 import 'package:coincasa_app/features/casa/screens/entra_con_codice_invito_screen.dart';
 import 'package:coincasa_app/features/casa/screens/hub_casa_admin.dart';
 
-// Riferimento globale per il file all'utente corrente per facilitare l'accesso alle variabili di sessione
-final _me = ApiProvider.client;
-
-class ListaCaseScreen extends ConsumerStatefulWidget {
+class ListaCaseScreen extends ConsumerWidget {
   const ListaCaseScreen({super.key});
 
   @override
-  ConsumerState<ListaCaseScreen> createState() => _ListaCaseScreenState();
-}
-
-class _ListaCaseScreenState extends ConsumerState<ListaCaseScreen> {
-  late Future<List<Casa>> _future;
-
-  @override
-  void initState() {
-    super.initState();
-    _future = ApiProvider.casa.list();
-  }
-
-  void _reload() {
-    setState(() {
-      _future = ApiProvider.casa.list();
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final vmAsync = ref.watch(listaCaseViewModelProvider);
     final activeCasaState = ref.watch(activeCasaProvider);
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
         backgroundColor: const Color(0xFF09031F),
         body: SafeArea(
-          child: FutureBuilder<List<Casa>>(
-            future: _future,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState != ConnectionState.done) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (snapshot.hasError) {
-                return _ErrorState(onRetry: _reload);
-              }
-
-              final caseUtente = snapshot.data ?? const [];
-              return Padding(
-                padding: const EdgeInsets.fromLTRB(24, 18, 24, 28),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _Header(caseCount: caseUtente.length, future: _future),
-                    const SizedBox(height: 20),
-                    Expanded(
-                      child: caseUtente.isEmpty
-                          ? const Center(
-                              child: Text(
-                                'Nessuna casa attiva.',
-                                style: TextStyle(color: Colors.white),
-                              ),
-                            )
-                          : RefreshIndicator(
-                              onRefresh: () async => _reload(),
-                              child: ListView.separated(
-                                itemCount: caseUtente.length,
-                                separatorBuilder: (_, _) =>
-                                    const SizedBox(height: 20),
-                                itemBuilder: (context, index) {
-                                  final casa = caseUtente[index];
-                                  final effectiveRuolo =
-                                      casa.id == activeCasaState.selectedCasaId
-                                          ? activeCasaState.ruoloCasa ??
-                                                casa.ruolo
-                                          : casa.ruolo;
-                                  return _HouseCard(
-                                    casa: casa,
-                                    effectiveRuolo: effectiveRuolo,
-                                    onTap: () async {
-                                      try {
-                                        final ruolo = await SessionManager
-                                            .selectCasa(casaId: casa.id);
-                                        if (context.mounted) {
-                                          ActiveCasaScope.read(
-                                            context,
-                                          ).setCasaContext(
-                                            casaId: casa.id,
-                                            ruolo: ruolo,
+          child: vmAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (_, _) => _ErrorState(
+              onRetry: () => ref.invalidate(listaCaseViewModelProvider),
+            ),
+            data: (caseUtente) => Padding(
+              padding: const EdgeInsets.fromLTRB(24, 18, 24, 28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _Header(caseCount: caseUtente.length),
+                  const SizedBox(height: 20),
+                  Expanded(
+                    child: caseUtente.isEmpty
+                        ? const Center(
+                            child: Text(
+                              'Nessuna casa attiva.',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          )
+                        : RefreshIndicator(
+                            onRefresh: () async {
+                              ref.invalidate(listaCaseViewModelProvider);
+                              await ref.read(listaCaseViewModelProvider.future);
+                            },
+                            child: ListView.separated(
+                              itemCount: caseUtente.length,
+                              separatorBuilder: (_, _) =>
+                                  const SizedBox(height: 20),
+                              itemBuilder: (context, index) {
+                                final casa = caseUtente[index];
+                                final effectiveRuolo =
+                                    casa.id == activeCasaState.selectedCasaId
+                                        ? activeCasaState.ruoloCasa ??
+                                              casa.ruolo
+                                        : casa.ruolo;
+                                return _HouseCard(
+                                  casa: casa,
+                                  effectiveRuolo: effectiveRuolo,
+                                  onTap: () async {
+                                    try {
+                                      final ruolo = await ref
+                                          .read(listaCaseViewModelProvider
+                                              .notifier)
+                                          .selectCasa(casa.id);
+                                      ref
+                                          .read(activeCasaProvider.notifier)
+                                          .update(
+                                            (s) => s.copyWith(
+                                              selectedCasaId: casa.id,
+                                              ruoloCasa: ruolo,
+                                              selectedCasa: casa,
+                                            ),
                                           );
-                                        }
-                                      } catch (_) {
-                                        // Il token potrebbe già essere valido; si tenta la navigazione comunque.
-                                      }
-                                      if (!context.mounted) return;
-                                      Navigator.of(context).push(
-                                        MaterialPageRoute<void>(
-                                          builder: (_) => HubCasaAdminScreen(
-                                            casaId: casa.id,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  );
-                                },
-                              ),
+                                      ref.invalidate(dashboardViewModelProvider);
+                                    } catch (_) {}
+                                    if (!context.mounted) return;
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute<void>(
+                                        builder: (_) =>
+                                            HubCasaAdminScreen(casaId: casa.id),
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
                             ),
-                    ),
-                    const SizedBox(height: 20),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 15),
-                      child: FilledButton(
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) =>
-                                  const CompilazioneFormCreaCasaScreen(),
-                            ),
-                          );
-                        },
-                        style: FilledButton.styleFrom(
-                          minimumSize: const Size.fromHeight(50),
-                          backgroundColor: const Color(0xFF5A2FC5),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
                           ),
-                        ),
-                        child: const Text(
-                          'Aggiungi casa',
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 15,
-                        vertical: 16,
-                      ),
-                      child: _OrDivider(),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 15),
-                      child: _InviteLinkButton(
-                        onTap: () => Navigator.of(context).push(
+                  ),
+                  const SizedBox(height: 20),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 15),
+                    child: FilledButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
                           MaterialPageRoute<void>(
-                            builder: (_) => const EntraConCodiceInvitoScreen(),
+                            builder: (_) =>
+                                const CompilazioneFormCreaCasaScreen(),
                           ),
+                        );
+                      },
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(50),
+                        backgroundColor: const Color(0xFF5A2FC5),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Aggiungi casa',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 24),
-                  ],
-                ),
-              );
-            },
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 15, vertical: 16),
+                    child: _OrDivider(),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 15),
+                    child: _InviteLinkButton(
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const EntraConCodiceInvitoScreen(),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -200,10 +175,9 @@ class _ErrorState extends StatelessWidget {
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.caseCount, required this.future});
+  const _Header({required this.caseCount});
 
   final int caseCount;
-  final Future<List<Casa>> future;
 
   @override
   Widget build(BuildContext context) {
@@ -250,7 +224,7 @@ class _Header extends StatelessWidget {
         InkWell(
           onTap: () => Navigator.of(context).pushNamed('/account'),
           customBorder: const CircleBorder(),
-          child: _CurrentUserAvatar(future: future),
+          child: const _CurrentUserAvatar(),
         ),
       ],
     );
@@ -258,21 +232,14 @@ class _Header extends StatelessWidget {
 }
 
 class _CurrentUserAvatar extends StatelessWidget {
-  const _CurrentUserAvatar({required this.future});
-
-  final Future<List<Casa>> future;
+  const _CurrentUserAvatar();
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<Casa>>(
-      future: future,
-      builder: (context, snapshot) {
-        return UserAvatar(
-          radius: 26,
-          userId: _me.currentUserAvatarSeed,
-          username: _me.currentUserUsername,
-        );
-      },
+    return UserAvatar(
+      radius: 26,
+      userId: ApiProvider.client.currentUserAvatarSeed,
+      username: ApiProvider.client.currentUserUsername,
     );
   }
 }
@@ -359,7 +326,8 @@ class _HouseCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                 decoration: BoxDecoration(
                   color: AppColors.brandPrimary,
                   borderRadius: BorderRadius.circular(4),

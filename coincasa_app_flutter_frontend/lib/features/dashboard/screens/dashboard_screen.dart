@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import 'package:coincasa_app/app.dart';
@@ -9,73 +10,32 @@ import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/scadenza.dart';
 import 'package:coincasa_app/core/models/spesa.dart';
 import 'package:coincasa_app/core/models/turno.dart';
-import 'package:coincasa_app/core/models/salute_casa_item.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
-import 'package:coincasa_app/core/state/active_casa_session.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/dashboard/house_health_section.dart';
 import 'package:coincasa_app/core/widgets/dashboard/open_problems_section.dart';
+import 'package:coincasa_app/domain/entities/dashboard_data.dart';
+import 'package:coincasa_app/domain/viewmodel/dashboard_viewmodel.dart';
 import 'package:coincasa_app/features/casa/screens/casa_welcome_screen.dart';
 import 'package:coincasa_app/features/icone_fab.dart';
 
-// Riferimento globale per il file all'utente corrente per facilitare l'accesso alle variabili di sessione
-final _me = ApiProvider.client;
-
-class DashboardScreen extends StatefulWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
-  late Future<_DashboardData> _dashboardDataFuture;
-  late ActiveCasaController _activeCasaController;
-  bool _initialized = false;
-
-  /// Cache statica: sopravvive alla distruzione del widget (pushReplacementNamed).
-  static _DashboardData? _cachedData;
-  static String? _cachedUserId;
-  bool _isBackgroundRefreshing = false;
-
-  @override
-  void initState() {
-    super.initState();
-    // Avvia subito un aggiornamento in background dopo il primo frame.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _triggerRefresh();
-    });
-  }
-
+class _DashboardScreenState extends ConsumerState<DashboardScreen>
+    with RouteAware {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _activeCasaController = ActiveCasaScope.read(context);
-    final currentUserId = ApiProvider.client.currentUserId;
-    if (_cachedUserId != currentUserId) {
-      _cachedData = null;
-      _cachedUserId = currentUserId;
-    }
-    // Registra il RouteObserver ad ogni chiamata (sicuro: unsubscribe avviene in dispose)
     final route = ModalRoute.of(context);
     if (route != null) {
       appRouteObserver.subscribe(this, route);
-    }
-    // Prima inizializzazione: usa la cache per mostrare subito i dati (se disponibili),
-    // altrimenti avvia il caricamento da rete.
-    if (!_initialized) {
-      if (_cachedData != null) {
-        _dashboardDataFuture = Future.value(_cachedData);
-      } else {
-        _dashboardDataFuture = _fetchFromNetwork().then((data) {
-          _cachedData = data;
-          return data;
-        });
-      }
-      _initialized = true;
     }
   }
 
@@ -85,279 +45,170 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
     super.dispose();
   }
 
-  /// Ricarica i dati ogni volta che si torna a questa schermata.
   @override
   void didPopNext() {
     super.didPopNext();
-    _triggerRefresh();
+    ref.read(dashboardViewModelProvider.notifier).refresh();
   }
 
-  /// Stale-while-revalidate: mostra subito i dati in cache e aggiorna silenziosamente in background.
-  void _triggerRefresh() {
-    if (_cachedData != null) {
-      setState(() {
-        _isBackgroundRefreshing = true;
-        _dashboardDataFuture = Future.value(_cachedData!);
-      });
-      _fetchFromNetwork()
-          .then((fresh) {
-            if (!mounted) return;
-            _cachedData = fresh;
-            setState(() {
-              _dashboardDataFuture = Future.value(fresh);
-              _isBackgroundRefreshing = false;
-            });
-          })
-          .catchError((_) {
-            if (mounted) setState(() => _isBackgroundRefreshing = false);
-          });
-    } else {
-      // Prima visita senza cache: se già in caricamento da didChangeDependencies non fare nulla.
-      if (_initialized) return;
-      setState(() {
-        _dashboardDataFuture = _fetchFromNetwork().then((data) {
-          _cachedData = data;
-          return data;
-        });
-      });
-    }
+  void _navigateToWelcome() {
+    final client = ApiProvider.client;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => CasaWelcomeScreen(
+          email: client.currentUserEmail ?? '',
+          userId: client.currentUserId,
+          username: client.currentUserUsername,
+          displayName: client.currentUserDisplayName,
+        ),
+      ),
+      (_) => false,
+    );
   }
 
-  /// Fetch effettivo dei dati da rete.
-  Future<_DashboardData> _fetchFromNetwork() async {
-    final caseUtente = await ApiProvider.casa.list();
-    if (caseUtente.isEmpty) {
+  Future<void> _completaTurno(String casaId, String turnoId) async {
+    try {
+      await ref
+          .read(dashboardViewModelProvider.notifier)
+          .completaTurno(casaId, turnoId);
       if (mounted) {
-        final client = ApiProvider.client;
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute<void>(
-            builder: (_) => CasaWelcomeScreen(
-              email: client.currentUserEmail ?? '',
-              userId: client.currentUserId,
-              username: client.currentUserUsername,
-              displayName: client.currentUserDisplayName,
-            ),
-          ),
-          (_) => false,
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Turno completato con successo!')),
         );
       }
-      throw StateError('Nessuna casa disponibile.');
-    }
-
-    final casa = await ensureActiveCasaContext(
-      _activeCasaController,
-      caseUtente: caseUtente,
-    );
-    final nomeCasa = _formatNomeCasa(casa);
-    final displayName = nomeCasa.isEmpty ? 'Casa senza nome' : nomeCasa;
-    final turniFuture = ApiProvider.turni.list(casa.id);
-    final turniOggiFuture = ApiProvider.turni.listOggi(casa.id);
-    final saluteCasaFuture = ApiProvider.turni.saluteCase(casa.id);
-
-    final amounts = await Future.wait<double>([
-      ApiProvider.spese.getSaldo(casa.id),
-      ApiProvider.spese.getCreditoTot(casa.id),
-      ApiProvider.spese.getDebitoTot(casa.id),
-    ]);
-    final turni = await turniFuture;
-    final turniOggi = await turniOggiFuture;
-    final saluteCasa = await saluteCasaFuture;
-    final spese = await ApiProvider.spese.list(casa.id);
-    List<Scadenza> scadenze = const [];
-    try {
-      scadenze = await ApiProvider.scadenze.list(casa.id);
-    } catch (_) {}
-    final houseHealthBadges = _buildHouseHealthBadges(turni, saluteCasa);
-
-    return _DashboardData(
-      nomeCasa: displayName,
-      caseUtente: caseUtente,
-      casaSelezionataId: casa.id,
-      saldo: amounts[0],
-      credito: amounts[1],
-      debito: amounts[2],
-      turni: turni,
-      turniOggi: turniOggi,
-      spese: spese,
-      scadenze: scadenze,
-      houseHealthBadges: houseHealthBadges,
-    );
-  }
-
-  String _formatNomeCasa(Casa casa) {
-    final nome = casa.nome.trim();
-    if (nome.isEmpty) {
-      return '';
-    }
-
-    return nome.toLowerCase().startsWith('casa ') ? nome : 'Casa $nome';
-  }
-
-  void _selectCasa(String casaId) {
-    if (_activeCasaController.selectedCasaId == casaId) {
-      return;
-    }
-    _selectCasaAndRefresh(casaId);
-  }
-
-  Future<void> _selectCasaAndRefresh(String casaId) async {
-    try {
-      await ensureActiveCasaContext(
-        _activeCasaController,
-        preferredCasaId: casaId,
-      );
-      if (!mounted) return;
-      _cachedData = null;
-      setState(() {
-        _dashboardDataFuture = _fetchFromNetwork().then((data) {
-          _cachedData = data;
-          return data;
-        });
-      });
     } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Impossibile cambiare casa. Riprova.')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Impossibile completare il turno. Riprova.'),
+          ),
+        );
+      }
     }
-  }
-
-  List<HouseHealthBadgeData> _buildHouseHealthBadges(
-    List<Turno> turni,
-    List<SaluteCasaItem> saluteCasa,
-  ) {
-    final saluteMap = {for (final s in saluteCasa) s.id: s};
-
-    final badges = turni
-        .map((turno) {
-          final salute = saluteMap[turno.id];
-          return HouseHealthBadgeData(
-            caption: _formatHouseHealthCaption(turno.titolo),
-            giorniRimanenti: salute?.giorniRimanenti,
-          );
-        })
-        .where((badge) => badge.caption.trim().isNotEmpty)
-        .toList(growable: true);
-
-    badges.sort(_compareBadges);
-
-    return badges;
-  }
-
-  static int _colorGroup(HouseHealthBadgeData badge) {
-    final giorni = badge.giorniRimanenti;
-    if (giorni == null || giorni < -3) return 0; // grigio
-    if (giorni <= 0) return 1; // rosso
-    if (giorni <= 2) return 2; // arancione
-    return 3; // verde
-  }
-
-  static int _compareBadges(HouseHealthBadgeData a, HouseHealthBadgeData b) {
-    final ga = _colorGroup(a);
-    final gb = _colorGroup(b);
-    if (ga != gb) return ga.compareTo(gb);
-
-    final da = a.giorniRimanenti;
-    final db = b.giorniRimanenti;
-    if (da == null && db == null) return 0;
-    if (da == null) return -1;
-    if (db == null) return 1;
-
-    // Grigio e rosso: decrescente per valore assoluto (più in ritardo → prima)
-    if (ga <= 1) return db.abs().compareTo(da.abs());
-    // Arancione e verde: crescente (meno giorni rimasti → prima)
-    return da.compareTo(db);
-  }
-
-  String _formatHouseHealthCaption(String title) {
-    final normalized = title.trim();
-    if (normalized.isEmpty) {
-      return 'Turno';
-    }
-    return normalized;
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AsyncValue<DashboardState>>(
+      dashboardViewModelProvider,
+      (_, next) {
+        if (next case AsyncError(:final error) when error is StateError) {
+          _navigateToWelcome();
+        }
+      },
+    );
+
+    final vmAsync = ref.watch(dashboardViewModelProvider);
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark,
+      value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: Scaffold(
-        backgroundColor: AppColors.pageBackground,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         bottomNavigationBar: const HouseQuickNav(currentRoute: '/dashboard'),
         body: SafeArea(
-          child: Stack(
-            children: [
-              SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSizes.p10,
-                  AppSizes.p16,
-                  AppSizes.p10,
-                  AppSizes.p110,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _EmptyDashboardHeader(
-                      dashboardDataFuture: _dashboardDataFuture,
-                      onCasaChanged: _selectCasa,
-                    ),
-                    const SizedBox(height: AppSizes.p12),
-                    _EmptyBalanceCard(
-                      dashboardDataFuture: _dashboardDataFuture,
-                    ),
-                    const SizedBox(height: AppSizes.p28),
-                    _HouseHealthSection(
-                      dashboardDataFuture: _dashboardDataFuture,
-                    ),
-                    const SizedBox(height: AppSizes.p28),
-                    _ProssimeScadenzeSection(
-                      dashboardDataFuture: _dashboardDataFuture,
-                    ),
-                    const SizedBox(height: AppSizes.p28),
-                    const OpenProblemsSection(),
-                    const SizedBox(height: AppSizes.p28),
-                    _TodayTurnSection(
-                      dashboardDataFuture: _dashboardDataFuture,
-                      onRefresh: _triggerRefresh,
-                    ),
-                    const SizedBox(height: AppSizes.p28),
-                    _EmptyCalendarSection(
-                      dashboardDataFuture: _dashboardDataFuture,
-                    ),
-                  ],
-                ),
-              ),
-              if (_isBackgroundRefreshing)
-                const Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  child: LinearProgressIndicator(
-                    minHeight: 2,
-                    backgroundColor: Colors.transparent,
+          child: vmAsync.when(
+            loading: () => const Center(
+              child: CircularProgressIndicator(color: AppColors.brandAccent),
+            ),
+            error: (_, _) => const SizedBox.shrink(),
+            data: (state) => Stack(
+              children: [
+                SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSizes.p10,
+                    AppSizes.p16,
+                    AppSizes.p10,
+                    AppSizes.p110,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _EmptyDashboardHeader(
+                        data: state.data,
+                        onCasaChanged: (id) {
+                          ref
+                              .read(dashboardViewModelProvider.notifier)
+                              .selectCasa(id)
+                              .catchError((_) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Impossibile cambiare casa. Riprova.',
+                                  ),
+                                ),
+                              );
+                            }
+                          });
+                        },
+                      ),
+                      const SizedBox(height: AppSizes.p12),
+                      _EmptyBalanceCard(data: state.data),
+                      const SizedBox(height: AppSizes.p28),
+                      HouseHealthSection(
+                        badges: state.houseHealthBadges
+                            .map(
+                              (t) => HouseHealthBadgeData(
+                                caption: t.titolo,
+                                giorniRimanenti: t.giorniRimanenti,
+                              ),
+                            )
+                            .toList(),
+                      ),
+                      const SizedBox(height: AppSizes.p28),
+                      _ProssimeScadenzeSection(
+                        entries: state.prossimeScadenze,
+                      ),
+                      const SizedBox(height: AppSizes.p28),
+                      const OpenProblemsSection(),
+                      const SizedBox(height: AppSizes.p28),
+                      _TodayTurnSection(
+                        turniOggi: state.data.turniOggi,
+                        casaId: state.data.casaSelezionataId,
+                        completingTurnoIds: state.completingTurnoIds,
+                        onCompletaTurno: (turnoId) => _completaTurno(
+                          state.data.casaSelezionataId ?? '',
+                          turnoId,
+                        ),
+                      ),
+                      const SizedBox(height: AppSizes.p28),
+                      _EmptyCalendarSection(data: state.data),
+                    ],
                   ),
                 ),
-              Positioned(
-                right: AppSizes.p10,
-                bottom: AppSizes.p24,
-                child: FloatingActionButton(
-                  onPressed: () {
-                    showDialog<void>(
-                      context: context,
-                      builder: (_) => const DashboardCreatePopup(),
-                    );
-                  },
-                  backgroundColor: AppColors.brandAccent,
-                  elevation: AppSizes.p6,
-                  child: const Icon(
-                    Icons.add,
-                    size: AppSizes.p38,
-                    color: AppColors.textOnDark,
+                if (state.isBackgroundRefreshing)
+                  const Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: LinearProgressIndicator(
+                      minHeight: 2,
+                      backgroundColor: Colors.transparent,
+                    ),
+                  ),
+                Positioned(
+                  right: AppSizes.p10,
+                  bottom: AppSizes.p24,
+                  child: FloatingActionButton(
+                    onPressed: () {
+                      showDialog<void>(
+                        context: context,
+                        builder: (_) => const DashboardCreatePopup(),
+                      );
+                    },
+                    backgroundColor: AppColors.brandAccent,
+                    elevation: AppSizes.p6,
+                    child: const Icon(
+                      Icons.add,
+                      size: AppSizes.p38,
+                      color: AppColors.textOnDark,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -365,116 +216,80 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
   }
 }
 
-class _DashboardData {
-  const _DashboardData({
-    required this.nomeCasa,
-    required this.caseUtente,
-    required this.casaSelezionataId,
-    this.saldo,
-    this.credito,
-    this.debito,
-    this.turni = const [],
-    this.turniOggi = const [],
-    this.spese = const [],
-    this.scadenze = const [],
-    this.houseHealthBadges = const [],
-  });
-
-  final String nomeCasa;
-  final List<Casa> caseUtente;
-  final String? casaSelezionataId;
-  final double? saldo;
-  final double? credito;
-  final double? debito;
-  final List<Turno> turni;
-  final List<Turno> turniOggi;
-  final List<Spesa> spese;
-  final List<Scadenza> scadenze;
-  final List<HouseHealthBadgeData> houseHealthBadges;
-}
-
 class _CurrentUserAvatar extends StatelessWidget {
-  const _CurrentUserAvatar({required this.future, this.radius = AppSizes.p23});
+  const _CurrentUserAvatar({this.radius = AppSizes.p23});
 
-  final Future<_DashboardData> future;
   final double radius;
 
   @override
   Widget build(BuildContext context) {
     final isAdmin = ActiveCasaScope.of(context).isHomeAdmin;
-    return FutureBuilder<_DashboardData>(
-      future: future,
-      builder: (context, snapshot) {
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            UserAvatar(
-              radius: radius,
-              userId: _me.currentUserAvatarSeed,
-              username: _me.currentUserUsername,
-            ),
-            if (isAdmin) ...[
-              const SizedBox(height: 4),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFFFFD700),
-                      Color(0xFFFFA500),
-                      Color(0xFFFFD700),
-                    ],
-                    stops: [0.0, 0.5, 1.0],
-                  ),
-                  borderRadius: BorderRadius.circular(6),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x88FFB700),
-                      blurRadius: 6,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: const Text(
-                  'Admin',
-                  style: TextStyle(
-                    color: Color(0xFF3A2000),
-                    fontSize: 9,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.5,
-                    shadows: [
-                      Shadow(
-                        color: Color(0x44FFFFFF),
-                        offset: Offset(0, 1),
-                        blurRadius: 1,
-                      ),
-                    ],
-                  ),
-                ),
+    final client = ApiProvider.client;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        UserAvatar(
+          radius: radius,
+          userId: client.currentUserAvatarSeed,
+          username: client.currentUserUsername,
+        ),
+        if (isAdmin) ...[
+          const SizedBox(height: 4),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [
+                  AppColors.keyYellow,
+                  AppColors.lockOrange,
+                  AppColors.keyYellow,
+                ],
+                stops: [0.0, 0.5, 1.0],
               ),
-            ],
-          ],
-        );
-      },
+              borderRadius: BorderRadius.circular(6),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.keyYellow.withValues(alpha: 0.53),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: const Text(
+              'Admin',
+              style: TextStyle(
+                color: AppColors.lockHole,
+                fontSize: 9,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.5,
+                shadows: [
+                  Shadow(
+                    color: Color(0x44FFFFFF),
+                    offset: Offset(0, 1),
+                    blurRadius: 1,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
 
 class _EmptyDashboardHeader extends StatelessWidget {
   const _EmptyDashboardHeader({
-    required this.dashboardDataFuture,
+    required this.data,
     required this.onCasaChanged,
   });
 
-  final Future<_DashboardData> dashboardDataFuture;
+  final DashboardData data;
   final ValueChanged<String> onCasaChanged;
 
-  String _formatNomeCasa(Casa casa) {
+  static String _formatNomeCasa(Casa casa) {
     final nome = casa.nome.trim();
-    if (nome.isEmpty) {
-      return 'Casa senza nome';
-    }
-
+    if (nome.isEmpty) return 'Casa senza nome';
     return nome.toLowerCase().startsWith('casa ') ? nome : 'Casa $nome';
   }
 
@@ -485,42 +300,26 @@ class _EmptyDashboardHeader extends StatelessWidget {
         InkWell(
           onTap: () => Navigator.of(context).pushNamed('/account'),
           customBorder: const CircleBorder(),
-          child: _CurrentUserAvatar(
-            future: dashboardDataFuture,
-            radius: AppSizes.p23,
-          ),
+          child: const _CurrentUserAvatar(radius: AppSizes.p23),
         ),
         const SizedBox(width: AppSizes.p14),
         Expanded(
-          child: FutureBuilder<_DashboardData>(
-            future: dashboardDataFuture,
-            builder: (context, snapshot) {
-              final nomeCasa = switch (snapshot.connectionState) {
-                ConnectionState.none ||
-                ConnectionState.waiting => 'Caricamento...',
-                _ when snapshot.hasError => 'Casa non disponibile',
-                _ => snapshot.data?.nomeCasa ?? 'Nessuna casa',
-              };
-              final data = snapshot.data;
-
-              if (data != null && data.caseUtente.length > 1) {
-                return _HouseSelector(
+          child: data.caseUtente.length > 1
+              ? _HouseSelector(
                   caseUtente: data.caseUtente,
                   selectedCasaId: data.casaSelezionataId,
                   formatNomeCasa: _formatNomeCasa,
                   onCasaChanged: onCasaChanged,
-                );
-              }
-
-              return Text(
-                nomeCasa,
-                style: AppTextStyles.dashboardHeaderTitle,
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              );
-            },
-          ),
+                )
+              : Text(
+                  data.nomeCasa,
+                  style: AppTextStyles.dashboardHeaderTitle.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
         ),
         const SizedBox(width: AppSizes.p14),
         InkWell(
@@ -557,11 +356,12 @@ class _HouseSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(AppSizes.radius8),
-        border: Border.all(color: AppColors.inputBorder),
+        border: Border.all(color: colorScheme.outline),
         boxShadow: const [
           BoxShadow(
             color: AppColors.shadowSoft,
@@ -577,18 +377,22 @@ class _HouseSelector extends StatelessWidget {
             value: selectedCasaId,
             isExpanded: true,
             borderRadius: BorderRadius.circular(AppSizes.radius8),
-            icon: const Icon(
+            icon: Icon(
               Icons.keyboard_arrow_down,
-              color: AppColors.brandSecondary,
+              color: colorScheme.primary,
             ),
-            dropdownColor: AppColors.surface,
-            style: AppTextStyles.dashboardHeaderTitle,
+            dropdownColor: colorScheme.surface,
+            style: AppTextStyles.dashboardHeaderTitle.copyWith(
+              color: colorScheme.onSurface,
+            ),
             selectedItemBuilder: (context) {
               return caseUtente.map((casa) {
                 return Center(
                   child: Text(
                     formatNomeCasa(casa),
-                    style: AppTextStyles.dashboardHeaderTitle,
+                    style: AppTextStyles.dashboardHeaderTitle.copyWith(
+                      color: colorScheme.onSurface,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -618,15 +422,12 @@ class _HouseSelector extends StatelessWidget {
 }
 
 class _EmptyBalanceCard extends StatelessWidget {
-  const _EmptyBalanceCard({required this.dashboardDataFuture});
+  const _EmptyBalanceCard({required this.data});
 
-  final Future<_DashboardData> dashboardDataFuture;
+  final DashboardData data;
 
   String _formatAmount(double? value, {bool showPlus = false}) {
-    if (value == null) {
-      return '\u20AC0';
-    }
-
+    if (value == null) return '€0';
     final rounded = value.toStringAsFixed(2);
     final normalized = rounded.endsWith('.00')
         ? rounded.substring(0, rounded.length - 3)
@@ -636,15 +437,11 @@ class _EmptyBalanceCard extends StatelessWidget {
         : showPlus && value > 0
         ? '+'
         : '';
-
-    return '$prefix\u20AC${normalized.replaceFirst('-', '')}';
+    return '$prefix€${normalized.replaceFirst('-', '')}';
   }
 
   Color _saldoColor(double? saldo) {
-    if (saldo == null || saldo >= 0) {
-      return AppColors.statusPositive;
-    }
-
+    if (saldo == null || saldo >= 0) return AppColors.statusPositive;
     return AppColors.statusNegative;
   }
 
@@ -658,100 +455,92 @@ class _EmptyBalanceCard extends StatelessWidget {
           Text(
             'IL TUO SALDO',
             style: AppTextStyles.dashboardHeaderSubtitle.copyWith(
-              color: AppColors.textMuted,
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
               fontSize: 18,
               fontWeight: FontWeight.w800,
             ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSizes.p10),
-          FutureBuilder<_DashboardData>(
-            future: dashboardDataFuture,
-            builder: (context, snapshot) {
-              final data = snapshot.data;
-              final saldo = data?.saldo;
-
-              return Container(
-                margin: const EdgeInsets.symmetric(horizontal: AppSizes.p18),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceDarkElevated,
-                  borderRadius: BorderRadius.circular(AppSizes.radius8),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: AppColors.shadowStrong,
-                      blurRadius: AppSizes.p8,
-                      offset: Offset(0, AppSizes.p5),
-                    ),
-                  ],
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: AppSizes.p18),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceDarkElevated,
+              borderRadius: BorderRadius.circular(AppSizes.radius8),
+              boxShadow: const [
+                BoxShadow(
+                  color: AppColors.shadowStrong,
+                  blurRadius: AppSizes.p8,
+                  offset: Offset(0, AppSizes.p5),
                 ),
-                padding: const EdgeInsets.fromLTRB(
-                  AppSizes.p18,
-                  AppSizes.p10,
-                  AppSizes.p14,
-                  AppSizes.p18,
-                ),
-                child: Column(
+              ],
+            ),
+            padding: const EdgeInsets.fromLTRB(
+              AppSizes.p18,
+              AppSizes.p10,
+              AppSizes.p14,
+              AppSizes.p18,
+            ),
+            child: Column(
+              children: [
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        const SizedBox(width: AppSizes.p30),
-                        Expanded(
-                          child: Text(
-                            'Totale',
-                            style: AppTextStyles.dashboardBalanceTitle.copyWith(
-                              fontSize: 20,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
+                    const SizedBox(width: AppSizes.p30),
+                    Expanded(
+                      child: Text(
+                        'Totale',
+                        style: AppTextStyles.dashboardBalanceTitle.copyWith(
+                          fontSize: 20,
                         ),
-                        SvgPicture.asset(
-                          'assets/Icons/Arrow up-right.svg',
-                          width: AppSizes.p30,
-                          height: AppSizes.p30,
-                          colorFilter: const ColorFilter.mode(
-                            AppColors.brandAccent,
-                            BlendMode.srcIn,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Text(
-                      _formatAmount(saldo),
-                      style: AppTextStyles.dashboardBalanceAmount.copyWith(
-                        color: _saldoColor(saldo),
-                        fontSize: 25,
+                        textAlign: TextAlign.center,
                       ),
                     ),
-                    const SizedBox(height: AppSizes.p18),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _BalanceMetric(
-                            label: 'Da ricevere',
-                            value: _formatAmount(data?.credito, showPlus: true),
-                            valueColor: AppColors.statusPositive,
-                            align: CrossAxisAlignment.center,
-                          ),
-                        ),
-                        Container(
-                          width: 1,
-                          height: AppSizes.p42,
-                          color: AppColors.dividerOnDark,
-                        ),
-                        Expanded(
-                          child: _BalanceMetric(
-                            label: 'Devi pagare',
-                            value: _formatAmount(data?.debito),
-                            valueColor: AppColors.statusNegative,
-                            align: CrossAxisAlignment.center,
-                          ),
-                        ),
-                      ],
+                    SvgPicture.asset(
+                      'assets/Icons/Arrow up-right.svg',
+                      width: AppSizes.p30,
+                      height: AppSizes.p30,
+                      colorFilter: const ColorFilter.mode(
+                        AppColors.brandAccent,
+                        BlendMode.srcIn,
+                      ),
                     ),
                   ],
                 ),
-              );
-            },
+                Text(
+                  _formatAmount(data.saldo),
+                  style: AppTextStyles.dashboardBalanceAmount.copyWith(
+                    color: _saldoColor(data.saldo),
+                    fontSize: 25,
+                  ),
+                ),
+                const SizedBox(height: AppSizes.p18),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _BalanceMetric(
+                        label: 'Da ricevere',
+                        value: _formatAmount(data.credito, showPlus: true),
+                        valueColor: AppColors.statusPositive,
+                        align: CrossAxisAlignment.center,
+                      ),
+                    ),
+                    Container(
+                      width: 1,
+                      height: AppSizes.p42,
+                      color: AppColors.dividerOnDark,
+                    ),
+                    Expanded(
+                      child: _BalanceMetric(
+                        label: 'Devi pagare',
+                        value: _formatAmount(data.debito),
+                        valueColor: AppColors.statusNegative,
+                        align: CrossAxisAlignment.center,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -797,27 +586,10 @@ class _BalanceMetric extends StatelessWidget {
   }
 }
 
-class _HouseHealthSection extends StatelessWidget {
-  const _HouseHealthSection({required this.dashboardDataFuture});
-
-  final Future<_DashboardData> dashboardDataFuture;
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<_DashboardData>(
-      future: dashboardDataFuture,
-      builder: (context, snapshot) {
-        final badges = snapshot.data?.houseHealthBadges ?? const [];
-        return HouseHealthSection(badges: badges);
-      },
-    );
-  }
-}
-
 class _ProssimeScadenzeSection extends StatelessWidget {
-  const _ProssimeScadenzeSection({required this.dashboardDataFuture});
+  const _ProssimeScadenzeSection({required this.entries});
 
-  final Future<_DashboardData> dashboardDataFuture;
+  final List<ProssimeScadenzeEntry> entries;
 
   @override
   Widget build(BuildContext context) {
@@ -826,120 +598,69 @@ class _ProssimeScadenzeSection extends StatelessWidget {
       children: [
         const _CenteredSectionTitle('PROSSIME SCADENZE'),
         const SizedBox(height: AppSizes.p10),
-        FutureBuilder<_DashboardData>(
-          future: dashboardDataFuture,
-          builder: (context, snapshot) {
-            final scadenze = snapshot.data?.scadenze ?? const <Scadenza>[];
-            final spese = snapshot.data?.spese ?? const <Spesa>[];
-            final entries = _buildEntries(scadenze, spese);
-
-            return InkWell(
-              onTap: () => Navigator.of(context).pushNamed('/scadenze'),
+        InkWell(
+          onTap: () => Navigator.of(context).pushNamed('/scadenze'),
+          borderRadius: BorderRadius.circular(AppSizes.radius8),
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.surfaceDarkElevated,
               borderRadius: BorderRadius.circular(AppSizes.radius8),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceDarkElevated,
-                  borderRadius: BorderRadius.circular(AppSizes.radius8),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: AppColors.shadowStrong,
-                      blurRadius: AppSizes.p8,
-                      offset: Offset(0, AppSizes.p5),
-                    ),
-                  ],
+              boxShadow: const [
+                BoxShadow(
+                  color: AppColors.shadowStrong,
+                  blurRadius: AppSizes.p8,
+                  offset: Offset(0, AppSizes.p5),
                 ),
-                padding: const EdgeInsets.fromLTRB(
-                  AppSizes.p14,
-                  AppSizes.p16,
-                  AppSizes.p14,
-                  AppSizes.p16,
-                ),
-                child: entries.isEmpty
-                    ? SizedBox(
-                        height: 80,
-                        child: Center(
-                          child: Text(
-                            'Nessuna scadenza questo mese',
-                            style: AppTextStyles.dashboardCardSubtitleOnDark
-                                .copyWith(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      )
-                    : Column(
-                        children: entries
-                            .asMap()
-                            .entries
-                            .map(
-                              (e) => Padding(
-                                padding: EdgeInsets.only(
-                                  bottom: e.key < entries.length - 1
-                                      ? AppSizes.p12
-                                      : 0,
-                                ),
-                                child: _ScadenzaRow(entry: e.value),
-                              ),
-                            )
-                            .toList(),
+              ],
+            ),
+            padding: const EdgeInsets.fromLTRB(
+              AppSizes.p14,
+              AppSizes.p16,
+              AppSizes.p14,
+              AppSizes.p16,
+            ),
+            child: entries.isEmpty
+                ? SizedBox(
+                    height: 80,
+                    child: Center(
+                      child: Text(
+                        'Nessuna scadenza questo mese',
+                        style: AppTextStyles.dashboardCardSubtitleOnDark
+                            .copyWith(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                            ),
+                        textAlign: TextAlign.center,
                       ),
-              ),
-            );
-          },
+                    ),
+                  )
+                : Column(
+                    children: entries
+                        .asMap()
+                        .entries
+                        .map(
+                          (e) => Padding(
+                            padding: EdgeInsets.only(
+                              bottom: e.key < entries.length - 1
+                                  ? AppSizes.p12
+                                  : 0,
+                            ),
+                            child: _ScadenzaRow(entry: e.value),
+                          ),
+                        )
+                        .toList(),
+                  ),
+          ),
         ),
       ],
     );
   }
-
-  static List<_ScadenzaEntry> _buildEntries(
-    List<Scadenza> scadenze,
-    List<Spesa> spese,
-  ) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final entries = <_ScadenzaEntry>[];
-
-    final idScadenzeConSpesa = spese
-        .map((s) => s.idScadenza)
-        .whereType<String>()
-        .toSet();
-
-    for (final spesa in spese) {
-      final d = spesa.dataScadenza;
-      if (d == null) continue;
-      final dOnly = DateTime(d.year, d.month, d.day);
-      if (d.year == now.year && d.month == now.month) {
-        entries.add(_ScadenzaEntry(nome: spesa.descrizione, date: dOnly));
-      }
-    }
-
-    for (final sc in scadenze) {
-      if (idScadenzeConSpesa.contains(sc.id)) continue;
-      final d = sc.dataScadenza;
-      final dOnly = DateTime(d.year, d.month, d.day);
-      if (d.year == now.year && d.month == now.month) {
-        entries.add(_ScadenzaEntry(nome: sc.nome, date: dOnly));
-      }
-    }
-
-    entries.sort((a, b) => a.date.compareTo(b.date));
-
-    return entries.where((e) => !e.date.isBefore(today)).take(3).toList();
-  }
-}
-
-class _ScadenzaEntry {
-  const _ScadenzaEntry({required this.nome, required this.date});
-  final String nome;
-  final DateTime date;
 }
 
 class _ScadenzaRow extends StatelessWidget {
   const _ScadenzaRow({required this.entry});
 
-  final _ScadenzaEntry entry;
+  final ProssimeScadenzeEntry entry;
 
   @override
   Widget build(BuildContext context) {
@@ -995,54 +716,21 @@ class _ScadenzaRow extends StatelessWidget {
   }
 }
 
-class _TodayTurnSection extends StatefulWidget {
+class _TodayTurnSection extends StatelessWidget {
   const _TodayTurnSection({
-    required this.dashboardDataFuture,
-    required this.onRefresh,
+    required this.turniOggi,
+    required this.casaId,
+    required this.completingTurnoIds,
+    required this.onCompletaTurno,
   });
 
-  final Future<_DashboardData> dashboardDataFuture;
-  final VoidCallback onRefresh;
+  final List<Turno> turniOggi;
+  final String? casaId;
+  final Set<String> completingTurnoIds;
+  final void Function(String turnoId) onCompletaTurno;
 
-  @override
-  State<_TodayTurnSection> createState() => _TodayTurnSectionState();
-}
-
-class _TodayTurnSectionState extends State<_TodayTurnSection> {
-  final Set<String> _completingIds = {};
-
-  Future<void> _completaTurno(String casaId, String turnoId) async {
-    setState(() {
-      _completingIds.add(turnoId);
-    });
-    try {
-      await ApiProvider.turni.completa(casaId, turnoId);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Turno completato con successo!')),
-        );
-        widget.onRefresh();
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Impossibile completare il turno. Riprova.'),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _completingIds.remove(turnoId);
-        });
-      }
-    }
-  }
-
-  Widget _buildCompleteButton(String casaId, Turno turno) {
-    final isCompleting = _completingIds.contains(turno.id);
-    if (isCompleting) {
+  Widget _buildCompleteButton(Turno turno) {
+    if (completingTurnoIds.contains(turno.id)) {
       return const SizedBox(
         width: 24,
         height: 24,
@@ -1074,14 +762,14 @@ class _TodayTurnSectionState extends State<_TodayTurnSection> {
           ),
           shadows: const [
             BoxShadow(
-              color: Color(0x3F000000),
+              color: AppColors.shadowOverlay,
               blurRadius: 4,
               offset: Offset(0, 4),
             ),
           ],
         ),
         child: OutlinedButton(
-          onPressed: () => _completaTurno(casaId, turno.id),
+          onPressed: () => onCompletaTurno(turno.id),
           style: OutlinedButton.styleFrom(
             backgroundColor: Colors.transparent,
             side: BorderSide.none,
@@ -1104,9 +792,9 @@ class _TodayTurnSectionState extends State<_TodayTurnSection> {
     );
   }
 
-  Widget _buildTurnoRow(Turno turno, String? casaId, bool isLast) {
-    final isCurrentAssignee =
-        casaId != null && turno.assegnatarioId == _me.currentUserId;
+  Widget _buildTurnoRow(Turno turno, bool isLast) {
+    final currentUserId = ApiProvider.client.currentUserId;
+    final isCurrentAssignee = turno.assegnatarioId == currentUserId;
 
     return Padding(
       padding: EdgeInsets.only(bottom: isLast ? 0 : AppSizes.p12),
@@ -1130,9 +818,9 @@ class _TodayTurnSectionState extends State<_TodayTurnSection> {
               ),
             ),
           ),
-          if (isCurrentAssignee) ...[
+          if (casaId != null && isCurrentAssignee) ...[
             const SizedBox(width: AppSizes.p8),
-            _buildCompleteButton(casaId, turno),
+            _buildCompleteButton(turno),
           ],
         ],
       ),
@@ -1146,104 +834,69 @@ class _TodayTurnSectionState extends State<_TodayTurnSection> {
       children: [
         const _CenteredSectionTitle('TURNI DI OGGI'),
         const SizedBox(height: AppSizes.p10),
-        FutureBuilder<_DashboardData>(
-          future: widget.dashboardDataFuture,
-          builder: (context, snapshot) {
-            final turniOggi = snapshot.data?.turniOggi ?? const <Turno>[];
-            final isLoading =
-                snapshot.connectionState == ConnectionState.waiting &&
-                snapshot.data == null;
-            final casaId = snapshot.data?.casaSelezionataId;
-
-            return InkWell(
-              onTap: () => Navigator.of(context).pushNamed('/turni'),
+        InkWell(
+          onTap: () => Navigator.of(context).pushNamed('/turni'),
+          borderRadius: BorderRadius.circular(AppSizes.radius8),
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.surfaceDarkElevated,
               borderRadius: BorderRadius.circular(AppSizes.radius8),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceDarkElevated,
-                  borderRadius: BorderRadius.circular(AppSizes.radius8),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: AppColors.shadowStrong,
-                      blurRadius: AppSizes.p8,
-                      offset: Offset(0, AppSizes.p5),
-                    ),
-                  ],
+              boxShadow: const [
+                BoxShadow(
+                  color: AppColors.shadowStrong,
+                  blurRadius: AppSizes.p8,
+                  offset: Offset(0, AppSizes.p5),
                 ),
-                padding: const EdgeInsets.fromLTRB(
-                  AppSizes.p14,
-                  AppSizes.p16,
-                  AppSizes.p20,
-                  AppSizes.p16,
-                ),
-                child: isLoading
-                    ? Row(
-                        children: [
-                          Container(
-                            width: AppSizes.p48,
-                            height: AppSizes.p48,
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AppColors.surfaceDark,
-                            ),
+              ],
+            ),
+            padding: const EdgeInsets.fromLTRB(
+              AppSizes.p14,
+              AppSizes.p16,
+              AppSizes.p20,
+              AppSizes.p16,
+            ),
+            child: turniOggi.isEmpty
+                ? Row(
+                    children: [
+                      Container(
+                        width: AppSizes.p48,
+                        height: AppSizes.p48,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AppColors.statusPositive,
+                            width: 2,
                           ),
-                          const SizedBox(width: AppSizes.p14),
-                          Expanded(
-                            child: Text(
-                              'Caricamento turno...',
-                              style: AppTextStyles.dashboardCardTitleOnDark
-                                  .copyWith(
-                                    color: AppColors.textOnDark,
-                                    fontSize: 18,
-                                  ),
-                            ),
-                          ),
-                        ],
-                      )
-                    : turniOggi.isEmpty
-                    ? Row(
-                        children: [
-                          Container(
-                            width: AppSizes.p48,
-                            height: AppSizes.p48,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: AppColors.statusPositive,
-                                width: 2,
-                              ),
-                            ),
-                            child: const Icon(
-                              Icons.check,
-                              color: AppColors.statusPositive,
-                              size: AppSizes.p28,
-                            ),
-                          ),
-                          const SizedBox(width: AppSizes.p14),
-                          Expanded(
-                            child: Text(
-                              'Nessuna pulizia da fare!',
-                              style: AppTextStyles.dashboardCardTitleOnDark
-                                  .copyWith(
-                                    color: AppColors.textOnDark,
-                                    fontSize: 18,
-                                  ),
-                            ),
-                          ),
-                        ],
-                      )
-                    : Column(
-                        children: List.generate(turniOggi.length, (i) {
-                          return _buildTurnoRow(
-                            turniOggi[i],
-                            casaId,
-                            i == turniOggi.length - 1,
-                          );
-                        }),
+                        ),
+                        child: const Icon(
+                          Icons.check,
+                          color: AppColors.statusPositive,
+                          size: AppSizes.p28,
+                        ),
                       ),
-              ),
-            );
-          },
+                      const SizedBox(width: AppSizes.p14),
+                      Expanded(
+                        child: Text(
+                          'Nessuna pulizia da fare!',
+                          style: AppTextStyles.dashboardCardTitleOnDark
+                              .copyWith(
+                                color: AppColors.textOnDark,
+                                fontSize: 18,
+                              ),
+                        ),
+                      ),
+                    ],
+                  )
+                : Column(
+                    children: List.generate(
+                      turniOggi.length,
+                      (i) => _buildTurnoRow(
+                        turniOggi[i],
+                        i == turniOggi.length - 1,
+                      ),
+                    ),
+                  ),
+          ),
         ),
       ],
     );
@@ -1251,38 +904,23 @@ class _TodayTurnSectionState extends State<_TodayTurnSection> {
 }
 
 class _EmptyCalendarSection extends StatelessWidget {
-  const _EmptyCalendarSection({required this.dashboardDataFuture});
+  const _EmptyCalendarSection({required this.data});
 
-  final Future<_DashboardData> dashboardDataFuture;
+  final DashboardData data;
 
   static const List<String> _weekDays = [
-    'Lu',
-    'Ma',
-    'Mer',
-    'Gio',
-    'Ven',
-    'Sab',
-    'Dom',
+    'Lu', 'Ma', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom',
   ];
   static const List<String> _monthNames = [
-    'Gennaio',
-    'Febbraio',
-    'Marzo',
-    'Aprile',
-    'Maggio',
-    'Giugno',
-    'Luglio',
-    'Agosto',
-    'Settembre',
-    'Ottobre',
-    'Novembre',
-    'Dicembre',
+    'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
+    'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre',
   ];
 
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
     final month = DateTime(now.year, now.month);
+    final days = _buildGridDays(month);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1304,7 +942,7 @@ class _EmptyCalendarSection extends StatelessWidget {
                     alignment: Alignment.center,
                     child: Text(
                       _monthNames[month.month - 1],
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: AppColors.textOnDark,
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
@@ -1339,43 +977,31 @@ class _EmptyCalendarSection extends StatelessWidget {
                               .toList(),
                         ),
                         const SizedBox(height: AppSizes.p16),
-                        FutureBuilder<_DashboardData>(
-                          future: dashboardDataFuture,
-                          builder: (context, snapshot) {
-                            final turni = snapshot.data?.turni ?? const [];
-                            final spese = snapshot.data?.spese ?? const [];
-                            final scadenze =
-                                snapshot.data?.scadenze ?? const <Scadenza>[];
-                            final days = _buildGridDays(month);
-
-                            return GridView.builder(
-                              itemCount: days.length,
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 7,
-                                    mainAxisSpacing: AppSizes.p12,
-                                    crossAxisSpacing: AppSizes.p12,
-                                    mainAxisExtent: 44,
-                                  ),
-                              itemBuilder: (context, index) {
-                                final date = days[index];
-                                final inMonth = date.month == month.month;
-                                final markers = inMonth
-                                    ? _markersForDate(
-                                        date,
-                                        turni,
-                                        spese,
-                                        scadenze,
-                                      )
-                                    : const <Color>[];
-
-                                return _DashboardCalendarDay(
-                                  day: inMonth ? '${date.day}' : '',
-                                  markers: markers,
-                                );
-                              },
+                        GridView.builder(
+                          itemCount: days.length,
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 7,
+                                mainAxisSpacing: AppSizes.p12,
+                                crossAxisSpacing: AppSizes.p12,
+                                mainAxisExtent: 44,
+                              ),
+                          itemBuilder: (context, index) {
+                            final date = days[index];
+                            final inMonth = date.month == month.month;
+                            final markers = inMonth
+                                ? _markersForDate(
+                                    date,
+                                    data.turni,
+                                    data.spese,
+                                    data.scadenze,
+                                  )
+                                : const <Color>[];
+                            return _DashboardCalendarDay(
+                              day: inMonth ? '${date.day}' : '',
+                              markers: markers,
                             );
                           },
                         ),
@@ -1474,9 +1100,7 @@ class _DashboardCalendarDay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (day.isEmpty) {
-      return const SizedBox.shrink();
-    }
+    if (day.isEmpty) return const SizedBox.shrink();
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -1529,7 +1153,7 @@ class _CenteredSectionTitle extends StatelessWidget {
     return Text(
       title,
       style: AppTextStyles.dashboardSectionTitle.copyWith(
-        color: AppColors.textMuted,
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
         fontSize: 18,
         letterSpacing: 0,
       ),
