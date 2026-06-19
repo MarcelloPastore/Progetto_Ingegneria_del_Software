@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
-import '../../constants/app_sizes.dart';
 
 class AppPriorityChip extends StatelessWidget {
   const AppPriorityChip({
@@ -20,36 +19,26 @@ class AppPriorityChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final gradient = LinearGradient(
-      begin: Alignment.topCenter,
-      end: Alignment.bottomCenter,
-      colors: [
-        Color.lerp(bgColor, Colors.white, 0.30)!,
-        bgColor,
-        Color.lerp(bgColor, Colors.black, 0.18)!,
-      ],
-      stops: const [0, 0.62, 1],
-    );
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppSizes.radius16),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 140),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: AppSizes.p8, vertical: AppSizes.p14),
         decoration: BoxDecoration(
-          gradient: gradient,
+          gradient: AppGradients.buttonGradient(bgColor),
           borderRadius: BorderRadius.circular(AppSizes.radius16),
           border: Border.all(
             color: selected ? AppColors.brandAccent : AppColors.darkBackground,
-            width: 3,
+            width: AppSizes.p3,
           ),
           boxShadow: [
             BoxShadow(
               color: selected
                   ? Colors.black.withValues(alpha: 0.45)
                   : AppColors.shadowStrong,
-              blurRadius: selected ? 8 : 6,
-              offset: Offset(0, selected ? 4 : 3),
+              blurRadius: selected ? AppSizes.p8 : AppSizes.p6,
+              offset: Offset(0, selected ? AppSizes.p4 : AppSizes.p3),
             ),
           ],
         ),
@@ -57,8 +46,8 @@ class AppPriorityChip extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.circle, color: dotColor, size: 18),
-            const SizedBox(width: 2),
+            Icon(Icons.circle, color: dotColor, size: AppSizes.p18),
+            const SizedBox(width: AppSizes.p2),
             Flexible(
               child: Text(
                 label,
@@ -66,7 +55,7 @@ class AppPriorityChip extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: AppTextStyles.screenTitleStrong.copyWith(
                   color: AppColors.textOnDark,
-                  fontSize: 15,
+                  fontSize: AppSizes.p15,
                   fontWeight: FontWeight.w800,
                 ),
               ),

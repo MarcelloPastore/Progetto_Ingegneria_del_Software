@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
-import '../../constants/app_sizes.dart';
 
 class AppCancelButton extends StatelessWidget {
   const AppCancelButton({super.key, required this.onPressed, this.enabled = true});
@@ -13,7 +12,7 @@ class AppCancelButton extends StatelessWidget {
       opacity: enabled ? 1.0 : 0.45,
       child: SizedBox(
         width: double.infinity,
-        height: 54,
+        height: AppSizes.p54,
         child: Material(
           color: Colors.transparent,
           child: InkWell(
@@ -24,7 +23,7 @@ class AppCancelButton extends StatelessWidget {
                 borderRadius: BorderRadius.circular(AppSizes.radius15),
                 border: Border.all(
                   color: AppColors.error.withValues(alpha: 0.7),
-                  width: 2,
+                  width: AppSizes.p2,
                 ),
               ),
               alignment: Alignment.center,
@@ -32,7 +31,7 @@ class AppCancelButton extends StatelessWidget {
                 'Annulla',
                 style: AppTextStyles.button.copyWith(
                   color: AppColors.errorStrong,
-                  fontSize: 20,
+                  fontSize: AppSizes.p20,
                   fontWeight: FontWeight.w700,
                 ),
               ),

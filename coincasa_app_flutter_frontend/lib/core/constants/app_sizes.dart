@@ -45,6 +45,7 @@ abstract final class AppSizes {
   static const double p48 = 48;
   static const double p50 = 50;
   static const double p52 = 52;
+  static const double p54 = 54;
   static const double p56 = 56;
   static const double p58 = 58;
   static const double p60 = 60;

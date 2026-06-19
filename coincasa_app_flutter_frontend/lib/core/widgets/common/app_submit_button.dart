@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
-import '../../constants/app_sizes.dart';
 
 class AppSubmitButton extends StatelessWidget {
   const AppSubmitButton({
@@ -23,14 +22,10 @@ class AppSubmitButton extends StatelessWidget {
       opacity: effectiveEnabled ? 1.0 : 0.45,
       child: SizedBox(
         width: double.infinity,
-        height: 58,
+        height: AppSizes.p58,
         child: DecoratedBox(
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [AppColors.brandAccent, AppColors.brandPrimary],
-            ),
+            gradient: AppGradients.brandPurple,
             borderRadius: BorderRadius.circular(AppSizes.radius16),
           ),
           child: Material(
@@ -41,8 +36,8 @@ class AppSubmitButton extends StatelessWidget {
               child: Center(
                 child: isLoading
                     ? const SizedBox(
-                        width: 22,
-                        height: 22,
+                        width: AppSizes.p22,
+                        height: AppSizes.p22,
                         child: CircularProgressIndicator(
                           strokeWidth: 2.5,
                           valueColor: AlwaysStoppedAnimation<Color>(
@@ -54,7 +49,7 @@ class AppSubmitButton extends StatelessWidget {
                         label,
                         style: AppTextStyles.button.copyWith(
                           color: AppColors.textOnDark,
-                          fontSize: 22,
+                          fontSize: AppSizes.p22,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
