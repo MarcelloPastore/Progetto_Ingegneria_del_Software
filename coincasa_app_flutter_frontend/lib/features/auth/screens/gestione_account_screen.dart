@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:coincasa_app/core/api/api_client.dart';
 import 'package:coincasa_app/core/api/api_provider.dart';
+import 'package:coincasa_app/core/providers/theme_provider.dart';
 import 'package:coincasa_app/core/services/session_manager.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
@@ -13,16 +15,17 @@ import 'package:coincasa_app/features/auth/screens/elimina_account_success_scree
 import 'package:coincasa_app/features/auth/screens/modifica_password_screen.dart';
 import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
 
-class GestioneAccountScreen extends StatefulWidget {
+class GestioneAccountScreen extends ConsumerStatefulWidget {
   const GestioneAccountScreen({super.key});
 
   static const routeName = '/account';
 
   @override
-  State<GestioneAccountScreen> createState() => _GestioneAccountScreenState();
+  ConsumerState<GestioneAccountScreen> createState() =>
+      _GestioneAccountScreenState();
 }
 
-class _GestioneAccountScreenState extends State<GestioneAccountScreen> {
+class _GestioneAccountScreenState extends ConsumerState<GestioneAccountScreen> {
   bool _isEditingUsername = false;
   final _newUsernameController = TextEditingController();
   String? _usernameError;
@@ -198,7 +201,7 @@ class _GestioneAccountScreenState extends State<GestioneAccountScreen> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor:  AppColors.darkBackground,
+        backgroundColor: AppColors.darkBackground,
         body: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -322,6 +325,41 @@ class _GestioneAccountScreenState extends State<GestioneAccountScreen> {
                             ],
                           ),
                         ),
+                        const SizedBox(height: 24),
+
+                        // ── Sezione Preferenze ───────────────────────────
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'PREFERENZE',
+                            style: GoogleFonts.inter(
+                              color: const Color(0xFFB6B6D2),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+
+                        Container(
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF141A3A),
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          child: _ThemeModeRow(
+                            label: 'Tema scuro',
+                            value: ref.watch(themeProvider) == ThemeMode.dark,
+                            onChanged: (isDark) {
+                              ref
+                                  .read(themeProvider.notifier)
+                                  .setThemeMode(
+                                    isDark ? ThemeMode.dark : ThemeMode.light,
+                                  );
+                            },
+                          ),
+                        ),
                         const SizedBox(height: 20),
 
                         // ── Logout ───────────────────────────────────────
@@ -403,6 +441,45 @@ class _GestioneAccountScreenState extends State<GestioneAccountScreen> {
     await SessionManager.clear();
     if (!context.mounted) return;
     Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
+  }
+}
+
+class _ThemeModeRow extends StatelessWidget {
+  const _ThemeModeRow({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: GoogleFonts.inter(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeThumbColor: AppColors.brandAccent,
+            activeTrackColor: AppColors.brandPrimary,
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -585,8 +662,6 @@ class _ConfermaButton extends StatelessWidget {
     );
   }
 }
-
-
 
 // ---------------------------------------------------------------------------
 // Componenti schermata principale
@@ -807,7 +882,11 @@ class _EasterEggSheet extends StatelessWidget {
         color: Color(0xFF1A1630),
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         boxShadow: [
-          BoxShadow(color: Color(0x66000000), blurRadius: 20, offset: Offset(0, -4)),
+          BoxShadow(
+            color: Color(0x66000000),
+            blurRadius: 20,
+            offset: Offset(0, -4),
+          ),
         ],
       ),
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
@@ -977,7 +1056,9 @@ class _EliminaAccountDialogState extends State<_EliminaAccountDialog> {
                   ],
                 ),
                 child: ElevatedButton(
-                  onPressed: _isDeleting ? null : () => Navigator.of(context).pop(),
+                  onPressed: _isDeleting
+                      ? null
+                      : () => Navigator.of(context).pop(),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.transparent,
                     shadowColor: Colors.transparent,

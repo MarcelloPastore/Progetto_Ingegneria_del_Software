@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'core/api/api_provider.dart';
 import 'core/models/casa.dart';
+import 'core/providers/theme_provider.dart';
 import 'core/services/session_manager.dart';
 import 'core/state/active_casa.dart';
 import 'core/theme/app_theme.dart';
@@ -25,17 +28,19 @@ final RouteObserver<ModalRoute<dynamic>> appRouteObserver =
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-class CoinCasaApp extends StatelessWidget {
+class CoinCasaApp extends ConsumerWidget {
   const CoinCasaApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeProvider);
+
     return ActiveCasaScope(
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
-        themeMode: ThemeMode.system,
+        themeMode: themeMode,
         navigatorKey: navigatorKey,
         navigatorObservers: [appRouteObserver],
         home: const _AppStartupScreen(),
