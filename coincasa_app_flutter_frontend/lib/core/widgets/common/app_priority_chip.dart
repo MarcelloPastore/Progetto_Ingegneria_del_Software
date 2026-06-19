@@ -23,42 +23,52 @@ class AppPriorityChip extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppSizes.radius16),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 140),
-        padding: const EdgeInsets.symmetric(horizontal: AppSizes.p8, vertical: AppSizes.p14),
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+        height: selected ? AppSizes.p58 : AppSizes.p50,
+        margin: EdgeInsets.symmetric(vertical: selected ? 0 : AppSizes.p4),
         decoration: BoxDecoration(
-          gradient: AppGradients.buttonGradient(bgColor),
+          gradient: AppGradients.priorityChip(bgColor: bgColor, isSelected: selected),
           borderRadius: BorderRadius.circular(AppSizes.radius16),
           border: Border.all(
-            color: selected ? AppColors.brandAccent : AppColors.darkBackground,
-            width: AppSizes.p3,
+            color: selected ? dotColor : Colors.transparent,
+            width: selected ? 2.5 : 0,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: selected
-                  ? Colors.black.withValues(alpha: 0.45)
-                  : AppColors.shadowStrong,
-              blurRadius: selected ? AppSizes.p8 : AppSizes.p6,
-              offset: Offset(0, selected ? AppSizes.p4 : AppSizes.p3),
-            ),
-          ],
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: dotColor.withValues(alpha: 0.55),
+                    blurRadius: AppSizes.p18,
+                    spreadRadius: AppSizes.p1,
+                    offset: const Offset(0, AppSizes.p4),
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.35),
+                    blurRadius: AppSizes.p6,
+                    offset: const Offset(0, AppSizes.p2),
+                  ),
+                ]
+              : [
+                  BoxShadow(
+                    color: AppColors.shadowStrong,
+                    blurRadius: AppSizes.p4,
+                    offset: const Offset(0, AppSizes.p2),
+                  ),
+                ],
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.circle, color: dotColor, size: AppSizes.p18),
-            const SizedBox(width: AppSizes.p2),
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.screenTitleStrong.copyWith(
-                  color: AppColors.textOnDark,
-                  fontSize: AppSizes.p15,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
+            if (selected)
+              Icon(Icons.check_circle_rounded, color: dotColor, size: AppSizes.p16)
+            else
+              Icon(Icons.circle, color: dotColor, size: AppSizes.p12),
+            const SizedBox(width: AppSizes.p6),
+            Text(
+              label,
+              style: selected
+                  ? AppTextStyles.priorityChipSelected
+                  : AppTextStyles.priorityChipUnselected,
             ),
           ],
         ),

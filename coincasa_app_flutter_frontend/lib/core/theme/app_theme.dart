@@ -37,6 +37,7 @@ abstract final class AppColors {
   static const textMutedDark = Color(0xFF8C8C96);
   static const textMutedSoft = Color(0xFFB0A9B8);
   static const textOnDark = Color(0xFFFFFFFF);
+  static const textOnDarkMuted = Color(0xB3FFFFFF);
 
   // Form & Inputs
   static const inputFillDark = Color(0xFF171B35);
@@ -66,6 +67,11 @@ abstract final class AppColors {
   static const statusSuccess = Color(0xFF39B54A);
   static const statusInfo = Color(0xFF3E80FF);
   static const statusNeutral = Color(0xFFA77F74);
+
+  // Priority chip backgrounds
+  static const problemChipUrgentBg = Color(0xFF710002);
+  static const problemChipMediumBg = Color(0xFF7E3B00);
+  static const problemChipLowBg = Color(0xFF786000);
 
   // Assets/Illustration Colors
   static const keyYellow = Color(0xFFFFD31A);
@@ -345,6 +351,19 @@ abstract final class AppTextStyles {
     color: AppColors.textPrimary,
     fontSize: 16,
     fontWeight: FontWeight.w700,
+  );
+
+  static const priorityChipSelected = TextStyle(
+    color: AppColors.textOnDark,
+    fontSize: 15,
+    fontWeight: FontWeight.w900,
+    letterSpacing: 0.3,
+  );
+
+  static const priorityChipUnselected = TextStyle(
+    color: AppColors.textOnDarkMuted,
+    fontSize: 13,
+    fontWeight: FontWeight.w600,
   );
 }
 
