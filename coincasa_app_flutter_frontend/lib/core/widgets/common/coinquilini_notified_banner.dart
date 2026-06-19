@@ -21,7 +21,10 @@ class CoinquiliniNotifiedBanner extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.successBright.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(AppSizes.radius14),
-        border: Border.all(color: AppColors.statusPositive, width: 1.5),
+        border: Border.all(
+          color: AppColors.statusPositive,
+          width: AppSizes.p1_5,
+        ),
       ),
       child: Text(
         message,

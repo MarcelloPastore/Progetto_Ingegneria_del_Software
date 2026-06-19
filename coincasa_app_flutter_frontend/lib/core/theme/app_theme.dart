@@ -24,10 +24,16 @@ abstract final class AppColors {
   static const darkBackground = Color(0xFF151127);
   static const surfaceDark = Color(0xFF151528);
   static const surfaceDarkElevated = Color(0xFF1F2848);
+  static const surfaceDarkCard = Color(0xFF1E1A2D);
+  static const surfaceDarkCardAlt = Color(0xFF211C35);
+  static const surfaceDarkMuted = Color(0xFF2C2846);
   static const surfaceTint = Color(0xFFF1EBFF);
   static const badgeSurface = Color(0xFF202468);
   static const shadowStrong = Color(0x19000000);
   static const shadowSoft = Color(0x12000000);
+  static const shadowMedium = Color(0x55000000);
+  static const shadowOverlay = Color(0x3F000000);
+  static const shadowPressed = Color(0x33000000);
 
   // Text Colors
   static const textPrimary = Color(0xFF1E1B2E);
@@ -36,6 +42,9 @@ abstract final class AppColors {
   static const textMutedLight = Color(0xFFC6C1CC);
   static const textMutedDark = Color(0xFF8C8CA0);
   static const textMutedSoft = Color(0xFFB0A9B8);
+  static const textDisabled = Color(0xFFC1BFC8);
+  static const textSubtle = Color(0xFFAFAEAE);
+  static const textDim = Color(0xFF918D9A);
   static const textOnDark = Color(0xFFFFFFFF);
   static const textOnDarkMuted = Color(0xB3FFFFFF);
 
@@ -45,6 +54,8 @@ abstract final class AppColors {
   static const inputBorderDark = Color(0xFFA7A9D8);
   static const dividerDark = Color(0xFF3B3B54);
   static const dividerOnDark = Color(0xFF3F4A72);
+  static const borderMuted = Color(0xFF807D7D);
+  static const borderSubtle = Color(0xFF77727F);
 
   // Status & Alerts
   static const error = Color(0xFFD32F2F);
@@ -53,6 +64,7 @@ abstract final class AppColors {
   static const errorContainerStrong = Color(0xFF580300);
   static const warning = Color(0xFFFFC21A);
   static const warningSoft = Color(0xFFF9A825);
+  static const warningDark = Color(0xFFC09A00);
   static const success = Color(0xFF2E7D32);
   static const successBright = Color(0xFF3EAE4F);
   static const info = Color(0xFF1565C0);
@@ -67,6 +79,8 @@ abstract final class AppColors {
   static const statusSuccess = Color(0xFF39B54A);
   static const statusInfo = Color(0xFF3E80FF);
   static const statusNeutral = Color(0xFFA77F74);
+  static const balanceCredit = Color(0xFF47CC5D);
+  static const balanceDebit = Color(0xFFF14A4A);
 
   // Priority chip backgrounds
   static const problemChipUrgentBg = Color(0xFF710002);
@@ -82,6 +96,7 @@ abstract final class AppColors {
 
   // Feature specific (Legacy/Migration)
   static const turniTabSurface = Color(0xFFE1E0E7);
+  static const featureAccent = Color(0xFF996CFA);
   static const turniDropdownSelectedText = Color(0xFFD98DFF);
   static const turniAssigneeMenuSurface = Color(0xFF4B3A2B);
   static const turniAssignMeSurface = Color(0xFF214B23);
@@ -389,11 +404,7 @@ abstract final class AppGradients {
   static const spesaFormConfirm = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: [
-      Color(0xFF9B7FE8),
-      Color(0xFF7B5DC8),
-      Color(0xFF5C3FA8),
-    ],
+    colors: [Color(0xFF9B7FE8), Color(0xFF7B5DC8), Color(0xFF5C3FA8)],
     stops: [0.0, 0.55, 1.0],
   );
 
@@ -422,21 +433,13 @@ abstract final class AppGradients {
   static const blueCta = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: [
-      Color(0xFF5A7EEE),
-      Color(0xFF2B5CE6),
-      Color(0xFF2145B0),
-    ],
+    colors: [Color(0xFF5A7EEE), Color(0xFF2B5CE6), Color(0xFF2145B0)],
     stops: [0.0, 0.60, 1.0],
   );
 
   /// Gradiente per l'icona del globo nella schermata no connection.
   static const globeIcon = LinearGradient(
-    colors: [
-      Color(0xFF3E80FF),
-      Color(0xFF8D8DFF),
-      Color(0xFFE84545),
-    ],
+    colors: [Color(0xFF3E80FF), Color(0xFF8D8DFF), Color(0xFFE84545)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -457,20 +460,12 @@ abstract final class AppGradients {
 
   /// Divisore orizzontale sfumato per i dettagli dei problemi.
   static const horizontalDivider = LinearGradient(
-    colors: [
-      Color(0x00000000),
-      Color(0x59AC86FC),
-      Color(0x00000000),
-    ],
+    colors: [Color(0x00000000), Color(0x59AC86FC), Color(0x00000000)],
   );
 
   /// Gradiente dorato per il badge admin nella dashboard.
   static const goldBadge = LinearGradient(
-    colors: [
-      Color(0xFFFFD700),
-      Color(0xFFFFA500),
-      Color(0xFFFFD700),
-    ],
+    colors: [Color(0xFFFFD700), Color(0xFFFFA500), Color(0xFFFFD700)],
     stops: [0.0, 0.5, 1.0],
   );
 
@@ -496,9 +491,16 @@ abstract final class AppGradients {
   // --- Dynamic Helper Methods ---
 
   /// Helper per il gradiente dei chip di priorità.
-  static LinearGradient priorityChip({required Color bgColor, bool isSelected = false}) {
+  static LinearGradient priorityChip({
+    required Color bgColor,
+    bool isSelected = false,
+  }) {
     final darkBg = Color.lerp(bgColor, Colors.black, 0.18)!;
-    final topColor = Color.lerp(bgColor, Colors.white, isSelected ? 0.50 : 0.28)!;
+    final topColor = Color.lerp(
+      bgColor,
+      Colors.white,
+      isSelected ? 0.50 : 0.28,
+    )!;
     return LinearGradient(
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
@@ -508,15 +510,22 @@ abstract final class AppGradients {
   }
 
   /// Helper per il gradiente del pulsante di assegnazione turno "Assegna a me".
-  static LinearGradient assignMeButton({required bool selected, required bool pressed}) {
+  static LinearGradient assignMeButton({
+    required bool selected,
+    required bool pressed,
+  }) {
     Color topColor;
     Color bottomColor;
     if (pressed) {
       topColor = selected ? const Color(0xFF7BE47E) : const Color(0xFF77C879);
-      bottomColor = selected ? const Color(0xFF2C7D34) : const Color(0xFF256A2D);
+      bottomColor = selected
+          ? const Color(0xFF2C7D34)
+          : const Color(0xFF256A2D);
     } else {
       topColor = selected ? const Color(0xFF53C95B) : const Color(0xFF68B86C);
-      bottomColor = selected ? const Color(0xFF2E9F3D) : const Color(0xFF2E7736);
+      bottomColor = selected
+          ? const Color(0xFF2E9F3D)
+          : const Color(0xFF2E7736);
     }
     return LinearGradient(
       colors: [topColor, bottomColor],

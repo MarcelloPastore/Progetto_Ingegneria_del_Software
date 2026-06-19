@@ -1,5 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/quota.dart';
 import 'package:coincasa_app/core/models/spesa.dart';
@@ -80,7 +78,3 @@ class SpeseRepositoryImpl implements ISpeseRepository {
     return ApiProvider.spese.getDebitoVerso(casaId, idInquilino);
   }
 }
-
-final speseRepositoryProvider = Provider<ISpeseRepository>(
-  (_) => const SpeseRepositoryImpl(),
-);

@@ -30,7 +30,7 @@ class InfoRow extends StatelessWidget {
               label,
               style: AppTextStyles.bodyMuted.copyWith(
                 color: AppColors.textMutedLight,
-                fontSize: 15,
+                fontSize: AppSizes.p15,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -40,7 +40,7 @@ class InfoRow extends StatelessWidget {
             textAlign: TextAlign.right,
             style: AppTextStyles.bodyStrong.copyWith(
               color: valueColor ?? AppColors.textOnDark,
-              fontSize: 15,
+              fontSize: AppSizes.p15,
               fontWeight: FontWeight.w700,
             ),
           ),

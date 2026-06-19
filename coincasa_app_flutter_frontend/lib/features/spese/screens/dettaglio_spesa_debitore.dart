@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/casa.dart';
-import 'package:coincasa_app/core/utils/user_initials.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/models/quota.dart';
 import 'package:coincasa_app/core/models/spesa.dart';
@@ -14,19 +13,22 @@ import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 import 'package:coincasa_app/features/spese/screens/elimina_spesa.dart';
 import 'package:coincasa_app/features/spese/screens/lista_spese_membro.dart';
 import 'package:coincasa_app/features/spese/screens/modifiche_spese_negata.dart';
+import 'package:coincasa_app/domain/viewmodel/lista_case_viewmodel.dart';
+import 'package:coincasa_app/domain/viewmodel/spese_viewmodel.dart';
+import 'package:coincasa_app/domain/viewmodel/auth_view_model.dart';
 
-class DettaglioSpesaDebitoreScreen extends StatefulWidget {
+class DettaglioSpesaDebitoreScreen extends ConsumerStatefulWidget {
   const DettaglioSpesaDebitoreScreen({super.key});
 
   static const String routeName = '/spese/dettaglio-debitore';
 
   @override
-  State<DettaglioSpesaDebitoreScreen> createState() =>
+  ConsumerState<DettaglioSpesaDebitoreScreen> createState() =>
       _DettaglioSpesaDebitoreScreenState();
 }
 
 class _DettaglioSpesaDebitoreScreenState
-    extends State<DettaglioSpesaDebitoreScreen> {
+    extends ConsumerState<DettaglioSpesaDebitoreScreen> {
   Future<_DebtorDetailData?>? _future;
   bool _isPaying = false;
 
@@ -42,24 +44,24 @@ class _DettaglioSpesaDebitoreScreenState
       return null;
     }
     final activeCasaController = ActiveCasaScope.read(context);
-    final caseUtente = await ApiProvider.casa.list();
+    final caseUtente = await ref.read(listaCaseViewModelProvider.future);
     if (caseUtente.isEmpty) {
       return null;
     }
     final casa = activeCasaController.resolveCasa(caseUtente);
-    final spesa = await ApiProvider.spese.getById(casa.id, spesaId);
-    final results = await Future.wait<dynamic>([
-      ApiProvider.spese
-          .getQuote(casa.id, spesa.id)
-          .catchError((_) => <Quota>[]),
-      ApiProvider.casa.listInquilini(casa.id).catchError((_) => <Inquilino>[]),
-    ]);
-    final inquilini = results[1] as List<Inquilino>;
-    final currentUser = _resolveCurrentUser(inquilini);
+    final speseState = await ref.read(speseViewModelProvider(casa.id).future);
+    final notifier = ref.read(speseViewModelProvider(casa.id).notifier);
+    final spesa = await notifier.getSpesaById(spesaId);
+    final quote = await notifier
+        .getQuoteSpesa(spesa.id)
+        .catchError((_) => <Quota>[]);
+    final inquilini = speseState.inquilini;
+    final authUser = await ref.read(authViewModelProvider.future);
+    final currentUser = currentSpeseInquilino(inquilini, authUser);
     return _DebtorDetailData(
       casa: casa,
       spesa: spesa,
-      quote: results[0] as List<Quota>,
+      quote: quote,
       inquilini: inquilini,
       currentUserId: currentUser?.id,
     );
@@ -71,7 +73,9 @@ class _DettaglioSpesaDebitoreScreenState
       _isPaying = true;
     });
     try {
-      await ApiProvider.spese.pagaQuota(casaId, spesaId, quotaId);
+      await ref
+          .read(speseViewModelProvider(casaId).notifier)
+          .pagaQuota(spesaId, quotaId);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Quota pagata con successo!')),
@@ -100,7 +104,7 @@ class _DettaglioSpesaDebitoreScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF151127),
+      backgroundColor: AppColors.darkBackground,
       bottomNavigationBar: const HouseQuickNav(currentRoute: '/spese'),
       body: SafeArea(
         child: FutureBuilder<_DebtorDetailData?>(
@@ -114,14 +118,15 @@ class _DettaglioSpesaDebitoreScreenState
               return const Center(
                 child: Text(
                   'Dettaglio non disponibile.',
-                  style: TextStyle(color: Colors.white),
+                  style: TextStyle(color: AppColors.textOnDark),
                 ),
               );
             }
             return _DebtorDetailContent(
               data: data,
               isPaying: _isPaying,
-              onPayQuota: (quotaId) => _payQuota(data.casa.id, data.spesa.id, quotaId),
+              onPayQuota: (quotaId) =>
+                  _payQuota(data.casa.id, data.spesa.id, quotaId),
             );
           },
         ),
@@ -148,7 +153,12 @@ class _DebtorDetailContent extends StatelessWidget {
     final quota = data.quote.isEmpty ? 0.0 : data.quote.first.importo;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(21, 14, 21, 34),
+      padding: const EdgeInsets.fromLTRB(
+        AppSizes.p21,
+        AppSizes.p14,
+        AppSizes.p21,
+        AppSizes.p34,
+      ),
       child: ConstrainedBox(
         constraints: BoxConstraints(
           minHeight:
@@ -165,64 +175,60 @@ class _DebtorDetailContent extends StatelessWidget {
                   onTap: () => Navigator.of(context).pop(),
                   child: const Icon(
                     Icons.arrow_back,
-                    color: Color(0xFF996CFA),
-                    size: 24,
+                    color: AppColors.featureAccent,
+                    size: AppSizes.p24,
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSizes.p8),
                 const Text(
                   'Dettaglio spesa',
                   style: TextStyle(
-                    color: Color(0xFF996CFA),
-                    fontSize: 19,
+                    color: AppColors.featureAccent,
+                    fontSize: AppSizes.p19,
                     fontFamily: 'Inter',
                     fontWeight: FontWeight.w800,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 34),
+            const SizedBox(height: AppSizes.p34),
             Text(
               formatCurrency(data.spesa.importo),
               textAlign: TextAlign.center,
               style: const TextStyle(
-                color: Colors.white,
-                fontSize: 32,
+                color: AppColors.textOnDark,
+                fontSize: AppSizes.p32,
                 fontFamily: 'Inter',
                 fontWeight: FontWeight.w800,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: AppSizes.p4),
             Text(
               '${data.spesa.descrizione} - ${formatFullDate(data.spesa.data)}',
               textAlign: TextAlign.center,
               style: const TextStyle(
-                color: Color(0xFF918D9A),
-                fontSize: 14,
+                color: AppColors.textDim,
+                fontSize: AppSizes.p14,
                 fontFamily: 'Inter',
                 fontWeight: FontWeight.w700,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSizes.p24),
             _InfoBox(payingNames: payingNames, quota: quota),
-            const SizedBox(height: 26),
+            const SizedBox(height: AppSizes.p26),
             const Text(
               'STATO QUOTE',
               style: TextStyle(
-                color: Color(0xFFC1BFC8),
-                fontSize: 17,
+                color: AppColors.textDisabled,
+                fontSize: AppSizes.p17,
                 fontFamily: 'Inter',
                 fontWeight: FontWeight.w800,
               ),
             ),
-            const SizedBox(height: 8),
-            _QuotesBox(
-              data: data,
-              isPaying: isPaying,
-              onPayQuota: onPayQuota,
-            ),
+            const SizedBox(height: AppSizes.p8),
+            _QuotesBox(data: data, isPaying: isPaying, onPayQuota: onPayQuota),
             if (canManage) ...[
-              const SizedBox(height: 18),
+              const SizedBox(height: AppSizes.p18),
               Row(
                 children: [
                   Expanded(
@@ -234,7 +240,7 @@ class _DebtorDetailContent extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSizes.p12),
                   Expanded(
                     child: _SmallManageButton(
                       label: 'Elimina',
@@ -248,7 +254,7 @@ class _DebtorDetailContent extends StatelessWidget {
               ),
             ],
             const Spacer(),
-            const SizedBox(height: 70),
+            const SizedBox(height: AppSizes.p70),
             _PrimaryBlueButton(
               label: 'Torna alle spese',
               onPressed: () => Navigator.of(
@@ -271,16 +277,21 @@ class _InfoBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 13, 16, 13),
+      padding: const EdgeInsets.fromLTRB(
+        AppSizes.p16,
+        AppSizes.p13,
+        AppSizes.p16,
+        AppSizes.p13,
+      ),
       decoration: BoxDecoration(
-        color: const Color(0xFF211C35),
-        border: Border.all(color: const Color(0xFF77727F), width: 1.2),
-        borderRadius: BorderRadius.circular(10),
+        color: AppColors.surfaceDarkCardAlt,
+        border: Border.all(color: AppColors.borderSubtle, width: AppSizes.p1_2),
+        borderRadius: BorderRadius.circular(AppSizes.radius10),
       ),
       child: Column(
         children: [
           _InfoRow(label: 'Chi deve pagare', value: payingNames),
-          const Divider(height: 12, color: Color(0xFF77727F)),
+          const Divider(height: AppSizes.p12, color: AppColors.borderSubtle),
           _InfoRow(label: 'Quota per persone', value: formatCurrency(quota)),
         ],
       ),
@@ -302,8 +313,8 @@ class _InfoRow extends StatelessWidget {
           child: Text(
             label,
             style: const TextStyle(
-              color: Color(0xFF918D9A),
-              fontSize: 15,
+              color: AppColors.textDim,
+              fontSize: AppSizes.p15,
               fontFamily: 'Inter',
               fontWeight: FontWeight.w800,
             ),
@@ -312,8 +323,8 @@ class _InfoRow extends StatelessWidget {
         Text(
           value,
           style: const TextStyle(
-            color: Colors.white,
-            fontSize: 15,
+            color: AppColors.textOnDark,
+            fontSize: AppSizes.p15,
             fontFamily: 'Inter',
             fontWeight: FontWeight.w800,
           ),
@@ -339,11 +350,16 @@ class _QuotesBox extends StatelessWidget {
     final rows = _quoteRows(data);
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF211C35),
-        border: Border.all(color: const Color(0xFF77727F), width: 1.2),
-        borderRadius: BorderRadius.circular(10),
+        color: AppColors.surfaceDarkCardAlt,
+        border: Border.all(color: AppColors.borderSubtle, width: AppSizes.p1_2),
+        borderRadius: BorderRadius.circular(AppSizes.radius10),
       ),
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+      padding: const EdgeInsets.fromLTRB(
+        AppSizes.p12,
+        AppSizes.p8,
+        AppSizes.p12,
+        AppSizes.p8,
+      ),
       child: Column(
         children: [
           for (int index = 0; index < rows.length; index++) ...[
@@ -353,7 +369,7 @@ class _QuotesBox extends StatelessWidget {
               onPayQuota: onPayQuota,
             ),
             if (index < rows.length - 1)
-              const Divider(height: 1, color: Color(0xFF77727F)),
+              const Divider(height: AppSizes.p1, color: AppColors.borderSubtle),
           ],
         ],
       ),
@@ -374,27 +390,37 @@ class _QuoteTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final showPayButton = row.isCurrentUser && !row.excluded && row.quotaId != null && row.status == 'Da pagare';
+    final showPayButton =
+        row.isCurrentUser &&
+        !row.excluded &&
+        row.quotaId != null &&
+        row.status == 'Da pagare';
 
     return Container(
-      height: 47,
-      color: row.isCurrentUser ? const Color(0xFF8B8993) : Colors.transparent,
-      padding: const EdgeInsets.symmetric(horizontal: 2),
+      height: AppSizes.p47,
+      color: row.isCurrentUser
+          ? AppColors.textMutedDark
+          : AppColors.transparent,
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.p2),
       child: Row(
         children: [
           Opacity(
             opacity: row.excluded ? 0.35 : 1.0,
-            child: UserAvatar(userId: row.userId, username: row.initials, radius: 17.5),
+            child: UserAvatar(
+              userId: row.userId,
+              username: row.initials,
+              radius: 17.5,
+            ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSizes.p12),
           Expanded(
             child: Text(
               row.name,
               style: TextStyle(
                 color: row.excluded
-                    ? const Color(0xFF8D8797)
-                    : Colors.white,
-                fontSize: 16,
+                    ? AppColors.textMutedDark
+                    : AppColors.textOnDark,
+                fontSize: AppSizes.p16,
                 fontFamily: 'Inter',
                 fontStyle: row.excluded ? FontStyle.italic : FontStyle.normal,
                 fontWeight: FontWeight.w600,
@@ -404,38 +430,40 @@ class _QuoteTile extends StatelessWidget {
           if (showPayButton)
             if (isPaying)
               const SizedBox(
-                width: 24,
-                height: 24,
+                width: AppSizes.p24,
+                height: AppSizes.p24,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.lockOrange),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    AppColors.lockOrange,
+                  ),
                 ),
               )
             else
               SizedBox(
-                height: 34,
+                height: AppSizes.p34,
                 child: DecoratedBox(
                   decoration: ShapeDecoration(
                     gradient: LinearGradient(
                       begin: const Alignment(0.50, 0.00),
                       end: const Alignment(0.50, 1.00),
                       colors: [
-                        Colors.white.withValues(alpha: 0.20),
-                        Colors.white.withValues(alpha: 0),
+                        AppColors.textOnDark.withValues(alpha: 0.20),
+                        AppColors.textOnDark.withValues(alpha: 0),
                       ],
                     ),
                     shape: RoundedRectangleBorder(
                       side: const BorderSide(
-                        width: 2,
+                        width: AppSizes.p2,
                         strokeAlign: BorderSide.strokeAlignOutside,
                         color: AppColors.lockOrange,
                       ),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppSizes.radius12),
                     ),
                     shadows: const [
                       BoxShadow(
-                        color: Color(0x3F000000),
-                        blurRadius: 4,
+                        color: AppColors.shadowOverlay,
+                        blurRadius: AppSizes.p4,
                         offset: Offset(0, 4),
                       ),
                     ],
@@ -443,18 +471,20 @@ class _QuoteTile extends StatelessWidget {
                   child: OutlinedButton(
                     onPressed: () => onPayQuota(row.quotaId!),
                     style: OutlinedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
+                      backgroundColor: AppColors.transparent,
                       side: BorderSide.none,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSizes.p12,
+                      ),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppSizes.radius12),
                       ),
                     ),
                     child: const Text(
                       'Paga',
                       style: TextStyle(
                         color: AppColors.lockOrange,
-                        fontSize: 14,
+                        fontSize: AppSizes.p14,
                         fontFamily: 'Inter',
                         fontWeight: FontWeight.w800,
                       ),
@@ -467,7 +497,7 @@ class _QuoteTile extends StatelessWidget {
               row.status,
               style: TextStyle(
                 color: row.statusColor,
-                fontSize: 15,
+                fontSize: AppSizes.p15,
                 fontFamily: 'Inter',
                 fontStyle: row.excluded ? FontStyle.italic : FontStyle.normal,
                 fontWeight: FontWeight.w800,
@@ -490,9 +520,12 @@ class _SmallManageButton extends StatelessWidget {
     return OutlinedButton(
       onPressed: onPressed,
       style: OutlinedButton.styleFrom(
-        side: const BorderSide(color: Color(0xFF996CFA)),
+        side: const BorderSide(color: AppColors.featureAccent),
       ),
-      child: Text(label, style: const TextStyle(color: Color(0xFF996CFA))),
+      child: Text(
+        label,
+        style: const TextStyle(color: AppColors.featureAccent),
+      ),
     );
   }
 }
@@ -506,21 +539,24 @@ class _PrimaryBlueButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 49,
+      height: AppSizes.p49,
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF0B58D5),
+          backgroundColor: AppColors.info,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: const BorderSide(color: Color(0xFF8D8A92), width: 1.3),
+            borderRadius: BorderRadius.circular(AppSizes.radius12),
+            side: const BorderSide(
+              color: AppColors.textMutedDark,
+              width: AppSizes.p1_3,
+            ),
           ),
         ),
         child: Text(
           label,
           style: const TextStyle(
-            color: Colors.white,
-            fontSize: 18,
+            color: AppColors.textOnDark,
+            fontSize: AppSizes.p18,
             fontFamily: 'Inter',
             fontWeight: FontWeight.w800,
           ),
@@ -569,140 +605,41 @@ class _QuoteRow {
 }
 
 List<_QuoteRow> _quoteRows(_DebtorDetailData data) {
-  final includedIds = <String>{};
-  final rows = <_QuoteRow>[];
-  for (final quota in data.quote) {
-    final inquilino = _inquilinoForQuota(quota, data.inquilini);
-    final id = inquilino?.id ?? _quotaUserId(quota);
-    if (id.isNotEmpty) {
-      includedIds.add(id);
-    }
-    final name = _nameForQuota(quota, data.inquilini);
-    final isCurrent = id.isNotEmpty && id == data.currentUserId;
-    rows.add(
-      _QuoteRow(
-        name: isCurrent ? '$name (Tu)' : name,
-        initials: _initials(name),
-        status: quota.pagata ? 'Pagato' : 'Da pagare',
-        statusColor: quota.pagata
-            ? const Color(0xFF3DFF65)
-            : const Color(0xFFFF7A7A),
-        isCurrentUser: isCurrent,
-        excluded: false,
-        quotaId: quota.id,
-        userId: id,
-      ),
-    );
-  }
-
-  for (final inquilino in data.inquilini) {
-    if (includedIds.contains(inquilino.id)) {
-      continue;
-    }
-    final name = _displayName(inquilino);
-    rows.add(
-      _QuoteRow(
-        name: name,
-        initials: _initials(name),
-        status: 'escluso/a',
-        statusColor: const Color(0xFF8D8797),
-        isCurrentUser: false,
-        excluded: true,
-        userId: inquilino.id,
-      ),
-    );
-  }
-  return rows;
+  final projection = SpesaDetailProjection.from(
+    spesa: data.spesa,
+    quote: data.quote,
+    inquilini: data.inquilini,
+    currentUserId: data.currentUserId,
+  );
+  return projection.rowsIncludingExcluded
+      .map(
+        (row) => _QuoteRow(
+          name: row.name,
+          initials: row.initials,
+          status: row.isExcluded
+              ? 'escluso/a'
+              : row.isPaid
+              ? 'Pagato'
+              : 'Da pagare',
+          statusColor: row.isExcluded
+              ? AppColors.textMutedDark
+              : row.isPaid
+              ? AppColors.statusPositive
+              : AppColors.statusNegative,
+          isCurrentUser: row.isCurrentUser,
+          excluded: row.isExcluded,
+          quotaId: row.quotaId,
+          userId: row.userId,
+        ),
+      )
+      .toList(growable: false);
 }
 
 String _payingNames(_DebtorDetailData data) {
-  final names = data.quote
-      .where((quota) => !quota.pagata)
-      .map((quota) => _nameForQuota(quota, data.inquilini))
-      .toList();
-  if (names.isEmpty) {
-    return 'Nessuno';
-  }
-  return names.join(', ');
+  return SpesaDetailProjection.from(
+    spesa: data.spesa,
+    quote: data.quote,
+    inquilini: data.inquilini,
+    currentUserId: data.currentUserId,
+  ).payingNames;
 }
-
-Inquilino? _resolveCurrentUser(List<Inquilino> inquilini) {
-  // 1. Usa l'ID utente dalla sessione — identificatore univoco, non ambiguo.
-  final userId = ApiProvider.client.currentUserId?.trim();
-  if (userId != null && userId.isNotEmpty) {
-    for (final inquilino in inquilini) {
-      if (inquilino.id == userId) {
-        return inquilino;
-      }
-    }
-  }
-
-  // 2. Fallback: email (univoca per definizione).
-  final email = ApiProvider.client.currentUserEmail?.trim().toLowerCase();
-  if (email != null && email.isNotEmpty) {
-    for (final inquilino in inquilini) {
-      if (inquilino.email.trim().toLowerCase() == email) {
-        return inquilino;
-      }
-    }
-  }
-
-  // Non usiamo nome/nomeCompleto: non sono univoci e causano falsi positivi
-  // quando due utenti condividono lo stesso nome anagrafico.
-  return null;
-}
-
-Inquilino? _inquilinoForQuota(Quota quota, List<Inquilino> inquilini) {
-  final id = _quotaUserId(quota);
-  for (final inquilino in inquilini) {
-    if (inquilino.id == id) {
-      return inquilino;
-    }
-  }
-  return null;
-}
-
-String _quotaUserId(Quota quota) {
-  final raw = quota.raw;
-  final id =
-      raw['inquilinoId'] ??
-      raw['idInquilino'] ??
-      raw['utenteId'] ??
-      raw['idUtente'] ??
-      raw['userId'] ??
-      (raw['utente'] is Map ? raw['utente']['id'] : null);
-  return id?.toString() ?? '';
-}
-
-String _nameForQuota(Quota quota, List<Inquilino> inquilini) {
-  final inquilino = _inquilinoForQuota(quota, inquilini);
-  if (inquilino != null) {
-    return _displayName(inquilino);
-  }
-  final raw = quota.raw;
-  return raw['username']?.toString() ??
-      (raw['utente'] is Map ? raw['utente']['username']?.toString() : null) ??
-      'Coinquilino';
-}
-
-String _displayName(Inquilino inquilino) {
-  final username = inquilino.username.trim();
-  if (username.isNotEmpty) return username;
-  return inquilino.email.trim().isEmpty ? 'Coinquilino' : inquilino.email;
-}
-
-String _initials(String name) {
-  final parts = name
-      .replaceAll('(Tu)', '')
-      .trim()
-      .split(RegExp(r'\s+'))
-      .where((part) => part.isNotEmpty)
-      .toList();
-  if (parts.isEmpty) return 'C';
-  if (parts.length == 1) {
-    return parts.first.characters.take(2).toString().toUpperCase();
-  }
-  return '${parts.first.characters.first}${parts.last.characters.first}'
-      .toUpperCase();
-}
-

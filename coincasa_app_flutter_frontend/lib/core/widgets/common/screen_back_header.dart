@@ -18,16 +18,23 @@ class ScreenBackHeader extends StatelessWidget {
       children: [
         IconButton(
           onPressed: onBack,
-          icon: const Icon(Icons.arrow_back, color: AppColors.brandAccent, size: 28),
+          icon: const Icon(
+            Icons.arrow_back,
+            color: AppColors.brandAccent,
+            size: AppSizes.p28,
+          ),
           padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          constraints: const BoxConstraints(
+            minWidth: AppSizes.p32,
+            minHeight: AppSizes.p32,
+          ),
         ),
         const SizedBox(width: AppSizes.p6),
         Text(
           title,
           style: AppTextStyles.screenTitleStrong.copyWith(
             color: AppColors.brandAccent,
-            fontSize: 23,
+            fontSize: AppSizes.p23,
             fontWeight: FontWeight.w800,
           ),
         ),

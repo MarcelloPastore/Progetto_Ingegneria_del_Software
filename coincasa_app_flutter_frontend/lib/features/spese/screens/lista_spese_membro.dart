@@ -3,8 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:coincasa_app/app.dart';
-import 'package:coincasa_app/core/api/api_provider.dart';
-import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/spesa.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
@@ -15,28 +13,7 @@ import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
 import 'package:coincasa_app/features/spese/screens/dettaglio_spesa_debitore.dart';
 import 'package:coincasa_app/features/spese/screens/inserisci_spesa_membro.dart';
 import 'package:coincasa_app/features/spese/screens/pareggia_conti.dart';
-
-final _memberSpeseDataProvider = FutureProvider.autoDispose
-    .family<_MemberSpeseData?, String?>((ref, selectedCasaId) async {
-      final caseUtente = await ApiProvider.casa.list();
-      if (caseUtente.isEmpty) {
-        return null;
-      }
-      final casa = _resolveCasa(caseUtente, selectedCasaId);
-      final spese = await ApiProvider.spese.list(casa.id);
-      final amounts = await Future.wait<double>([
-        ApiProvider.spese.getSaldo(casa.id).catchError((_) => 0.0),
-        ApiProvider.spese.getCreditoTot(casa.id).catchError((_) => 0.0),
-        ApiProvider.spese.getDebitoTot(casa.id).catchError((_) => 0.0),
-      ]);
-      return _MemberSpeseData(
-        casa: casa,
-        spese: spese,
-        totaleMese: amounts[0],
-        credito: amounts[1],
-        debito: amounts[2],
-      );
-    });
+import 'package:coincasa_app/domain/viewmodel/spese_viewmodel.dart';
 
 class ListaSpeseMembroScreen extends ConsumerStatefulWidget {
   const ListaSpeseMembroScreen({super.key});
@@ -57,7 +34,10 @@ class _ListaSpeseMembroScreenState extends ConsumerState<ListaSpeseMembroScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final casaId = ActiveCasaScope.read(context).selectedCasaId;
-      ref.invalidate(_memberSpeseDataProvider(casaId));
+      if (casaId != null) {
+        ref.invalidate(speseViewModelProvider(casaId));
+      }
+      ref.invalidate(memberSpeseDataProvider(casaId));
     });
   }
 
@@ -81,18 +61,21 @@ class _ListaSpeseMembroScreenState extends ConsumerState<ListaSpeseMembroScreen>
   void didPopNext() {
     super.didPopNext();
     final selectedCasaId = ActiveCasaScope.read(context).selectedCasaId;
-    ref.invalidate(_memberSpeseDataProvider(selectedCasaId));
+    if (selectedCasaId != null) {
+      ref.invalidate(speseViewModelProvider(selectedCasaId));
+    }
+    ref.invalidate(memberSpeseDataProvider(selectedCasaId));
   }
 
   @override
   Widget build(BuildContext context) {
     final selectedCasaId = ActiveCasaScope.read(context).selectedCasaId;
-    final asyncData = ref.watch(_memberSpeseDataProvider(selectedCasaId));
+    final asyncData = ref.watch(memberSpeseDataProvider(selectedCasaId));
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: const Color(0xFF151127),
+        backgroundColor: AppColors.darkBackground,
         bottomNavigationBar: const HouseQuickNav(currentRoute: '/spese'),
         body: SafeArea(
           child: asyncData.when(
@@ -112,16 +95,21 @@ class _ListaSpeseMembroScreenState extends ConsumerState<ListaSpeseMembroScreen>
 class _MemberSpeseContent extends StatelessWidget {
   const _MemberSpeseContent({required this.data});
 
-  final _MemberSpeseData data;
+  final MemberSpeseData data;
 
   @override
   Widget build(BuildContext context) {
-    final groups = _groupByMonth(data.spese);
+    final groups = data.groupedSpese;
     return Column(
       children: [
         Expanded(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(14, 8, 14, 16),
+            padding: const EdgeInsets.fromLTRB(
+              AppSizes.p14,
+              AppSizes.p8,
+              AppSizes.p14,
+              AppSizes.p16,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -131,12 +119,12 @@ class _MemberSpeseContent extends StatelessWidget {
                     onPressed: () => Navigator.of(context).pop(),
                     icon: const Icon(
                       Icons.arrow_back,
-                      color: Color(0xFF996CFA),
+                      color: AppColors.featureAccent,
                     ),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints.tightFor(
-                      width: 28,
-                      height: 28,
+                      width: AppSizes.p28,
+                      height: AppSizes.p28,
                     ),
                   ),
                 ),
@@ -146,30 +134,38 @@ class _MemberSpeseContent extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: AppTextStyles.screenTitleStrong.copyWith(
                       color: AppColors.brandAccent,
-                      fontSize: 40,
+                      fontSize: AppSizes.p40,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: AppSizes.p20),
                 _SummaryCard(data: data),
-                const SizedBox(height: 25),
+                const SizedBox(height: AppSizes.p25),
                 for (final entry in groups.entries) ...[
                   _MonthTitle(entry.key),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSizes.p8),
                   for (int index = 0; index < entry.value.length; index++) ...[
                     _ExpenseTile(spesa: entry.value[index]),
                     if (index < entry.value.length - 1)
-                      const Divider(height: 1, color: Color(0xFF77727F)),
+                      const Divider(
+                        height: AppSizes.p1,
+                        color: AppColors.borderSubtle,
+                      ),
                   ],
-                  const SizedBox(height: 28),
+                  const SizedBox(height: AppSizes.p28),
                 ],
               ],
             ),
           ),
         ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
+          padding: const EdgeInsets.fromLTRB(
+            AppSizes.p16,
+            AppSizes.p8,
+            AppSizes.p16,
+            AppSizes.p14,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -181,7 +177,7 @@ class _MemberSpeseContent extends StatelessWidget {
                     context,
                   ).pushNamed(PareggiaContiScreen.routeName),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: AppSizes.p10),
               ],
               MainCtaButton(
                 label: 'Inserisci nuova spesa',
@@ -200,47 +196,52 @@ class _MemberSpeseContent extends StatelessWidget {
 class _SummaryCard extends StatelessWidget {
   const _SummaryCard({required this.data});
 
-  final _MemberSpeseData data;
+  final MemberSpeseData data;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(13, 12, 13, 12),
+      padding: const EdgeInsets.fromLTRB(
+        AppSizes.p13,
+        AppSizes.p12,
+        AppSizes.p13,
+        AppSizes.p12,
+      ),
       decoration: BoxDecoration(
-        color: const Color(0xFF312B4A),
-        border: Border.all(color: const Color(0xFF77727F), width: 1.2),
-        borderRadius: BorderRadius.circular(8),
+        color: AppColors.surfaceDarkMuted,
+        border: Border.all(color: AppColors.borderSubtle, width: AppSizes.p1_2),
+        borderRadius: BorderRadius.circular(AppSizes.radius8),
       ),
       child: Column(
         children: [
           Text(
             'SALDO MESE - ${monthName(DateTime.now().month).toUpperCase()} ${DateTime.now().year}',
             style: const TextStyle(
-              color: Color(0xFFC1BFC8),
-              fontSize: 16,
+              color: AppColors.textDisabled,
+              fontSize: AppSizes.p16,
               fontFamily: 'Inter',
               fontWeight: FontWeight.w800,
             ),
           ),
-          const Divider(color: Color(0xFF77727F), height: 22),
+          const Divider(color: AppColors.borderSubtle, height: AppSizes.p22),
           Row(
             children: [
               _SummaryColumn(
                 label: 'Totale mese',
                 value: formatCurrency(data.totaleMese),
-                color: Colors.white,
+                color: AppColors.textOnDark,
               ),
               const _VerticalLine(),
               _SummaryColumn(
                 label: 'Devi ricevere',
                 value: formatCurrency(data.credito),
-                color: const Color(0xFF4DE45F),
+                color: AppColors.statusPositive,
               ),
               const _VerticalLine(),
               _SummaryColumn(
                 label: 'Devi pagare',
                 value: formatCurrency(data.debito),
-                color: const Color(0xFFFF5555),
+                color: AppColors.statusNegative,
               ),
             ],
           ),
@@ -269,18 +270,18 @@ class _SummaryColumn extends StatelessWidget {
           Text(
             label,
             style: const TextStyle(
-              color: Color(0xFF918D9A),
-              fontSize: 13,
+              color: AppColors.textDim,
+              fontSize: AppSizes.p13,
               fontFamily: 'Inter',
               fontWeight: FontWeight.w800,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSizes.p8),
           Text(
             value,
             style: TextStyle(
               color: color,
-              fontSize: 21,
+              fontSize: AppSizes.p21,
               fontFamily: 'Inter',
               fontWeight: FontWeight.w800,
             ),
@@ -301,7 +302,7 @@ class _ExpenseTile extends StatelessWidget {
     final creator = spesa.creatoreNome.isEmpty
         ? 'coinquilino'
         : spesa.creatoreNome;
-    final isPagata = _isSpesaPagata(spesa);
+    final isPagata = spesaStatusFor(spesa, null) == SpesaStatus.pagata;
 
     return Opacity(
       opacity: isPagata ? 0.4 : 1.0,
@@ -311,13 +312,13 @@ class _ExpenseTile extends StatelessWidget {
           arguments: spesa.id,
         ),
         child: Container(
-          height: 39,
-          padding: const EdgeInsets.symmetric(horizontal: 5),
-          color: Colors.transparent,
+          height: AppSizes.p39,
+          padding: const EdgeInsets.symmetric(horizontal: AppSizes.p5),
+          color: AppColors.transparent,
           child: Row(
             children: [
               UserAvatar(displayName: creator, radius: 18),
-              const SizedBox(width: 13),
+              const SizedBox(width: AppSizes.p13),
               Expanded(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -327,8 +328,7 @@ class _ExpenseTile extends StatelessWidget {
                       title: spesa.descrizione.isEmpty
                           ? 'Spesa'
                           : spesa.descrizione,
-                      date:
-                          '${spesa.data.day} ${monthShort(spesa.data.month)}',
+                      date: '${spesa.data.day} ${monthShort(spesa.data.month)}',
                     ),
                     Text(
                       isPagata ? 'Pagata' : '$creator ha pagato',
@@ -336,9 +336,9 @@ class _ExpenseTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: isPagata
-                            ? const Color(0xFF4DE45F)
-                            : const Color(0xFF918D9A),
-                        fontSize: 11,
+                            ? AppColors.statusPositive
+                            : AppColors.textDim,
+                        fontSize: AppSizes.p11,
                         fontFamily: 'Inter',
                         fontWeight: FontWeight.w600,
                       ),
@@ -349,8 +349,8 @@ class _ExpenseTile extends StatelessWidget {
               Text(
                 formatCurrency(spesa.importo),
                 style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 15,
+                  color: AppColors.textOnDark,
+                  fontSize: AppSizes.p15,
                   fontFamily: 'Inter',
                   fontWeight: FontWeight.w800,
                 ),
@@ -362,18 +362,6 @@ class _ExpenseTile extends StatelessWidget {
     );
   }
 }
-
-/// Restituisce true se tutte le quote non escluse della spesa risultano pagate.
-bool _isSpesaPagata(Spesa spesa) {
-  final partecipanti = spesa.partecipanti;
-  if (partecipanti.isEmpty) return false;
-  final nonEsclusi = partecipanti.where((p) => p['escluso'] != true).toList();
-  if (nonEsclusi.isEmpty) return false;
-  return nonEsclusi.every(
-    (p) => p['pagato'] == true || p['pagata'] == true || p['saldato'] == true,
-  );
-}
-
 
 class _MonthTitle extends StatelessWidget {
   const _MonthTitle(this.month);
@@ -388,8 +376,8 @@ class _MonthTitle extends StatelessWidget {
     return Text(
       '${monthName(month.month).toUpperCase()} ${month.year}${closed ? ' (chiuso)' : ''}',
       style: TextStyle(
-        color: closed ? const Color(0xFF6F687C) : const Color(0xFFC1BFC8),
-        fontSize: 17,
+        color: closed ? AppColors.textMutedDark : AppColors.textDisabled,
+        fontSize: AppSizes.p17,
         fontFamily: 'Inter',
         fontWeight: FontWeight.w800,
       ),
@@ -402,7 +390,11 @@ class _VerticalLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(width: 1, height: 35, color: const Color(0xFF77727F));
+    return Container(
+      width: AppSizes.p1,
+      height: AppSizes.p35,
+      color: AppColors.borderSubtle,
+    );
   }
 }
 
@@ -414,50 +406,9 @@ class _StateMessage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Text(message, style: const TextStyle(color: Colors.white)),
+      child: Text(message, style: const TextStyle(color: AppColors.textOnDark)),
     );
   }
-}
-
-class _MemberSpeseData {
-  const _MemberSpeseData({
-    required this.casa,
-    required this.spese,
-    required this.totaleMese,
-    required this.credito,
-    required this.debito,
-  });
-
-  final Casa casa;
-  final List<Spesa> spese;
-  final double totaleMese;
-  final double credito;
-  final double debito;
-}
-
-Casa _resolveCasa(List<Casa> caseUtente, String? selectedCasaId) {
-  if (selectedCasaId != null) {
-    for (final casa in caseUtente) {
-      if (casa.id == selectedCasaId) {
-        return casa;
-      }
-    }
-  }
-  return caseUtente.first;
-}
-
-Map<DateTime, List<Spesa>> _groupByMonth(List<Spesa> spese) {
-  final grouped = <DateTime, List<Spesa>>{};
-  for (final spesa in spese) {
-    final key = DateTime(spesa.data.year, spesa.data.month);
-    grouped.putIfAbsent(key, () => []).add(spesa);
-  }
-  for (final list in grouped.values) {
-    list.sort((a, b) => b.data.compareTo(a.data));
-  }
-  final entries = grouped.entries.toList()
-    ..sort((a, b) => b.key.compareTo(a.key));
-  return Map.fromEntries(entries);
 }
 
 class _TitleWithDate extends StatelessWidget {
@@ -467,14 +418,14 @@ class _TitleWithDate extends StatelessWidget {
   final String date;
 
   static const _titleStyle = TextStyle(
-    color: Colors.white,
-    fontSize: 15,
+    color: AppColors.textOnDark,
+    fontSize: AppSizes.p15,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w800,
   );
   static const _dateStyle = TextStyle(
-    color: Color(0xFF908F8F),
-    fontSize: 11,
+    color: AppColors.textMutedDark,
+    fontSize: AppSizes.p11,
     fontFamily: 'Inter',
     fontWeight: FontWeight.w400,
   );
@@ -517,7 +468,7 @@ class _TitleWithDate extends StatelessWidget {
               ),
             ),
             if (showDate) ...[
-              const SizedBox(width: 6),
+              const SizedBox(width: AppSizes.p6),
               Text(date, style: _dateStyle),
             ],
           ],

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:coincasa_app/core/api/api_provider.dart';
+import 'package:coincasa_app/core/models/auth_user.dart';
 import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
@@ -9,6 +10,9 @@ import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 import 'package:coincasa_app/features/spese/screens/inserisci_spesa_successo.dart';
+import 'package:coincasa_app/domain/viewmodel/auth_view_model.dart';
+import 'package:coincasa_app/domain/viewmodel/lista_case_viewmodel.dart';
+import 'package:coincasa_app/domain/viewmodel/spese_viewmodel.dart';
 
 Future<void> showInserisciSpesaMembroDialog(BuildContext context) {
   final screenSize = MediaQuery.sizeOf(context);
@@ -18,29 +22,35 @@ Future<void> showInserisciSpesaMembroDialog(BuildContext context) {
   return showDialog<void>(
     context: context,
     barrierDismissible: true,
-    barrierColor: Colors.black.withValues(alpha: 0.56),
+    barrierColor: AppColors.darkBackground.withValues(alpha: 0.56),
     builder: (_) => Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.p16,
+        vertical: AppSizes.p24,
+      ),
+      backgroundColor: AppColors.transparent,
       child: Container(
         width: popupWidth,
         height: popupHeight,
         decoration: ShapeDecoration(
-          color: Colors.white,
+          color: AppColors.textOnDark,
           shape: RoundedRectangleBorder(
-            side: const BorderSide(width: 2, color: Color(0xFF996CFA)),
-            borderRadius: BorderRadius.circular(15),
+            side: const BorderSide(
+              width: AppSizes.p2,
+              color: AppColors.featureAccent,
+            ),
+            borderRadius: BorderRadius.circular(AppSizes.radius15),
           ),
           shadows: const [
             BoxShadow(
-              color: Color(0x3F000000),
-              blurRadius: 4,
+              color: AppColors.shadowOverlay,
+              blurRadius: AppSizes.p4,
               offset: Offset(0, 4),
             ),
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(13),
+          borderRadius: BorderRadius.circular(AppSizes.radius13),
           child: const InserisciSpesaMembroPopupContent(),
         ),
       ),
@@ -48,25 +58,26 @@ Future<void> showInserisciSpesaMembroDialog(BuildContext context) {
   );
 }
 
-class InserisciSpesaMembroScreen extends StatefulWidget {
+class InserisciSpesaMembroScreen extends ConsumerStatefulWidget {
   const InserisciSpesaMembroScreen({super.key});
 
   static const String routeName = '/spese/nuovo-membro';
 
   @override
-  State<InserisciSpesaMembroScreen> createState() =>
+  ConsumerState<InserisciSpesaMembroScreen> createState() =>
       _InserisciSpesaMembroScreenState();
 }
 
-class InserisciSpesaMembroPopupContent extends StatefulWidget {
+class InserisciSpesaMembroPopupContent extends ConsumerStatefulWidget {
   const InserisciSpesaMembroPopupContent({super.key});
 
   @override
-  State<InserisciSpesaMembroPopupContent> createState() =>
+  ConsumerState<InserisciSpesaMembroPopupContent> createState() =>
       _InserisciSpesaMembroPopupContentState();
 }
 
-class _InserisciSpesaMembroScreenState extends State<InserisciSpesaMembroScreen>
+class _InserisciSpesaMembroScreenState
+    extends ConsumerState<InserisciSpesaMembroScreen>
     with _InserisciSpesaMembroFormMixin<InserisciSpesaMembroScreen> {
   @override
   bool get _isPopup => false;
@@ -74,7 +85,7 @@ class _InserisciSpesaMembroScreenState extends State<InserisciSpesaMembroScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF151127),
+      backgroundColor: AppColors.darkBackground,
       bottomNavigationBar: const HouseQuickNav(currentRoute: '/spese'),
       body: SafeArea(child: _buildContent()),
     );
@@ -82,7 +93,7 @@ class _InserisciSpesaMembroScreenState extends State<InserisciSpesaMembroScreen>
 }
 
 class _InserisciSpesaMembroPopupContentState
-    extends State<InserisciSpesaMembroPopupContent>
+    extends ConsumerState<InserisciSpesaMembroPopupContent>
     with _InserisciSpesaMembroFormMixin<InserisciSpesaMembroPopupContent> {
   @override
   bool get _isPopup => true;
@@ -93,7 +104,8 @@ class _InserisciSpesaMembroPopupContentState
   }
 }
 
-mixin _InserisciSpesaMembroFormMixin<T extends StatefulWidget> on State<T> {
+mixin _InserisciSpesaMembroFormMixin<T extends ConsumerStatefulWidget>
+    on ConsumerState<T> {
   final _importoController = TextEditingController();
   final _descrizioneController = TextEditingController();
   late Future<_MemberExpenseData?> _future;
@@ -125,13 +137,15 @@ mixin _InserisciSpesaMembroFormMixin<T extends StatefulWidget> on State<T> {
 
   Future<_MemberExpenseData?> _loadData() async {
     final activeCasaController = ActiveCasaScope.read(context);
-    final caseUtente = await ApiProvider.casa.list();
+    final caseUtente = await ref.read(listaCaseViewModelProvider.future);
     if (caseUtente.isEmpty) {
       return null;
     }
     final casa = activeCasaController.resolveCasa(caseUtente);
-    final inquilini = await ApiProvider.casa.listInquilini(casa.id);
-    final current = _resolveCurrentUser(inquilini);
+    final state = await ref.read(speseViewModelProvider(casa.id).future);
+    final currentUser = await ref.read(authViewModelProvider.future);
+    final inquilini = state.inquilini;
+    final current = _resolveCurrentUser(inquilini, currentUser);
 
     if (mounted && _selectedIds.isEmpty) {
       setState(() {
@@ -149,9 +163,12 @@ mixin _InserisciSpesaMembroFormMixin<T extends StatefulWidget> on State<T> {
     );
   }
 
-  Inquilino? _resolveCurrentUser(List<Inquilino> inquilini) {
+  Inquilino? _resolveCurrentUser(
+    List<Inquilino> inquilini,
+    AuthUser? currentUser,
+  ) {
     // 1. Usa l'ID utente dalla sessione — identificatore univoco, non ambiguo.
-    final userId = ApiProvider.client.currentUserId?.trim();
+    final userId = currentUser?.id.trim();
     if (userId != null && userId.isNotEmpty) {
       for (final inquilino in inquilini) {
         if (inquilino.id == userId) {
@@ -161,7 +178,7 @@ mixin _InserisciSpesaMembroFormMixin<T extends StatefulWidget> on State<T> {
     }
 
     // 2. Fallback: email (univoca per definizione).
-    final email = ApiProvider.client.currentUserEmail?.trim().toLowerCase();
+    final email = currentUser?.email.trim().toLowerCase();
     if (email != null && email.isNotEmpty) {
       for (final inquilino in inquilini) {
         if (inquilino.email.trim().toLowerCase() == email) {
@@ -174,7 +191,6 @@ mixin _InserisciSpesaMembroFormMixin<T extends StatefulWidget> on State<T> {
     // quando due utenti condividono lo stesso nome anagrafico.
     return null;
   }
-
 
   double? get _parsedAmount {
     final normalized = _importoController.text.trim().replaceAll(',', '.');
@@ -211,20 +227,16 @@ mixin _InserisciSpesaMembroFormMixin<T extends StatefulWidget> on State<T> {
 
     setState(() => _isSubmitting = true);
     try {
-      await ApiProvider.spese.create(data.casa.id, {
-        'descrizione': _descrizioneController.text.trim().isEmpty
-            ? 'Spesa'
-            : _descrizioneController.text.trim(),
-        'importo': amount,
-        'dataScadenza': _date.toIso8601String().split('T').first,
-        'partecipanti': _buildPartecipantiIds(
-          selectedIds: _selectedIds,
-          currentUserId: data.currentUserId,
-        ),
-        if (_paidForAll && data.currentUserId != null)
-          'anticipataDa': data.currentUserId,
-        'isRicorrente': false,
-      });
+      await ref
+          .read(speseViewModelProvider(data.casa.id).notifier)
+          .createSpesaFromFields(
+            descrizione: _descrizioneController.text,
+            importo: _importoController.text,
+            partecipanti: _selectedIds,
+            data: _date,
+            currentUserId: data.currentUserId,
+            anticipataPerTutti: _paidForAll,
+          );
       if (!mounted) {
         return;
       }
@@ -248,13 +260,13 @@ mixin _InserisciSpesaMembroFormMixin<T extends StatefulWidget> on State<T> {
 
   Widget _buildContent() {
     return Container(
-      color: _isPopup ? Colors.white : Colors.transparent,
+      color: _isPopup ? AppColors.textOnDark : AppColors.transparent,
       child: FutureBuilder<_MemberExpenseData?>(
         future: _future,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
             return const Center(
-              child: CircularProgressIndicator(color: Color(0xFF996CFA)),
+              child: CircularProgressIndicator(color: AppColors.featureAccent),
             );
           }
           final data = snapshot.data;
@@ -263,14 +275,21 @@ mixin _InserisciSpesaMembroFormMixin<T extends StatefulWidget> on State<T> {
               child: Text(
                 'Dati non disponibili.',
                 style: TextStyle(
-                  color: _isPopup ? Color(0xFF2F2741) : Colors.white,
+                  color: _isPopup
+                      ? AppColors.surfaceDarkMuted
+                      : AppColors.textOnDark,
                 ),
               ),
             );
           }
 
           return SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(13, _isPopup ? 16 : 18, 13, 24),
+            padding: EdgeInsets.fromLTRB(
+              AppSizes.p13,
+              _isPopup ? AppSizes.p16 : AppSizes.p18,
+              AppSizes.p13,
+              AppSizes.p24,
+            ),
             child: ConstrainedBox(
               constraints: BoxConstraints(
                 minHeight: (_isPopup
@@ -292,20 +311,20 @@ mixin _InserisciSpesaMembroFormMixin<T extends StatefulWidget> on State<T> {
                       message: 'Inserisci un importo valido per continuare',
                       leftPadding: 0,
                     ),
-                    const SizedBox(height: 7),
+                    const SizedBox(height: AppSizes.p7),
                   ],
                   _AmountField(
                     controller: _importoController,
                     hasError: _hasAmountError,
                     onChanged: (_) => setState(() {}),
                   ),
-                  const SizedBox(height: 7),
+                  const SizedBox(height: AppSizes.p7),
                   Row(
                     children: [
                       Expanded(
                         child: _DateButton(date: _date, onTap: _pickDate),
                       ),
-                      const SizedBox(width: 7),
+                      const SizedBox(width: AppSizes.p7),
                       Expanded(
                         flex: 12,
                         child: _DescriptionField(
@@ -314,22 +333,22 @@ mixin _InserisciSpesaMembroFormMixin<T extends StatefulWidget> on State<T> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: AppSizes.p18),
                   Padding(
-                    padding: const EdgeInsets.only(left: 24),
+                    padding: const EdgeInsets.only(left: AppSizes.p24),
                     child: Text(
                       'DIVIDI TRA',
                       style: TextStyle(
                         color: _isPopup
-                            ? const Color(0xFF5228AD)
-                            : const Color(0xFFC1BFC8),
-                        fontSize: 20,
+                            ? AppColors.brandPrimaryDark
+                            : AppColors.textDisabled,
+                        fontSize: AppSizes.p20,
                         fontFamily: 'Inter',
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSizes.p8),
                   _ParticipantsCard(
                     inquilini: data.inquilini,
                     selectedIds: _selectedIds,
@@ -350,13 +369,13 @@ mixin _InserisciSpesaMembroFormMixin<T extends StatefulWidget> on State<T> {
                     },
                   ),
                   if (_hasParticipantsError) ...[
-                    const SizedBox(height: 7),
+                    const SizedBox(height: AppSizes.p7),
                     const _ErrorText(
                       message: 'Seleziona almeno un coinquilino',
                       leftPadding: 38,
                     ),
                   ],
-                  const SizedBox(height: 18),
+                  const SizedBox(height: AppSizes.p18),
                   _MemberSwitchRow(
                     title: 'Ho anticipato per tutti',
                     subtitle: 'Gli altri vedranno il debito verso di te',
@@ -364,7 +383,7 @@ mixin _InserisciSpesaMembroFormMixin<T extends StatefulWidget> on State<T> {
                     popup: _isPopup,
                     onChanged: (value) => setState(() => _paidForAll = value),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSizes.p12),
                   _RecurringDisabledRow(popup: _isPopup),
                   if (!_isPopup) const Spacer(),
                   SizedBox(height: _isPopup ? 22 : 34),
@@ -372,7 +391,7 @@ mixin _InserisciSpesaMembroFormMixin<T extends StatefulWidget> on State<T> {
                     isSubmitting: _isSubmitting,
                     onPressed: () => _submit(data),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSizes.p8),
                   _CancelButton(
                     enabled: !_isSubmitting,
                     onPressed: () {
@@ -401,19 +420,19 @@ class _BackTitle extends StatelessWidget {
       children: [
         InkWell(
           onTap: onBack,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppSizes.radius20),
           child: const Icon(
             Icons.arrow_back,
-            color: Color(0xFF996CFA),
-            size: 25,
+            color: AppColors.featureAccent,
+            size: AppSizes.p25,
           ),
         ),
-        const SizedBox(width: 2),
+        const SizedBox(width: AppSizes.p2),
         Text(
           popup ? 'Nuova Spesa' : 'Spese',
           style: TextStyle(
-            color: Color(0xFF996CFA),
-            fontSize: 22,
+            color: AppColors.featureAccent,
+            fontSize: AppSizes.p22,
             fontFamily: 'Inter',
             fontWeight: FontWeight.w800,
           ),
@@ -467,23 +486,23 @@ class _AmountFieldState extends State<_AmountField> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOut,
-        height: 73,
+        height: AppSizes.p73,
         decoration: BoxDecoration(
-          color: const Color(0xFF312B4A),
+          color: AppColors.surfaceDarkMuted,
           border: Border.all(
             color: widget.hasError
-                ? const Color(0xFFFF2525)
+                ? AppColors.errorStrong
                 : _hasFocus
-                ? const Color(0xFF996CFA)
-                : const Color(0xFFAAA6B2),
+                ? AppColors.featureAccent
+                : AppColors.textMutedSoft,
             width: widget.hasError || _hasFocus ? 2 : 1.8,
           ),
-          borderRadius: BorderRadius.circular(9),
+          borderRadius: BorderRadius.circular(AppSizes.radius9),
           boxShadow: _hasFocus
               ? [
                   BoxShadow(
-                    color: const Color(0xFF996CFA).withValues(alpha: 0.22),
-                    blurRadius: 14,
+                    color: AppColors.featureAccent.withValues(alpha: 0.22),
+                    blurRadius: AppSizes.p14,
                     offset: const Offset(0, 6),
                   ),
                 ]
@@ -492,13 +511,13 @@ class _AmountFieldState extends State<_AmountField> {
         child: Stack(
           children: [
             Positioned(
-              left: 11,
-              top: 5,
+              left: AppSizes.p11,
+              top: AppSizes.p5,
               child: Text(
                 'Importo',
                 style: AppTextStyles.screenTitleStrong.copyWith(
-                  color: Colors.white,
-                  fontSize: 19,
+                  color: AppColors.textOnDark,
+                  fontSize: AppSizes.p19,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -517,23 +536,28 @@ class _AmountFieldState extends State<_AmountField> {
                 ],
                 textAlign: TextAlign.right,
                 style: AppTextStyles.screenTitleStrong.copyWith(
-                  color: const Color(0xFF996CFA),
-                  fontSize: 38,
+                  color: AppColors.featureAccent,
+                  fontSize: AppSizes.p38,
                   fontWeight: FontWeight.w500,
                 ),
                 decoration: InputDecoration(
                   border: InputBorder.none,
-                  contentPadding: const EdgeInsets.fromLTRB(12, 22, 11, 0),
+                  contentPadding: const EdgeInsets.fromLTRB(
+                    AppSizes.p12,
+                    AppSizes.p22,
+                    AppSizes.p11,
+                    AppSizes.p0,
+                  ),
                   prefixText: widget.controller.text.trim().isEmpty ? '' : '€ ',
                   prefixStyle: AppTextStyles.screenTitleStrong.copyWith(
-                    color: const Color(0xFF996CFA),
-                    fontSize: 38,
+                    color: AppColors.featureAccent,
+                    fontSize: AppSizes.p38,
                     fontWeight: FontWeight.w500,
                   ),
                   hintText: '€ 0,00',
                   hintStyle: AppTextStyles.screenTitleStrong.copyWith(
-                    color: const Color(0xFF996CFA),
-                    fontSize: 38,
+                    color: AppColors.featureAccent,
+                    fontSize: AppSizes.p38,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -561,15 +585,19 @@ class _DateButton extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.calendar_month, color: Colors.white, size: 18),
-          const SizedBox(width: 5),
+          const Icon(
+            Icons.calendar_month,
+            color: AppColors.textOnDark,
+            size: AppSizes.p18,
+          ),
+          const SizedBox(width: AppSizes.p5),
           Flexible(
             child: Text(
               formatted,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
+                color: AppColors.textOnDark,
+                fontSize: AppSizes.p16,
                 fontFamily: 'Inter',
                 fontWeight: FontWeight.w600,
               ),
@@ -593,14 +621,14 @@ class _DescriptionField extends StatelessWidget {
         controller: controller,
         textAlign: TextAlign.center,
         style: const TextStyle(
-          color: Colors.white,
-          fontSize: 16,
+          color: AppColors.textOnDark,
+          fontSize: AppSizes.p16,
           fontFamily: 'Inter',
           fontWeight: FontWeight.w600,
         ),
         decoration: const InputDecoration(
           hintText: 'Descrizione',
-          hintStyle: TextStyle(color: Colors.white70),
+          hintStyle: TextStyle(color: AppColors.textOnDarkMuted),
           border: InputBorder.none,
           isDense: true,
           contentPadding: EdgeInsets.zero,
@@ -620,16 +648,19 @@ class _MiniFieldButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(7),
+      borderRadius: BorderRadius.circular(AppSizes.radius7),
       child: Container(
-        height: 37,
+        height: AppSizes.p37,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: const Color(0xFF312B4A),
-          border: Border.all(color: const Color(0xFFAAA6B2), width: 1.8),
-          borderRadius: BorderRadius.circular(7),
+          color: AppColors.surfaceDarkMuted,
+          border: Border.all(
+            color: AppColors.textMutedSoft,
+            width: AppSizes.p1_8,
+          ),
+          borderRadius: BorderRadius.circular(AppSizes.radius7),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 8),
+        padding: const EdgeInsets.symmetric(horizontal: AppSizes.p8),
         child: child,
       ),
     );
@@ -657,14 +688,19 @@ class _ParticipantsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF211C35),
+        color: AppColors.surfaceDarkCardAlt,
         border: Border.all(
-          color: hasError ? const Color(0xFFFF2525) : const Color(0xFFAAA6B2),
+          color: hasError ? AppColors.errorStrong : AppColors.textMutedSoft,
           width: hasError ? 2 : 1.8,
         ),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppSizes.radius10),
       ),
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 7),
+      padding: const EdgeInsets.fromLTRB(
+        AppSizes.p16,
+        AppSizes.p8,
+        AppSizes.p16,
+        AppSizes.p7,
+      ),
       child: Column(
         children: [
           for (int index = 0; index < inquilini.length; index++) ...[
@@ -676,7 +712,10 @@ class _ParticipantsCard extends StatelessWidget {
               onToggle: () => onToggle(inquilini[index].id),
             ),
             if (index < inquilini.length - 1)
-              const Divider(height: 1, color: Color(0xFF6E6879)),
+              const Divider(
+                height: AppSizes.p1,
+                color: AppColors.textMutedDark,
+              ),
           ],
         ],
       ),
@@ -714,19 +753,19 @@ class _ParticipantRow extends StatelessWidget {
     return InkWell(
       onTap: isCurrentUser ? null : onToggle,
       child: SizedBox(
-        height: 46,
+        height: AppSizes.p46,
         child: Row(
           children: [
             UserAvatar(displayName: label, radius: 18),
-            const SizedBox(width: 14),
+            const SizedBox(width: AppSizes.p14),
             Expanded(
               child: Text(
                 isCurrentUser ? '$label (Tu)' : label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: muted ? const Color(0xFF817B8C) : Colors.white,
-                  fontSize: 13,
+                  color: muted ? AppColors.textMutedDark : AppColors.textOnDark,
+                  fontSize: AppSizes.p13,
                   fontFamily: 'Inter',
                   fontWeight: FontWeight.w500,
                 ),
@@ -735,21 +774,24 @@ class _ParticipantRow extends StatelessWidget {
             Checkbox(
               value: selected,
               onChanged: isCurrentUser ? null : (_) => onToggle(),
-              activeColor: const Color(0xFF5A2CBD),
-              checkColor: Colors.white,
-              side: const BorderSide(color: Color(0xFF817B8C), width: 2),
+              activeColor: AppColors.brandPrimaryDark,
+              checkColor: AppColors.textOnDark,
+              side: const BorderSide(
+                color: AppColors.textMutedDark,
+                width: AppSizes.p2,
+              ),
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
             SizedBox(
-              width: 37,
+              width: AppSizes.p37,
               child: Text(
                 selected && amount != null
                     ? '€${amount!.toStringAsFixed(0)}'
                     : '-',
                 textAlign: TextAlign.right,
                 style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
+                  color: AppColors.textOnDark,
+                  fontSize: AppSizes.p16,
                   fontFamily: 'Inter',
                   fontWeight: FontWeight.w700,
                 ),
@@ -788,10 +830,8 @@ class _MemberSwitchRow extends StatelessWidget {
               Text(
                 title,
                 style: TextStyle(
-                  color: popup
-                      ? const Color(0xFF3B3150)
-                      : const Color(0xFFC1BFC8),
-                  fontSize: 17,
+                  color: popup ? AppColors.dividerDark : AppColors.textDisabled,
+                  fontSize: AppSizes.p17,
                   fontFamily: 'Inter',
                   fontWeight: FontWeight.w500,
                 ),
@@ -800,9 +840,9 @@ class _MemberSwitchRow extends StatelessWidget {
                 subtitle,
                 style: TextStyle(
                   color: popup
-                      ? const Color(0xFF645A76)
-                      : const Color(0xFF8E8898),
-                  fontSize: 12,
+                      ? AppColors.textMutedDark
+                      : AppColors.textMutedDark,
+                  fontSize: AppSizes.p12,
                   fontFamily: 'Inter',
                   fontWeight: FontWeight.w500,
                 ),
@@ -813,10 +853,10 @@ class _MemberSwitchRow extends StatelessWidget {
         Switch(
           value: value,
           onChanged: onChanged,
-          activeThumbColor: Colors.white,
-          activeTrackColor: const Color(0xFF5A2CBD),
-          inactiveThumbColor: Colors.white,
-          inactiveTrackColor: const Color(0xFF72717A),
+          activeThumbColor: AppColors.textOnDark,
+          activeTrackColor: AppColors.brandPrimaryDark,
+          inactiveThumbColor: AppColors.textOnDark,
+          inactiveTrackColor: AppColors.textMutedDark,
         ),
       ],
     );
@@ -840,9 +880,9 @@ class _RecurringDisabledRow extends StatelessWidget {
                 'Spesa ricorrente',
                 style: TextStyle(
                   color: popup
-                      ? const Color(0xFF645A76)
-                      : const Color(0xFF8F879F),
-                  fontSize: 17,
+                      ? AppColors.textMutedDark
+                      : AppColors.textMutedDark,
+                  fontSize: AppSizes.p17,
                   fontFamily: 'Inter',
                   fontWeight: FontWeight.w500,
                 ),
@@ -851,9 +891,9 @@ class _RecurringDisabledRow extends StatelessWidget {
                 'Ripete seguendo la data precedente',
                 style: TextStyle(
                   color: popup
-                      ? const Color(0xFF645A76)
-                      : const Color(0xFF8F879F),
-                  fontSize: 12,
+                      ? AppColors.textMutedDark
+                      : AppColors.textMutedDark,
+                  fontSize: AppSizes.p12,
                   fontFamily: 'Inter',
                   fontWeight: FontWeight.w500,
                 ),
@@ -863,14 +903,18 @@ class _RecurringDisabledRow extends StatelessWidget {
                   Text(
                     '( solo HomeAdmin )',
                     style: TextStyle(
-                      color: Color(0xFFC09A00),
-                      fontSize: 12,
+                      color: AppColors.warningDark,
+                      fontSize: AppSizes.p12,
                       fontFamily: 'Inter',
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  SizedBox(width: 4),
-                  Icon(Icons.warning, color: Color(0xFFC09A00), size: 13),
+                  SizedBox(width: AppSizes.p4),
+                  Icon(
+                    Icons.warning,
+                    color: AppColors.warningDark,
+                    size: AppSizes.p13,
+                  ),
                 ],
               ),
             ],
@@ -879,8 +923,8 @@ class _RecurringDisabledRow extends StatelessWidget {
         Switch(
           value: false,
           onChanged: null,
-          inactiveThumbColor: const Color(0xFF9A98A0),
-          inactiveTrackColor: const Color(0xFF57535F),
+          inactiveThumbColor: AppColors.textMutedDark,
+          inactiveTrackColor: AppColors.textMutedDark,
         ),
       ],
     );
@@ -896,19 +940,22 @@ class _SubmitButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 56,
+      height: AppSizes.p56,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF834BE0), Color(0xFF5526BA)],
+          colors: [AppColors.brandSecondary, AppColors.brandPrimaryDark],
         ),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: const Color(0xFF8D8A92), width: 1.7),
+        borderRadius: BorderRadius.circular(AppSizes.radius15),
+        border: Border.all(
+          color: AppColors.textMutedDark,
+          width: AppSizes.p1_7,
+        ),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x55000000),
-            blurRadius: 4,
+            color: AppColors.shadowMedium,
+            blurRadius: AppSizes.p4,
             offset: Offset(0, 3),
           ),
         ],
@@ -916,18 +963,18 @@ class _SubmitButton extends StatelessWidget {
       child: ElevatedButton(
         onPressed: isSubmitting ? null : onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          disabledBackgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
+          backgroundColor: AppColors.transparent,
+          disabledBackgroundColor: AppColors.transparent,
+          shadowColor: AppColors.transparent,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
+            borderRadius: BorderRadius.circular(AppSizes.radius15),
           ),
         ),
         child: Text(
           isSubmitting ? 'Salvataggio...' : 'Conferma e aggiungi',
           style: const TextStyle(
-            color: Colors.white,
-            fontSize: 22,
+            color: AppColors.textOnDark,
+            fontSize: AppSizes.p22,
             fontFamily: 'Inter',
             fontWeight: FontWeight.w800,
           ),
@@ -946,16 +993,19 @@ class _CancelButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 28),
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.p28),
       child: OutlinedButton(
         onPressed: enabled ? onPressed : null,
         style: OutlinedButton.styleFrom(
           backgroundColor: AppColors.errorContainerStrong,
           foregroundColor: AppColors.errorStrong,
-          side: const BorderSide(color: AppColors.errorStrong, width: 2),
-          padding: const EdgeInsets.symmetric(vertical: 13),
+          side: const BorderSide(
+            color: AppColors.errorStrong,
+            width: AppSizes.p2,
+          ),
+          padding: const EdgeInsets.symmetric(vertical: AppSizes.p13),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(AppSizes.radius18),
           ),
           disabledForegroundColor: AppColors.textMuted.withValues(alpha: 0.42),
         ),
@@ -983,14 +1033,18 @@ class _ErrorText extends StatelessWidget {
       padding: EdgeInsets.only(left: leftPadding),
       child: Row(
         children: [
-          const Icon(Icons.error, color: Color(0xFFFF2525), size: 16),
-          const SizedBox(width: 7),
+          const Icon(
+            Icons.error,
+            color: AppColors.errorStrong,
+            size: AppSizes.p16,
+          ),
+          const SizedBox(width: AppSizes.p7),
           Expanded(
             child: Text(
               message,
               style: const TextStyle(
-                color: Color(0xFFFF2525),
-                fontSize: 16,
+                color: AppColors.errorStrong,
+                fontSize: AppSizes.p16,
                 fontFamily: 'Inter',
                 fontWeight: FontWeight.w800,
               ),
@@ -1014,21 +1068,9 @@ class _MemberExpenseData {
   final String? currentUserId;
 }
 
-List<String> _buildPartecipantiIds({
-  required Set<String> selectedIds,
-  required String? currentUserId,
-}) {
-  final partecipanti = <String>{...selectedIds};
-  if (currentUserId != null && currentUserId.isNotEmpty) {
-    partecipanti.add(currentUserId);
-  }
-  return partecipanti.toList();
-}
-
 String _displayName(Inquilino inquilino) {
   final username = inquilino.username.trim();
   if (username.isNotEmpty) return username;
   if (inquilino.email.trim().isNotEmpty) return inquilino.email.trim();
   return 'Coinquilino';
 }
-

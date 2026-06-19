@@ -1,5 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/salute_casa_item.dart';
 import 'package:coincasa_app/core/models/turno.dart';
@@ -71,7 +69,3 @@ class TurniRepositoryImpl implements ITurniRepository {
     return ApiProvider.turni.completa(casaId, idTurno);
   }
 }
-
-final turniRepositoryProvider = Provider<ITurniRepository>(
-  (_) => const TurniRepositoryImpl(),
-);

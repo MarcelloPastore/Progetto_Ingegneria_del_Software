@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/models/turno.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
@@ -13,78 +12,8 @@ import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
 import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 import 'package:coincasa_app/features/turni/screens/assegna_a_me.dart';
 import 'package:coincasa_app/features/turni/screens/turno_create_screen.dart';
-
-String _assigneeDisplayName(Inquilino inquilino) {
-  final username = inquilino.username.trim();
-  if (username.isNotEmpty) return username;
-  final email = inquilino.email.trim();
-  if (email.isNotEmpty) return email.split('@').first;
-  return 'coinquilino';
-}
-
-bool _matchesCurrentUser(Inquilino inquilino) {
-  final currentId = ApiProvider.client.currentUserId?.trim();
-  if (currentId != null && currentId.isNotEmpty) {
-    if (inquilino.id.trim() == currentId) {
-      return true;
-    }
-  }
-
-  final email = ApiProvider.client.currentUserEmail?.trim().toLowerCase();
-  final name = ApiProvider.client.currentUserName?.trim().toLowerCase();
-  final normalizedValues = <String>{
-    if (email != null && email.isNotEmpty) inquilino.email.trim().toLowerCase(),
-    if (name != null && name.isNotEmpty)
-      inquilino.nomeCompleto.trim().toLowerCase(),
-    if (name != null && name.isNotEmpty) inquilino.nome.trim().toLowerCase(),
-    if (name != null && name.isNotEmpty)
-      inquilino.username.trim().toLowerCase(),
-  };
-
-  return normalizedValues.contains(email) || normalizedValues.contains(name);
-}
-
-List<Inquilino> _validAssignees(List<Inquilino> inquilini) {
-  return inquilini.where((item) => item.id.isNotEmpty).toList(growable: false);
-}
-
-List<Inquilino> _otherAssignees(List<Inquilino> assignees) {
-  return assignees
-      .where((inquilino) => !_matchesCurrentUser(inquilino))
-      .toList(growable: false);
-}
-
-Inquilino? _findCurrentUser(List<Inquilino> inquilini) {
-  for (final inquilino in inquilini) {
-    if (_matchesCurrentUser(inquilino)) {
-      return inquilino;
-    }
-  }
-  return null;
-}
-
-Inquilino? _findInquilinoById(List<Inquilino> inquilini, String? id) {
-  if (id == null || id.isEmpty) {
-    return null;
-  }
-  for (final inquilino in inquilini) {
-    if (inquilino.id == id) {
-      return inquilino;
-    }
-  }
-  return null;
-}
-
-String _resolveCreatoreNome(_TurnoDetailData data) {
-  final nome = data.turno.creatoreNome.trim();
-  if (nome.isNotEmpty) return nome;
-  final id = data.turno.creatoreId.trim();
-  if (id.isNotEmpty) {
-    final inquilino = _findInquilinoById(data.inquilini, id);
-    if (inquilino != null) return _assigneeDisplayName(inquilino);
-  }
-  return '';
-}
+import 'package:coincasa_app/domain/viewmodel/auth_view_model.dart';
+import 'package:coincasa_app/domain/viewmodel/turni_viewmodel.dart';
 
 String _formatDate(DateTime? date) {
   if (date == null) {
@@ -152,21 +81,23 @@ class _DettaglioTurnoAdminScreenState
     final nav = _navArgs;
     if (nav == null) return null;
 
-    final results = await Future.wait([
-      ApiProvider.turni.getById(nav.casaId, nav.turno.id),
-      ApiProvider.casa.listInquilini(nav.casaId),
-    ]);
+    final state = await ref.read(turniViewModelProvider(nav.casaId).future);
+    final turno = await ref
+        .read(turniViewModelProvider(nav.casaId).notifier)
+        .getTurnoById(nav.turno.id);
     return _TurnoDetailData(
       casaId: nav.casaId,
-      turno: results[0] as Turno,
-      inquilini: results[1] as List<Inquilino>,
+      turno: turno,
+      inquilini: state.inquilini,
     );
   }
 
   Future<void> _handleAssignMe(_TurnoDetailData data) async {
     setState(() => _isSubmitting = true);
     try {
-      await ApiProvider.turni.autoAssegna(data.casaId, data.turno.id);
+      await ref
+          .read(turniViewModelProvider(data.casaId).notifier)
+          .autoAssegnaTurno(data.turno.id);
       if (mounted) {
         Navigator.of(context).pushNamed(AssegnaAMeSuccessScreen.routeName);
       }
@@ -194,16 +125,14 @@ class _DettaglioTurnoAdminScreenState
     });
 
     try {
-      await ApiProvider.turni.assegna(data.casaId, data.turno.id, {
-        'idUtente': assigneeId,
-      });
+      await ref.read(turniViewModelProvider(data.casaId).notifier).assegnaTurno(
+        data.turno.id,
+        {'idUtente': assigneeId},
+      );
       if (mounted) {
-        final selectedInquilino = _findInquilinoById(
-          data.inquilini,
-          assigneeId,
-        );
+        final selectedInquilino = inquilinoById(data.inquilini, assigneeId);
         final nomeInquilino = selectedInquilino != null
-            ? _assigneeDisplayName(selectedInquilino)
+            ? assigneeDisplayName(selectedInquilino)
             : 'coinquilino';
         Navigator.of(context).pushNamed(
           AssegnaAMeSuccessScreen.routeName,
@@ -236,7 +165,9 @@ class _DettaglioTurnoAdminScreenState
       description:
           '${turno.titolo} verrà rimosso definitivamente. '
           'Le occorrenze future saranno aggiornate.',
-      onConfirm: () => ApiProvider.turni.delete(data.casaId, turno.id),
+      onConfirm: () => ref
+          .read(turniViewModelProvider(data.casaId).notifier)
+          .deleteTurno(turno.id),
       onSuccess: () {
         if (mounted) {
           Navigator.of(
@@ -256,15 +187,13 @@ class _DettaglioTurnoAdminScreenState
   }
 
   String _selectedAssigneeLabel(List<Inquilino> assignees) {
-    final selected = _findInquilinoById(
-      assignees,
-      _defaultAssigneeId(assignees),
-    );
-    return selected != null ? _assigneeDisplayName(selected) : 'coinquilino';
+    final selected = inquilinoById(assignees, _defaultAssigneeId(assignees));
+    return selected != null ? assigneeDisplayName(selected) : 'coinquilino';
   }
 
   @override
   Widget build(BuildContext context) {
+    final authIdentity = ref.watch(authViewModelProvider).valueOrNull;
     return FutureBuilder<_TurnoDetailData?>(
       future: _detailFuture,
       builder: (context, snapshot) {
@@ -278,7 +207,10 @@ class _DettaglioTurnoAdminScreenState
                   child: Text(
                     'Impossibile caricare il turno.\n${snapshot.error}',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: AppColors.textMutedLight, fontSize: 16),
+                    style: TextStyle(
+                      color: AppColors.textMutedLight,
+                      fontSize: AppSizes.p16,
+                    ),
                   ),
                 ),
               ),
@@ -289,15 +221,15 @@ class _DettaglioTurnoAdminScreenState
         final isLoading = snapshot.connectionState == ConnectionState.waiting;
         final assignees = data == null
             ? const <Inquilino>[]
-            : _otherAssignees(_validAssignees(data.inquilini));
+            : otherAssignees(validAssignees(data.inquilini), authIdentity);
         final selectedAssigneeId = _defaultAssigneeId(assignees);
-        final currentUser = data == null
+        final currentAssignee = data == null
             ? null
-            : _findCurrentUser(data.inquilini);
+            : currentInquilino(data.inquilini, authIdentity);
         final isCreator =
-            currentUser != null &&
+            currentAssignee != null &&
             data != null &&
-            data.turno.isCreatedBy(currentUser.id);
+            data.turno.isCreatedBy(currentAssignee.id);
         final isAdmin = ActiveCasaScope.of(context).isHomeAdmin;
         final canDeleteTurno = isCreator || isAdmin;
 
@@ -337,7 +269,10 @@ class _DettaglioTurnoAdminScreenState
                               if (data != null) ...[
                                 const SizedBox(height: AppSizes.p24),
                                 _CreatorRow(
-                                  creatoreNome: _resolveCreatoreNome(data),
+                                  creatoreNome: resolveTurnoCreatorName(
+                                    data.turno,
+                                    data.inquilini,
+                                  ),
                                   creatoreId: data.turno.creatoreId,
                                 ),
                               ],
@@ -346,7 +281,7 @@ class _DettaglioTurnoAdminScreenState
                                 'Vuoi occupartene tu?',
                                 style: AppTextStyles.bodyStrong.copyWith(
                                   color: AppColors.textMutedLight,
-                                  fontSize: 18,
+                                  fontSize: AppSizes.p18,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -360,9 +295,7 @@ class _DettaglioTurnoAdminScreenState
                                         data == null ||
                                         (data.turno.assegnatarioId.isNotEmpty &&
                                             data.turno.assegnatarioId ==
-                                                ApiProvider
-                                                    .client
-                                                    .currentUserId)
+                                                authIdentity?.id)
                                     ? null
                                     : () => _handleAssignMe(data),
                               ),
@@ -435,7 +368,7 @@ class _DetailHeader extends StatelessWidget {
             icon: const Icon(
               Icons.arrow_back_rounded,
               color: AppColors.brandAccent,
-              size: 28,
+              size: AppSizes.p28,
             ),
           ),
           Expanded(
@@ -444,7 +377,7 @@ class _DetailHeader extends StatelessWidget {
               textAlign: TextAlign.center,
               style: AppTextStyles.screenTitleStrong.copyWith(
                 color: AppColors.brandAccent,
-                fontSize: 24,
+                fontSize: AppSizes.p24,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -478,7 +411,7 @@ class _TurnoSummaryCard extends StatelessWidget {
               text: '${turno?.titolo ?? 'Turno'}\n',
               style: AppTextStyles.bodyStrong.copyWith(
                 color: AppColors.textOnDark,
-                fontSize: 20,
+                fontSize: AppSizes.p20,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -487,7 +420,7 @@ class _TurnoSummaryCard extends StatelessWidget {
                   '${turno?.frequenzaLabel ?? 'Ogni giorno'}\nprossimo: ${_formatDate(turno?.dataProssimaPulizia)}',
               style: AppTextStyles.bodyStrong.copyWith(
                 color: AppColors.textMutedLight,
-                fontSize: 20,
+                fontSize: AppSizes.p20,
                 height: 1.14,
                 fontWeight: FontWeight.w600,
               ),
@@ -509,9 +442,9 @@ class _ResponsibleCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final current = turno == null
         ? null
-        : _findInquilinoById(inquilini, turno!.assegnatarioId);
+        : inquilinoById(inquilini, turno!.assegnatarioId);
     final label = current != null
-        ? _assigneeDisplayName(current)
+        ? assigneeDisplayName(current)
         : (turno?.assegnatarioNome.isNotEmpty == true
               ? turno!.assegnatarioNome
               : '?');
@@ -531,7 +464,7 @@ class _ResponsibleCard extends StatelessWidget {
             'RESPONSABILE',
             style: AppTextStyles.bodyStrong.copyWith(
               color: AppColors.textMutedLight,
-              fontSize: 15,
+              fontSize: AppSizes.p15,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -551,8 +484,8 @@ class _ResponsibleCard extends StatelessWidget {
                   Text(
                     label,
                     style: AppTextStyles.bodyStrong.copyWith(
-                      color: const Color(0xFF20F545),
-                      fontSize: 17,
+                      color: AppColors.statusPositive,
+                      fontSize: AppSizes.p17,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -561,7 +494,7 @@ class _ResponsibleCard extends StatelessWidget {
                       'Assegnato da rotazione automatica',
                       style: AppTextStyles.bodyStrong.copyWith(
                         color: AppColors.textMutedDark,
-                        fontSize: 14,
+                        fontSize: AppSizes.p14,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -593,13 +526,13 @@ class _PrimaryActionButton extends StatelessWidget {
           foregroundColor: AppColors.textOnDark,
           padding: const EdgeInsets.symmetric(vertical: AppSizes.p13),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(13),
+            borderRadius: BorderRadius.circular(AppSizes.radius13),
           ),
         ),
         child: Text(
           label,
           style: AppTextStyles.buttonCompact.copyWith(
-            fontSize: 23,
+            fontSize: AppSizes.p23,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -736,11 +669,14 @@ class _AssigneeSelectorState extends State<_AssigneeSelector> {
           onTap: widget.isSubmitting ? null : widget.onToggle,
           borderRadius: BorderRadius.circular(AppSizes.radius8),
           child: Container(
-            height: 44,
+            height: AppSizes.p44,
             decoration: BoxDecoration(
-              color: const Color(0xFF5A3317),
+              color: AppColors.turniAssigneeMenuSurface,
               borderRadius: BorderRadius.circular(AppSizes.radius8),
-              border: Border.all(color: AppColors.lockOrange, width: 1.2),
+              border: Border.all(
+                color: AppColors.lockOrange,
+                width: AppSizes.p1_2,
+              ),
             ),
             padding: const EdgeInsets.fromLTRB(
               AppSizes.p12,
@@ -752,13 +688,13 @@ class _AssigneeSelectorState extends State<_AssigneeSelector> {
               children: [
                 const CircleAvatar(
                   radius: 17,
-                  backgroundColor: Color(0xFFF3E8FF),
+                  backgroundColor: AppColors.surfaceTint,
                   child: Image(
                     image: AssetImage(
                       'assets/Icons/assegna_a_qualcuno_help.png',
                     ),
-                    width: 32,
-                    height: 32,
+                    width: AppSizes.p32,
+                    height: AppSizes.p32,
                   ),
                 ),
                 Expanded(
@@ -767,7 +703,7 @@ class _AssigneeSelectorState extends State<_AssigneeSelector> {
                     textAlign: TextAlign.center,
                     style: AppTextStyles.bodyStrong.copyWith(
                       color: AppColors.warning,
-                      fontSize: 16,
+                      fontSize: AppSizes.p16,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -777,7 +713,7 @@ class _AssigneeSelectorState extends State<_AssigneeSelector> {
                       ? Icons.keyboard_arrow_up_rounded
                       : Icons.keyboard_arrow_down_rounded,
                   color: AppColors.warning,
-                  size: 25,
+                  size: AppSizes.p25,
                 ),
               ],
             ),
@@ -804,11 +740,11 @@ class _AssigneeMenu extends StatelessWidget {
     return Material(
       color: AppColors.transparent,
       child: Container(
-        width: 170,
+        width: AppSizes.p170,
         decoration: BoxDecoration(
-          color: const Color(0xFF65401E),
+          color: AppColors.turniAssigneeMenuSurface,
           borderRadius: BorderRadius.circular(AppSizes.radius5),
-          border: Border.all(color: AppColors.lockOrange, width: 1),
+          border: Border.all(color: AppColors.lockOrange, width: AppSizes.p1),
           boxShadow: const [
             BoxShadow(
               color: AppColors.shadowStrong,
@@ -824,21 +760,23 @@ class _AssigneeMenu extends StatelessWidget {
                 (option) => InkWell(
                   onTap: () => onSelected(option.id),
                   child: Container(
-                    height: 44,
+                    height: AppSizes.p44,
                     alignment: Alignment.center,
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSizes.p10,
                     ),
                     decoration: option.id == selectedId
-                        ? const BoxDecoration(color: Color(0x885A3317))
+                        ? const BoxDecoration(
+                            color: AppColors.turniAssigneeMenuSurface,
+                          )
                         : null,
                     child: Text(
-                      _assigneeDisplayName(option),
+                      assigneeDisplayName(option),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyles.bodyStrong.copyWith(
                         color: AppColors.warning,
-                        fontSize: 16,
+                        fontSize: AppSizes.p16,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -868,8 +806,8 @@ class _CreatorRow extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Container(
-          width: 40,
-          height: 40,
+          width: AppSizes.p40,
+          height: AppSizes.p40,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: userAvatarColorsForSeed(seed).background,
@@ -878,8 +816,8 @@ class _CreatorRow extends StatelessWidget {
           child: Text(
             initials,
             style: const TextStyle(
-              color: Colors.white,
-              fontSize: 15,
+              color: AppColors.textOnDark,
+              fontSize: AppSizes.p15,
               fontFamily: 'Inter',
               fontWeight: FontWeight.w700,
             ),
@@ -892,8 +830,8 @@ class _CreatorRow extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              color: Color(0xFFAFAEAE),
-              fontSize: 15,
+              color: AppColors.textSubtle,
+              fontSize: AppSizes.p15,
               fontFamily: 'Inter',
               fontWeight: FontWeight.w500,
             ),
@@ -927,14 +865,14 @@ class TurnoRimossoScreen extends StatelessWidget {
               const Icon(
                 Icons.cancel_outlined,
                 color: AppColors.errorStrong,
-                size: 92,
+                size: AppSizes.p92,
               ),
               const SizedBox(height: AppSizes.p58),
               Text(
                 'Turno rimosso',
                 textAlign: TextAlign.center,
                 style: AppTextStyles.screenTitleStrong.copyWith(
-                  fontSize: 32,
+                  fontSize: AppSizes.p32,
                   fontWeight: FontWeight.w900,
                 ),
               ),
@@ -946,7 +884,7 @@ class TurnoRimossoScreen extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: AppTextStyles.bodyStrong.copyWith(
                   color: AppColors.textMutedLight,
-                  fontSize: 20,
+                  fontSize: AppSizes.p20,
                   height: 1.16,
                   fontWeight: FontWeight.w600,
                 ),
@@ -955,15 +893,23 @@ class TurnoRimossoScreen extends StatelessWidget {
               Container(
                 width:
                     double.infinity, // Adapted from 340, keeping it responsive
-                height: 53.28, // As per requested style
+                height: AppSizes.p53_28,
                 decoration: ShapeDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Color.lerp(AppColors.brandPrimary, Colors.white, 0.30)!,
+                      Color.lerp(
+                        AppColors.brandPrimary,
+                        AppColors.textOnDark,
+                        0.30,
+                      )!,
                       AppColors.brandPrimary,
-                      Color.lerp(AppColors.brandPrimary, Colors.black, 0.18)!,
+                      Color.lerp(
+                        AppColors.brandPrimary,
+                        AppColors.darkBackground,
+                        0.18,
+                      )!,
                     ],
                     stops: const [0, 0.62, 1],
                   ),
@@ -974,10 +920,10 @@ class TurnoRimossoScreen extends StatelessWidget {
                   ),
                   shadows: const [
                     BoxShadow(
-                      color: Color(0x005228AD),
-                      blurRadius: 4,
+                      color: AppColors.transparent,
+                      blurRadius: AppSizes.p4,
                       offset: Offset(0, 4),
-                      spreadRadius: 0,
+                      spreadRadius: AppSizes.p0,
                     ),
                   ],
                 ),
@@ -987,8 +933,8 @@ class TurnoRimossoScreen extends StatelessWidget {
                   style: OutlinedButton.styleFrom(
                     backgroundColor: Colors
                         .transparent, // Make button background transparent to show gradient
-                    foregroundColor:
-                        Colors.transparent, // Text color handled by Text widget
+                    foregroundColor: AppColors
+                        .transparent, // Text color handled by Text widget
                     side: BorderSide.none, // Remove button border
                     padding: EdgeInsets
                         .zero, // Padding handled by the outer Container's height
@@ -999,7 +945,7 @@ class TurnoRimossoScreen extends StatelessWidget {
                     ),
                     elevation: 0, // Remove default button elevation
                     shadowColor:
-                        Colors.transparent, // Remove default button shadow
+                        AppColors.transparent, // Remove default button shadow
                   ),
                   child: const Text(
                     // Use const for performance
@@ -1007,8 +953,8 @@ class TurnoRimossoScreen extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       // As per requested style
-                      color: Colors.white,
-                      fontSize: 22,
+                      color: AppColors.textOnDark,
+                      fontSize: AppSizes.p22,
                       fontFamily: 'Inter',
                       fontWeight: FontWeight.w600,
                     ),
@@ -1025,7 +971,7 @@ class TurnoRimossoScreen extends StatelessWidget {
 
 BoxDecoration _cardDecoration() {
   return BoxDecoration(
-    color: const Color(0xFF3E3964),
+    color: AppColors.dividerDark,
     borderRadius: BorderRadius.circular(AppSizes.radius8),
     boxShadow: const [
       BoxShadow(

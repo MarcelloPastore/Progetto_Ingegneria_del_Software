@@ -75,15 +75,12 @@ class _IconArea extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (backgroundColor == null) {
-      return SizedBox(width: 145, height: 145, child: icon);
+      return SizedBox(width: AppSizes.p145, height: AppSizes.p145, child: icon);
     }
     return Container(
-      width: 145,
-      height: 145,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: backgroundColor,
-      ),
+      width: AppSizes.p145,
+      height: AppSizes.p145,
+      decoration: BoxDecoration(shape: BoxShape.circle, color: backgroundColor),
       alignment: Alignment.center,
       child: icon,
     );

@@ -73,7 +73,7 @@ class _TurnoSuccessScaffold extends StatelessWidget {
                 title,
                 textAlign: TextAlign.center,
                 style: AppTextStyles.screenTitleStrong.copyWith(
-                  fontSize: 25,
+                  fontSize: AppSizes.p25,
                   fontWeight: FontWeight.w900,
                 ),
               ),
@@ -83,7 +83,7 @@ class _TurnoSuccessScaffold extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: AppTextStyles.bodyStrong.copyWith(
                   color: AppColors.textMutedLight,
-                  fontSize: 19,
+                  fontSize: AppSizes.p19,
                   height: 1.16,
                   fontWeight: FontWeight.w600,
                 ),
@@ -122,8 +122,8 @@ class _PurpleActionButtonState extends State<_PurpleActionButton> {
 
   @override
   Widget build(BuildContext context) {
-    const Color bg = Color(0xFF7B43FF);
-    const Color border = Color(0xFF4C1DBF);
+    const Color bg = AppColors.brandSecondary;
+    const Color border = AppColors.brandPrimaryDark;
 
     return GestureDetector(
       onTapDown: (_) => _setPressed(true),
@@ -142,10 +142,12 @@ class _PurpleActionButtonState extends State<_PurpleActionButton> {
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(AppSizes.radius12),
-          border: Border.all(color: border, width: 2.0),
+          border: Border.all(color: border, width: AppSizes.p2),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: _pressed ? 0.18 : 0.32),
+              color: AppColors.darkBackground.withValues(
+                alpha: _pressed ? 0.18 : 0.32,
+              ),
               blurRadius: _pressed ? 6 : 12,
               offset: Offset(0, _pressed ? 3 : 6),
             ),
@@ -156,8 +158,8 @@ class _PurpleActionButtonState extends State<_PurpleActionButton> {
         child: Text(
           widget.label,
           style: AppTextStyles.buttonCompact.copyWith(
-            color: Colors.white,
-            fontSize: 19,
+            color: AppColors.textOnDark,
+            fontSize: AppSizes.p19,
             fontWeight: FontWeight.w900,
           ),
         ),
@@ -165,4 +167,3 @@ class _PurpleActionButtonState extends State<_PurpleActionButton> {
     );
   }
 }
-

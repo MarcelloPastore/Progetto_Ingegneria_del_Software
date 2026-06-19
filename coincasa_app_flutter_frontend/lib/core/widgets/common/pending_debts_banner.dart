@@ -12,14 +12,19 @@ class PendingDebtsBanner extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.warningSoft.withValues(alpha: 0.15),
-        border: Border.all(color: AppColors.warning, width: 1.5),
+        border: Border.all(color: AppColors.warning, width: AppSizes.p1_5),
         borderRadius: BorderRadius.circular(AppSizes.radius10),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(AppSizes.p14, AppSizes.p12, AppSizes.p14, AppSizes.p8),
+            padding: const EdgeInsets.fromLTRB(
+              AppSizes.p14,
+              AppSizes.p12,
+              AppSizes.p14,
+              AppSizes.p8,
+            ),
             child: Row(
               children: [
                 const Icon(
@@ -51,7 +56,12 @@ class PendingDebtsBanner extends StatelessWidget {
               endIndent: AppSizes.p14,
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(AppSizes.p14, AppSizes.p8, AppSizes.p14, AppSizes.p12),
+              padding: const EdgeInsets.fromLTRB(
+                AppSizes.p14,
+                AppSizes.p8,
+                AppSizes.p14,
+                AppSizes.p12,
+              ),
               child: Column(
                 children: [
                   for (int i = 0; i < spese.length; i++) ...[

@@ -29,7 +29,7 @@ class AppSubmitButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppSizes.radius16),
           ),
           child: Material(
-            color: Colors.transparent,
+            color: AppColors.transparent,
             child: InkWell(
               borderRadius: BorderRadius.circular(AppSizes.radius16),
               onTap: effectiveEnabled ? onPressed : null,

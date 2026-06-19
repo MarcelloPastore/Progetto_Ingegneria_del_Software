@@ -28,10 +28,13 @@ class AppPriorityChip extends StatelessWidget {
         height: selected ? AppSizes.p58 : AppSizes.p50,
         margin: EdgeInsets.symmetric(vertical: selected ? 0 : AppSizes.p4),
         decoration: BoxDecoration(
-          gradient: AppGradients.priorityChip(bgColor: bgColor, isSelected: selected),
+          gradient: AppGradients.priorityChip(
+            bgColor: bgColor,
+            isSelected: selected,
+          ),
           borderRadius: BorderRadius.circular(AppSizes.radius16),
           border: Border.all(
-            color: selected ? dotColor : Colors.transparent,
+            color: selected ? dotColor : AppColors.transparent,
             width: selected ? 2.5 : 0,
           ),
           boxShadow: selected
@@ -43,7 +46,7 @@ class AppPriorityChip extends StatelessWidget {
                     offset: const Offset(0, AppSizes.p4),
                   ),
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.35),
+                    color: AppColors.darkBackground.withValues(alpha: 0.35),
                     blurRadius: AppSizes.p6,
                     offset: const Offset(0, AppSizes.p2),
                   ),
@@ -60,7 +63,11 @@ class AppPriorityChip extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             if (selected)
-              Icon(Icons.check_circle_rounded, color: dotColor, size: AppSizes.p16)
+              Icon(
+                Icons.check_circle_rounded,
+                color: dotColor,
+                size: AppSizes.p16,
+              )
             else
               Icon(Icons.circle, color: dotColor, size: AppSizes.p12),
             const SizedBox(width: AppSizes.p6),

@@ -1,12 +1,12 @@
 class Quota {
-  const Quota({
+  Quota({
     required this.id,
     required this.importo,
     required this.pagata,
-    required this.raw,
+    required Map<String, dynamic> raw,
     this.utenteId = '',
     this.utenteNome = '',
-  });
+  }) : raw = Map.unmodifiable(raw);
 
   final String id;
   final double importo;

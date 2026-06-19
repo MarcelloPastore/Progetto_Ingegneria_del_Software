@@ -9,7 +9,8 @@ class AssegnaAMeSuccessScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String? username = ModalRoute.of(context)?.settings.arguments as String?;
+    final String? username =
+        ModalRoute.of(context)?.settings.arguments as String?;
     final String title = username != null && username.isNotEmpty
         ? 'Turno assegnato a $username!'
         : 'Turno assegnato a te!';
@@ -38,7 +39,7 @@ class AssegnaAMeSuccessScreen extends StatelessWidget {
                 title,
                 textAlign: TextAlign.center,
                 style: AppTextStyles.screenTitleStrong.copyWith(
-                  fontSize: 25,
+                  fontSize: AppSizes.p25,
                   fontWeight: FontWeight.w900,
                 ),
               ),
@@ -51,7 +52,7 @@ class AssegnaAMeSuccessScreen extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: AppTextStyles.bodyStrong.copyWith(
                   color: AppColors.textMutedLight,
-                  fontSize: 19,
+                  fontSize: AppSizes.p19,
                   height: 1.16,
                   fontWeight: FontWeight.w600,
                 ),
@@ -66,7 +67,7 @@ class AssegnaAMeSuccessScreen extends StatelessWidget {
                   foregroundColor: AppColors.brandAccent,
                   side: const BorderSide(
                     color: AppColors.brandSecondary,
-                    width: 1.8,
+                    width: AppSizes.p1_8,
                   ),
                   padding: const EdgeInsets.symmetric(vertical: AppSizes.p14),
                   shape: RoundedRectangleBorder(
@@ -77,7 +78,7 @@ class AssegnaAMeSuccessScreen extends StatelessWidget {
                   'Ritorna ai turni',
                   style: AppTextStyles.buttonCompact.copyWith(
                     color: AppColors.brandAccent,
-                    fontSize: 19,
+                    fontSize: AppSizes.p19,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -99,16 +100,16 @@ class _NotifiedBanner extends StatelessWidget {
       height: AppSizes.p56,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: const Color(0x2200F529),
+        color: AppColors.statusPositive,
         borderRadius: BorderRadius.circular(AppSizes.radius8),
-        border: Border.all(color: AppColors.statusPositive, width: 2),
+        border: Border.all(color: AppColors.statusPositive, width: AppSizes.p2),
       ),
       child: Text(
         'Tutti i coinquilini sono stati avvisati',
         textAlign: TextAlign.center,
         style: AppTextStyles.bodyStrong.copyWith(
           color: AppColors.statusPositive,
-          fontSize: 16,
+          fontSize: AppSizes.p16,
           fontWeight: FontWeight.w900,
         ),
       ),

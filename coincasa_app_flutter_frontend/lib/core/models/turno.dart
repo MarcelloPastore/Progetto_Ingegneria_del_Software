@@ -1,5 +1,6 @@
 class Turno {
-  const Turno({required this.id, required this.raw});
+  Turno({required this.id, required Map<String, dynamic> raw})
+    : raw = Map.unmodifiable(raw);
 
   final String id;
   final Map<String, dynamic> raw;

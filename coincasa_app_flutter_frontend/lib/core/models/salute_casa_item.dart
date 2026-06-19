@@ -15,10 +15,15 @@ class SaluteCasaItem {
 
   factory SaluteCasaItem.fromJson(Map<String, dynamic> json) {
     return SaluteCasaItem(
-      id: json['id'] as String,
-      task: json['task'] as String,
-      giorniPassati: json['giorniPassati'] as int,
-      cadenzaGiorni: json['cadenzaGiorni'] as int,
+      id: json['id']?.toString() ?? '',
+      task: json['task']?.toString() ?? '',
+      giorniPassati: _parseInt(json['giorniPassati']),
+      cadenzaGiorni: _parseInt(json['cadenzaGiorni']),
     );
+  }
+
+  static int _parseInt(dynamic value) {
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? 0;
   }
 }

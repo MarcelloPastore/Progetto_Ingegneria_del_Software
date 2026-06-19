@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/features/spese/screens/lista_spese_admin.dart';
 import 'package:coincasa_app/features/spese/screens/lista_spese_membro.dart';
 
@@ -19,16 +20,16 @@ class InserisciSpesaSuccessoScreen extends StatelessWidget {
     final memberFlow = args is InserisciSpesaSuccessoArgs && args.memberFlow;
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.transparent,
       body: Stack(
         children: [
           // Semi-transparent background overlay
           Opacity(
             opacity: 0.50,
             child: Container(
-              width: 403,
-              height: 848,
-              color: const Color(0xFFD9D9D9),
+              width: AppSizes.p403,
+              height: AppSizes.p848,
+              color: AppColors.textMutedLight,
             ),
           ),
 
@@ -36,13 +37,16 @@ class InserisciSpesaSuccessoScreen extends StatelessWidget {
           Center(
             child: SafeArea(
               child: Container(
-                width: 303,
-                height: 424,
+                width: AppSizes.p303,
+                height: AppSizes.p424,
                 decoration: ShapeDecoration(
-                  color: const Color(0xFF151127),
+                  color: AppColors.darkBackground,
                   shape: RoundedRectangleBorder(
-                    side: const BorderSide(width: 3, color: Color(0xFF737373)),
-                    borderRadius: BorderRadius.circular(10),
+                    side: const BorderSide(
+                      width: AppSizes.p3,
+                      color: AppColors.textMutedDark,
+                    ),
+                    borderRadius: BorderRadius.circular(AppSizes.radius10),
                   ),
                 ),
                 child: Column(
@@ -50,56 +54,58 @@ class InserisciSpesaSuccessoScreen extends StatelessWidget {
                   children: [
                     // Checkmark icon
                     Container(
-                      width: 80,
-                      height: 80,
+                      width: AppSizes.p80,
+                      height: AppSizes.p80,
                       decoration: const BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Color(0xFF39B54A),
+                        color: AppColors.statusSuccess,
                       ),
                       alignment: Alignment.center,
                       child: const Icon(
                         Icons.check,
-                        size: 60,
-                        color: Colors.white,
+                        size: AppSizes.p60,
+                        color: AppColors.textOnDark,
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: AppSizes.p24),
 
                     // Success title
                     const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      padding: EdgeInsets.symmetric(horizontal: AppSizes.p16),
                       child: Text(
                         'Spesa aggiunta!',
                         style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
+                          color: AppColors.textOnDark,
+                          fontSize: AppSizes.p24,
                           fontFamily: 'Inter',
                           fontWeight: FontWeight.w700,
                         ),
                         textAlign: TextAlign.center,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: AppSizes.p12),
 
                     // Description
                     const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      padding: EdgeInsets.symmetric(horizontal: AppSizes.p16),
                       child: Text(
                         'La spesa è stata aggiunta. I coinquilini sono stati notificati',
                         style: TextStyle(
-                          color: Color(0xFFB1B1B1),
-                          fontSize: 14,
+                          color: AppColors.textMutedSoft,
+                          fontSize: AppSizes.p14,
                           fontFamily: 'Inter',
                           fontWeight: FontWeight.w500,
                         ),
                         textAlign: TextAlign.center,
                       ),
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: AppSizes.p32),
 
                     // Back to spese button
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSizes.p24,
+                      ),
                       child: SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
@@ -110,17 +116,21 @@ class InserisciSpesaSuccessoScreen extends StatelessWidget {
                                     : ListaSpeseAdminScreen.routeName,
                               ),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF4695EA),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            backgroundColor: AppColors.statusInfo,
+                            padding: const EdgeInsets.symmetric(
+                              vertical: AppSizes.p12,
+                            ),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(
+                                AppSizes.radius8,
+                              ),
                             ),
                           ),
                           child: const Text(
                             'Torna alle spese',
                             style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
+                              color: AppColors.textOnDark,
+                              fontSize: AppSizes.p16,
                               fontFamily: 'Inter',
                               fontWeight: FontWeight.w600,
                             ),

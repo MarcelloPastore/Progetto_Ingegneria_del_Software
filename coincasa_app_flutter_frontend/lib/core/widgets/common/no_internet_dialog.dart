@@ -18,7 +18,7 @@ class NoInternetDialog {
     showDialog<void>(
       context: ctx,
       barrierDismissible: false,
-      barrierColor: Colors.black.withAlpha(180),
+      barrierColor: AppColors.darkBackground.withAlpha(180),
       builder: (_) => const _NoInternetDialogContent(),
     ).whenComplete(() => isShowing = false);
   }
@@ -39,8 +39,9 @@ class _NoInternetDialogContentState extends State<_NoInternetDialogContent> {
     if (_isLoading) return;
     setState(() => _isLoading = true);
     try {
-      await InternetAddress.lookup('google.com')
-          .timeout(const Duration(seconds: 4));
+      await InternetAddress.lookup(
+        'google.com',
+      ).timeout(const Duration(seconds: 4));
       final response = await Dio().get<void>(
         '${Env.baseUrl}/health',
         options: Options(receiveTimeout: const Duration(seconds: 4)),
@@ -74,14 +75,25 @@ class _NoInternetDialogContentState extends State<_NoInternetDialogContent> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: AppSizes.p32, vertical: AppSizes.p40),
+      backgroundColor: AppColors.transparent,
+      insetPadding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.p32,
+        vertical: AppSizes.p40,
+      ),
       child: Container(
-        padding: const EdgeInsets.fromLTRB(AppSizes.p24, AppSizes.p32, AppSizes.p24, AppSizes.p28),
+        padding: const EdgeInsets.fromLTRB(
+          AppSizes.p24,
+          AppSizes.p32,
+          AppSizes.p24,
+          AppSizes.p28,
+        ),
         decoration: BoxDecoration(
           color: AppColors.surfaceDarkElevated,
           borderRadius: BorderRadius.circular(AppSizes.radius24),
-          border: Border.all(color: AppColors.dividerDark, width: 1.2),
+          border: Border.all(
+            color: AppColors.dividerDark,
+            width: AppSizes.p1_2,
+          ),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -127,13 +139,16 @@ class _NoInternetDialogContentState extends State<_NoInternetDialogContent> {
                         height: AppSizes.p24,
                         child: CircularProgressIndicator(
                           strokeWidth: 2.5,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(AppColors.textOnDark),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            AppColors.textOnDark,
+                          ),
                         ),
                       )
                     : Text(
                         'Riprova',
-                        style: AppTextStyles.buttonCompact.copyWith(color: AppColors.textOnDark),
+                        style: AppTextStyles.buttonCompact.copyWith(
+                          color: AppColors.textOnDark,
+                        ),
                       ),
               ),
             ),
@@ -180,7 +195,10 @@ class _WifiWarningIcon extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppColors.warningSoft,
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.surfaceDarkElevated, width: AppSizes.p2),
+                border: Border.all(
+                  color: AppColors.surfaceDarkElevated,
+                  width: AppSizes.p2,
+                ),
               ),
               child: const Icon(
                 Icons.warning_rounded,
@@ -204,7 +222,10 @@ class _BulletList extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: AppSizes.p16, vertical: AppSizes.p14),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.p16,
+        vertical: AppSizes.p14,
+      ),
       decoration: BoxDecoration(
         color: AppColors.darkBackground,
         borderRadius: BorderRadius.circular(AppSizes.radius12),

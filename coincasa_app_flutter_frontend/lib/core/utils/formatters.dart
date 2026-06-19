@@ -1,6 +1,7 @@
 /// Centralized Italian formatting utilities for currency, dates, and months.
 ///
 /// Import this instead of defining _formatCurrency / _formatDate locally.
+library;
 
 /// "€1,50" — uses Italian decimal comma
 String formatCurrency(double value) =>
@@ -23,32 +24,32 @@ String formatShortDate(DateTime date) {
 
 /// Full Italian month name in lowercase: "gennaio"
 String monthName(int month) => const [
-      'gennaio',
-      'febbraio',
-      'marzo',
-      'aprile',
-      'maggio',
-      'giugno',
-      'luglio',
-      'agosto',
-      'settembre',
-      'ottobre',
-      'novembre',
-      'dicembre',
-    ][month - 1];
+  'gennaio',
+  'febbraio',
+  'marzo',
+  'aprile',
+  'maggio',
+  'giugno',
+  'luglio',
+  'agosto',
+  'settembre',
+  'ottobre',
+  'novembre',
+  'dicembre',
+][month - 1];
 
 /// Abbreviated Italian month in lowercase: "gen"
 String monthShort(int month) => const [
-      'gen',
-      'feb',
-      'mar',
-      'apr',
-      'mag',
-      'giu',
-      'lug',
-      'ago',
-      'set',
-      'ott',
-      'nov',
-      'dic',
-    ][month - 1];
+  'gen',
+  'feb',
+  'mar',
+  'apr',
+  'mag',
+  'giu',
+  'lug',
+  'ago',
+  'set',
+  'ott',
+  'nov',
+  'dic',
+][month - 1];

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/models/quota.dart';
@@ -12,6 +11,8 @@ import 'package:coincasa_app/core/utils/formatters.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/screen_back_header.dart';
 import 'package:coincasa_app/features/spese/screens/modifiche_spese_successo.dart';
+import 'package:coincasa_app/domain/viewmodel/lista_case_viewmodel.dart';
+import 'package:coincasa_app/domain/viewmodel/spese_viewmodel.dart';
 
 class ModificheSpeseNegataScreen extends ConsumerStatefulWidget {
   const ModificheSpeseNegataScreen({super.key});
@@ -61,26 +62,23 @@ class _ModificheSpeseNegataScreenState
     }
 
     final activeCasaController = ActiveCasaScope.read(context);
-    final caseUtente = await ApiProvider.casa.list();
+    final caseUtente = await ref.read(listaCaseViewModelProvider.future);
     if (caseUtente.isEmpty) {
       return null;
     }
     final casa = activeCasaController.resolveCasa(caseUtente);
+    final state = await ref.read(speseViewModelProvider(casa.id).future);
+    final notifier = ref.read(speseViewModelProvider(casa.id).notifier);
     final results = await Future.wait<dynamic>([
       args is Spesa
           ? Future<Spesa>.value(args)
-          : ApiProvider.spese.getById(casa.id, spesaId),
-      ApiProvider.casa
-          .listInquilini(casa.id)
-          .catchError((_) => const <Inquilino>[]),
-      ApiProvider.spese
-          .getQuote(casa.id, spesaId)
-          .catchError((_) => const <Quota>[]),
+          : notifier.getSpesaById(spesaId),
+      notifier.getQuoteSpesa(spesaId).catchError((_) => const <Quota>[]),
     ]);
 
     final spesa = results[0] as Spesa;
-    final inquilini = results[1] as List<Inquilino>;
-    final quote = results[2] as List<Quota>;
+    final inquilini = state.inquilini;
+    final quote = results[1] as List<Quota>;
     _amountController.text = spesa.importo
         .toStringAsFixed(2)
         .replaceAll('.', ',');
@@ -101,31 +99,7 @@ class _ModificheSpeseNegataScreenState
     Spesa spesa,
     List<Quota> quote,
     List<Inquilino> inquilini,
-  ) {
-    final ids = <String>{};
-    for (final quota in quote) {
-      if (quota.utenteId.isNotEmpty) {
-        ids.add(quota.utenteId);
-      }
-    }
-    if (ids.isNotEmpty) {
-      return ids;
-    }
-    for (final item in spesa.partecipanti) {
-      final utente = item['utente'];
-      final id =
-          item['id'] ??
-          item['utenteId'] ??
-          item['idUtente'] ??
-          item['inquilinoId'] ??
-          item['idInquilino'] ??
-          (utente is Map<String, dynamic> ? utente['id'] : null);
-      if (id != null) {
-        ids.add(id.toString());
-      }
-    }
-    return ids.isEmpty ? inquilini.map((item) => item.id).toSet() : ids;
-  }
+  ) => selectedParticipantIds(spesa, quote, inquilini);
 
   Future<void> _submit(_EditData data) async {
     if (_submitting || _selectedIds.isEmpty) {
@@ -133,23 +107,19 @@ class _ModificheSpeseNegataScreenState
     }
     setState(() => _submitting = true);
     try {
-      final importo = double.parse(
-        _amountController.text.trim().replaceAll(',', '.'),
-      );
-      final partecipanti = <String>{..._selectedIds};
-      if (data.spesa.creatoreId.isNotEmpty) {
-        partecipanti.add(data.spesa.creatoreId);
-      }
-      final updated = await ApiProvider.spese
-          .update(data.casa.id, data.spesa.id, {
-            'descrizione': _descriptionController.text.trim(),
-            'importo': importo,
-            'dataScadenza': _date.toIso8601String().split('T').first,
-            'partecipanti': partecipanti.toList(),
-            if (!_paidForAll) 'anticipataDa': null,
-            'isRicorrente': _recurring,
-            if (_recurring) 'cadenzaGiorni': _cadenzaGiorniFor(_frequency),
-          });
+      final updated = await ref
+          .read(speseViewModelProvider(data.casa.id).notifier)
+          .updateSpesaFromFields(
+            idSpesa: data.spesa.id,
+            descrizione: _descriptionController.text,
+            importo: _amountController.text,
+            partecipanti: _selectedIds,
+            data: _date,
+            currentUserId: data.spesa.creatoreId,
+            anticipataPerTutti: _paidForAll,
+            ricorrente: _recurring,
+            frequenza: _frequency,
+          );
       if (!mounted) {
         return;
       }
@@ -257,44 +227,52 @@ class _EditFormContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 22),
+      padding: const EdgeInsets.fromLTRB(
+        AppSizes.p20,
+        AppSizes.p10,
+        AppSizes.p20,
+        AppSizes.p22,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          ScreenBackHeader(title: 'Spese', onBack: () => Navigator.of(context).pop()),
-          const SizedBox(height: 16),
+          ScreenBackHeader(
+            title: 'Spese',
+            onBack: () => Navigator.of(context).pop(),
+          ),
+          const SizedBox(height: AppSizes.p16),
           const _WarningBox(),
-          const SizedBox(height: 14),
+          const SizedBox(height: AppSizes.p14),
           _AmountBox(controller: amountController),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSizes.p8),
           Row(
             children: [
               Expanded(
                 child: _DateBox(date: date, onChanged: onDateChanged),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSizes.p8),
               Expanded(
                 child: _DescriptionBox(controller: descriptionController),
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: AppSizes.p14),
           Text(
             'DIVIDI TRA',
             style: AppTextStyles.screenTitleStrong.copyWith(
-              color: const Color(0xFFAFAEAE),
-              fontSize: 23,
+              color: AppColors.textSubtle,
+              fontSize: AppSizes.p23,
               fontWeight: FontWeight.w800,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSizes.p8),
           _RoommatesBox(
             inquilini: data.inquilini,
             selectedIds: selectedIds,
             total: _parseAmount(amountController.text),
             onToggle: onToggleInquilino,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSizes.p12),
           _SwitchRow(
             title: 'Ho anticipato per tutti',
             subtitle: 'Gli altri vedranno il debito verso di te.',
@@ -312,20 +290,20 @@ class _EditFormContent extends StatelessWidget {
             style: AppTextStyles.screenTitleStrong.copyWith(
               color: recurring
                   ? AppColors.brandAccent
-                  : const Color(0xFF6A5A86),
-              fontSize: 23,
+                  : AppColors.textMutedDark,
+              fontSize: AppSizes.p23,
               fontWeight: FontWeight.w800,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: AppSizes.p6),
           _FrequencyBox(
             value: frequency,
             enabled: recurring,
             onChanged: onFrequencyChanged,
           ),
-          const SizedBox(height: 14),
-          const Divider(color: Color(0xFF807D7D)),
-          const SizedBox(height: 14),
+          const SizedBox(height: AppSizes.p14),
+          const Divider(color: AppColors.borderMuted),
+          const SizedBox(height: AppSizes.p14),
           Row(
             children: [
               Expanded(
@@ -333,7 +311,7 @@ class _EditFormContent extends StatelessWidget {
                   onPressed: submitting ? null : onSubmit,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.brandPrimary,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: const EdgeInsets.symmetric(vertical: AppSizes.p16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(AppSizes.radius16),
                     ),
@@ -341,14 +319,14 @@ class _EditFormContent extends StatelessWidget {
                   child: Text(
                     submitting ? 'Salvataggio...' : 'Salva modifiche',
                     style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
+                      color: AppColors.textOnDark,
+                      fontSize: AppSizes.p18,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: AppSizes.p10),
               Expanded(
                 child: OutlinedButton(
                   onPressed: submitting
@@ -357,9 +335,9 @@ class _EditFormContent extends StatelessWidget {
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(
                       color: AppColors.brandPrimary,
-                      width: 2,
+                      width: AppSizes.p2,
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: const EdgeInsets.symmetric(vertical: AppSizes.p16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(AppSizes.radius16),
                     ),
@@ -368,7 +346,7 @@ class _EditFormContent extends StatelessWidget {
                     'Annulla',
                     style: TextStyle(
                       color: AppColors.brandPrimary,
-                      fontSize: 18,
+                      fontSize: AppSizes.p18,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -390,7 +368,12 @@ class _ProtectedEditContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(28, 24, 28, 28),
+      padding: const EdgeInsets.fromLTRB(
+        AppSizes.p28,
+        AppSizes.p24,
+        AppSizes.p28,
+        AppSizes.p28,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -398,24 +381,29 @@ class _ProtectedEditContent extends StatelessWidget {
             title: 'Dettaglio spesa',
             onBack: () => Navigator.of(context).pop(),
           ),
-          const SizedBox(height: 42),
+          const SizedBox(height: AppSizes.p42),
           Text(
             formatCurrency(data.spesa.importo),
             textAlign: TextAlign.center,
-            style: AppTextStyles.screenTitleStrong.copyWith(fontSize: 38),
+            style: AppTextStyles.screenTitleStrong.copyWith(
+              fontSize: AppSizes.p38,
+            ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: AppSizes.p6),
           Text(
             '${data.spesa.descrizione} - ${formatLongDate(data.spesa.data)}',
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Color(0xFFAFAEAE), fontSize: 18),
+            style: const TextStyle(
+              color: AppColors.textSubtle,
+              fontSize: AppSizes.p18,
+            ),
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: AppSizes.p28),
           _SimpleSummary(data: data),
           Transform.translate(
             offset: const Offset(0, -2),
             child: const _ProtectedCard(
-              color: Color(0xFFFFD400),
+              color: AppColors.warning,
               icon: Icons.edit_off,
               title: 'Impossibile modificare la spesa',
               message:
@@ -429,22 +417,24 @@ class _ProtectedEditContent extends StatelessWidget {
   }
 }
 
-
 class _WarningBox extends StatelessWidget {
   const _WarningBox();
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.p12,
+        vertical: AppSizes.p10,
+      ),
       decoration: BoxDecoration(
-        color: const Color(0xFF66552C),
-        border: Border.all(color: const Color(0xFFFFD400), width: 3),
-        borderRadius: BorderRadius.circular(4),
+        color: AppColors.turniAssigneeDivider,
+        border: Border.all(color: AppColors.warning, width: AppSizes.p3),
+        borderRadius: BorderRadius.circular(AppSizes.radius4),
       ),
       child: const Text(
         'Stai modificando una spesa esistente. Le modifiche saranno visibili a tutti i coinquilini.',
-        style: TextStyle(color: Color(0xFFFFD400), fontSize: 16),
+        style: TextStyle(color: AppColors.warning, fontSize: AppSizes.p16),
       ),
     );
   }
@@ -459,13 +449,21 @@ class _AmountBox extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: _fieldDecoration(),
-      padding: const EdgeInsets.fromLTRB(10, 6, 18, 6),
+      padding: const EdgeInsets.fromLTRB(
+        AppSizes.p10,
+        AppSizes.p6,
+        AppSizes.p18,
+        AppSizes.p6,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
             'Importo',
-            style: TextStyle(color: Colors.white, fontSize: 20),
+            style: TextStyle(
+              color: AppColors.textOnDark,
+              fontSize: AppSizes.p20,
+            ),
           ),
           TextField(
             controller: controller,
@@ -473,7 +471,7 @@ class _AmountBox extends StatelessWidget {
             textAlign: TextAlign.right,
             style: const TextStyle(
               color: AppColors.brandAccent,
-              fontSize: 39,
+              fontSize: AppSizes.p39,
               fontWeight: FontWeight.w600,
             ),
             decoration: const InputDecoration(
@@ -509,15 +507,27 @@ class _DateBox extends StatelessWidget {
           onChanged(picked);
         }
       },
-      icon: const Icon(Icons.calendar_month, color: Colors.white, size: 18),
+      icon: const Icon(
+        Icons.calendar_month,
+        color: AppColors.textOnDark,
+        size: AppSizes.p18,
+      ),
       label: Text(
         formatShortDate(date),
-        style: const TextStyle(color: Colors.white, fontSize: 17),
+        style: const TextStyle(
+          color: AppColors.textOnDark,
+          fontSize: AppSizes.p17,
+        ),
       ),
       style: OutlinedButton.styleFrom(
-        side: const BorderSide(color: Color(0xFF8C8990), width: 2),
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        side: const BorderSide(
+          color: AppColors.textMutedDark,
+          width: AppSizes.p2,
+        ),
+        padding: const EdgeInsets.symmetric(vertical: AppSizes.p12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radius8),
+        ),
       ),
     );
   }
@@ -533,18 +543,30 @@ class _DescriptionBox extends StatelessWidget {
     return TextField(
       controller: controller,
       textAlign: TextAlign.center,
-      style: const TextStyle(color: Colors.white, fontSize: 17),
+      style: const TextStyle(
+        color: AppColors.textOnDark,
+        fontSize: AppSizes.p17,
+      ),
       decoration: InputDecoration(
         filled: true,
-        fillColor: const Color(0xFF2C2846),
-        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        fillColor: AppColors.surfaceDarkMuted,
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: AppSizes.p12,
+          horizontal: AppSizes.p8,
+        ),
         border: OutlineInputBorder(
-          borderSide: const BorderSide(color: Color(0xFF8C8990), width: 2),
-          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(
+            color: AppColors.textMutedDark,
+            width: AppSizes.p2,
+          ),
+          borderRadius: BorderRadius.circular(AppSizes.radius8),
         ),
         enabledBorder: OutlineInputBorder(
-          borderSide: const BorderSide(color: Color(0xFF8C8990), width: 2),
-          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(
+            color: AppColors.textMutedDark,
+            width: AppSizes.p2,
+          ),
+          borderRadius: BorderRadius.circular(AppSizes.radius8),
         ),
       ),
     );
@@ -570,7 +592,10 @@ class _RoommatesBox extends StatelessWidget {
     final share = total / selectedCount;
     return Container(
       decoration: _fieldDecoration(),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.p20,
+        vertical: AppSizes.p10,
+      ),
       child: Column(
         children: [
           for (int index = 0; index < inquilini.length; index++) ...[
@@ -581,7 +606,7 @@ class _RoommatesBox extends StatelessWidget {
               onTap: () => onToggle(inquilini[index].id),
             ),
             if (index < inquilini.length - 1)
-              const Divider(color: Color(0xFF807D7D), height: 10),
+              const Divider(color: AppColors.borderMuted, height: AppSizes.p10),
           ],
         ],
       ),
@@ -604,12 +629,14 @@ class _RoommateRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final name = inquilino.username.isNotEmpty ? inquilino.username : inquilino.email;
+    final name = inquilino.username.isNotEmpty
+        ? inquilino.username
+        : inquilino.email;
     final initials = _initials(name);
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.symmetric(vertical: AppSizes.p6),
         child: Row(
           children: [
             CircleAvatar(
@@ -617,14 +644,17 @@ class _RoommateRow extends StatelessWidget {
               backgroundColor: _avatarColor(initials),
               child: Text(
                 initials,
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: AppColors.textOnDark),
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: AppSizes.p16),
             Expanded(
               child: Text(
                 name,
-                style: const TextStyle(color: Colors.white, fontSize: 15),
+                style: const TextStyle(
+                  color: AppColors.textOnDark,
+                  fontSize: AppSizes.p15,
+                ),
               ),
             ),
             Checkbox(
@@ -634,7 +664,10 @@ class _RoommateRow extends StatelessWidget {
             ),
             Text(
               formatCurrency(share),
-              style: const TextStyle(color: Colors.white, fontSize: 18),
+              style: const TextStyle(
+                color: AppColors.textOnDark,
+                fontSize: AppSizes.p18,
+              ),
             ),
           ],
         ),
@@ -666,11 +699,17 @@ class _SwitchRow extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(color: Color(0xFFC1BFC8), fontSize: 20),
+                style: const TextStyle(
+                  color: AppColors.textDisabled,
+                  fontSize: AppSizes.p20,
+                ),
               ),
               Text(
                 subtitle,
-                style: const TextStyle(color: Color(0xFF9B98A0), fontSize: 13),
+                style: const TextStyle(
+                  color: AppColors.textMutedDark,
+                  fontSize: AppSizes.p13,
+                ),
               ),
             ],
           ),
@@ -678,7 +717,7 @@ class _SwitchRow extends StatelessWidget {
         Switch(
           value: value,
           onChanged: onChanged,
-          activeThumbColor: Colors.white,
+          activeThumbColor: AppColors.textOnDark,
           activeTrackColor: AppColors.brandPrimary,
         ),
       ],
@@ -707,25 +746,25 @@ class _FrequencyBox extends StatelessWidget {
       'Personalizzata',
     ];
     return SizedBox(
-      width: 240,
+      width: AppSizes.p240,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14),
+        padding: const EdgeInsets.symmetric(horizontal: AppSizes.p14),
         decoration: _fieldDecoration(
           borderColor: enabled
-              ? const Color(0xFF8C8990)
-              : const Color(0xFF5F596B),
+              ? AppColors.textMutedDark
+              : AppColors.textMutedDark,
           fillColor: enabled
-              ? const Color(0xFF2C2846)
-              : const Color(0xFF1D1A2E),
+              ? AppColors.surfaceDarkMuted
+              : AppColors.surfaceDarkCard,
         ),
         child: DropdownButtonHideUnderline(
           child: DropdownButton<String>(
             value: options.contains(value) ? value : options.first,
-            dropdownColor: const Color(0xFF3A3459),
+            dropdownColor: AppColors.dividerDark,
             iconEnabledColor: enabled
                 ? AppColors.brandAccent
-                : const Color(0xFF6A5A86),
-            iconDisabledColor: const Color(0xFF6A5A86),
+                : AppColors.textMutedDark,
+            iconDisabledColor: AppColors.textMutedDark,
             isExpanded: true,
             items: options
                 .map(
@@ -735,9 +774,9 @@ class _FrequencyBox extends StatelessWidget {
                       option,
                       style: TextStyle(
                         color: enabled
-                            ? const Color(0xFFC1BFC8)
-                            : const Color(0xFF77717F),
-                        fontSize: 16,
+                            ? AppColors.textDisabled
+                            : AppColors.borderSubtle,
+                        fontSize: AppSizes.p16,
                       ),
                     ),
                   ),
@@ -764,30 +803,28 @@ class _SimpleSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final names = data.quote
-        .map((quota) => _quotaName(quota, data.inquilini))
-        .where((name) => name.isNotEmpty)
-        .toList();
-    final share = data.quote.isEmpty
-        ? data.spesa.importo
-        : data.spesa.importo / data.quote.length;
+    final projection = SpesaDetailProjection.from(
+      spesa: data.spesa,
+      quote: data.quote,
+      inquilini: data.inquilini,
+      currentUserId: null,
+    );
+    final names = projection.rows.map((row) => row.name).toList();
+    final share = projection.quotaPerPersona;
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFFB7B4BC)),
-        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.textMutedSoft),
+        borderRadius: BorderRadius.circular(AppSizes.radius16),
       ),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSizes.p16),
       child: Column(
         children: [
           _SummaryRow(
             label: 'Chi deve pagare',
             value: names.isEmpty ? 'Marco, Emilia' : names.join(', '),
           ),
-          const Divider(color: Color(0xFF807D7D)),
-          _SummaryRow(
-            label: 'Quota per persone',
-            value: formatCurrency(share),
-          ),
+          const Divider(color: AppColors.borderMuted),
+          _SummaryRow(label: 'Quota per persone', value: formatCurrency(share)),
         ],
       ),
     );
@@ -808,13 +845,19 @@ class _SummaryRow extends StatelessWidget {
           child: Text(
             label,
             style: const TextStyle(
-              color: Color(0xFFAFAEAE),
-              fontSize: 18,
+              color: AppColors.textSubtle,
+              fontSize: AppSizes.p18,
               fontWeight: FontWeight.w800,
             ),
           ),
         ),
-        Text(value, style: const TextStyle(color: Colors.white, fontSize: 18)),
+        Text(
+          value,
+          style: const TextStyle(
+            color: AppColors.textOnDark,
+            fontSize: AppSizes.p18,
+          ),
+        ),
       ],
     );
   }
@@ -838,12 +881,17 @@ class _ProtectedCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(minHeight: 385),
-      padding: const EdgeInsets.fromLTRB(18, 10, 18, 24),
+      constraints: const BoxConstraints(minHeight: AppSizes.p385),
+      padding: const EdgeInsets.fromLTRB(
+        AppSizes.p18,
+        AppSizes.p10,
+        AppSizes.p18,
+        AppSizes.p24,
+      ),
       decoration: BoxDecoration(
         color: AppColors.darkBackground,
-        border: Border.all(color: color, width: 2),
-        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color, width: AppSizes.p2),
+        borderRadius: BorderRadius.circular(AppSizes.radius12),
       ),
       child: Stack(
         children: [
@@ -851,10 +899,14 @@ class _ProtectedCard extends StatelessWidget {
             alignment: Alignment.topRight,
             child: CircleAvatar(
               radius: 13,
-              backgroundColor: const Color(0xFFFF242E),
+              backgroundColor: AppColors.errorStrong,
               child: IconButton(
                 onPressed: () => Navigator.of(context).pop(),
-                icon: const Icon(Icons.close, color: Colors.white, size: 19),
+                icon: const Icon(
+                  Icons.close,
+                  color: AppColors.textOnDark,
+                  size: AppSizes.p19,
+                ),
                 padding: EdgeInsets.zero,
               ),
             ),
@@ -863,45 +915,45 @@ class _ProtectedCard extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, color: color, size: 66),
-                const SizedBox(height: 22),
+                Icon(icon, color: color, size: AppSizes.p66),
+                const SizedBox(height: AppSizes.p22),
                 Text(
                   title,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
+                    color: AppColors.textOnDark,
+                    fontSize: AppSizes.p20,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSizes.p8),
                 Text(
                   message,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                    color: Color(0xFFAFAEAE),
-                    fontSize: 18,
+                    color: AppColors.textSubtle,
+                    fontSize: AppSizes.p18,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: AppSizes.p28),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
+                    horizontal: AppSizes.p16,
+                    vertical: AppSizes.p8,
                   ),
                   decoration: BoxDecoration(
-                    border: Border.all(color: color, width: 1.4),
-                    borderRadius: BorderRadius.circular(30),
+                    border: Border.all(color: color, width: AppSizes.p1_4),
+                    borderRadius: BorderRadius.circular(AppSizes.radius30),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.lock, color: color, size: 18),
-                      const SizedBox(width: 8),
+                      Icon(Icons.lock, color: color, size: AppSizes.p18),
+                      const SizedBox(width: AppSizes.p8),
                       Text(
                         pillText,
-                        style: TextStyle(color: color, fontSize: 13),
+                        style: TextStyle(color: color, fontSize: AppSizes.p13),
                       ),
                     ],
                   ),
@@ -930,39 +982,18 @@ class _EditData {
 }
 
 BoxDecoration _fieldDecoration({
-  Color fillColor = const Color(0xFF2C2846),
-  Color borderColor = const Color(0xFF8C8990),
+  Color fillColor = AppColors.surfaceDarkMuted,
+  Color borderColor = AppColors.textMutedDark,
 }) {
   return BoxDecoration(
     color: fillColor,
-    border: Border.all(color: borderColor, width: 2),
-    borderRadius: BorderRadius.circular(10),
+    border: Border.all(color: borderColor, width: AppSizes.p2),
+    borderRadius: BorderRadius.circular(AppSizes.radius10),
   );
 }
 
 double _parseAmount(String value) {
   return double.tryParse(value.replaceAll(',', '.')) ?? 0;
-}
-
-String _quotaName(Quota quota, List<Inquilino> inquilini) {
-  final id = quota.utenteId;
-  if (id.isNotEmpty) {
-    for (final inquilino in inquilini) {
-      if (inquilino.id == id) {
-        return inquilino.username.isNotEmpty ? inquilino.username : inquilino.email;
-      }
-    }
-  }
-  return quota.utenteNome;
-}
-
-int _cadenzaGiorniFor(String frequenza) {
-  return switch (frequenza) {
-    'Bimestrale' => 60,
-    'Trimestrale' => 90,
-    'Annuale' => 365,
-    _ => 30,
-  };
 }
 
 String _initials(String name) {
@@ -983,11 +1014,10 @@ String _initials(String name) {
 
 Color _avatarColor(String initials) {
   const colors = [
-    Color(0xFF315173),
-    Color(0xFFAAFFB5),
-    Color(0xFFFFB58A),
-    Color(0xFFEE7274),
+    AppColors.info,
+    AppColors.statusPositive,
+    AppColors.statusWarning,
+    AppColors.statusNegative,
   ];
   return colors[initials.codeUnitAt(0) % colors.length];
 }
-

@@ -43,7 +43,12 @@ class DetailActionsBar extends StatelessWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSizes.p16, AppSizes.p8, AppSizes.p16, AppSizes.p14),
+      padding: const EdgeInsets.fromLTRB(
+        AppSizes.p16,
+        AppSizes.p8,
+        AppSizes.p16,
+        AppSizes.p14,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -99,7 +104,9 @@ class _DetailActionButton extends StatelessWidget {
       width: double.infinity,
       child: DecoratedBox(
         decoration: ShapeDecoration(
-          gradient: AppGradients.whiteOverlay(topAlpha: isDisabled ? 0.04 : 0.18),
+          gradient: AppGradients.whiteOverlay(
+            topAlpha: isDisabled ? 0.04 : 0.18,
+          ),
           shape: RoundedRectangleBorder(
             side: BorderSide(
               width: AppSizes.p2,
@@ -119,7 +126,7 @@ class _DetailActionButton extends StatelessWidget {
         child: OutlinedButton(
           onPressed: onPressed,
           style: OutlinedButton.styleFrom(
-            backgroundColor: Colors.transparent,
+            backgroundColor: AppColors.transparent,
             side: BorderSide.none,
             padding: EdgeInsets.zero,
             shape: const RoundedRectangleBorder(borderRadius: _radius),
@@ -131,12 +138,18 @@ class _DetailActionButton extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (isDisabled) ...[
-                  Icon(Icons.lock_outline_rounded, color: effectiveColor, size: AppSizes.p14),
+                  Icon(
+                    Icons.lock_outline_rounded,
+                    color: effectiveColor,
+                    size: AppSizes.p14,
+                  ),
                   const SizedBox(width: AppSizes.p5),
                 ],
                 Text(
                   label,
-                  style: AppTextStyles.buttonCompact.copyWith(color: effectiveColor),
+                  style: AppTextStyles.buttonCompact.copyWith(
+                    color: effectiveColor,
+                  ),
                 ),
               ],
             ),
@@ -148,8 +161,8 @@ class _DetailActionButton extends StatelessWidget {
 }
 
 abstract final class MainCtaColors {
-  static const turni    = AppColors.statusInfo;
-  static const spese    = AppColors.warningSoft;
+  static const turni = AppColors.statusInfo;
+  static const spese = AppColors.warningSoft;
   static const scadenze = AppColors.statusNegative;
   static const problemi = AppColors.brandSecondary;
 }
@@ -166,7 +179,9 @@ class MainCtaButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final double height;
 
-  static const _borderRadius = BorderRadius.all(Radius.circular(AppSizes.radius15));
+  static const _borderRadius = BorderRadius.all(
+    Radius.circular(AppSizes.radius15),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -188,13 +203,13 @@ class MainCtaButton extends StatelessWidget {
         child: OutlinedButton(
           onPressed: onPressed,
           style: OutlinedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            foregroundColor: Colors.transparent,
+            backgroundColor: AppColors.transparent,
+            foregroundColor: AppColors.transparent,
             side: BorderSide.none,
             padding: EdgeInsets.zero,
             shape: const RoundedRectangleBorder(borderRadius: _borderRadius),
             elevation: AppSizes.p0,
-            shadowColor: Colors.transparent,
+            shadowColor: AppColors.transparent,
           ),
           child: Text(
             label,
@@ -220,7 +235,9 @@ class SecondaryCtaButton extends StatelessWidget {
   final double height;
   final Color color;
 
-  static const _borderRadius = BorderRadius.all(Radius.circular(AppSizes.radius12));
+  static const _borderRadius = BorderRadius.all(
+    Radius.circular(AppSizes.radius12),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -230,8 +247,8 @@ class SecondaryCtaButton extends StatelessWidget {
       child: OutlinedButton(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          side: BorderSide(color: color, width: 1.5),
+          backgroundColor: AppColors.transparent,
+          side: BorderSide(color: color, width: AppSizes.p1_5),
           shape: const RoundedRectangleBorder(borderRadius: _borderRadius),
           padding: EdgeInsets.zero,
         ),

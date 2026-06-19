@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:coincasa_app/core/api/api_provider.dart';
-import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/empty_state_widget.dart';
@@ -14,45 +12,31 @@ class NessunaSpeseRegistrataScreen extends StatelessWidget {
 
   static const String routeName = '/spese/nessuna';
 
-  Future<Casa?> _loadActiveCasa(BuildContext context) async {
-    final activeCasaController = ActiveCasaScope.read(context);
-    final caseUtente = await ApiProvider.casa.list();
-    if (caseUtente.isEmpty) {
-      return null;
-    }
-    return activeCasaController.resolveCasa(caseUtente);
-  }
-
   @override
   Widget build(BuildContext context) {
+    final casaNome = ActiveCasaScope.read(context).selectedCasa?.nome ?? 'Casa';
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: const Color(0xFF09051F),
+        backgroundColor: AppColors.darkBackground,
         bottomNavigationBar: const HouseQuickNav(currentRoute: '/spese'),
         body: SafeArea(
-          child: FutureBuilder<Casa?>(
-            future: _loadActiveCasa(context),
-            builder: (context, snapshot) {
-              final casaNome = snapshot.data?.nome.trim().isNotEmpty == true
-                  ? snapshot.data!.nome.trim()
-                  : 'Casa';
-
-              return EmptyStateWidget(
-                icon: Image.asset(
-                  'assets/Icons/carrello_spesa.png',
-                  width: 100,
-                  height: 100,
-                  fit: BoxFit.contain,
-                ),
-                iconBackgroundColor: AppColors.statusPositive.withValues(alpha: 0.1),
-                title: 'Nessuna spesa registrata',
-                description:
-                    'Aggiungi la prima spesa della casa per iniziare a dividere i costi con i coinquilini.',
-                ctaLabel: 'Inserisci spesa',
-                onCta: () => Navigator.of(context).pushNamed(InserisciSpesaScreen.routeName),
-              );
-            },
+          child: EmptyStateWidget(
+            icon: Image.asset(
+              'assets/Icons/carrello_spesa.png',
+              width: AppSizes.p100,
+              height: AppSizes.p100,
+              fit: BoxFit.contain,
+            ),
+            iconBackgroundColor: AppColors.statusPositive.withValues(
+              alpha: 0.1,
+            ),
+            title: 'Nessuna spesa registrata in $casaNome',
+            description:
+                'Aggiungi la prima spesa della casa per iniziare a dividere i costi con i coinquilini.',
+            ctaLabel: 'Inserisci spesa',
+            onCta: () =>
+                Navigator.of(context).pushNamed(InserisciSpesaScreen.routeName),
           ),
         ),
       ),

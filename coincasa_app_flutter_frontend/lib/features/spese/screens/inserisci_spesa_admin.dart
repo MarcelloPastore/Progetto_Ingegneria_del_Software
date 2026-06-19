@@ -2,47 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:coincasa_app/core/api/api_provider.dart';
-import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/utils/user_initials.dart';
 import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
-import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
-import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
 import 'package:coincasa_app/features/spese/screens/lista_spese_admin.dart';
 import 'package:coincasa_app/features/spese/screens/modifica_spesa_admin.dart';
-
-// ---------------------------------------------------------------------------
-// Providers
-// ---------------------------------------------------------------------------
-
-final speseCreateCasaProvider = FutureProvider.family<Casa?, String?>((
-  ref,
-  selectedCasaId,
-) async {
-  final caseUtente = await ApiProvider.casa.list();
-  if (caseUtente.isEmpty) return null;
-  if (selectedCasaId != null && selectedCasaId.isNotEmpty) {
-    for (final casa in caseUtente) {
-      if (casa.id == selectedCasaId) return casa;
-    }
-  }
-  return caseUtente.first;
-});
-
-final speseCreateInquiliniProvider =
-    FutureProvider.family<List<Inquilino>, String?>((ref, casaId) {
-      if (casaId == null || casaId.isEmpty) return const [];
-      return ApiProvider.casa.listInquilini(casaId);
-    });
-
-final speseCreateFormProvider =
-    StateNotifierProvider.autoDispose<
-      _SpesaCreateFormController,
-      _SpesaCreateFormState
-    >((ref) => _SpesaCreateFormController());
+import 'package:coincasa_app/domain/viewmodel/auth_view_model.dart';
+import 'package:coincasa_app/domain/viewmodel/spese_viewmodel.dart';
 
 // ---------------------------------------------------------------------------
 // Screen — full page
@@ -72,71 +40,47 @@ class _InserisciSpesaScreenState extends ConsumerState<InserisciSpesaScreen> {
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
     final controller = ref.read(speseCreateFormProvider.notifier);
-    final form = ref.read(speseCreateFormProvider);
     final activeCasaController = ActiveCasaScope.of(context);
     final casa = await ref.read(
       speseCreateCasaProvider(activeCasaController.selectedCasaId).future,
     );
-    if (!controller.validateBeforeSubmit()) return;
-    if (casa == null || casa.id.isEmpty) {
-      controller.setSubmitError('Nessuna casa disponibile.');
-      return;
-    }
-    controller.setSubmitting(true);
-    try {
-      final inquilini = await ref.read(
-        speseCreateInquiliniProvider(casa.id).future,
-      );
-      final currentUserId = _resolveCurrentUserId(inquilini);
-      final partecipanti = _buildPartecipantiIds(
-        selectedIds: form.selectedInquiliniIds,
-        currentUserId: currentUserId,
-      );
-      final payload = <String, dynamic>{
-        'descrizione': form.descrizione.trim(),
-        'importo': double.parse(form.importo.replaceAll(',', '.')),
-        'partecipanti': partecipanti,
-        'isRicorrente': form.spesaRicorrente,
-        if (form.dataSpesa != null) 'dataScadenza': _fmtDate(form.dataSpesa),
-        if (form.hoAnticipatoPerTutti && currentUserId != null)
-          'anticipataDa': currentUserId,
-        if (form.spesaRicorrente) ...{
-          'dataScadenza': _fmtDate(form.dataSpesa),
-          'cadenzaGiorni': _cadenzaGiorniFor(form.frequenza),
+    final inquilini = casa == null
+        ? const <Inquilino>[]
+        : await ref.read(speseCreateInquiliniProvider(casa.id).future);
+    final result = await controller.submit(
+      casa: casa,
+      inquilini: inquilini,
+      currentUser: ref.read(authViewModelProvider).valueOrNull,
+    );
+    if (result == null || !mounted) return;
+
+    final form = ref.read(speseCreateFormProvider);
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogCtx) => _SpesaAggiuntaDialog(
+        descrizione: result.spesa.descrizione,
+        importo: result.importo,
+        nPartecipanti: result.numeroPartecipanti,
+        haAnticipato: form.hoAnticipatoPerTutti,
+        anticipatoreNome: result.anticipatoreNome,
+        onTornaAlleSpese: () {
+          Navigator.of(dialogCtx).pop();
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            ListaSpeseAdminScreen.routeName,
+            (_) => false,
+          );
         },
-      };
-      await ApiProvider.spese.create(casa.id, payload);
-      if (!mounted) return;
-      final currentUserName = ApiProvider.client.currentUserName ?? '';
-      final importoNum = double.parse(form.importo.replaceAll(',', '.'));
-      await showDialog<void>(
-        context: context,
-        barrierDismissible: false,
-        builder: (dialogCtx) => _SpesaAggiuntaDialog(
-          descrizione: form.descrizione.trim(),
-          importo: importoNum,
-          nPartecipanti: partecipanti.length,
-          haAnticipato: form.hoAnticipatoPerTutti,
-          anticipatoreNome: currentUserName.split(' ').first,
-          onTornaAlleSpese: () {
-            Navigator.of(dialogCtx).pop();
-            Navigator.of(context).pushNamedAndRemoveUntil(
-              ListaSpeseAdminScreen.routeName,
-              (_) => false,
-            );
-          },
-        ),
-      );
-    } catch (_) {
-      controller.setSubmitError('Impossibile salvare la spesa. Riprova.');
-    }
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final activeCasaController = ActiveCasaScope.of(context);
     final form = ref.watch(speseCreateFormProvider);
-    final controller = ref.read(speseCreateFormProvider.notifier);
+    final controller = ref.watch(speseCreateFormProvider.notifier);
+    final currentUser = ref.watch(authViewModelProvider).valueOrNull;
     final casaAsync = ref.watch(
       speseCreateCasaProvider(activeCasaController.selectedCasaId),
     );
@@ -158,7 +102,12 @@ class _InserisciSpesaScreenState extends ConsumerState<InserisciSpesaScreen> {
             children: [
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSizes.p16,
+                    AppSizes.p16,
+                    AppSizes.p16,
+                    AppSizes.p16,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -170,21 +119,21 @@ class _InserisciSpesaScreenState extends ConsumerState<InserisciSpesaScreen> {
                             const Icon(
                               Icons.arrow_back_ios_new_rounded,
                               color: AppColors.brandAccent,
-                              size: 16,
+                              size: AppSizes.p16,
                             ),
-                            const SizedBox(width: 4),
+                            const SizedBox(width: AppSizes.p4),
                             Text(
                               'Spese',
                               style: AppTextStyles.screenTitleStrong.copyWith(
                                 color: AppColors.brandAccent,
-                                fontSize: 16,
+                                fontSize: AppSizes.p16,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: AppSizes.p16),
 
                       // Importo — shared widget
                       SpesaFormImportoCard(
@@ -192,7 +141,7 @@ class _InserisciSpesaScreenState extends ConsumerState<InserisciSpesaScreen> {
                         hasError: form.showErrors && !form.hasValidImporto,
                         onChanged: controller.setImporto,
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: AppSizes.p10),
 
                       // Data + Descrizione — shared widgets
                       Row(
@@ -203,7 +152,7 @@ class _InserisciSpesaScreenState extends ConsumerState<InserisciSpesaScreen> {
                             onCleared: () => controller.clearDataSpesa(),
                             minDate: DateTime.now(),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: AppSizes.p8),
                           Expanded(
                             child: SpesaFormDescrizioneField(
                               controller: _descCtrl,
@@ -215,7 +164,7 @@ class _InserisciSpesaScreenState extends ConsumerState<InserisciSpesaScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: AppSizes.p24),
 
                       // Dividi tra — shared widget
                       inquiliniAsync.when(
@@ -231,8 +180,9 @@ class _InserisciSpesaScreenState extends ConsumerState<InserisciSpesaScreen> {
                           onSelected: controller.toggleInquilino,
                         ),
                         data: (inquilini) {
-                          final currentUserId = _resolveCurrentUserId(
+                          final currentUserId = resolveCurrentUserId(
                             inquilini,
+                            currentUser,
                           );
                           WidgetsBinding.instance.addPostFrameCallback((_) {
                             if (!mounted) return;
@@ -253,7 +203,7 @@ class _InserisciSpesaScreenState extends ConsumerState<InserisciSpesaScreen> {
                           );
                         },
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: AppSizes.p20),
 
                       // Toggle panel — shared widgets
                       SpesaFormTogglePanel(
@@ -262,7 +212,10 @@ class _InserisciSpesaScreenState extends ConsumerState<InserisciSpesaScreen> {
                             value: form.hoAnticipatoPerTutti,
                             onChanged: controller.setHoAnticipatoPerTutti,
                           ),
-                          const Divider(height: 1, color: Color(0xFF3A3555)),
+                          const Divider(
+                            height: AppSizes.p1,
+                            color: AppColors.dividerDark,
+                          ),
                           SpesaFormRecurringRow(
                             value: form.spesaRicorrente,
                             isAdmin: isAdmin,
@@ -275,16 +228,16 @@ class _InserisciSpesaScreenState extends ConsumerState<InserisciSpesaScreen> {
 
                       // Frequenza
                       if (isAdmin && form.spesaRicorrente) ...[
-                        const SizedBox(height: 16),
+                        const SizedBox(height: AppSizes.p16),
                         Text(
                           'Frequenza',
                           style: AppTextStyles.screenTitleStrong.copyWith(
                             color: AppColors.brandPrimary,
-                            fontSize: 15,
+                            fontSize: AppSizes.p15,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppSizes.p8),
                         SpesaFormFrequencyDropdown(
                           value: form.frequenza,
                           onChanged: controller.setFrequenza,
@@ -292,10 +245,10 @@ class _InserisciSpesaScreenState extends ConsumerState<InserisciSpesaScreen> {
                       ],
 
                       if (form.showMissingError) ...[
-                        const SizedBox(height: 16),
+                        const SizedBox(height: AppSizes.p16),
                         SpesaFormErrorLine(message: form.submitError),
                       ],
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppSizes.p8),
                     ],
                   ),
                 ),
@@ -303,7 +256,12 @@ class _InserisciSpesaScreenState extends ConsumerState<InserisciSpesaScreen> {
 
               // CTA pinned — shared widget
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSizes.p16,
+                  AppSizes.p8,
+                  AppSizes.p16,
+                  AppSizes.p14,
+                ),
                 child: SpesaFormConfermaButton(
                   label: 'Conferma e aggiungi',
                   enabled: form.canSubmit,
@@ -344,74 +302,48 @@ class _InserisciSpesaPopupContentState
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
     final controller = ref.read(speseCreateFormProvider.notifier);
-    final form = ref.read(speseCreateFormProvider);
     final navigator = Navigator.of(context);
     final activeCasaController = ActiveCasaScope.of(context);
     final casa = await ref.read(
       speseCreateCasaProvider(activeCasaController.selectedCasaId).future,
     );
-    if (!controller.validateBeforeSubmit()) return;
-    if (casa == null || casa.id.isEmpty) {
-      controller.setSubmitError('Nessuna casa disponibile.');
-      return;
-    }
-    controller.setSubmitting(true);
-    try {
-      final inquilini = await ref.read(
-        speseCreateInquiliniProvider(casa.id).future,
-      );
-      final currentUserId = _resolveCurrentUserId(inquilini);
-      final partecipanti = _buildPartecipantiIds(
-        selectedIds: form.selectedInquiliniIds,
-        currentUserId: currentUserId,
-      );
-      final payload = <String, dynamic>{
-        'descrizione': form.descrizione.trim(),
-        'importo': double.parse(form.importo.replaceAll(',', '.')),
-        'partecipanti': partecipanti,
-        'isRicorrente': form.spesaRicorrente,
-        if (form.dataSpesa != null) 'dataScadenza': _fmtDate(form.dataSpesa),
-        if (form.hoAnticipatoPerTutti && currentUserId != null)
-          'anticipataDa': currentUserId,
-        if (form.spesaRicorrente) ...{
-          'dataScadenza': _fmtDate(form.dataSpesa),
-          'cadenzaGiorni': _cadenzaGiorniFor(form.frequenza),
+    final inquilini = casa == null
+        ? const <Inquilino>[]
+        : await ref.read(speseCreateInquiliniProvider(casa.id).future);
+    final result = await controller.submit(
+      casa: casa,
+      inquilini: inquilini,
+      currentUser: ref.read(authViewModelProvider).valueOrNull,
+    );
+    if (result == null || !mounted) return;
+
+    final form = ref.read(speseCreateFormProvider);
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogCtx) => _SpesaAggiuntaDialog(
+        descrizione: result.spesa.descrizione,
+        importo: result.importo,
+        nPartecipanti: result.numeroPartecipanti,
+        haAnticipato: form.hoAnticipatoPerTutti,
+        anticipatoreNome: result.anticipatoreNome,
+        onTornaAlleSpese: () {
+          Navigator.of(dialogCtx).pop();
+          navigator.pushNamedAndRemoveUntil(
+            ListaSpeseAdminScreen.routeName,
+            (_) => false,
+          );
         },
-      };
-      await ApiProvider.spese.create(casa.id, payload);
-      if (!mounted) return;
-      final currentUserName = ApiProvider.client.currentUserName ?? '';
-      final importoNum = double.parse(form.importo.replaceAll(',', '.'));
-      await showDialog<void>(
-        context: context,
-        barrierDismissible: false,
-        builder: (dialogCtx) => _SpesaAggiuntaDialog(
-          descrizione: form.descrizione.trim(),
-          importo: importoNum,
-          nPartecipanti: partecipanti.length,
-          haAnticipato: form.hoAnticipatoPerTutti,
-          anticipatoreNome: currentUserName.split(' ').first,
-          onTornaAlleSpese: () {
-            Navigator.of(dialogCtx).pop();
-            navigator.pushNamedAndRemoveUntil(
-              ListaSpeseAdminScreen.routeName,
-              (_) => false,
-            );
-          },
-        ),
-      );
-    } catch (_) {
-      controller.setSubmitError('Impossibile salvare la spesa. Riprova.');
-    } finally {
-      if (mounted) controller.setSubmitting(false);
-    }
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final activeCasaController = ActiveCasaScope.of(context);
     final form = ref.watch(speseCreateFormProvider);
-    final controller = ref.read(speseCreateFormProvider.notifier);
+    final controller = ref.watch(speseCreateFormProvider.notifier);
+    final currentUser = ref.watch(authViewModelProvider).valueOrNull;
     final casaAsync = ref.watch(
       speseCreateCasaProvider(activeCasaController.selectedCasaId),
     );
@@ -431,23 +363,23 @@ class _InserisciSpesaPopupContentState
             'Nuova Spesa',
             style: AppTextStyles.screenTitleStrong.copyWith(
               color: AppColors.brandPrimary,
-              fontSize: 23,
+              fontSize: AppSizes.p23,
               fontWeight: FontWeight.w800,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppSizes.p10),
           // Importo card con display grande
           _ImportoCard(
             value: form.importo,
             hasError: form.showErrors && !form.hasValidImporto,
             onChanged: controller.setImporto,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSizes.p8),
           _PopupDescrizioneField(
             controller: _descrizioneController,
             onChanged: controller.setDescrizione,
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: AppSizes.p18),
           inquiliniAsync.when(
             loading: () => const _DivisioneLoading(),
             error: (_, _) => _PopupDivisioneSection(
@@ -459,7 +391,10 @@ class _InserisciSpesaPopupContentState
               onSelected: controller.toggleInquilino,
             ),
             data: (inquilini) {
-              final currentUserId = _resolveCurrentUserId(inquilini);
+              final currentUserId = resolveCurrentUserId(
+                inquilini,
+                currentUser,
+              );
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (!mounted) return;
                 controller.prepopulateInquilini(inquilini, currentUserId);
@@ -474,22 +409,22 @@ class _InserisciSpesaPopupContentState
               );
             },
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSizes.p8),
           _PopupPaidForAllRow(
             value: form.hoAnticipatoPerTutti,
             onChanged: controller.setHoAnticipatoPerTutti,
           ),
           if (form.showMissingError) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: AppSizes.p10),
             _ErrorLine(message: 'Dati mancanti: compila i campi necessari'),
           ],
-          const SizedBox(height: 14),
+          const SizedBox(height: AppSizes.p14),
           FabSaveButton(
             label: 'Salva spesa',
             onPressed: form.canSubmit ? _submit : null,
             isLoading: form.isSubmitting,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSizes.p8),
           AppCancelButton(
             onPressed: form.isSubmitting
                 ? null
@@ -517,13 +452,13 @@ class _PopupDescrizioneField extends StatelessWidget {
       onChanged: onChanged,
       style: AppTextStyles.screenTitleStrong.copyWith(
         color: AppColors.textOnDark,
-        fontSize: 14,
+        fontSize: AppSizes.p14,
       ),
       decoration: InputDecoration(
         hintText: 'Descrizione spesa...',
         hintStyle: AppTextStyles.screenTitleStrong.copyWith(
           color: AppColors.textOnDark.withValues(alpha: 0.55),
-          fontSize: 14,
+          fontSize: AppSizes.p14,
         ),
         filled: true,
         fillColor: AppColors.surfaceDarkElevated,
@@ -537,7 +472,10 @@ class _PopupDescrizioneField extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSizes.radius8),
-          borderSide: const BorderSide(color: AppColors.brandAccent, width: 2),
+          borderSide: const BorderSide(
+            color: AppColors.brandAccent,
+            width: AppSizes.p2,
+          ),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppSizes.p12,
@@ -577,13 +515,13 @@ class _PopupDivisioneSection extends StatelessWidget {
         Text(
           'DIVIDI TRA',
           style: AppTextStyles.screenTitleStrong.copyWith(
-            color: const Color(0xFF5228AD),
-            fontSize: 13,
+            color: AppColors.brandPrimaryDark,
+            fontSize: AppSizes.p13,
             fontWeight: FontWeight.w800,
             letterSpacing: 0.5,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: AppSizes.p6),
         ...inquilini.map((inq) {
           final isSelected = selectedIds.contains(inq.id);
           final isCurrentUser = inq.id == currentUserId;
@@ -591,7 +529,7 @@ class _PopupDivisioneSection extends StatelessWidget {
               ? '€ ${quota.toStringAsFixed(2).replaceAll('.', ',')}'
               : '–';
           return Padding(
-            padding: const EdgeInsets.only(bottom: 2),
+            padding: const EdgeInsets.only(bottom: AppSizes.p2),
             child: _PopupInquilinoCheckbox(
               inquilino: inq,
               isSelected: isSelected,
@@ -602,7 +540,7 @@ class _PopupDivisioneSection extends StatelessWidget {
           );
         }),
         if (showError) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSizes.p8),
           const _ErrorLine(message: 'Seleziona almeno un coinquilino'),
         ],
       ],
@@ -634,12 +572,15 @@ class _PopupInquilinoCheckbox extends StatelessWidget {
         : inquilino.email.split('@').first;
 
     return Material(
-      color: Colors.transparent,
+      color: AppColors.transparent,
       child: InkWell(
         onTap: isCurrentUser ? null : onChanged,
         borderRadius: BorderRadius.circular(AppSizes.radius8),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSizes.p4,
+            vertical: AppSizes.p3,
+          ),
           child: Row(
             children: [
               CircleAvatar(
@@ -650,11 +591,11 @@ class _PopupInquilinoCheckbox extends StatelessWidget {
                   style: const TextStyle(
                     color: AppColors.textOnDark,
                     fontWeight: FontWeight.bold,
-                    fontSize: 13,
+                    fontSize: AppSizes.p13,
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSizes.p12),
               Expanded(
                 child: Text(
                   isCurrentUser ? '$name (Tu)' : name,
@@ -665,11 +606,11 @@ class _PopupInquilinoCheckbox extends StatelessWidget {
                     color: const Color(
                       0xFF7A7490,
                     ).withValues(alpha: isCurrentUser ? 0.5 : 1.0),
-                    fontSize: 13,
+                    fontSize: AppSizes.p13,
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSizes.p8),
               Transform.scale(
                 scale: 1.2,
                 child: Checkbox(
@@ -679,7 +620,7 @@ class _PopupInquilinoCheckbox extends StatelessWidget {
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSizes.p8),
               Text(
                 quotaLabel,
                 textAlign: TextAlign.right,
@@ -687,7 +628,7 @@ class _PopupInquilinoCheckbox extends StatelessWidget {
                   color: isSelected
                       ? AppColors.brandAccent
                       : AppColors.textOnDark.withValues(alpha: 0.3),
-                  fontSize: 12,
+                  fontSize: AppSizes.p12,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -708,7 +649,7 @@ class _PopupPaidForAllRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.p20),
       child: Row(
         children: [
           Expanded(
@@ -718,16 +659,16 @@ class _PopupPaidForAllRow extends StatelessWidget {
                 Text(
                   'Ho anticipato per tutti',
                   style: AppTextStyles.screenTitleStrong.copyWith(
-                    color: const Color(0xFF3B3150),
-                    fontSize: 16,
+                    color: AppColors.dividerDark,
+                    fontSize: AppSizes.p16,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
                 Text(
                   'Gli altri vedranno il debito verso di te',
                   style: AppTextStyles.screenTitleStrong.copyWith(
-                    color: const Color(0xFF645A76),
-                    fontSize: 12,
+                    color: AppColors.textMutedDark,
+                    fontSize: AppSizes.p12,
                   ),
                 ),
               ],
@@ -742,147 +683,6 @@ class _PopupPaidForAllRow extends StatelessWidget {
       ),
     );
   }
-}
-
-// ---------------------------------------------------------------------------
-// Form State
-// ---------------------------------------------------------------------------
-
-class _SpesaCreateFormState {
-  _SpesaCreateFormState({
-    this.importo = '',
-    this.descrizione = '',
-    this.selectedInquiliniIds = const {},
-    this.currentUserId,
-    this.dataSpesa,
-    this.hoAnticipatoPerTutti = false,
-    this.spesaRicorrente = false,
-    this.frequenza = 'Mensile',
-    this.showErrors = false,
-    this.isSubmitting = false,
-    this.submitError = '',
-  });
-
-  final String importo;
-  final String descrizione;
-  final Set<String> selectedInquiliniIds;
-  final String? currentUserId;
-  final DateTime? dataSpesa;
-  final bool hoAnticipatoPerTutti;
-  final bool spesaRicorrente;
-  final String frequenza;
-  final bool showErrors;
-  final bool isSubmitting;
-  final String submitError;
-
-  DateTime get effectiveDate => dataSpesa ?? DateTime.now();
-
-  bool get hasValidImporto =>
-      importo.trim().isNotEmpty &&
-      (double.tryParse(importo.trim().replaceAll(',', '.')) ?? 0) > 0;
-
-  bool get canSubmit =>
-      hasValidImporto &&
-      descrizione.trim().isNotEmpty &&
-      selectedInquiliniIds.isNotEmpty &&
-      !isSubmitting;
-
-  bool get showMissingError => submitError.isNotEmpty && showErrors;
-
-  _SpesaCreateFormState copyWith({
-    String? importo,
-    String? descrizione,
-    Set<String>? selectedInquiliniIds,
-    String? currentUserId,
-    DateTime? dataSpesa,
-    bool clearDataSpesa = false,
-    bool? hoAnticipatoPerTutti,
-    bool? spesaRicorrente,
-    String? frequenza,
-    bool? showErrors,
-    bool? isSubmitting,
-    String? submitError,
-  }) {
-    return _SpesaCreateFormState(
-      importo: importo ?? this.importo,
-      descrizione: descrizione ?? this.descrizione,
-      selectedInquiliniIds: selectedInquiliniIds ?? this.selectedInquiliniIds,
-      currentUserId: currentUserId ?? this.currentUserId,
-      dataSpesa: clearDataSpesa ? null : (dataSpesa ?? this.dataSpesa),
-      hoAnticipatoPerTutti: hoAnticipatoPerTutti ?? this.hoAnticipatoPerTutti,
-      spesaRicorrente: spesaRicorrente ?? this.spesaRicorrente,
-      frequenza: frequenza ?? this.frequenza,
-      showErrors: showErrors ?? this.showErrors,
-      isSubmitting: isSubmitting ?? this.isSubmitting,
-      submitError: submitError ?? this.submitError,
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Form Controller
-// ---------------------------------------------------------------------------
-
-class _SpesaCreateFormController extends StateNotifier<_SpesaCreateFormState> {
-  _SpesaCreateFormController() : super(_SpesaCreateFormState());
-
-  void setImporto(String v) =>
-      state = state.copyWith(importo: v, submitError: '');
-  void setDescrizione(String v) =>
-      state = state.copyWith(descrizione: v, submitError: '');
-  void setDataSpesa(DateTime v) => state = state.copyWith(dataSpesa: v);
-  void clearDataSpesa() => state = state.copyWith(clearDataSpesa: true);
-  void setHoAnticipatoPerTutti(bool v) =>
-      state = state.copyWith(hoAnticipatoPerTutti: v);
-  void setSpesaRicorrente(bool v) => state = state.copyWith(spesaRicorrente: v);
-  void setFrequenza(String v) => state = state.copyWith(frequenza: v);
-
-  void prepopulateInquilini(List<Inquilino> inquilini, String? currentUserId) {
-    if (state.selectedInquiliniIds.isNotEmpty && state.currentUserId != null) {
-      return;
-    }
-    final allIds = inquilini.map((e) => e.id).toSet();
-    state = state.copyWith(
-      selectedInquiliniIds: allIds,
-      currentUserId: currentUserId,
-    );
-  }
-
-  void toggleInquilino(String id) {
-    // L'utente corrente non può essere rimosso
-    if (id == state.currentUserId) return;
-    final ids = {...state.selectedInquiliniIds};
-    if (ids.contains(id)) {
-      ids.remove(id);
-    } else {
-      ids.add(id);
-    }
-    state = state.copyWith(selectedInquiliniIds: ids, submitError: '');
-  }
-
-  void ensureSelected(String? id) {
-    // Rimosso a favore di prepopulateInquilini
-  }
-
-  bool validateBeforeSubmit() {
-    if (!state.hasValidImporto ||
-        state.descrizione.trim().isEmpty ||
-        state.selectedInquiliniIds.isEmpty) {
-      state = state.copyWith(
-        showErrors: true,
-        submitError: 'Dati mancanti: compila i campi necessari',
-      );
-      return false;
-    }
-    return true;
-  }
-
-  void setSubmitting(bool v) => state = state.copyWith(isSubmitting: v);
-  void setSubmitError(String e) => state = state.copyWith(
-    submitError: e,
-    showErrors: true,
-    isSubmitting: false,
-  );
 }
 
 class _ImportoCard extends StatefulWidget {
@@ -941,7 +741,12 @@ class _ImportoCardState extends State<_ImportoCard> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOut,
-        padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+        padding: const EdgeInsets.fromLTRB(
+          AppSizes.p14,
+          AppSizes.p10,
+          AppSizes.p14,
+          AppSizes.p10,
+        ),
         decoration: BoxDecoration(
           color: AppColors.surfaceDarkElevated,
           borderRadius: BorderRadius.circular(AppSizes.radius8),
@@ -950,14 +755,14 @@ class _ImportoCardState extends State<_ImportoCard> {
                 ? AppColors.statusNegative
                 : _hasFocus
                 ? AppColors.brandAccent
-                : Colors.transparent,
+                : AppColors.transparent,
             width: _hasFocus ? 2 : 1.5,
           ),
           boxShadow: _hasFocus
               ? [
                   BoxShadow(
                     color: AppColors.brandAccent.withValues(alpha: 0.22),
-                    blurRadius: 14,
+                    blurRadius: AppSizes.p14,
                     offset: const Offset(0, 6),
                   ),
                 ]
@@ -978,7 +783,7 @@ class _ImportoCardState extends State<_ImportoCard> {
               ),
               child: Text('Importo'),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: AppSizes.p4),
             Row(
               children: [
                 Expanded(
@@ -995,7 +800,7 @@ class _ImportoCardState extends State<_ImportoCard> {
                     onChanged: widget.onChanged,
                     style: AppTextStyles.screenTitleStrong.copyWith(
                       color: AppColors.brandAccent,
-                      fontSize: 28,
+                      fontSize: AppSizes.p28,
                       fontWeight: FontWeight.w800,
                     ),
                     decoration: InputDecoration(
@@ -1007,12 +812,12 @@ class _ImportoCardState extends State<_ImportoCard> {
                       prefixText: '€ ',
                       prefixStyle: AppTextStyles.screenTitleStrong.copyWith(
                         color: AppColors.brandAccent,
-                        fontSize: 28,
+                        fontSize: AppSizes.p28,
                         fontWeight: FontWeight.w800,
                       ),
                       hintStyle: AppTextStyles.screenTitleStrong.copyWith(
                         color: AppColors.brandAccent.withValues(alpha: 0.34),
-                        fontSize: 28,
+                        fontSize: AppSizes.p28,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -1077,14 +882,14 @@ class _DescrizioneFieldState extends State<_DescrizioneField> {
       onChanged: widget.onChanged,
       style: AppTextStyles.screenTitleStrong.copyWith(
         color: AppColors.textOnDark,
-        fontSize: 14,
+        fontSize: AppSizes.p14,
         fontWeight: FontWeight.w600,
       ),
       decoration: InputDecoration(
         hintText: 'Descrizione spesa',
         hintStyle: AppTextStyles.screenTitleStrong.copyWith(
           color: AppColors.textOnDark.withValues(alpha: 0.45),
-          fontSize: 14,
+          fontSize: AppSizes.p14,
         ),
         filled: true,
         fillColor: AppColors.surfaceDarkElevated,
@@ -1093,8 +898,8 @@ class _DescrizioneFieldState extends State<_DescrizioneField> {
           borderSide: BorderSide(
             color: widget.hasError
                 ? AppColors.statusNegative
-                : Colors.transparent,
-            width: 1.5,
+                : AppColors.transparent,
+            width: AppSizes.p1_5,
           ),
         ),
         enabledBorder: OutlineInputBorder(
@@ -1102,17 +907,20 @@ class _DescrizioneFieldState extends State<_DescrizioneField> {
           borderSide: BorderSide(
             color: widget.hasError
                 ? AppColors.statusNegative
-                : Colors.transparent,
-            width: 1.5,
+                : AppColors.transparent,
+            width: AppSizes.p1_5,
           ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSizes.radius8),
-          borderSide: const BorderSide(color: AppColors.brandAccent, width: 2),
+          borderSide: const BorderSide(
+            color: AppColors.brandAccent,
+            width: AppSizes.p2,
+          ),
         ),
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 13,
+          horizontal: AppSizes.p12,
+          vertical: AppSizes.p13,
         ),
       ),
     );
@@ -1129,7 +937,7 @@ class _DivisioneLoading extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const SizedBox(
-      height: 120,
+      height: AppSizes.p120,
       child: Center(child: CircularProgressIndicator()),
     );
   }
@@ -1151,15 +959,15 @@ class _ErrorLine extends StatelessWidget {
         const Icon(
           Icons.warning_rounded,
           color: AppColors.statusNegative,
-          size: 18,
+          size: AppSizes.p18,
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: AppSizes.p8),
         Expanded(
           child: Text(
             message,
             style: AppTextStyles.screenTitleStrong.copyWith(
               color: AppColors.statusNegative,
-              fontSize: 13,
+              fontSize: AppSizes.p13,
             ),
           ),
         ),
@@ -1196,62 +1004,78 @@ class _SpesaAggiuntaDialog extends StatelessWidget {
     final quota = nPartecipanti > 0 ? importo / nPartecipanti : importo;
 
     return Dialog(
-      backgroundColor: const Color(0xFF1E1A2D),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
+      backgroundColor: AppColors.surfaceDarkCard,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSizes.radius20),
+      ),
+      insetPadding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.p32,
+        vertical: AppSizes.p48,
+      ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 32, 24, 28),
+        padding: const EdgeInsets.fromLTRB(
+          AppSizes.p24,
+          AppSizes.p32,
+          AppSizes.p24,
+          AppSizes.p28,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             // Checkmark
             Container(
-              width: 72,
-              height: 72,
+              width: AppSizes.p72,
+              height: AppSizes.p72,
               decoration: const BoxDecoration(
-                color: Color(0xFF1E1A2D),
+                color: AppColors.surfaceDarkCard,
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.check_circle_rounded,
-                color: Color(0xFF4CAF50),
-                size: 72,
+                color: AppColors.successBright,
+                size: AppSizes.p72,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSizes.p16),
             Text(
               'Spesa aggiunta!',
               style: AppTextStyles.screenTitleStrong.copyWith(
                 color: AppColors.textOnDark,
-                fontSize: 22,
+                fontSize: AppSizes.p22,
                 fontWeight: FontWeight.w800,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSizes.p8),
             Text(
               'La spesa "$descrizione" è stata aggiunta. I coinquilini sono stati notificati',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: AppColors.textOnDark.withValues(alpha: 0.65),
-                fontSize: 14,
+                fontSize: AppSizes.p14,
                 fontFamily: 'Inter',
-                height: 1.4,
+                height: AppSizes.p1_4,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSizes.p24),
             // Summary card
             Container(
               decoration: BoxDecoration(
                 color: AppColors.surfaceDarkElevated,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppSizes.radius12),
               ),
               child: Column(
                 children: [
                   _SummaryRow(label: 'Totale', value: _fmt(importo)),
-                  const Divider(height: 1, color: Color(0xFF2E2A42)),
+                  const Divider(
+                    height: AppSizes.p1,
+                    color: AppColors.surfaceDarkMuted,
+                  ),
                   _SummaryRow(label: 'Quota per persona', value: _fmt(quota)),
                   if (haAnticipato) ...[
-                    const Divider(height: 1, color: Color(0xFF2E2A42)),
+                    const Divider(
+                      height: AppSizes.p1,
+                      color: AppColors.surfaceDarkMuted,
+                    ),
                     _SummaryRow(
                       label: 'Ha pagato',
                       value: anticipatoreNome.isNotEmpty
@@ -1262,7 +1086,7 @@ class _SpesaAggiuntaDialog extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSizes.p24),
             SizedBox(
               width: double.infinity,
               child: MainCtaButton(
@@ -1286,7 +1110,10 @@ class _SummaryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.p16,
+        vertical: AppSizes.p12,
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -1294,7 +1121,7 @@ class _SummaryRow extends StatelessWidget {
             label,
             style: TextStyle(
               color: AppColors.textOnDark.withValues(alpha: 0.7),
-              fontSize: 15,
+              fontSize: AppSizes.p15,
               fontFamily: 'Inter',
               fontWeight: FontWeight.w500,
             ),
@@ -1303,7 +1130,7 @@ class _SummaryRow extends StatelessWidget {
             value,
             style: AppTextStyles.screenTitleStrong.copyWith(
               color: AppColors.textOnDark,
-              fontSize: 15,
+              fontSize: AppSizes.p15,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -1312,56 +1139,3 @@ class _SummaryRow extends StatelessWidget {
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-String? _resolveCurrentUserId(List<Inquilino> inquilini) {
-  // 1. Usa l'ID utente — è il modo più affidabile.
-  final userId = ApiProvider.client.currentUserId;
-  if (userId != null && userId.trim().isNotEmpty) return userId.trim();
-
-  // 2. Fallback sicuro: confronta solo per email (univoca).
-  final email = ApiProvider.client.currentUserEmail?.trim().toLowerCase();
-  if (email != null && email.isNotEmpty) {
-    for (final inquilino in inquilini) {
-      if (inquilino.email.trim().toLowerCase() == email) {
-        return inquilino.id;
-      }
-    }
-  }
-
-  // 3. Fallback per username (univoco nell'app).
-  final username = ApiProvider.client.currentUserUsername?.trim().toLowerCase();
-  if (username != null && username.isNotEmpty) {
-    for (final inquilino in inquilini) {
-      if (inquilino.username.trim().toLowerCase() == username) {
-        return inquilino.id;
-      }
-    }
-  }
-
-  // Non usiamo nome/nomeCompleto: non sono univoci e causano falsi positivi
-  // quando due utenti condividono lo stesso nome anagrafico.
-  return null;
-}
-
-List<String> _buildPartecipantiIds({
-  required Set<String> selectedIds,
-  required String? currentUserId,
-}) {
-  final set = <String>{...selectedIds};
-  if (currentUserId != null && currentUserId.isNotEmpty) set.add(currentUserId);
-  return set.toList();
-}
-
-int _cadenzaGiorniFor(String frequenza) => switch (frequenza) {
-  'Bimestrale' => 60,
-  'Trimestrale' => 90,
-  'Annuale' => 365,
-  _ => 30,
-};
-
-String _fmtDate(DateTime? d) =>
-    (d ?? DateTime.now()).toIso8601String().split('T').first;

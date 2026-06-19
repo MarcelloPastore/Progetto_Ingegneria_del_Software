@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:coincasa_app/core/api/api_provider.dart';
-import 'package:coincasa_app/core/models/casa.dart';
-import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
 import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 import 'package:coincasa_app/features/spese/screens/lista_spese_admin.dart';
+import 'package:coincasa_app/domain/viewmodel/spese_viewmodel.dart';
 
 class PareggiaContiScreen extends ConsumerStatefulWidget {
   const PareggiaContiScreen({super.key});
@@ -22,7 +20,7 @@ class PareggiaContiScreen extends ConsumerStatefulWidget {
 }
 
 class _PareggiaContiScreenState extends ConsumerState<PareggiaContiScreen> {
-  late Future<_PareggiaData?> _future;
+  late Future<PareggiaData?> _future;
   bool _initialized = false;
   String? _submittingKey;
 
@@ -34,93 +32,9 @@ class _PareggiaContiScreenState extends ConsumerState<PareggiaContiScreen> {
     _future = _loadData();
   }
 
-  Future<_PareggiaData?> _loadData() async {
-    final activeCasaController = ActiveCasaScope.read(context);
-    final caseUtente = await ApiProvider.casa.list();
-    if (caseUtente.isEmpty) return null;
-
-    final casa = activeCasaController.resolveCasa(caseUtente);
-    final inquilini = await ApiProvider.casa.listInquilini(casa.id);
-    final balances = <_BalanceRow>[];
-
-    for (final inquilino in inquilini) {
-      final isMe = _isCurrentUser(inquilino);
-      double credito = 0;
-      double debito = 0;
-      if (!isMe) {
-        final results = await Future.wait<double>([
-          ApiProvider.spese
-              .getCreditoVerso(casa.id, inquilino.id)
-              .catchError((_) => 0.0),
-          ApiProvider.spese
-              .getDebitoVerso(casa.id, inquilino.id)
-              .catchError((_) => 0.0),
-        ]);
-        credito = results[0]; // questa persona mi deve soldi
-        debito = results[1];  // devo soldi a questa persona
-      }
-      balances.add(
-        _BalanceRow(
-          id: inquilino.id,
-          name: _displayName(inquilino),
-          initials: _initials(_displayName(inquilino)),
-          credito: credito,
-          debito: debito,
-          isCurrentUser: isMe,
-        ),
-      );
-    }
-
-    // Saldo aggregato dell'utente corrente: somma di tutti i saldi netti
-    final aggregateSaldo =
-        balances.where((r) => !r.isCurrentUser).fold<double>(
-          0,
-          (sum, r) => sum + r.saldo,
-        );
-    final idx = balances.indexWhere((r) => r.isCurrentUser);
-    if (idx != -1) {
-      final me = balances[idx];
-      balances[idx] = _BalanceRow(
-        id: me.id,
-        name: me.name,
-        initials: me.initials,
-        credito: aggregateSaldo > 0 ? aggregateSaldo : 0,
-        debito: aggregateSaldo < 0 ? aggregateSaldo.abs() : 0,
-        isCurrentUser: true,
-      );
-    }
-
-    balances.sort((a, b) {
-      // Utente corrente sempre PRIMO
-      if (a.isCurrentUser) return -1;
-      if (b.isCurrentUser) return 1;
-      return a.name.compareTo(b.name);
-    });
-
-    final currentUserRow =
-        balances.where((r) => r.isCurrentUser).firstOrNull;
-    final currentUserName = currentUserRow?.name ?? 'Tu';
-    final currentUserInitials = currentUserRow?.initials ?? 'T';
-
-    final transfers = balances
-        .where((r) => !r.isCurrentUser && r.debito > r.credito + 0.01)
-        .map(
-          (r) => _TransferRow(
-            creditorId: r.id,
-            creditorName: r.name,
-            creditorInitials: r.initials,
-            debtorName: currentUserName,
-            debtorInitials: currentUserInitials,
-            amount: r.debito,
-          ),
-        )
-        .toList();
-
-    return _PareggiaData(
-      casa: casa,
-      balances: balances,
-      transfers: transfers,
-    );
+  Future<PareggiaData?> _loadData() {
+    final casaId = ActiveCasaScope.read(context).selectedCasaId;
+    return ref.read(pareggiaDataProvider(casaId).future);
   }
 
   Future<void> _settleDebt(String creditorId, String creditorName) async {
@@ -129,7 +43,9 @@ class _PareggiaContiScreenState extends ConsumerState<PareggiaContiScreen> {
     try {
       final data = await _future;
       if (data == null) return;
-      await ApiProvider.spese.pareggia(data.casa.id, [creditorId]);
+      await ref
+          .read(speseViewModelProvider(data.casa.id).notifier)
+          .pareggiaConti([creditorId]);
       if (!mounted) return;
       setState(() {
         _future = _loadData();
@@ -153,13 +69,13 @@ class _PareggiaContiScreenState extends ConsumerState<PareggiaContiScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF151127),
+      backgroundColor: AppColors.darkBackground,
       bottomNavigationBar: const HouseQuickNav(currentRoute: '/spese'),
       body: SafeArea(
         child: Column(
           children: [
             Expanded(
-              child: FutureBuilder<_PareggiaData?>(
+              child: FutureBuilder<PareggiaData?>(
                 future: _future,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState != ConnectionState.done) {
@@ -170,7 +86,7 @@ class _PareggiaContiScreenState extends ConsumerState<PareggiaContiScreen> {
                     return const Center(
                       child: Text(
                         'Dati non disponibili.',
-                        style: TextStyle(color: Colors.white),
+                        style: TextStyle(color: AppColors.textOnDark),
                       ),
                     );
                   }
@@ -183,11 +99,17 @@ class _PareggiaContiScreenState extends ConsumerState<PareggiaContiScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
+              padding: const EdgeInsets.fromLTRB(
+                AppSizes.p16,
+                AppSizes.p8,
+                AppSizes.p16,
+                AppSizes.p14,
+              ),
               child: MainCtaButton(
                 label: 'Torna alle spese',
-                onPressed: () => Navigator.of(context)
-                    .pushReplacementNamed(ListaSpeseAdminScreen.routeName),
+                onPressed: () => Navigator.of(
+                  context,
+                ).pushReplacementNamed(ListaSpeseAdminScreen.routeName),
               ),
             ),
           ],
@@ -208,15 +130,20 @@ class _PareggiaContent extends StatelessWidget {
     required this.onSettleDebt,
   });
 
-  final _PareggiaData data;
+  final PareggiaData data;
   final String? submittingKey;
   final Future<void> Function(String creditorId, String creditorName)
-      onSettleDebt;
+  onSettleDebt;
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+      padding: const EdgeInsets.fromLTRB(
+        AppSizes.p16,
+        AppSizes.p24,
+        AppSizes.p16,
+        AppSizes.p16,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -228,63 +155,72 @@ class _PareggiaContent extends StatelessWidget {
                 icon: const Icon(
                   Icons.arrow_back,
                   color: AppColors.brandAccent,
-                  size: 28,
+                  size: AppSizes.p28,
                 ),
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                constraints: const BoxConstraints(
+                  minWidth: AppSizes.p32,
+                  minHeight: AppSizes.p32,
+                ),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: AppSizes.p6),
               Text(
                 'Spese',
                 style: AppTextStyles.screenTitleStrong.copyWith(
                   color: AppColors.brandAccent,
-                  fontSize: 23,
+                  fontSize: AppSizes.p23,
                   fontWeight: FontWeight.w800,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSizes.p8),
           Text(
             'Pareggia i conti',
             style: AppTextStyles.screenTitleStrong.copyWith(
-              fontSize: 22,
+              fontSize: AppSizes.p22,
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSizes.p4),
           Text(
             '${_currentMonthYear()} · ${data.casa.nome}',
             style: AppTextStyles.bodyStrong.copyWith(
-              color: const Color(0xFF918D9A),
-              fontSize: 16,
+              color: AppColors.textDim,
+              fontSize: AppSizes.p16,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSizes.p16),
 
           // ── Box introduttivo ────────────────────────────────────────────
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSizes.p14,
+              vertical: AppSizes.p12,
+            ),
             decoration: BoxDecoration(
-              color: const Color(0xFF1E1A30),
-              border: Border.all(color: const Color(0xFF3A3555), width: 1),
-              borderRadius: BorderRadius.circular(10),
+              color: AppColors.surfaceDarkCard,
+              border: Border.all(
+                color: AppColors.dividerDark,
+                width: AppSizes.p1,
+              ),
+              borderRadius: BorderRadius.circular(AppSizes.radius10),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Icon(
                   Icons.info_outline_rounded,
-                  color: Color(0xFF7B74A0),
-                  size: 18,
+                  color: AppColors.textMutedDark,
+                  size: AppSizes.p18,
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: AppSizes.p10),
                 const Expanded(
                   child: Text(
                     'Tieni traccia dei crediti e salda i debiti con i coinquilini in un unico click.',
                     style: TextStyle(
-                      color: Color(0xFF9B94BF),
-                      fontSize: 13,
+                      color: AppColors.textMutedSoft,
+                      fontSize: AppSizes.p13,
                       fontFamily: 'Inter',
                       fontWeight: FontWeight.w500,
                       height: 1.45,
@@ -294,17 +230,17 @@ class _PareggiaContent extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSizes.p24),
 
           // ── Saldi attuali ───────────────────────────────────────────────
           const _SectionTitle('SALDI ATTUALI'),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSizes.p12),
           _BalancesCard(rows: data.balances),
-          const SizedBox(height: 28),
+          const SizedBox(height: AppSizes.p28),
 
           // ── Trasferimenti minimi ────────────────────────────────────────
           const _SectionTitle('TRASFERIMENTI MINIMI'),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSizes.p12),
           _TransfersCard(
             transfers: data.transfers,
             submittingKey: submittingKey,
@@ -317,9 +253,18 @@ class _PareggiaContent extends StatelessWidget {
 
   String _currentMonthYear() {
     const months = [
-      'Gennaio', 'Febbraio', 'Marzo', 'Aprile',
-      'Maggio', 'Giugno', 'Luglio', 'Agosto',
-      'Settembre', 'Ottobre', 'Novembre', 'Dicembre',
+      'Gennaio',
+      'Febbraio',
+      'Marzo',
+      'Aprile',
+      'Maggio',
+      'Giugno',
+      'Luglio',
+      'Agosto',
+      'Settembre',
+      'Ottobre',
+      'Novembre',
+      'Dicembre',
     ];
     final now = DateTime.now();
     return '${months[now.month - 1]} ${now.year}';
@@ -333,7 +278,7 @@ class _PareggiaContent extends StatelessWidget {
 class _BalancesCard extends StatelessWidget {
   const _BalancesCard({required this.rows});
 
-  final List<_BalanceRow> rows;
+  final List<BalanceRow> rows;
 
   @override
   Widget build(BuildContext context) {
@@ -346,7 +291,10 @@ class _BalancesCard extends StatelessWidget {
           for (int i = 0; i < rows.length; i++) ...[
             _BalanceTile(row: rows[i]),
             if (i < rows.length - 1)
-              const Divider(height: 1, color: Color(0xFF4A4560)),
+              const Divider(
+                height: AppSizes.p1,
+                color: AppColors.dividerOnDark,
+              ),
           ],
         ],
       ),
@@ -357,7 +305,7 @@ class _BalancesCard extends StatelessWidget {
 class _BalanceTile extends StatelessWidget {
   const _BalanceTile({required this.row});
 
-  final _BalanceRow row;
+  final BalanceRow row;
 
   @override
   Widget build(BuildContext context) {
@@ -365,16 +313,16 @@ class _BalanceTile extends StatelessWidget {
     final String saldoText;
 
     if (row.isCurrentUser) {
-      saldoColor = const Color(0xFF918D9A);
+      saldoColor = AppColors.textDim;
       saldoText = '−';
     } else if (row.saldo > 0.01) {
-      saldoColor = const Color(0xFF5DFF71);
+      saldoColor = AppColors.statusPositive;
       saldoText = '+€${_fmt(row.saldo)}';
     } else if (row.saldo < -0.01) {
-      saldoColor = const Color(0xFFFF6767);
+      saldoColor = AppColors.statusNegative;
       saldoText = '-€${_fmt(row.saldo.abs())}';
     } else {
-      saldoColor = const Color(0xFF918D9A);
+      saldoColor = AppColors.textDim;
       saldoText = '±€0.00';
     }
 
@@ -383,20 +331,23 @@ class _BalanceTile extends StatelessWidget {
         !row.isCurrentUser && row.credito > 0.01 && row.debito > 0.01;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.p14,
+        vertical: AppSizes.p10,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               UserAvatar(userId: row.id, username: row.name, radius: 19),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSizes.p12),
               Expanded(
                 child: Text(
                   displayName,
                   style: AppTextStyles.bodyStrong.copyWith(
-                    color: const Color(0xFFDDDAE8),
-                    fontSize: 17,
+                    color: AppColors.textMutedLight,
+                    fontSize: AppSizes.p17,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -405,7 +356,7 @@ class _BalanceTile extends StatelessWidget {
                 saldoText,
                 style: TextStyle(
                   color: saldoColor,
-                  fontSize: 19,
+                  fontSize: AppSizes.p19,
                   fontFamily: 'Inter',
                   fontWeight: FontWeight.w800,
                 ),
@@ -413,21 +364,21 @@ class _BalanceTile extends StatelessWidget {
             ],
           ),
           if (showBreakdown) ...[
-            const SizedBox(height: 6),
+            const SizedBox(height: AppSizes.p6),
             Padding(
-              padding: const EdgeInsets.only(left: 50),
+              padding: const EdgeInsets.only(left: AppSizes.p50),
               child: Row(
                 children: [
                   _BreakdownChip(
                     label: 'Mi deve',
                     value: '€${_fmt(row.credito)}',
-                    color: const Color(0xFF3DCC55),
+                    color: AppColors.statusSuccess,
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSizes.p8),
                   _BreakdownChip(
                     label: 'Devo',
                     value: '€${_fmt(row.debito)}',
-                    color: const Color(0xFFFF6767),
+                    color: AppColors.statusNegative,
                   ),
                 ],
               ),
@@ -453,17 +404,23 @@ class _BreakdownChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.p8,
+        vertical: AppSizes.p3,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withValues(alpha: 0.30), width: 1),
+        borderRadius: BorderRadius.circular(AppSizes.radius6),
+        border: Border.all(
+          color: color.withValues(alpha: 0.30),
+          width: AppSizes.p1,
+        ),
       ),
       child: RichText(
         text: TextSpan(
           style: const TextStyle(
             fontFamily: 'Inter',
-            fontSize: 12,
+            fontSize: AppSizes.p12,
             fontWeight: FontWeight.w500,
           ),
           children: [
@@ -473,10 +430,7 @@ class _BreakdownChip extends StatelessWidget {
             ),
             TextSpan(
               text: value,
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.w700,
-              ),
+              style: TextStyle(color: color, fontWeight: FontWeight.w700),
             ),
           ],
         ),
@@ -496,7 +450,7 @@ class _TransfersCard extends StatelessWidget {
     required this.onSettle,
   });
 
-  final List<_TransferRow> transfers;
+  final List<TransferRow> transfers;
   final String? submittingKey;
   final Future<void> Function(String creditorId, String creditorName) onSettle;
 
@@ -517,7 +471,10 @@ class _TransfersCard extends StatelessWidget {
                   onSettle(transfers[i].creditorId, transfers[i].creditorName),
             ),
             if (i < transfers.length - 1)
-              const Divider(height: 1, color: Color(0xFF4A4560)),
+              const Divider(
+                height: AppSizes.p1,
+                color: AppColors.dividerOnDark,
+              ),
           ],
         ],
       ),
@@ -533,7 +490,7 @@ class _TransferTile extends StatelessWidget {
     required this.onSettle,
   });
 
-  final _TransferRow transfer;
+  final TransferRow transfer;
   final bool submitting;
   final bool disabled;
   final VoidCallback onSettle;
@@ -541,7 +498,10 @@ class _TransferTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.p14,
+        vertical: AppSizes.p10,
+      ),
       child: Row(
         children: [
           UserAvatar(
@@ -549,41 +509,41 @@ class _TransferTile extends StatelessWidget {
             username: transfer.creditorName,
             radius: 19,
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: AppSizes.p10),
           Expanded(
             child: RichText(
               text: TextSpan(
                 style: AppTextStyles.bodyStrong.copyWith(
-                  color: const Color(0xFFDDDAE8),
-                  fontSize: 16,
+                  color: AppColors.textMutedLight,
+                  fontSize: AppSizes.p16,
                   fontWeight: FontWeight.w600,
                 ),
                 children: [
                   TextSpan(text: transfer.debtorName),
                   const TextSpan(
                     text: ' paga ',
-                    style: TextStyle(color: Color(0xFF918D9A)),
+                    style: TextStyle(color: AppColors.textDim),
                   ),
                   TextSpan(text: transfer.creditorName),
                 ],
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSizes.p8),
           Text(
             '€${_fmt(transfer.amount)}',
             style: const TextStyle(
               color: AppColors.lockOrange,
-              fontSize: 16,
+              fontSize: AppSizes.p16,
               fontFamily: 'Inter',
               fontWeight: FontWeight.w800,
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: AppSizes.p10),
           if (submitting)
             const SizedBox(
-              width: 28,
-              height: 28,
+              width: AppSizes.p28,
+              height: AppSizes.p28,
               child: CircularProgressIndicator(
                 strokeWidth: 2.5,
                 color: AppColors.lockOrange,
@@ -591,29 +551,29 @@ class _TransferTile extends StatelessWidget {
             )
           else
             SizedBox(
-              height: 34,
+              height: AppSizes.p34,
               child: DecoratedBox(
                 decoration: ShapeDecoration(
                   gradient: LinearGradient(
                     begin: const Alignment(0.50, 0.00),
                     end: const Alignment(0.50, 1.00),
                     colors: [
-                      Colors.white.withValues(alpha: 0.20),
-                      Colors.white.withValues(alpha: 0.00),
+                      AppColors.textOnDark.withValues(alpha: 0.20),
+                      AppColors.textOnDark.withValues(alpha: 0.00),
                     ],
                   ),
                   shape: RoundedRectangleBorder(
                     side: const BorderSide(
-                      width: 2,
+                      width: AppSizes.p2,
                       strokeAlign: BorderSide.strokeAlignOutside,
                       color: AppColors.lockOrange,
                     ),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppSizes.radius12),
                   ),
                   shadows: const [
                     BoxShadow(
-                      color: Color(0x3F000000),
-                      blurRadius: 4,
+                      color: AppColors.shadowOverlay,
+                      blurRadius: AppSizes.p4,
                       offset: Offset(0, 4),
                     ),
                   ],
@@ -621,19 +581,21 @@ class _TransferTile extends StatelessWidget {
                 child: OutlinedButton(
                   onPressed: disabled ? null : onSettle,
                   style: OutlinedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    disabledBackgroundColor: Colors.transparent,
+                    backgroundColor: AppColors.transparent,
+                    disabledBackgroundColor: AppColors.transparent,
                     side: BorderSide.none,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSizes.p12,
+                    ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppSizes.radius12),
                     ),
                   ),
                   child: const Text(
                     'Torna in Pari',
                     style: TextStyle(
                       color: AppColors.lockOrange,
-                      fontSize: 13,
+                      fontSize: AppSizes.p13,
                       fontFamily: 'Inter',
                       fontWeight: FontWeight.w800,
                     ),
@@ -660,8 +622,11 @@ class _Panel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF312B4A),
-        border: Border.all(color: const Color(0xFF4A4560), width: 1.2),
+        color: AppColors.surfaceDarkMuted,
+        border: Border.all(
+          color: AppColors.dividerOnDark,
+          width: AppSizes.p1_2,
+        ),
         borderRadius: BorderRadius.circular(AppSizes.radius8),
       ),
       child: child,
@@ -678,11 +643,11 @@ class _EmptyCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return _Panel(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSizes.p16),
         child: Text(
           message,
           style: AppTextStyles.bodyStrong.copyWith(
-            color: const Color(0xFFC1BFC8),
+            color: AppColors.textDisabled,
           ),
         ),
       ),
@@ -700,96 +665,13 @@ class _SectionTitle extends StatelessWidget {
     return Text(
       text,
       style: AppTextStyles.screenTitleStrong.copyWith(
-        color: const Color(0xFFC1BFC8),
-        fontSize: 14,
+        color: AppColors.textDisabled,
+        fontSize: AppSizes.p14,
         fontWeight: FontWeight.w800,
         letterSpacing: 0.8,
       ),
     );
   }
-}
-
-// ---------------------------------------------------------------------------
-// Data models
-// ---------------------------------------------------------------------------
-
-class _PareggiaData {
-  const _PareggiaData({
-    required this.casa,
-    required this.balances,
-    required this.transfers,
-  });
-
-  final Casa casa;
-  final List<_BalanceRow> balances;
-  final List<_TransferRow> transfers;
-}
-
-class _BalanceRow {
-  const _BalanceRow({
-    required this.id,
-    required this.name,
-    required this.initials,
-    required this.credito,
-    required this.debito,
-    required this.isCurrentUser,
-  });
-
-  final String id;
-  final String name;
-  final String initials;
-  final double credito; // questa persona mi deve
-  final double debito;  // devo a questa persona
-  final bool isCurrentUser;
-
-  double get saldo => credito - debito; // positivo = mi deve, negativo = devo io
-}
-
-class _TransferRow {
-  const _TransferRow({
-    required this.creditorId,
-    required this.creditorName,
-    required this.creditorInitials,
-    required this.debtorName,
-    required this.debtorInitials,
-    required this.amount,
-  });
-
-  final String creditorId;
-  final String creditorName;
-  final String creditorInitials;
-  final String debtorName;
-  final String debtorInitials;
-  final double amount;
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-String _displayName(Inquilino inquilino) {
-  final username = inquilino.username.trim();
-  if (username.isNotEmpty) return username;
-  return inquilino.email.trim().isEmpty ? 'Coinquilino' : inquilino.email;
-}
-
-bool _isCurrentUser(Inquilino inquilino) {
-  final userId = ApiProvider.client.currentUserId?.trim();
-  if (userId != null && userId.isNotEmpty) return inquilino.id == userId;
-  final email = ApiProvider.client.currentUserEmail?.trim().toLowerCase();
-  if (email == null || email.isEmpty) return false;
-  return inquilino.email.trim().toLowerCase() == email;
-}
-
-String _initials(String name) {
-  final parts = name
-      .trim()
-      .split(RegExp(r'\s+'))
-      .where((p) => p.isNotEmpty)
-      .toList();
-  if (parts.isEmpty) return 'C';
-  if (parts.length == 1) return parts.first[0].toUpperCase();
-  return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
 }
 
 String _fmt(double value) => value.toStringAsFixed(2);

@@ -14,15 +14,16 @@ Future<void> showDeleteConfirmDialog({
     context: context,
     barrierDismissible: true,
     barrierLabel: 'Chiudi',
-    barrierColor: Colors.white.withValues(alpha: 0.18),
+    barrierColor: AppColors.textOnDark.withValues(alpha: 0.18),
     transitionDuration: const Duration(milliseconds: 200),
     transitionBuilder: (context, animation, _, child) {
       return FadeTransition(
         opacity: animation,
         child: ScaleTransition(
-          scale: Tween<double>(begin: 0.92, end: 1).animate(
-            CurvedAnimation(parent: animation, curve: Curves.easeOut),
-          ),
+          scale: Tween<double>(
+            begin: 0.92,
+            end: 1,
+          ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut)),
           child: child,
         ),
       );
@@ -84,13 +85,18 @@ class _DeleteConfirmDialogState extends State<_DeleteConfirmDialog> {
       onTap: () => Navigator.of(context).pop(),
       behavior: HitTestBehavior.opaque,
       child: Scaffold(
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.transparent,
         body: Center(
           child: GestureDetector(
             onTap: () {},
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: AppSizes.p28),
-              padding: const EdgeInsets.fromLTRB(AppSizes.p32, AppSizes.p24, AppSizes.p32, AppSizes.p28),
+              padding: const EdgeInsets.fromLTRB(
+                AppSizes.p32,
+                AppSizes.p24,
+                AppSizes.p32,
+                AppSizes.p28,
+              ),
               decoration: BoxDecoration(
                 color: AppColors.surfaceDarkElevated,
                 borderRadius: BorderRadius.circular(AppSizes.radius18),
@@ -118,7 +124,9 @@ class _DeleteConfirmDialogState extends State<_DeleteConfirmDialog> {
                   Text(
                     widget.title,
                     textAlign: TextAlign.center,
-                    style: AppTextStyles.title.copyWith(fontWeight: FontWeight.w800),
+                    style: AppTextStyles.title.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                   const SizedBox(height: AppSizes.p12),
                   Text(
@@ -134,7 +142,9 @@ class _DeleteConfirmDialogState extends State<_DeleteConfirmDialog> {
                     Text(
                       _error!,
                       textAlign: TextAlign.center,
-                      style: AppTextStyles.error.copyWith(fontWeight: FontWeight.w600),
+                      style: AppTextStyles.error.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                   const SizedBox(height: AppSizes.p24),
@@ -147,9 +157,14 @@ class _DeleteConfirmDialogState extends State<_DeleteConfirmDialog> {
                           color: AppColors.errorStrong,
                           width: AppSizes.p2,
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: AppSizes.p16, vertical: AppSizes.p14),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSizes.p16,
+                          vertical: AppSizes.p14,
+                        ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppSizes.radius16),
+                          borderRadius: BorderRadius.circular(
+                            AppSizes.radius16,
+                          ),
                         ),
                       ),
                       child: _loading

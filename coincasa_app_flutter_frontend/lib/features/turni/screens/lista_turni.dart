@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:coincasa_app/core/api/api_provider.dart';
-import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/turno.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
@@ -14,32 +12,8 @@ import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
 import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 import 'package:coincasa_app/features/turni/screens/dettaglio_turno_admin.dart';
 import 'package:coincasa_app/features/turni/screens/turno_create_screen.dart';
-
-final _me = ApiProvider.client;
-
-final _listaTurniCasaProvider = FutureProvider.autoDispose
-    .family<Casa?, String?>((ref, selectedCasaId) async {
-      final caseUtente = await ApiProvider.casa.list();
-      if (caseUtente.isEmpty) {
-        return null;
-      }
-      if (selectedCasaId != null && selectedCasaId.isNotEmpty) {
-        for (final casa in caseUtente) {
-          if (casa.id == selectedCasaId) {
-            return casa;
-          }
-        }
-      }
-      return caseUtente.first;
-    });
-
-final _listaTurniProvider = FutureProvider.autoDispose
-    .family<List<Turno>, String?>((ref, casaId) {
-      if (casaId == null || casaId.isEmpty) {
-        return const [];
-      }
-      return ApiProvider.turni.list(casaId);
-    });
+import 'package:coincasa_app/domain/viewmodel/auth_view_model.dart';
+import 'package:coincasa_app/domain/viewmodel/turni_viewmodel.dart';
 
 class ListaTurniScreen extends ConsumerStatefulWidget {
   const ListaTurniScreen({super.key, this.onInserisciTurno});
@@ -62,7 +36,9 @@ class _ListaTurniScreenState extends ConsumerState<ListaTurniScreen>
       _completingIds.add(turnoId);
     });
     try {
-      await ApiProvider.turni.completa(casaId, turnoId);
+      await ref
+          .read(turniViewModelProvider(casaId).notifier)
+          .completaTurno(turnoId);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Turno completato con successo!')),
@@ -116,19 +92,24 @@ class _ListaTurniScreenState extends ConsumerState<ListaTurniScreen>
       if (!mounted) {
         return;
       }
-      ref.invalidate(_listaTurniCasaProvider);
-      ref.invalidate(_listaTurniProvider);
+      ref.invalidate(listaTurniCasaProvider);
+      ref.invalidate(listaTurniProvider);
+      final casaId = ActiveCasaScope.read(context).selectedCasaId;
+      if (casaId != null) {
+        ref.invalidate(turniViewModelProvider(casaId));
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final activeCasaController = ActiveCasaScope.of(context);
+    final currentUserId = ref.watch(authViewModelProvider).valueOrNull?.id;
     final casaAsync = ref.watch(
-      _listaTurniCasaProvider(activeCasaController.selectedCasaId),
+      listaTurniCasaProvider(activeCasaController.selectedCasaId),
     );
     final turniAsync = casaAsync.when(
-      data: (casa) => ref.watch(_listaTurniProvider(casa?.id)),
+      data: (casa) => ref.watch(listaTurniProvider(casa?.id)),
       loading: () => const AsyncValue<List<Turno>>.loading(),
       error: (error, stackTrace) =>
           AsyncValue<List<Turno>>.error(error, stackTrace),
@@ -172,19 +153,19 @@ class _ListaTurniScreenState extends ConsumerState<ListaTurniScreen>
                                     ).selectedCasa?.nome ??
                                     '',
                                 style: const TextStyle(
-                                  color: Color(0xFF8C8CA0),
-                                  fontSize: 20,
+                                  color: AppColors.textMutedDark,
+                                  fontSize: AppSizes.p20,
                                   fontFamily: 'Inter',
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                              const SizedBox(height: AppSizes.p4),
                               Text(
                                 'Turni',
                                 textAlign: TextAlign.center,
                                 style: AppTextStyles.screenTitleStrong.copyWith(
                                   color: AppColors.brandAccent,
-                                  fontSize: 40,
+                                  fontSize: AppSizes.p40,
                                   fontWeight: FontWeight.w800,
                                 ),
                               ),
@@ -196,7 +177,7 @@ class _ListaTurniScreenState extends ConsumerState<ListaTurniScreen>
                       Text(
                         'Calendario',
                         style: AppTextStyles.screenTitleStrong.copyWith(
-                          fontSize: 26,
+                          fontSize: AppSizes.p26,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -221,7 +202,7 @@ class _ListaTurniScreenState extends ConsumerState<ListaTurniScreen>
                                     'Turni assegnati',
                                     style: AppTextStyles.screenTitleStrong
                                         .copyWith(
-                                          fontSize: 26,
+                                          fontSize: AppSizes.p26,
                                           fontWeight: FontWeight.w800,
                                         ),
                                   ),
@@ -234,53 +215,11 @@ class _ListaTurniScreenState extends ConsumerState<ListaTurniScreen>
                               );
                             }
 
-                            final now = DateTime.now();
-                            final today = DateTime(
-                              now.year,
-                              now.month,
-                              now.day,
+                            final projection = TurniListProjection.from(
+                              effectiveTurni,
                             );
-
-                            final turniScaduti =
-                                effectiveTurni.where((t) {
-                                  if (t.completato) return false;
-                                  final date = t.dataProssimaPulizia;
-                                  if (date == null) return false;
-                                  final dateOnly = DateTime(
-                                    date.year,
-                                    date.month,
-                                    date.day,
-                                  );
-                                  return dateOnly.isBefore(today) ||
-                                      dateOnly.isAtSameMomentAs(today);
-                                }).toList()..sort((a, b) {
-                                  final aDate = a.dataProssimaPulizia;
-                                  final bDate = b.dataProssimaPulizia;
-                                  if (aDate == null && bDate == null) return 0;
-                                  if (aDate == null) return 1;
-                                  if (bDate == null) return -1;
-                                  return aDate.compareTo(bDate);
-                                });
-
-                            final turniAssegnati =
-                                effectiveTurni.where((t) {
-                                  if (t.completato) return false;
-                                  final date = t.dataProssimaPulizia;
-                                  if (date == null) return true;
-                                  final dateOnly = DateTime(
-                                    date.year,
-                                    date.month,
-                                    date.day,
-                                  );
-                                  return dateOnly.isAfter(today);
-                                }).toList()..sort((a, b) {
-                                  final aDate = a.dataProssimaPulizia;
-                                  final bDate = b.dataProssimaPulizia;
-                                  if (aDate == null && bDate == null) return 0;
-                                  if (aDate == null) return 1;
-                                  if (bDate == null) return -1;
-                                  return aDate.compareTo(bDate);
-                                });
+                            final turniScaduti = projection.scaduti;
+                            final turniAssegnati = projection.assegnati;
 
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -290,7 +229,7 @@ class _ListaTurniScreenState extends ConsumerState<ListaTurniScreen>
                                     'Turni scaduti',
                                     style: AppTextStyles.screenTitleStrong
                                         .copyWith(
-                                          fontSize: 26,
+                                          fontSize: AppSizes.p26,
                                           fontWeight: FontWeight.w800,
                                           color: AppColors.statusNegative,
                                         ),
@@ -306,7 +245,7 @@ class _ListaTurniScreenState extends ConsumerState<ListaTurniScreen>
                                             'casaId': casaAsync.value?.id,
                                           },
                                         ),
-                                    currentUserId: _me.currentUserId,
+                                    currentUserId: currentUserId,
                                     casaId: casaAsync.value?.id,
                                     completingIds: _completingIds,
                                     onCompleta: _completaTurno,
@@ -317,7 +256,7 @@ class _ListaTurniScreenState extends ConsumerState<ListaTurniScreen>
                                   'Turni assegnati',
                                   style: AppTextStyles.screenTitleStrong
                                       .copyWith(
-                                        fontSize: 26,
+                                        fontSize: AppSizes.p26,
                                         fontWeight: FontWeight.w800,
                                       ),
                                 ),
@@ -337,7 +276,7 @@ class _ListaTurniScreenState extends ConsumerState<ListaTurniScreen>
                                             'casaId': casaAsync.value?.id,
                                           },
                                         ),
-                                    currentUserId: _me.currentUserId,
+                                    currentUserId: currentUserId,
                                     casaId: casaAsync.value?.id,
                                     completingIds: _completingIds,
                                     onCompleta: _completaTurno,
@@ -354,7 +293,7 @@ class _ListaTurniScreenState extends ConsumerState<ListaTurniScreen>
                                   'Turni assegnati',
                                   style: AppTextStyles.screenTitleStrong
                                       .copyWith(
-                                        fontSize: 26,
+                                        fontSize: AppSizes.p26,
                                         fontWeight: FontWeight.w800,
                                       ),
                                 ),
@@ -372,7 +311,7 @@ class _ListaTurniScreenState extends ConsumerState<ListaTurniScreen>
                               Text(
                                 'Turni assegnati',
                                 style: AppTextStyles.screenTitleStrong.copyWith(
-                                  fontSize: 26,
+                                  fontSize: AppSizes.p26,
                                   fontWeight: FontWeight.w800,
                                 ),
                               ),
@@ -469,7 +408,7 @@ class _TurniCalendarCardState extends State<_TurniCalendarCard> {
       curve: Curves.easeOut,
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFF20284D),
+          color: AppColors.surfaceDarkElevated,
           borderRadius: BorderRadius.circular(AppSizes.radius12),
           boxShadow: const [
             BoxShadow(
@@ -496,13 +435,13 @@ class _TurniCalendarCardState extends State<_TurniCalendarCard> {
                       textAlign: TextAlign.center,
                       style: AppTextStyles.screenTitleStrong.copyWith(
                         color: AppColors.brandAccent,
-                        fontSize: 24,
+                        fontSize: AppSizes.p24,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                   ),
                   IconButton(
-                    iconSize: 34,
+                    iconSize: AppSizes.p34,
                     visualDensity: VisualDensity.compact,
                     onPressed: () => _changeMonth(-1),
                     icon: const Icon(
@@ -511,7 +450,7 @@ class _TurniCalendarCardState extends State<_TurniCalendarCard> {
                     ),
                   ),
                   IconButton(
-                    iconSize: 34,
+                    iconSize: AppSizes.p34,
                     visualDensity: VisualDensity.compact,
                     onPressed: () => _changeMonth(1),
                     icon: const Icon(
@@ -593,7 +532,7 @@ class _TurniCalendarCardState extends State<_TurniCalendarCard> {
                         ? Icons.fullscreen_exit_rounded
                         : Icons.fullscreen_rounded,
                     color: AppColors.brandAccent,
-                    size: 34,
+                    size: AppSizes.p34,
                   ),
                 ),
               ],
@@ -702,8 +641,8 @@ class _WeekDayCell extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 44,
-          height: 36,
+          width: AppSizes.p44,
+          height: AppSizes.p36,
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: selected
@@ -715,25 +654,27 @@ class _WeekDayCell extends StatelessWidget {
             day,
             style: AppTextStyles.bodyStrong.copyWith(
               color: AppColors.textOnDark,
-              fontSize: 16,
+              fontSize: AppSizes.p16,
               fontWeight: FontWeight.w700,
             ),
           ),
         ),
-        const SizedBox(height: 3),
+        const SizedBox(height: AppSizes.p3),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
             if (markers.isEmpty)
-              const SizedBox(width: 10, height: 10)
+              const SizedBox(width: AppSizes.p10, height: AppSizes.p10)
             else
               ...markers.asMap().entries.map(
                 (e) => Padding(
-                  padding: EdgeInsets.only(left: e.key == 0 ? 0 : 2),
+                  padding: EdgeInsets.only(
+                    left: e.key == 0 ? AppSizes.p0 : AppSizes.p2,
+                  ),
                   child: Container(
-                    width: 8,
-                    height: 8,
+                    width: AppSizes.p8,
+                    height: AppSizes.p8,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: e.value,
@@ -763,7 +704,7 @@ class _CalendarDayCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textColor = muted ? const Color(0xFF7D8192) : AppColors.textOnDark;
+    final textColor = muted ? AppColors.textMutedDark : AppColors.textOnDark;
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -776,11 +717,11 @@ class _CalendarDayCell extends StatelessWidget {
           alignment: Alignment.center,
           decoration: selected
               ? const BoxDecoration(
-                  color: Color(0xFFD25BFF),
+                  color: AppColors.brandAccent,
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Color(0x99D25BFF),
+                      color: AppColors.brandAccent,
                       blurRadius: AppSizes.p10,
                     ),
                   ],
@@ -790,25 +731,27 @@ class _CalendarDayCell extends StatelessWidget {
             day,
             style: AppTextStyles.bodyStrong.copyWith(
               color: selected ? AppColors.textOnDark : textColor,
-              fontSize: 19,
+              fontSize: AppSizes.p19,
               fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
             ),
           ),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: AppSizes.p2),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
             if (markers.isEmpty)
-              const SizedBox(width: 8, height: 8)
+              const SizedBox(width: AppSizes.p8, height: AppSizes.p8)
             else
               ...markers.asMap().entries.map(
                 (e) => Padding(
-                  padding: EdgeInsets.only(left: e.key == 0 ? 0 : 2),
+                  padding: EdgeInsets.only(
+                    left: e.key == 0 ? AppSizes.p0 : AppSizes.p2,
+                  ),
                   child: Container(
-                    width: 7,
-                    height: 7,
+                    width: AppSizes.p7,
+                    height: AppSizes.p7,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: e.value,
@@ -835,8 +778,8 @@ class _CalendarLegendDot extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 11,
-          height: 11,
+          width: AppSizes.p11,
+          height: AppSizes.p11,
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: AppSizes.p5),
@@ -844,7 +787,7 @@ class _CalendarLegendDot extends StatelessWidget {
           label,
           style: AppTextStyles.bodyStrong.copyWith(
             color: AppColors.textMutedLight,
-            fontSize: 13,
+            fontSize: AppSizes.p13,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -908,10 +851,10 @@ class _AssignedTurniCard extends StatelessWidget {
   final void Function(String casaId, String turnoId) onCompleta;
 
   static const _whenColors = [
-    Color(0xFF2E8641),
-    Color(0xFF835C2F),
-    Color(0xFF65347C),
-    Color(0xFF286D76),
+    AppColors.success,
+    AppColors.turniAssigneeSurface,
+    AppColors.brandSecondary,
+    AppColors.info,
   ];
 
   @override
@@ -966,10 +909,10 @@ class _ExpiredTurniCard extends StatelessWidget {
   final void Function(String casaId, String turnoId) onCompleta;
 
   static const _whenColors = [
-    Color(0xFF2E8641),
-    Color(0xFF835C2F),
-    Color(0xFF65347C),
-    Color(0xFF286D76),
+    AppColors.success,
+    AppColors.turniAssigneeSurface,
+    AppColors.brandSecondary,
+    AppColors.info,
   ];
 
   @override
@@ -1014,7 +957,7 @@ class _TurniStatePanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(minHeight: 150),
+      constraints: const BoxConstraints(minHeight: AppSizes.p150),
       alignment: Alignment.center,
       padding: const EdgeInsets.symmetric(horizontal: AppSizes.p24),
       decoration: BoxDecoration(
@@ -1033,7 +976,7 @@ class _TurniStatePanel extends StatelessWidget {
         textAlign: TextAlign.center,
         style: AppTextStyles.screenTitleStrong.copyWith(
           color: AppColors.statusPositive,
-          fontSize: 22,
+          fontSize: AppSizes.p22,
           height: 1.16,
           fontWeight: FontWeight.w800,
         ),
@@ -1075,12 +1018,12 @@ class _TurnoCard extends StatelessWidget {
     final showCompleta = isCurrentAssignee && isExpired;
     final taskColor = isExpired
         ? AppColors.statusNegative
-        : const Color(0xFFD6D7E8);
+        : AppColors.textMutedLight;
 
     return ClipRRect(
       borderRadius: _cardBorderRadius,
       child: Material(
-        color: const Color(0xFF272746),
+        color: AppColors.surfaceDarkElevated,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1110,7 +1053,7 @@ class _TurnoCard extends StatelessWidget {
                         task,
                         style: AppTextStyles.bodyStrong.copyWith(
                           color: taskColor,
-                          fontSize: 20,
+                          fontSize: AppSizes.p20,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -1130,7 +1073,7 @@ class _TurnoCard extends StatelessWidget {
                         when,
                         style: AppTextStyles.bodyStrong.copyWith(
                           color: AppColors.textOnDark,
-                          fontSize: 13,
+                          fontSize: AppSizes.p13,
                           fontWeight: FontWeight.w700,
                           fontStyle: FontStyle.italic,
                         ),
@@ -1144,7 +1087,7 @@ class _TurnoCard extends StatelessWidget {
             // ── Barra "Completa" ──────────────────────────────────────────
             if (showCompleta) ...[
               const Divider(
-                height: 1,
+                height: AppSizes.p1,
                 thickness: 1,
                 color: AppColors.dividerOnDark,
               ),
@@ -1172,11 +1115,11 @@ class _CompletaBar extends StatelessWidget {
   Widget build(BuildContext context) {
     if (isCompleting) {
       return const SizedBox(
-        height: 44,
+        height: AppSizes.p44,
         child: Center(
           child: SizedBox(
-            width: 20,
-            height: 20,
+            width: AppSizes.p20,
+            height: AppSizes.p20,
             child: CircularProgressIndicator(
               strokeWidth: 2,
               valueColor: AlwaysStoppedAnimation<Color>(
@@ -1192,9 +1135,9 @@ class _CompletaBar extends StatelessWidget {
       onTap: onTap,
       borderRadius: _bottomRadius,
       child: Container(
-        height: 44,
+        height: AppSizes.p44,
         decoration: const BoxDecoration(
-          color: Color(0xFF1B5E20),
+          color: AppColors.success,
           borderRadius: _bottomRadius,
         ),
         alignment: Alignment.center,
@@ -1204,14 +1147,14 @@ class _CompletaBar extends StatelessWidget {
             const Icon(
               Icons.check_rounded,
               color: AppColors.textOnDark,
-              size: 18,
+              size: AppSizes.p18,
             ),
             const SizedBox(width: AppSizes.p6),
             Text(
               'Completa',
               style: AppTextStyles.bodyStrong.copyWith(
                 color: AppColors.textOnDark,
-                fontSize: 15,
+                fontSize: AppSizes.p15,
                 fontWeight: FontWeight.w800,
               ),
             ),

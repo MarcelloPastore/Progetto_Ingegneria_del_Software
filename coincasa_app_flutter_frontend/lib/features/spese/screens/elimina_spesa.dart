@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/models/quota.dart';
@@ -14,6 +13,8 @@ import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/screen_back_header.dart';
 import 'package:coincasa_app/features/spese/screens/lista_spese_admin.dart';
 import 'package:coincasa_app/features/spese/screens/modifiche_spese_negata.dart';
+import 'package:coincasa_app/domain/viewmodel/lista_case_viewmodel.dart';
+import 'package:coincasa_app/domain/viewmodel/spese_viewmodel.dart';
 
 class EliminaSpesaScreen extends ConsumerStatefulWidget {
   const EliminaSpesaScreen({super.key});
@@ -48,27 +49,24 @@ class _EliminaSpesaScreenState extends ConsumerState<EliminaSpesaScreen> {
     }
 
     final activeCasaController = ActiveCasaScope.read(context);
-    final caseUtente = await ApiProvider.casa.list();
+    final caseUtente = await ref.read(listaCaseViewModelProvider.future);
     if (caseUtente.isEmpty) {
       return null;
     }
     final casa = activeCasaController.resolveCasa(caseUtente);
+    final speseState = await ref.read(speseViewModelProvider(casa.id).future);
+    final notifier = ref.read(speseViewModelProvider(casa.id).notifier);
     final results = await Future.wait<dynamic>([
       args is Spesa
           ? Future<Spesa>.value(args)
-          : ApiProvider.spese.getById(casa.id, spesaId),
-      ApiProvider.spese
-          .getQuote(casa.id, spesaId)
-          .catchError((_) => const <Quota>[]),
-      ApiProvider.casa
-          .listInquilini(casa.id)
-          .catchError((_) => const <Inquilino>[]),
+          : notifier.getSpesaById(spesaId),
+      notifier.getQuoteSpesa(spesaId).catchError((_) => const <Quota>[]),
     ]);
     return _DeleteData(
       casa: casa,
       spesa: results[0] as Spesa,
       quote: results[1] as List<Quota>,
-      inquilini: results[2] as List<Inquilino>,
+      inquilini: speseState.inquilini,
     );
   }
 
@@ -82,7 +80,9 @@ class _EliminaSpesaScreenState extends ConsumerState<EliminaSpesaScreen> {
     }
     setState(() => _deleting = true);
     try {
-      await ApiProvider.spese.delete(data.casa.id, data.spesa.id);
+      await ref
+          .read(speseViewModelProvider(data.casa.id).notifier)
+          .deleteSpesa(data.spesa.id);
       if (mounted) {
         setState(() => _state = _DeleteState.success);
       }
@@ -100,7 +100,7 @@ class _EliminaSpesaScreenState extends ConsumerState<EliminaSpesaScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF6F6C78),
+      backgroundColor: AppColors.textMutedDark,
       bottomNavigationBar: const HouseQuickNav(currentRoute: '/spese'),
       body: SafeArea(
         child: FutureBuilder<_DeleteData?>(
@@ -147,30 +147,37 @@ class _DeleteContent extends StatelessWidget {
     return Stack(
       children: [
         SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
+          padding: const EdgeInsets.fromLTRB(
+            AppSizes.p20,
+            AppSizes.p24,
+            AppSizes.p20,
+            AppSizes.p28,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               ScreenBackHeader(title: 'Dettaglio spesa', onBack: onCancel),
-              const SizedBox(height: 50),
+              const SizedBox(height: AppSizes.p50),
               Text(
                 formatCurrency(data.spesa.importo),
                 textAlign: TextAlign.center,
-                style: AppTextStyles.screenTitleStrong.copyWith(fontSize: 40),
+                style: AppTextStyles.screenTitleStrong.copyWith(
+                  fontSize: AppSizes.p40,
+                ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSizes.p8),
               Text(
                 '${data.spesa.descrizione} - ${formatLongDate(data.spesa.data)}',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  color: Color(0xFFC1BFC8),
-                  fontSize: 18,
+                  color: AppColors.textDisabled,
+                  fontSize: AppSizes.p18,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: AppSizes.p28),
               _Summary(data: data),
-              const SizedBox(height: 32),
+              const SizedBox(height: AppSizes.p32),
               Row(
                 children: [
                   Expanded(
@@ -184,9 +191,11 @@ class _DeleteContent extends StatelessWidget {
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(
                           color: AppColors.brandAccent,
-                          width: 2,
+                          width: AppSizes.p2,
                         ),
-                        padding: const EdgeInsets.symmetric(vertical: 17),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSizes.p17,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(
                             AppSizes.radius16,
@@ -197,13 +206,13 @@ class _DeleteContent extends StatelessWidget {
                         'Modifica spesa',
                         style: TextStyle(
                           color: AppColors.brandAccent,
-                          fontSize: 17,
+                          fontSize: AppSizes.p17,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: AppSizes.p16),
                   Expanded(
                     child: OutlinedButton(
                       onPressed: state == _DeleteState.confirm
@@ -211,10 +220,12 @@ class _DeleteContent extends StatelessWidget {
                           : null,
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(
-                          color: Color(0xFFFF7A7E),
-                          width: 2,
+                          color: AppColors.statusNegative,
+                          width: AppSizes.p2,
                         ),
-                        padding: const EdgeInsets.symmetric(vertical: 17),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSizes.p17,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(
                             AppSizes.radius16,
@@ -224,8 +235,8 @@ class _DeleteContent extends StatelessWidget {
                       child: const Text(
                         'Elimina spesa',
                         style: TextStyle(
-                          color: Color(0xFFFF7A7E),
-                          fontSize: 17,
+                          color: AppColors.statusNegative,
+                          fontSize: AppSizes.p17,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -233,14 +244,14 @@ class _DeleteContent extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: AppSizes.p18),
               ElevatedButton(
                 onPressed: () => Navigator.of(
                   context,
                 ).pushReplacementNamed(ListaSpeseAdminScreen.routeName),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF668FD4),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  backgroundColor: AppColors.statusInfo,
+                  padding: const EdgeInsets.symmetric(vertical: AppSizes.p16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppSizes.radius16),
                   ),
@@ -248,8 +259,8 @@ class _DeleteContent extends StatelessWidget {
                 child: const Text(
                   'Torna alle spese',
                   style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 23,
+                    color: AppColors.textOnDark,
+                    fontSize: AppSizes.p23,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -258,9 +269,9 @@ class _DeleteContent extends StatelessWidget {
           ),
         ),
         Positioned(
-          left: 20,
-          right: 20,
-          top: 82,
+          left: AppSizes.p20,
+          right: AppSizes.p20,
+          top: AppSizes.p82,
           child: switch (state) {
             _DeleteState.confirm => _ConfirmDeleteCard(
               data: data,
@@ -293,43 +304,52 @@ class _ConfirmDeleteCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(38, 18, 38, 30),
-      decoration: _cardDecoration(const Color(0xFF2D293B)),
+      padding: const EdgeInsets.fromLTRB(
+        AppSizes.p38,
+        AppSizes.p18,
+        AppSizes.p38,
+        AppSizes.p30,
+      ),
+      decoration: _cardDecoration(AppColors.surfaceDarkMuted),
       child: Column(
         children: [
           const CircleAvatar(
             radius: 29,
-            backgroundColor: Color(0xFFFF7075),
-            child: Icon(Icons.delete, color: Color(0xFF5A141D), size: 34),
+            backgroundColor: AppColors.statusNegative,
+            child: Icon(
+              Icons.delete,
+              color: AppColors.errorContainerStrong,
+              size: AppSizes.p34,
+            ),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: AppSizes.p18),
           const Text(
             'Eliminare la spesa?',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Colors.white,
-              fontSize: 23,
+              color: AppColors.textOnDark,
+              fontSize: AppSizes.p23,
               fontWeight: FontWeight.w800,
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: AppSizes.p14),
           Text(
             '${data.spesa.descrizione} - ${formatCurrency(data.spesa.importo)} verrà rimossa definitivamente dalla lista.',
             textAlign: TextAlign.center,
             style: const TextStyle(
-              color: Color(0xFFC1BFC8),
-              fontSize: 18,
+              color: AppColors.textDisabled,
+              fontSize: AppSizes.p18,
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 26),
+          const SizedBox(height: AppSizes.p26),
           AppOutlinedButton(
             label: 'Sì, elimina definitivamente',
             onPressed: onDelete,
             color: AppColors.errorStrong,
             isLoading: deleting,
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppSizes.p10),
           AppOutlinedButton(label: 'Annulla', onPressed: onCancel),
         ],
       ),
@@ -345,37 +365,47 @@ class _DeleteSuccessCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(minHeight: 374),
-      padding: const EdgeInsets.fromLTRB(26, 18, 26, 30),
-      decoration: _cardDecoration(const Color(0xFF45FF58)),
+      constraints: const BoxConstraints(minHeight: AppSizes.p374),
+      padding: const EdgeInsets.fromLTRB(
+        AppSizes.p26,
+        AppSizes.p18,
+        AppSizes.p26,
+        AppSizes.p30,
+      ),
+      decoration: _cardDecoration(AppColors.statusPositive),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text('✓', style: TextStyle(fontSize: 100, height: 1)),
-          const SizedBox(height: 10),
+          const Text(
+            '✓',
+            style: TextStyle(fontSize: AppSizes.p100, height: AppSizes.p1),
+          ),
+          const SizedBox(height: AppSizes.p10),
           const Text(
             'Spesa eliminata',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Colors.white,
-              fontSize: 26,
+              color: AppColors.textOnDark,
+              fontSize: AppSizes.p26,
               fontWeight: FontWeight.w800,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppSizes.p10),
           Text(
             'La spesa “${data.spesa.descrizione}” è stata eliminata con successo.',
             textAlign: TextAlign.center,
             style: const TextStyle(
-              color: Color(0xFFC1BFC8),
-              fontSize: 18,
+              color: AppColors.textDisabled,
+              fontSize: AppSizes.p18,
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 56),
+          const SizedBox(height: AppSizes.p56),
           AppOutlinedButton(
             label: 'Torna alle spese',
-            onPressed: () => Navigator.of(context).pushReplacementNamed(ListaSpeseAdminScreen.routeName),
+            onPressed: () => Navigator.of(
+              context,
+            ).pushReplacementNamed(ListaSpeseAdminScreen.routeName),
           ),
         ],
       ),
@@ -391,19 +421,28 @@ class _DeleteDeniedCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(minHeight: 460),
-      padding: const EdgeInsets.fromLTRB(22, 16, 22, 28),
-      decoration: _cardDecoration(const Color(0xFFFF1721)),
+      constraints: const BoxConstraints(minHeight: AppSizes.p460),
+      padding: const EdgeInsets.fromLTRB(
+        AppSizes.p22,
+        AppSizes.p16,
+        AppSizes.p22,
+        AppSizes.p28,
+      ),
+      decoration: _cardDecoration(AppColors.errorStrong),
       child: Stack(
         children: [
           Align(
             alignment: Alignment.topRight,
             child: CircleAvatar(
               radius: 13,
-              backgroundColor: const Color(0xFFFF242E),
+              backgroundColor: AppColors.errorStrong,
               child: IconButton(
                 onPressed: onClose,
-                icon: const Icon(Icons.close, color: Colors.white, size: 19),
+                icon: const Icon(
+                  Icons.close,
+                  color: AppColors.textOnDark,
+                  size: AppSizes.p19,
+                ),
                 padding: EdgeInsets.zero,
               ),
             ),
@@ -412,50 +451,58 @@ class _DeleteDeniedCard extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.block, color: Color(0xFFFF1721), size: 72),
-                const SizedBox(height: 28),
+                const Icon(
+                  Icons.block,
+                  color: AppColors.errorStrong,
+                  size: AppSizes.p72,
+                ),
+                const SizedBox(height: AppSizes.p28),
                 const Text(
                   'Impossibile eliminare la spesa',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
+                    color: AppColors.textOnDark,
+                    fontSize: AppSizes.p20,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSizes.p12),
                 const Text(
                   'Questa spesa ha quote già pagate da uno o più coinquilini. Non è possibile eliminarla per non perdere i pagamenti già registrati.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Color(0xFFC1BFC8),
-                    fontSize: 18,
+                    color: AppColors.textDisabled,
+                    fontSize: AppSizes.p18,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 30),
+                const SizedBox(height: AppSizes.p30),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
+                    horizontal: AppSizes.p16,
+                    vertical: AppSizes.p8,
                   ),
                   decoration: BoxDecoration(
                     border: Border.all(
-                      color: const Color(0xFF25A7FF),
-                      width: 3,
+                      color: AppColors.statusInfo,
+                      width: AppSizes.p3,
                     ),
-                    borderRadius: BorderRadius.circular(30),
+                    borderRadius: BorderRadius.circular(AppSizes.radius30),
                   ),
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.lock, color: Color(0xFFFF1721), size: 18),
-                      SizedBox(width: 8),
+                      Icon(
+                        Icons.lock,
+                        color: AppColors.errorStrong,
+                        size: AppSizes.p18,
+                      ),
+                      SizedBox(width: AppSizes.p8),
                       Text(
                         'Spesa protetta da pagamenti esistenti',
                         style: TextStyle(
-                          color: Color(0xFFFF1721),
-                          fontSize: 13,
+                          color: AppColors.errorStrong,
+                          fontSize: AppSizes.p13,
                         ),
                       ),
                     ],
@@ -477,30 +524,33 @@ class _Summary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final names = data.quote
-        .map((quota) => _quotaName(quota, data.inquilini))
-        .where((name) => name.isNotEmpty)
-        .toList();
-    final share = data.quote.isEmpty
-        ? data.spesa.importo
-        : data.spesa.importo / data.quote.length;
+    final projection = SpesaDetailProjection.from(
+      spesa: data.spesa,
+      quote: data.quote,
+      inquilini: data.inquilini,
+      currentUserId: null,
+    );
+    final names = projection.rows.map((row) => row.name).toList();
+    final share = projection.quotaPerPersona;
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFFC1BFC8), width: 1.2),
-        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.textDisabled, width: AppSizes.p1_2),
+        borderRadius: BorderRadius.circular(AppSizes.radius16),
       ),
-      padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
+      padding: const EdgeInsets.fromLTRB(
+        AppSizes.p18,
+        AppSizes.p14,
+        AppSizes.p18,
+        AppSizes.p14,
+      ),
       child: Column(
         children: [
           _SummaryRow(
             label: 'Chi deve pagare',
             value: names.isEmpty ? 'Nessuno' : names.join(', '),
           ),
-          const Divider(color: Color(0xFFB8B5C1)),
-          _SummaryRow(
-            label: 'Quota per persone',
-            value: formatCurrency(share),
-          ),
+          const Divider(color: AppColors.textMutedSoft),
+          _SummaryRow(label: 'Quota per persone', value: formatCurrency(share)),
         ],
       ),
     );
@@ -521,8 +571,8 @@ class _SummaryRow extends StatelessWidget {
           child: Text(
             label,
             style: const TextStyle(
-              color: Color(0xFFC1BFC8),
-              fontSize: 18,
+              color: AppColors.textDisabled,
+              fontSize: AppSizes.p18,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -530,8 +580,8 @@ class _SummaryRow extends StatelessWidget {
         Text(
           value,
           style: const TextStyle(
-            color: Colors.white,
-            fontSize: 18,
+            color: AppColors.textOnDark,
+            fontSize: AppSizes.p18,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -539,8 +589,6 @@ class _SummaryRow extends StatelessWidget {
     );
   }
 }
-
-
 
 class _DeleteData {
   const _DeleteData({
@@ -561,32 +609,14 @@ enum _DeleteState { confirm, success, denied }
 BoxDecoration _cardDecoration(Color borderColor) {
   return BoxDecoration(
     color: AppColors.darkBackground,
-    border: Border.all(color: borderColor, width: 2),
-    borderRadius: BorderRadius.circular(10),
+    border: Border.all(color: borderColor, width: AppSizes.p2),
+    borderRadius: BorderRadius.circular(AppSizes.radius10),
     boxShadow: const [
-      BoxShadow(color: Color(0x55000000), blurRadius: 5, offset: Offset(0, 3)),
+      BoxShadow(
+        color: AppColors.shadowMedium,
+        blurRadius: AppSizes.p5,
+        offset: Offset(0, 3),
+      ),
     ],
   );
 }
-
-String _quotaName(Quota quota, List<Inquilino> inquilini) {
-  final id =
-      quota.raw['inquilinoId'] ??
-      quota.raw['idInquilino'] ??
-      quota.raw['utenteId'] ??
-      quota.raw['idUtente'] ??
-      (quota.raw['utente'] is Map ? quota.raw['utente']['id'] : null);
-  if (id != null) {
-    for (final inquilino in inquilini) {
-      if (inquilino.id == id.toString()) {
-        return inquilino.username.isNotEmpty ? inquilino.username : inquilino.email;
-      }
-    }
-  }
-  return (quota.raw['utente'] is Map
-          ? quota.raw['utente']['username']?.toString()
-          : null) ??
-      quota.raw['username']?.toString() ??
-      '';
-}
-

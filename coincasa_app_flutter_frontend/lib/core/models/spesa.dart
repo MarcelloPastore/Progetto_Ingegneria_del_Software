@@ -1,17 +1,20 @@
 class Spesa {
-  const Spesa({
+  Spesa({
     required this.id,
     required this.descrizione,
     required this.importo,
     required this.data,
     this.dataScadenza,
     this.isRicorrente = false,
-    this.partecipanti = const [],
+    List<Map<String, dynamic>> partecipanti = const [],
     this.creatoreId = '',
     this.creatoreNome = '',
     this.idScadenza,
-    this.raw = const {},
-  });
+    Map<String, dynamic> raw = const {},
+  }) : partecipanti = List.unmodifiable(
+         partecipanti.map((item) => Map<String, dynamic>.unmodifiable(item)),
+       ),
+       raw = Map.unmodifiable(raw);
 
   final String id;
   final String descrizione;
