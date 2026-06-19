@@ -864,16 +864,6 @@ Inquilino? _resolveCurrentUser(List<Inquilino> inquilini) {
     }
   }
 
-  // 3. Fallback: username (univoco nell'app).
-  final username = ApiProvider.client.currentUserUsername?.trim().toLowerCase();
-  if (username != null && username.isNotEmpty) {
-    for (final inquilino in inquilini) {
-      if (inquilino.username.trim().toLowerCase() == username) {
-        return inquilino;
-      }
-    }
-  }
-
   // Non usiamo nome/nomeCompleto: non sono univoci e causano falsi positivi
   // quando due utenti condividono lo stesso nome anagrafico.
   return null;

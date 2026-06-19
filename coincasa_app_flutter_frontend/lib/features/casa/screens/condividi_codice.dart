@@ -83,10 +83,14 @@ class _CondividiCodiceScreenState extends State<CondividiCodiceScreen> {
           IconButton(onPressed: _reload, icon: const Icon(Icons.refresh)),
           Padding(
             padding: const EdgeInsets.only(right: 16),
-            child: UserAvatar(
-              radius: 18,
-              userId: ApiProvider.client.currentUserAvatarSeed,
-              username: ApiProvider.client.currentUserUsername,
+            child: InkWell(
+              onTap: () => Navigator.of(context).pushNamed('/account'),
+              customBorder: const CircleBorder(),
+              child: UserAvatar(
+                radius: 18,
+                userId: ApiProvider.client.currentUserAvatarSeed,
+                username: ApiProvider.client.currentUserUsername,
+              ),
             ),
           ),
         ],

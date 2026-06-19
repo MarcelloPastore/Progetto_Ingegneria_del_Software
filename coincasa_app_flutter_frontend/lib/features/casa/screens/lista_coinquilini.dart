@@ -168,7 +168,11 @@ class _ListaCoinquiliniScreenState extends State<ListaCoinquiliniScreen> {
           IconButton(onPressed: _reload, icon: const Icon(Icons.refresh)),
           Padding(
             padding: const EdgeInsets.only(right: 16),
-            child: _CurrentUserAvatar(future: _future),
+            child: InkWell(
+              onTap: () => Navigator.of(context).pushNamed('/account'),
+              customBorder: const CircleBorder(),
+              child: _CurrentUserAvatar(future: _future),
+            ),
           ),
         ],
       ),
