@@ -8,6 +8,7 @@ import 'package:coincasa_app/core/models/quota.dart';
 import 'package:coincasa_app/core/models/spesa.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/utils/formatters.dart';
 import 'package:coincasa_app/core/utils/user_initials.dart';
 import 'package:coincasa_app/core/widgets/common/delete_confirm_dialog.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
@@ -210,7 +211,7 @@ class _DetailContent extends StatelessWidget {
           ),
           const SizedBox(height: AppSizes.p48),
           Text(
-            _formatCurrency(data.spesa.importo),
+            formatCurrency(data.spesa.importo),
             textAlign: TextAlign.center,
             style: AppTextStyles.screenTitleStrong.copyWith(
               fontSize: 38,
@@ -219,7 +220,7 @@ class _DetailContent extends StatelessWidget {
           ),
           const SizedBox(height: AppSizes.p6),
           Text(
-            '${data.spesa.descrizione} - ${_formatLongDate(data.spesa.data)}',
+            '${data.spesa.descrizione} - ${formatLongDate(data.spesa.data)}',
             textAlign: TextAlign.center,
             style: AppTextStyles.bodyStrong.copyWith(
               color: const Color(0xFFAFAEAE),
@@ -505,13 +506,13 @@ class _SummaryCard extends StatelessWidget {
           const Divider(color: Color(0xFF716E76), height: AppSizes.p18),
           _SummaryRow(
             label: 'Quota per persone',
-            value: _formatCurrency(quotaPerPersona),
+            value: formatCurrency(quotaPerPersona),
           ),
           if (hasScadenza) ...[
             const Divider(color: Color(0xFF716E76), height: AppSizes.p18),
             _SummaryRow(
               label: 'Scadenza',
-              value: _formatLongDate(dataScadenza!),
+              value: formatLongDate(dataScadenza!),
               valueColor: const Color(0xFFFFD31A),
             ),
           ],
@@ -901,24 +902,3 @@ bool _spesaHasAnticipatore(Map<String, dynamic> raw) {
   return false;
 }
 
-String _formatCurrency(double value) {
-  return '€${value.toStringAsFixed(2).replaceAll('.', ',')}';
-}
-
-String _formatLongDate(DateTime date) {
-  const months = [
-    'gen',
-    'feb',
-    'mar',
-    'apr',
-    'mag',
-    'giu',
-    'lug',
-    'ago',
-    'set',
-    'ott',
-    'nov',
-    'dic',
-  ];
-  return '${date.day} ${months[date.month - 1]} ${date.year}';
-}

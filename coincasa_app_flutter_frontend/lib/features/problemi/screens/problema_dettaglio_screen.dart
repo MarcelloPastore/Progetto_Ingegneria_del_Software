@@ -5,10 +5,7 @@ import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/problema.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
-import 'package:coincasa_app/core/widgets/common/delete_confirm_dialog.dart';
-import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
-import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
-import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
+import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
 import 'package:coincasa_app/features/problemi/screens/deassegnazione_successo_screen.dart';
 import 'package:coincasa_app/features/problemi/screens/modifica_problema_screen.dart';
 
@@ -830,28 +827,34 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
         const SizedBox(height: AppSizes.p12),
         Row(
           children: [
-            _PriorityButton(
-              label: 'Urgente',
-              dotColor: AppColors.problemPriorityUrgent,
-              bgColor: const Color(0xFF710002),
-              isSelected: _normalizedPriority == 'Urgente',
-              onTap: () => _handlePriorita('Urgente'),
+            Expanded(
+              child: AppPriorityChip(
+                label: 'Urgente',
+                dotColor: AppColors.problemPriorityUrgent,
+                bgColor: AppColors.problemChipUrgentBg,
+                selected: _normalizedPriority == 'Urgente',
+                onTap: () => _handlePriorita('Urgente'),
+              ),
             ),
             const SizedBox(width: AppSizes.p8),
-            _PriorityButton(
-              label: 'Media',
-              dotColor: AppColors.problemPriorityMedium,
-              bgColor: const Color(0xFF7E3B00),
-              isSelected: _normalizedPriority == 'Media',
-              onTap: () => _handlePriorita('Media'),
+            Expanded(
+              child: AppPriorityChip(
+                label: 'Media',
+                dotColor: AppColors.problemPriorityMedium,
+                bgColor: AppColors.problemChipMediumBg,
+                selected: _normalizedPriority == 'Media',
+                onTap: () => _handlePriorita('Media'),
+              ),
             ),
             const SizedBox(width: AppSizes.p8),
-            _PriorityButton(
-              label: 'Bassa',
-              dotColor: AppColors.problemPriorityLow,
-              bgColor: const Color(0xFF786000),
-              isSelected: _normalizedPriority == 'Bassa',
-              onTap: () => _handlePriorita('Bassa'),
+            Expanded(
+              child: AppPriorityChip(
+                label: 'Bassa',
+                dotColor: AppColors.problemPriorityLow,
+                bgColor: AppColors.problemChipLowBg,
+                selected: _normalizedPriority == 'Bassa',
+                onTap: () => _handlePriorita('Bassa'),
+              ),
             ),
           ],
         ),
@@ -1119,102 +1122,6 @@ class _HistoryRow extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _PriorityButton extends StatelessWidget {
-  const _PriorityButton({
-    required this.label,
-    required this.dotColor,
-    required this.bgColor,
-    required this.isSelected,
-    required this.onTap,
-  });
-  final String label;
-  final Color dotColor;
-  final Color bgColor;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final brightBg = Color.lerp(bgColor, Colors.white, 0.28)!;
-    final darkBg = Color.lerp(bgColor, Colors.black, 0.18)!;
-
-    final gradient = LinearGradient(
-      begin: Alignment.topCenter,
-      end: Alignment.bottomCenter,
-      colors: isSelected
-          ? [
-              Color.lerp(bgColor, Colors.white, 0.50)!,
-              bgColor,
-              darkBg,
-            ]
-          : [brightBg, bgColor, darkBg],
-      stops: const [0, 0.62, 1],
-    );
-
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppSizes.radius16),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOut,
-          height: isSelected ? 58 : 50,
-          margin: EdgeInsets.symmetric(vertical: isSelected ? 0 : 4),
-          decoration: BoxDecoration(
-            gradient: gradient,
-            borderRadius: BorderRadius.circular(AppSizes.radius16),
-            border: Border.all(
-              color: isSelected ? dotColor : Colors.transparent,
-              width: isSelected ? 2.5 : 0,
-            ),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: dotColor.withValues(alpha: 0.55),
-                      blurRadius: 18,
-                      spreadRadius: 1,
-                      offset: const Offset(0, 4),
-                    ),
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.35),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : [
-                    BoxShadow(
-                      color: AppColors.shadowStrong,
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (isSelected)
-                Icon(Icons.check_circle_rounded, color: dotColor, size: 16)
-              else
-                Icon(Icons.circle, color: dotColor, size: 12),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  color: isSelected ? Colors.white : Colors.white70,
-                  fontSize: isSelected ? 15 : 13,
-                  fontWeight:
-                      isSelected ? FontWeight.w900 : FontWeight.w600,
-                  letterSpacing: isSelected ? 0.3 : 0,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

@@ -8,7 +8,9 @@ import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/spesa.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/utils/formatters.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
 import 'package:coincasa_app/features/spese/screens/dettaglio_spesa_debitore.dart';
 import 'package:coincasa_app/features/spese/screens/inserisci_spesa_membro.dart';
@@ -212,7 +214,7 @@ class _SummaryCard extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            'SALDO MESE - ${_monthName(DateTime.now().month).toUpperCase()} ${DateTime.now().year}',
+            'SALDO MESE - ${monthName(DateTime.now().month).toUpperCase()} ${DateTime.now().year}',
             style: const TextStyle(
               color: Color(0xFFC1BFC8),
               fontSize: 16,
@@ -225,19 +227,19 @@ class _SummaryCard extends StatelessWidget {
             children: [
               _SummaryColumn(
                 label: 'Totale mese',
-                value: _formatCurrency(data.totaleMese),
+                value: formatCurrency(data.totaleMese),
                 color: Colors.white,
               ),
               const _VerticalLine(),
               _SummaryColumn(
                 label: 'Devi ricevere',
-                value: _formatCurrency(data.credito),
+                value: formatCurrency(data.credito),
                 color: const Color(0xFF4DE45F),
               ),
               const _VerticalLine(),
               _SummaryColumn(
                 label: 'Devi pagare',
-                value: _formatCurrency(data.debito),
+                value: formatCurrency(data.debito),
                 color: const Color(0xFFFF5555),
               ),
             ],
@@ -314,7 +316,7 @@ class _ExpenseTile extends StatelessWidget {
           color: Colors.transparent,
           child: Row(
             children: [
-              _Avatar(initials: _initials(creator)),
+              UserAvatar(displayName: creator, radius: 18),
               const SizedBox(width: 13),
               Expanded(
                 child: Column(
@@ -326,7 +328,7 @@ class _ExpenseTile extends StatelessWidget {
                           ? 'Spesa'
                           : spesa.descrizione,
                       date:
-                          '${spesa.data.day} ${_monthShort(spesa.data.month)}',
+                          '${spesa.data.day} ${monthShort(spesa.data.month)}',
                     ),
                     Text(
                       isPagata ? 'Pagata' : '$creator ha pagato',
@@ -345,7 +347,7 @@ class _ExpenseTile extends StatelessWidget {
                 ),
               ),
               Text(
-                _formatCurrency(spesa.importo),
+                formatCurrency(spesa.importo),
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 15,
@@ -372,33 +374,6 @@ bool _isSpesaPagata(Spesa spesa) {
   );
 }
 
-class _Avatar extends StatelessWidget {
-  const _Avatar({required this.initials});
-
-  final String initials;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 36,
-      height: 36,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: _avatarColor(initials),
-      ),
-      child: Text(
-        initials,
-        style: const TextStyle(
-          color: Color(0xFF70FF90),
-          fontSize: 20,
-          fontFamily: 'Inter',
-          fontWeight: FontWeight.w800,
-        ),
-      ),
-    );
-  }
-}
 
 class _MonthTitle extends StatelessWidget {
   const _MonthTitle(this.month);
@@ -411,7 +386,7 @@ class _MonthTitle extends StatelessWidget {
       DateTime(DateTime.now().year, DateTime.now().month),
     );
     return Text(
-      '${_monthName(month.month).toUpperCase()} ${month.year}${closed ? ' (chiuso)' : ''}',
+      '${monthName(month.month).toUpperCase()} ${month.year}${closed ? ' (chiuso)' : ''}',
       style: TextStyle(
         color: closed ? const Color(0xFF6F687C) : const Color(0xFFC1BFC8),
         fontSize: 17,
@@ -483,72 +458,6 @@ Map<DateTime, List<Spesa>> _groupByMonth(List<Spesa> spese) {
   final entries = grouped.entries.toList()
     ..sort((a, b) => b.key.compareTo(a.key));
   return Map.fromEntries(entries);
-}
-
-String _formatCurrency(double value) {
-  return '€${value.toStringAsFixed(2)}';
-}
-
-String _initials(String name) {
-  final parts = name
-      .trim()
-      .split(RegExp(r'\s+'))
-      .where((p) => p.isNotEmpty)
-      .toList();
-  if (parts.isEmpty) {
-    return 'C';
-  }
-  if (parts.length == 1) {
-    return parts.first.characters.take(2).toString().toUpperCase();
-  }
-  return '${parts.first.characters.first}${parts.last.characters.first}'
-      .toUpperCase();
-}
-
-Color _avatarColor(String initials) {
-  const colors = [
-    Color(0xFF218D45),
-    Color(0xFF2E6E9A),
-    Color(0xFFEF6C73),
-    Color(0xFF5D3D2F),
-  ];
-  return colors[initials.hashCode.abs() % colors.length];
-}
-
-String _monthName(int month) {
-  const months = [
-    'gennaio',
-    'febbraio',
-    'marzo',
-    'aprile',
-    'maggio',
-    'giugno',
-    'luglio',
-    'agosto',
-    'settembre',
-    'ottobre',
-    'novembre',
-    'dicembre',
-  ];
-  return months[month - 1];
-}
-
-String _monthShort(int month) {
-  const months = [
-    'gen',
-    'feb',
-    'mar',
-    'apr',
-    'mag',
-    'giu',
-    'lug',
-    'ago',
-    'set',
-    'ott',
-    'nov',
-    'dic',
-  ];
-  return months[month - 1];
 }
 
 class _TitleWithDate extends StatelessWidget {

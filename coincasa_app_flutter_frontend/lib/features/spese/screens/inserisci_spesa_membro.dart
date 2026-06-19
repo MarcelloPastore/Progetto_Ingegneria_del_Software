@@ -7,6 +7,7 @@ import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 import 'package:coincasa_app/features/spese/screens/inserisci_spesa_successo.dart';
 
 Future<void> showInserisciSpesaMembroDialog(BuildContext context) {
@@ -715,7 +716,7 @@ class _ParticipantRow extends StatelessWidget {
         height: 46,
         child: Row(
           children: [
-            _Avatar(initials: _initials(label)),
+            UserAvatar(displayName: label, radius: 18),
             const SizedBox(width: 14),
             Expanded(
               child: Text(
@@ -1000,34 +1001,6 @@ class _ErrorText extends StatelessWidget {
   }
 }
 
-class _Avatar extends StatelessWidget {
-  const _Avatar({required this.initials});
-
-  final String initials;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 36,
-      height: 36,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: _avatarColor(initials),
-        shape: BoxShape.circle,
-      ),
-      child: Text(
-        initials,
-        style: const TextStyle(
-          color: Color(0xFF58C9FF),
-          fontSize: 14,
-          fontFamily: 'Inter',
-          fontWeight: FontWeight.w800,
-        ),
-      ),
-    );
-  }
-}
-
 class _MemberExpenseData {
   const _MemberExpenseData({
     required this.casa,
@@ -1058,28 +1031,3 @@ String _displayName(Inquilino inquilino) {
   return 'Coinquilino';
 }
 
-String _initials(String value) {
-  final parts = value
-      .trim()
-      .split(RegExp(r'\s+'))
-      .where((part) => part.isNotEmpty)
-      .toList();
-  if (parts.isEmpty) {
-    return '?';
-  }
-  if (parts.length == 1) {
-    return parts.first.characters.take(2).toString().toUpperCase();
-  }
-  return '${parts.first.characters.first}${parts.last.characters.first}'
-      .toUpperCase();
-}
-
-Color _avatarColor(String initials) {
-  const colors = [
-    Color(0xFF2E6E9A),
-    Color(0xFF478B54),
-    Color(0xFFFFB085),
-    Color(0xFFF16D70),
-  ];
-  return colors[initials.hashCode.abs() % colors.length];
-}

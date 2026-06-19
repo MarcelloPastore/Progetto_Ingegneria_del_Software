@@ -10,6 +10,7 @@ import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
+import 'package:coincasa_app/core/widgets/common/section_label.dart';
 import 'package:coincasa_app/features/spese/screens/dettaglio_spesa_admin.dart';
 import 'package:coincasa_app/features/turni/screens/dettaglio_turno_admin.dart';
 import 'dettaglio_scadenza_admin.dart';
@@ -356,7 +357,7 @@ class _ListaScadenzeState extends State<ListaScadenze> {
                         child: ListView(
                           children: [
                             if (inScadenza.isNotEmpty) ...[
-                              const _SectionHeader(label: 'IN SCADENZA'),
+                              SectionLabel('IN SCADENZA', color: AppColors.textMutedLight, fontSize: 13),
                               const SizedBox(height: 8),
                               ...inScadenza.map(
                                 (s) => _ScadenzaCard(
@@ -367,7 +368,7 @@ class _ListaScadenzeState extends State<ListaScadenze> {
                               const SizedBox(height: 12),
                             ],
                             if (prossime.isNotEmpty) ...[
-                              const _SectionHeader(label: 'PROSSIME'),
+                              SectionLabel('PROSSIME', color: AppColors.textMutedLight, fontSize: 13),
                               const SizedBox(height: 8),
                               ...prossime.map(
                                 (s) => _ScadenzaCard(
@@ -463,23 +464,6 @@ class _ListaScadenzeState extends State<ListaScadenze> {
 // ---------------------------------------------------------------------------
 // Sub-widgets
 // ---------------------------------------------------------------------------
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.label});
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      label,
-      style: const TextStyle(
-        color: Color(0xFFD8D5D5),
-        fontWeight: FontWeight.w700,
-        fontSize: 13,
-        letterSpacing: 0.8,
-      ),
-    );
-  }
-}
 
 class _ScadenzaCard extends StatelessWidget {
   const _ScadenzaCard({required this.item, required this.onTap});
@@ -741,25 +725,21 @@ class _EmptyFilterState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.filter_list_off, color: Color(0xFF5A2BBF), size: 56),
-          SizedBox(height: 16),
+          const Icon(Icons.filter_list_off, color: AppColors.brandPrimary, size: 56),
+          const SizedBox(height: AppSizes.p16),
           Text(
             'Nessun risultato',
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
+            style: AppTextStyles.bodyStrong.copyWith(color: AppColors.textMutedLight),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: AppSizes.p8),
           Text(
             'Attiva almeno un filtro dalla legenda.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white38, fontSize: 14),
+            style: AppTextStyles.bodyMuted.copyWith(color: AppColors.textMutedDark),
           ),
         ],
       ),

@@ -8,7 +8,9 @@ import 'package:coincasa_app/core/models/quota.dart';
 import 'package:coincasa_app/core/models/spesa.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/utils/formatters.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 import 'package:coincasa_app/features/spese/screens/elimina_spesa.dart';
 import 'package:coincasa_app/features/spese/screens/lista_spese_membro.dart';
 import 'package:coincasa_app/features/spese/screens/modifiche_spese_negata.dart';
@@ -181,7 +183,7 @@ class _DebtorDetailContent extends StatelessWidget {
             ),
             const SizedBox(height: 34),
             Text(
-              _formatCurrency(data.spesa.importo),
+              formatCurrency(data.spesa.importo),
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: Colors.white,
@@ -192,7 +194,7 @@ class _DebtorDetailContent extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              '${data.spesa.descrizione} - ${_formatLongDate(data.spesa.data)}',
+              '${data.spesa.descrizione} - ${formatFullDate(data.spesa.data)}',
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: Color(0xFF918D9A),
@@ -279,7 +281,7 @@ class _InfoBox extends StatelessWidget {
         children: [
           _InfoRow(label: 'Chi deve pagare', value: payingNames),
           const Divider(height: 12, color: Color(0xFF77727F)),
-          _InfoRow(label: 'Quota per persone', value: _formatCurrency(quota)),
+          _InfoRow(label: 'Quota per persone', value: formatCurrency(quota)),
         ],
       ),
     );
@@ -380,7 +382,10 @@ class _QuoteTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 2),
       child: Row(
         children: [
-          _Avatar(initials: row.initials, excluded: row.excluded, userId: row.userId),
+          Opacity(
+            opacity: row.excluded ? 0.35 : 1.0,
+            child: UserAvatar(userId: row.userId, username: row.initials, radius: 17.5),
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -469,37 +474,6 @@ class _QuoteTile extends StatelessWidget {
               ),
             ),
         ],
-      ),
-    );
-  }
-}
-
-class _Avatar extends StatelessWidget {
-  const _Avatar({required this.initials, required this.excluded, this.userId = ''});
-
-  final String initials;
-  final bool excluded;
-  final String userId;
-
-  @override
-  Widget build(BuildContext context) {
-    final seed = userId.isNotEmpty ? userId : initials;
-    return Container(
-      width: 35,
-      height: 35,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: excluded ? const Color(0xFF4A342E) : userAvatarColorsForSeed(seed).background,
-        shape: BoxShape.circle,
-      ),
-      child: Text(
-        initials,
-        style: TextStyle(
-          color: excluded ? const Color(0xFF6B4A28) : const Color(0xFF70FF90),
-          fontSize: 14,
-          fontFamily: 'Inter',
-          fontWeight: FontWeight.w800,
-        ),
       ),
     );
   }
@@ -707,28 +681,6 @@ String _displayName(Inquilino inquilino) {
   final username = inquilino.username.trim();
   if (username.isNotEmpty) return username;
   return inquilino.email.trim().isEmpty ? 'Coinquilino' : inquilino.email;
-}
-
-String _formatCurrency(double value) {
-  return '€${value.toStringAsFixed(2).replaceAll('.', ',')}';
-}
-
-String _formatLongDate(DateTime date) {
-  const months = [
-    'gennaio',
-    'febbraio',
-    'marzo',
-    'aprile',
-    'maggio',
-    'giugno',
-    'luglio',
-    'agosto',
-    'settembre',
-    'ottobre',
-    'novembre',
-    'dicembre',
-  ];
-  return '${date.day} ${months[date.month - 1]} ${date.year}';
 }
 
 String _initials(String name) {

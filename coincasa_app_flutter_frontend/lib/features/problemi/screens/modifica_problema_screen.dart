@@ -6,7 +6,9 @@ import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/problema.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/widgets/common/app_outlined_button.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
 import 'package:coincasa_app/core/widgets/dashboard/open_problems_section.dart';
 
 // ---------------------------------------------------------------------------
@@ -288,9 +290,9 @@ class _ModificaProblemaScreenState
                   Row(
                     children: [
                       Expanded(
-                        child: _PriorityChip(
+                        child: AppPriorityChip(
                           label: 'Urgente',
-                          bgColor: const Color(0xFF710002),
+                          bgColor: AppColors.problemChipUrgentBg,
                           dotColor: AppColors.problemPriorityUrgent,
                           selected: form.priorita == _Priorita.urgent,
                           onTap: () => ctrl.setPriorita(_Priorita.urgent),
@@ -298,9 +300,9 @@ class _ModificaProblemaScreenState
                       ),
                       const SizedBox(width: AppSizes.p8),
                       Expanded(
-                        child: _PriorityChip(
+                        child: AppPriorityChip(
                           label: 'Media',
-                          bgColor: const Color(0xFF7E3B00),
+                          bgColor: AppColors.problemChipMediumBg,
                           dotColor: AppColors.problemPriorityMedium,
                           selected: form.priorita == _Priorita.medium,
                           onTap: () => ctrl.setPriorita(_Priorita.medium),
@@ -308,9 +310,9 @@ class _ModificaProblemaScreenState
                       ),
                       const SizedBox(width: AppSizes.p8),
                       Expanded(
-                        child: _PriorityChip(
+                        child: AppPriorityChip(
                           label: 'Bassa',
-                          bgColor: const Color(0xFF786000),
+                          bgColor: AppColors.problemChipLowBg,
                           dotColor: AppColors.problemPriorityLow,
                           selected: form.priorita == _Priorita.low,
                           onTap: () => ctrl.setPriorita(_Priorita.low),
@@ -363,7 +365,9 @@ class _ModificaProblemaScreenState
                   const SizedBox(height: AppSizes.p12),
 
                   // Annulla
-                  _CancelButton(
+                  AppOutlinedButton(
+                    label: 'Annulla',
+                    color: AppColors.errorStrong,
                     onPressed: () => Navigator.of(context).maybePop(),
                   ),
                 ],
@@ -450,81 +454,6 @@ class _FormTextField extends StatelessWidget {
   }
 }
 
-class _PriorityChip extends StatelessWidget {
-  const _PriorityChip({
-    required this.label,
-    required this.bgColor,
-    required this.dotColor,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final Color bgColor;
-  final Color dotColor;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final gradient = LinearGradient(
-      begin: Alignment.topCenter,
-      end: Alignment.bottomCenter,
-      colors: [
-        Color.lerp(bgColor, Colors.white, 0.30)!,
-        bgColor,
-        Color.lerp(bgColor, Colors.black, 0.18)!,
-      ],
-      stops: const [0, 0.62, 1],
-    );
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppSizes.radius16),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 140),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
-        decoration: BoxDecoration(
-          gradient: gradient,
-          borderRadius: BorderRadius.circular(AppSizes.radius16),
-          border: Border.all(
-            color: selected ? AppColors.brandAccent : AppColors.darkBackground,
-            width: 3,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: selected
-                  ? Colors.black.withValues(alpha: 0.45)
-                  : AppColors.shadowStrong,
-              blurRadius: selected ? 8 : 6,
-              offset: Offset(0, selected ? 4 : 3),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.circle, color: dotColor, size: 18),
-            const SizedBox(width: 2),
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.screenTitleStrong.copyWith(
-                  color: AppColors.textOnDark,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _SubmitButton extends StatelessWidget {
   const _SubmitButton({
     required this.label,
@@ -589,40 +518,3 @@ class _SubmitButton extends StatelessWidget {
   }
 }
 
-class _CancelButton extends StatelessWidget {
-  const _CancelButton({required this.onPressed});
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 54,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(AppSizes.radius15),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppSizes.radius15),
-              border: Border.all(
-                color: AppColors.error.withValues(alpha: 0.7),
-                width: 2,
-              ),
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              'Annulla',
-              style: AppTextStyles.button.copyWith(
-                color: AppColors.errorStrong,
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}

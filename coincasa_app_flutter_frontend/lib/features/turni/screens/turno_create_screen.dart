@@ -9,6 +9,7 @@ import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/utils/user_initials.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
 import 'package:coincasa_app/features/turni/screens/turno_salvato_con_successo.dart';
 
 final turniCreateCasaProvider = FutureProvider.autoDispose
@@ -382,12 +383,9 @@ class _TurnoCreateScreenState extends ConsumerState<TurnoCreateScreen> {
                       ),
                     ),
                     const SizedBox(height: 7),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 47),
-                      child: _CancelButton(
-                        enabled: !form.isSubmitting,
-                        onPressed: () => Navigator.of(context).pop(),
-                      ),
+                    AppCancelButton(
+                      enabled: !form.isSubmitting,
+                      onPressed: () => Navigator.of(context).pop(),
                     ),
                   ],
                 ),
@@ -1266,34 +1264,6 @@ class _SaveButton extends StatelessWidget {
                 fontWeight: FontWeight.w800,
               ),
             ),
-    );
-  }
-}
-
-class _CancelButton extends StatelessWidget {
-  const _CancelButton({required this.enabled, required this.onPressed});
-
-  final bool enabled;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return OutlinedButton(
-      onPressed: enabled ? onPressed : null,
-      style: OutlinedButton.styleFrom(
-        backgroundColor: AppColors.errorStrong.withValues(alpha: 0.25),
-        foregroundColor: AppColors.errorStrong,
-        side: const BorderSide(color: AppColors.errorStrong, width: 2),
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(21)),
-      ),
-      child: Text(
-        'Annulla',
-        style: AppTextStyles.buttonCompact.copyWith(
-          color: AppColors.errorStrong,
-          fontWeight: FontWeight.w900,
-        ),
-      ),
     );
   }
 }

@@ -6,7 +6,9 @@ import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/widgets/common/app_outlined_button.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
 import 'package:coincasa_app/core/widgets/dashboard/open_problems_section.dart';
 import 'package:coincasa_app/features/problemi/screens/popup_successo_FAB.dart';
 
@@ -368,7 +370,11 @@ class _SegnalaProblemaScreenState extends ConsumerState<SegnalaProblemaScreen> {
                   const SizedBox(height: AppSizes.p12),
 
                   // Annulla button
-                  _CancelButton(onPressed: () => Navigator.of(context).pop()),
+                  AppOutlinedButton(
+                    label: 'Annulla',
+                    color: AppColors.errorStrong,
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
                 ],
               ),
             ),
@@ -497,130 +503,35 @@ class _PriorityRow extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: _PriorityChip(
+          child: AppPriorityChip(
             label: 'Urgente',
-            bgColor: const Color(0xFF710002),
-            contentColor: AppColors.problemPriorityUrgent,
+            bgColor: AppColors.problemChipUrgentBg,
+            dotColor: AppColors.problemPriorityUrgent,
             selected: selected == _Priorita.urgent,
             onTap: () => onChanged(_Priorita.urgent),
           ),
         ),
         const SizedBox(width: AppSizes.p8),
         Expanded(
-          child: _PriorityChip(
+          child: AppPriorityChip(
             label: 'Media',
-            bgColor: const Color(0xFF7E3B00),
-            contentColor: AppColors.problemPriorityMedium,
+            bgColor: AppColors.problemChipMediumBg,
+            dotColor: AppColors.problemPriorityMedium,
             selected: selected == _Priorita.medium,
             onTap: () => onChanged(_Priorita.medium),
           ),
         ),
         const SizedBox(width: AppSizes.p8),
         Expanded(
-          child: _PriorityChip(
+          child: AppPriorityChip(
             label: 'Bassa',
-            bgColor: const Color(0xFF786000),
-            contentColor: AppColors.problemPriorityLow,
+            bgColor: AppColors.problemChipLowBg,
+            dotColor: AppColors.problemPriorityLow,
             selected: selected == _Priorita.low,
             onTap: () => onChanged(_Priorita.low),
           ),
         ),
       ],
-    );
-  }
-}
-
-class _PriorityChip extends StatelessWidget {
-  const _PriorityChip({
-    required this.label,
-    required this.bgColor,
-    required this.contentColor,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final Color bgColor;
-  final Color contentColor;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final brightBg = Color.lerp(bgColor, Colors.white, 0.28)!;
-    final darkBg = Color.lerp(bgColor, Colors.black, 0.18)!;
-
-    final gradient = LinearGradient(
-      begin: Alignment.topCenter,
-      end: Alignment.bottomCenter,
-      colors: selected
-          ? [Color.lerp(bgColor, Colors.white, 0.50)!, bgColor, darkBg]
-          : [brightBg, bgColor, darkBg],
-      stops: const [0, 0.62, 1],
-    );
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppSizes.radius16),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOut,
-        height: selected ? 58 : 50,
-        margin: EdgeInsets.symmetric(vertical: selected ? 0 : 4),
-        decoration: BoxDecoration(
-          gradient: gradient,
-          borderRadius: BorderRadius.circular(AppSizes.radius16),
-          border: Border.all(
-            color: selected ? contentColor : Colors.transparent,
-            width: selected ? 2.5 : 0,
-          ),
-          boxShadow: selected
-              ? [
-                  BoxShadow(
-                    color: contentColor.withValues(alpha: 0.55),
-                    blurRadius: 18,
-                    spreadRadius: 1,
-                    offset: const Offset(0, 4),
-                  ),
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.35),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : [
-                  BoxShadow(
-                    color: AppColors.shadowStrong,
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (selected)
-              Icon(Icons.check_circle_rounded, color: contentColor, size: 16)
-            else
-              Icon(Icons.circle, color: contentColor, size: 12),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                softWrap: false,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: selected ? Colors.white : Colors.white70,
-                  fontSize: selected ? 15 : 13,
-                  fontWeight: selected ? FontWeight.w900 : FontWeight.w600,
-                  letterSpacing: selected ? 0.3 : 0,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -875,45 +786,3 @@ class _SubmitButton extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Cancel button (outlined dark red)
-// ---------------------------------------------------------------------------
-
-class _CancelButton extends StatelessWidget {
-  const _CancelButton({required this.onPressed});
-
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 54,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(AppSizes.radius15),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppSizes.radius15),
-              border: Border.all(
-                color: AppColors.error.withValues(alpha: 0.7),
-                width: 2,
-              ),
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              'Annulla',
-              style: AppTextStyles.button.copyWith(
-                color: AppColors.errorStrong,
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}

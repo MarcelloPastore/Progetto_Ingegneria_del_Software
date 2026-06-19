@@ -8,6 +8,7 @@ import 'package:coincasa_app/core/models/quota.dart';
 import 'package:coincasa_app/core/models/spesa.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/utils/formatters.dart';
 import 'package:coincasa_app/core/widgets/common/app_outlined_button.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/screen_back_header.dart';
@@ -153,13 +154,13 @@ class _DeleteContent extends StatelessWidget {
               ScreenBackHeader(title: 'Dettaglio spesa', onBack: onCancel),
               const SizedBox(height: 50),
               Text(
-                _formatCurrency(data.spesa.importo),
+                formatCurrency(data.spesa.importo),
                 textAlign: TextAlign.center,
                 style: AppTextStyles.screenTitleStrong.copyWith(fontSize: 40),
               ),
               const SizedBox(height: 8),
               Text(
-                '${data.spesa.descrizione} - ${_formatLongDate(data.spesa.data)}',
+                '${data.spesa.descrizione} - ${formatLongDate(data.spesa.data)}',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: Color(0xFFC1BFC8),
@@ -313,7 +314,7 @@ class _ConfirmDeleteCard extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           Text(
-            '${data.spesa.descrizione} - ${_formatCurrency(data.spesa.importo)} verrà rimossa definitivamente dalla lista.',
+            '${data.spesa.descrizione} - ${formatCurrency(data.spesa.importo)} verrà rimossa definitivamente dalla lista.',
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: Color(0xFFC1BFC8),
@@ -498,7 +499,7 @@ class _Summary extends StatelessWidget {
           const Divider(color: Color(0xFFB8B5C1)),
           _SummaryRow(
             label: 'Quota per persone',
-            value: _formatCurrency(share),
+            value: formatCurrency(share),
           ),
         ],
       ),
@@ -589,24 +590,3 @@ String _quotaName(Quota quota, List<Inquilino> inquilini) {
       '';
 }
 
-String _formatCurrency(double value) {
-  return '€${value.toStringAsFixed(2).replaceAll('.', ',')}';
-}
-
-String _formatLongDate(DateTime date) {
-  const months = [
-    'gen',
-    'feb',
-    'mar',
-    'apr',
-    'mag',
-    'giu',
-    'lug',
-    'ago',
-    'set',
-    'ott',
-    'nov',
-    'dic',
-  ];
-  return '${date.day} ${months[date.month - 1]} ${date.year}';
-}

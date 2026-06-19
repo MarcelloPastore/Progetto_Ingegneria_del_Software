@@ -9,6 +9,7 @@ import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/fab_buttons.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
 import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 import 'package:coincasa_app/core/widgets/dashboard/open_problems_section.dart';
 import 'package:coincasa_app/features/problemi/screens/popup_successo_FAB.dart';
@@ -937,130 +938,35 @@ class _PriorityRow extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: _PriorityChip(
+            child: AppPriorityChip(
               label: 'Urgente',
-              color: const Color(0xFF710002),
-              contentColor: AppColors.problemPriorityUrgent,
+              bgColor: AppColors.problemChipUrgentBg,
+              dotColor: AppColors.problemPriorityUrgent,
               selected: selected == _ProblemaPriority.urgent,
               onTap: () => onChanged(_ProblemaPriority.urgent),
             ),
           ),
           const SizedBox(width: AppSizes.p6),
           Expanded(
-            child: _PriorityChip(
+            child: AppPriorityChip(
               label: 'Media',
-              color: const Color(0xFF7E3B00),
-              contentColor: AppColors.problemPriorityMedium,
+              bgColor: AppColors.problemChipMediumBg,
+              dotColor: AppColors.problemPriorityMedium,
               selected: selected == _ProblemaPriority.medium,
               onTap: () => onChanged(_ProblemaPriority.medium),
             ),
           ),
           const SizedBox(width: AppSizes.p6),
           Expanded(
-            child: _PriorityChip(
+            child: AppPriorityChip(
               label: 'Bassa',
-              color: const Color(0xFF786000),
-              contentColor: AppColors.problemPriorityLow,
+              bgColor: AppColors.problemChipLowBg,
+              dotColor: AppColors.problemPriorityLow,
               selected: selected == _ProblemaPriority.low,
               onTap: () => onChanged(_ProblemaPriority.low),
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _PriorityChip extends StatelessWidget {
-  const _PriorityChip({
-    required this.label,
-    required this.color,
-    required this.contentColor,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final Color color;
-  final Color contentColor;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final brightBg = Color.lerp(color, Colors.white, 0.28)!;
-    final darkBg = Color.lerp(color, Colors.black, 0.18)!;
-
-    final gradient = LinearGradient(
-      begin: Alignment.topCenter,
-      end: Alignment.bottomCenter,
-      colors: selected
-          ? [Color.lerp(color, Colors.white, 0.50)!, color, darkBg]
-          : [brightBg, color, darkBg],
-      stops: const [0, 0.62, 1],
-    );
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppSizes.radius16),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOut,
-        height: selected ? 58 : 50,
-        margin: EdgeInsets.symmetric(vertical: selected ? 0 : 4),
-        decoration: BoxDecoration(
-          gradient: gradient,
-          borderRadius: BorderRadius.circular(AppSizes.radius16),
-          border: Border.all(
-            color: selected ? contentColor : Colors.transparent,
-            width: selected ? 2.5 : 0,
-          ),
-          boxShadow: selected
-              ? [
-                  BoxShadow(
-                    color: contentColor.withValues(alpha: 0.55),
-                    blurRadius: 18,
-                    spreadRadius: 1,
-                    offset: const Offset(0, 4),
-                  ),
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.35),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : [
-                  BoxShadow(
-                    color: AppColors.shadowStrong,
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (selected)
-              Icon(Icons.check_circle_rounded, color: contentColor, size: 16)
-            else
-              Icon(Icons.circle, color: contentColor, size: 12),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                softWrap: false,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: selected ? Colors.white : Colors.white70,
-                  fontSize: selected ? 15 : 13,
-                  fontWeight: selected ? FontWeight.w900 : FontWeight.w600,
-                  letterSpacing: selected ? 0.3 : 0,
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

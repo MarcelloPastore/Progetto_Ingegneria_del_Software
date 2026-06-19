@@ -8,6 +8,7 @@ import 'package:coincasa_app/core/models/quota.dart';
 import 'package:coincasa_app/core/models/spesa.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/utils/formatters.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/screen_back_header.dart';
 import 'package:coincasa_app/features/spese/screens/modifiche_spese_successo.dart';
@@ -399,13 +400,13 @@ class _ProtectedEditContent extends StatelessWidget {
           ),
           const SizedBox(height: 42),
           Text(
-            _formatCurrency(data.spesa.importo),
+            formatCurrency(data.spesa.importo),
             textAlign: TextAlign.center,
             style: AppTextStyles.screenTitleStrong.copyWith(fontSize: 38),
           ),
           const SizedBox(height: 6),
           Text(
-            '${data.spesa.descrizione} - ${_formatLongDate(data.spesa.data)}',
+            '${data.spesa.descrizione} - ${formatLongDate(data.spesa.data)}',
             textAlign: TextAlign.center,
             style: const TextStyle(color: Color(0xFFAFAEAE), fontSize: 18),
           ),
@@ -510,7 +511,7 @@ class _DateBox extends StatelessWidget {
       },
       icon: const Icon(Icons.calendar_month, color: Colors.white, size: 18),
       label: Text(
-        _formatDate(date),
+        formatShortDate(date),
         style: const TextStyle(color: Colors.white, fontSize: 17),
       ),
       style: OutlinedButton.styleFrom(
@@ -632,7 +633,7 @@ class _RoommateRow extends StatelessWidget {
               activeColor: AppColors.brandPrimary,
             ),
             Text(
-              _formatCurrency(share),
+              formatCurrency(share),
               style: const TextStyle(color: Colors.white, fontSize: 18),
             ),
           ],
@@ -785,7 +786,7 @@ class _SimpleSummary extends StatelessWidget {
           const Divider(color: Color(0xFF807D7D)),
           _SummaryRow(
             label: 'Quota per persone',
-            value: _formatCurrency(share),
+            value: formatCurrency(share),
           ),
         ],
       ),
@@ -990,30 +991,3 @@ Color _avatarColor(String initials) {
   return colors[initials.codeUnitAt(0) % colors.length];
 }
 
-String _formatCurrency(double value) {
-  return '€ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
-}
-
-String _formatDate(DateTime date) {
-  final day = date.day.toString().padLeft(2, '0');
-  final month = date.month.toString().padLeft(2, '0');
-  return '$day/$month/${date.year}';
-}
-
-String _formatLongDate(DateTime date) {
-  const months = [
-    'gen',
-    'feb',
-    'mar',
-    'apr',
-    'mag',
-    'giu',
-    'lug',
-    'ago',
-    'set',
-    'ott',
-    'nov',
-    'dic',
-  ];
-  return '${date.day} ${months[date.month - 1]} ${date.year}';
-}

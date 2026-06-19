@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:coincasa_app/core/utils/formatters.dart';
 import 'package:coincasa_app/core/models/spesa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/coinquilini_notified_banner.dart';
@@ -131,13 +132,13 @@ class _SummaryTable extends StatelessWidget {
             value: spesa?.descrizione ?? 'Spesa Supermercato',
           ),
           const Divider(color: Color(0xFF807D7D), height: 10),
-          _TableRow(label: 'Totale', value: _formatCurrency(total)),
+          _TableRow(label: 'Totale', value: formatCurrency(total)),
           const Divider(color: Color(0xFF807D7D), height: 10),
           const _TableRow(label: 'Ha pagato', value: 'Francesco'),
           const Divider(color: Color(0xFF807D7D), height: 10),
           _TableRow(
             label: 'Quota per persona',
-            value: _formatCurrency(total / 4),
+            value: formatCurrency(total / 4),
           ),
         ],
       ),
@@ -171,6 +172,3 @@ class _TableRow extends StatelessWidget {
   }
 }
 
-String _formatCurrency(double value) {
-  return '€ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
-}
