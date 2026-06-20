@@ -143,7 +143,7 @@ class _ModificheSpeseNegataScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       bottomNavigationBar: const HouseQuickNav(currentRoute: '/spese'),
       body: SafeArea(
         child: FutureBuilder<_EditData?>(

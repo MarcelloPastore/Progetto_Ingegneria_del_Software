@@ -76,7 +76,7 @@ class _TurnoCreateScreenState extends ConsumerState<TurnoCreateScreen> {
     final future = _future;
 
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       bottomNavigationBar: const HouseQuickNav(currentRoute: '/turni'),
       body: FutureBuilder<TurnoCreateData?>(
         future: future,
@@ -764,7 +764,6 @@ class _AutoRotationRow extends StatelessWidget {
                       style: TextStyle(
                         color: AppColors.warningDark,
                         fontSize: AppSizes.p12,
-                        fontFamily: 'Inter',
                         fontWeight: FontWeight.w500,
                       ),
                     ),

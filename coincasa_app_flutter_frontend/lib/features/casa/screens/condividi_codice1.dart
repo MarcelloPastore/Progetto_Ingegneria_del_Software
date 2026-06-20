@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:coincasa_app/core/theme/app_theme.dart';
+
 Future<void> showCondividiCodiceDialog(
   BuildContext context, {
   String inviteCode = 'CX-4821',
@@ -71,7 +73,7 @@ class _CondividiCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFFFFFFF),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF7B3FE4), width: 1.5),
+        border: Border.all(color: AppColors.brandSecondary, width: 1.5),
         boxShadow: const [
           BoxShadow(
             color: Color(0x44000000),

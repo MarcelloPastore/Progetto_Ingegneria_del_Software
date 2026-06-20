@@ -104,7 +104,7 @@ class _DettaglioSpesaDebitoreScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       bottomNavigationBar: const HouseQuickNav(currentRoute: '/spese'),
       body: SafeArea(
         child: FutureBuilder<_DebtorDetailData?>(
@@ -185,7 +185,6 @@ class _DebtorDetailContent extends StatelessWidget {
                   style: TextStyle(
                     color: AppColors.featureAccent,
                     fontSize: AppSizes.p19,
-                    fontFamily: 'Inter',
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -198,7 +197,6 @@ class _DebtorDetailContent extends StatelessWidget {
               style: const TextStyle(
                 color: AppColors.textOnDark,
                 fontSize: AppSizes.p32,
-                fontFamily: 'Inter',
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -209,7 +207,6 @@ class _DebtorDetailContent extends StatelessWidget {
               style: const TextStyle(
                 color: AppColors.textDim,
                 fontSize: AppSizes.p14,
-                fontFamily: 'Inter',
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -221,7 +218,6 @@ class _DebtorDetailContent extends StatelessWidget {
               style: TextStyle(
                 color: AppColors.textDisabled,
                 fontSize: AppSizes.p17,
-                fontFamily: 'Inter',
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -315,7 +311,6 @@ class _InfoRow extends StatelessWidget {
             style: const TextStyle(
               color: AppColors.textDim,
               fontSize: AppSizes.p15,
-              fontFamily: 'Inter',
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -325,7 +320,6 @@ class _InfoRow extends StatelessWidget {
           style: const TextStyle(
             color: AppColors.textOnDark,
             fontSize: AppSizes.p15,
-            fontFamily: 'Inter',
             fontWeight: FontWeight.w800,
           ),
         ),
@@ -421,7 +415,6 @@ class _QuoteTile extends StatelessWidget {
                     ? AppColors.textMutedDark
                     : AppColors.textOnDark,
                 fontSize: AppSizes.p16,
-                fontFamily: 'Inter',
                 fontStyle: row.excluded ? FontStyle.italic : FontStyle.normal,
                 fontWeight: FontWeight.w600,
               ),
@@ -485,7 +478,6 @@ class _QuoteTile extends StatelessWidget {
                       style: TextStyle(
                         color: AppColors.lockOrange,
                         fontSize: AppSizes.p14,
-                        fontFamily: 'Inter',
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -498,7 +490,6 @@ class _QuoteTile extends StatelessWidget {
               style: TextStyle(
                 color: row.statusColor,
                 fontSize: AppSizes.p15,
-                fontFamily: 'Inter',
                 fontStyle: row.excluded ? FontStyle.italic : FontStyle.normal,
                 fontWeight: FontWeight.w800,
               ),
@@ -557,7 +548,6 @@ class _PrimaryBlueButton extends StatelessWidget {
           style: const TextStyle(
             color: AppColors.textOnDark,
             fontSize: AppSizes.p18,
-            fontFamily: 'Inter',
             fontWeight: FontWeight.w800,
           ),
         ),

@@ -1010,7 +1010,6 @@ class _AssigneeDropdownState extends State<_AssigneeDropdown> {
                             style: TextStyle(
                               color: AppColors.warningDark,
                               fontSize: AppSizes.p12,
-                              fontFamily: 'Inter',
                               fontWeight: FontWeight.w500,
                             ),
                           ),

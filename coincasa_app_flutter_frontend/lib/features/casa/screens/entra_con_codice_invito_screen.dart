@@ -170,10 +170,11 @@ class _EntraConCodiceInvitoScreenState
 
     final state = ref.watch(inviteCodeEntryControllerProvider);
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: Scaffold(
-        backgroundColor: AppColors.darkBackground,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         body: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) {

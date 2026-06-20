@@ -69,13 +69,14 @@ class _ListaSpeseMembroScreenState extends ConsumerState<ListaSpeseMembroScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final selectedCasaId = ActiveCasaScope.read(context).selectedCasaId;
     final asyncData = ref.watch(memberSpeseDataProvider(selectedCasaId));
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: Scaffold(
-        backgroundColor: AppColors.darkBackground,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         bottomNavigationBar: const HouseQuickNav(currentRoute: '/spese'),
         body: SafeArea(
           child: asyncData.when(
@@ -219,7 +220,6 @@ class _SummaryCard extends StatelessWidget {
             style: const TextStyle(
               color: AppColors.textDisabled,
               fontSize: AppSizes.p16,
-              fontFamily: 'Inter',
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -272,7 +272,6 @@ class _SummaryColumn extends StatelessWidget {
             style: const TextStyle(
               color: AppColors.textDim,
               fontSize: AppSizes.p13,
-              fontFamily: 'Inter',
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -282,7 +281,6 @@ class _SummaryColumn extends StatelessWidget {
             style: TextStyle(
               color: color,
               fontSize: AppSizes.p21,
-              fontFamily: 'Inter',
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -339,7 +337,6 @@ class _ExpenseTile extends StatelessWidget {
                             ? AppColors.statusPositive
                             : AppColors.textDim,
                         fontSize: AppSizes.p11,
-                        fontFamily: 'Inter',
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -351,7 +348,6 @@ class _ExpenseTile extends StatelessWidget {
                 style: const TextStyle(
                   color: AppColors.textOnDark,
                   fontSize: AppSizes.p15,
-                  fontFamily: 'Inter',
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -378,7 +374,6 @@ class _MonthTitle extends StatelessWidget {
       style: TextStyle(
         color: closed ? AppColors.textMutedDark : AppColors.textDisabled,
         fontSize: AppSizes.p17,
-        fontFamily: 'Inter',
         fontWeight: FontWeight.w800,
       ),
     );
@@ -420,13 +415,11 @@ class _TitleWithDate extends StatelessWidget {
   static const _titleStyle = TextStyle(
     color: AppColors.textOnDark,
     fontSize: AppSizes.p15,
-    fontFamily: 'Inter',
     fontWeight: FontWeight.w800,
   );
   static const _dateStyle = TextStyle(
     color: AppColors.textMutedDark,
     fontSize: AppSizes.p11,
-    fontFamily: 'Inter',
     fontWeight: FontWeight.w400,
   );
 

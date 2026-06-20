@@ -21,10 +21,11 @@ class ListaCaseScreen extends ConsumerWidget {
     final vmAsync = ref.watch(listaCaseViewModelProvider);
     final activeCasaState = ref.watch(activeCasaProvider);
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: Scaffold(
-        backgroundColor: const Color(0xFF09031F),
+        backgroundColor: Theme.of(context).colorScheme.surface,
         body: SafeArea(
           child: vmAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
@@ -109,7 +110,7 @@ class ListaCaseScreen extends ConsumerWidget {
                       },
                       style: FilledButton.styleFrom(
                         minimumSize: const Size.fromHeight(50),
-                        backgroundColor: const Color(0xFF5A2FC5),
+                        backgroundColor: AppColors.brandPrimary,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -284,7 +285,7 @@ class _HouseCard extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.fromLTRB(14, 18, 14, 14),
           decoration: BoxDecoration(
-            color: const Color(0xFF17213B),
+            color: AppColors.surfaceDark,
             borderRadius: BorderRadius.circular(13),
           ),
           child: Row(

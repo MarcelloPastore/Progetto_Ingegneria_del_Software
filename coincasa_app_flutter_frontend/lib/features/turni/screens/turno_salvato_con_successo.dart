@@ -50,7 +50,7 @@ class _TurnoSuccessScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(

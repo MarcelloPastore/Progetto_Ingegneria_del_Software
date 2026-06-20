@@ -26,7 +26,7 @@ class _CaricaDocumentoScreenState extends State<CaricaDocumentoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF09031F),
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: Stack(
           children: [
@@ -78,7 +78,7 @@ class _CaricaDocumentoScreenState extends State<CaricaDocumentoScreen> {
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(vertical: 32),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF151127),
+                          color: AppColors.surfaceDark,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: _selectedFile != null
@@ -99,7 +99,7 @@ class _CaricaDocumentoScreenState extends State<CaricaDocumentoScreen> {
                                   const Icon(
                                     Icons.folder_open_rounded,
                                     size: 72,
-                                    color: Color(0xFFFFB300),
+                                    color: AppColors.keyYellow,
                                   ),
                             ),
                             const SizedBox(height: 12),
@@ -118,7 +118,7 @@ class _CaricaDocumentoScreenState extends State<CaricaDocumentoScreen> {
                               'PDF, JPG, PNG - max\n10 MB',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                color: Color(0xFFD7D3E8),
+                                color: AppColors.textOnDarkMuted,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w500,
                                 height: 1.3,
@@ -149,7 +149,7 @@ class _CaricaDocumentoScreenState extends State<CaricaDocumentoScreen> {
                           fontSize: 13,
                         ),
                         filled: true,
-                        fillColor: const Color(0xFF151127),
+                        fillColor: AppColors.surfaceDark,
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(9),
                           borderSide: const BorderSide(
@@ -175,7 +175,7 @@ class _CaricaDocumentoScreenState extends State<CaricaDocumentoScreen> {
                     const Text(
                       'Il documento sarà visibile a tutti i coinquilini.\nSolo gli Admin possono eliminarlo',
                       style: TextStyle(
-                        color: Color(0xFFD7D3E8),
+                        color: AppColors.textOnDarkMuted,
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
                         height: 1.3,
@@ -198,7 +198,7 @@ class _CaricaDocumentoScreenState extends State<CaricaDocumentoScreen> {
                             : null,
                         style: FilledButton.styleFrom(
                           minimumSize: const Size.fromHeight(45),
-                          backgroundColor: const Color(0xFFBDA7FF),
+                          backgroundColor: AppColors.brandAccent,
                           disabledBackgroundColor: const Color(0xFF5A4B7E),
                           foregroundColor: const Color(0xFF160A31),
                           disabledForegroundColor: const Color(0xFFE9E1FF),
@@ -230,7 +230,7 @@ class _CaricaDocumentoScreenState extends State<CaricaDocumentoScreen> {
                           Text(
                             'Solo gli Admin possono caricare documenti.',
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Color(0xFFD7D3E8), fontSize: 16),
+                            style: TextStyle(color: AppColors.textOnDarkMuted, fontSize: 16),
                           ),
                         ],
                       ),

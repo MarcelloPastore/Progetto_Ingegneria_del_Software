@@ -73,15 +73,16 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final activeCasaController = ActiveCasaScope.read(context);
     final selectedCasaId = activeCasaController.selectedCasaId;
     final currentUser = ref.watch(authViewModelProvider).valueOrNull;
 
     if (selectedCasaId == null) {
       return AnnotatedRegion<SystemUiOverlayStyle>(
-        value: SystemUiOverlayStyle.light,
+        value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
         child: Scaffold(
-          backgroundColor: AppColors.darkBackground,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           body: const SafeArea(
             child: Center(child: CircularProgressIndicator()),
           ),
@@ -122,9 +123,9 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
     final hasSpese = (effectiveSpese?.isNotEmpty) ?? false;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: Scaffold(
-        backgroundColor: AppColors.darkBackground,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         bottomNavigationBar: const HouseQuickNav(currentRoute: '/spese'),
         body: SafeArea(
           child: Column(
@@ -200,7 +201,6 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
                     style: const TextStyle(
                       color: AppColors.textMutedDark,
                       fontSize: AppSizes.p20,
-                      fontFamily: 'Inter',
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -244,7 +244,6 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
                   style: const TextStyle(
                     color: AppColors.textMutedDark,
                     fontSize: AppSizes.p16,
-                    fontFamily: 'Inter',
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -399,7 +398,6 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
                 style: const TextStyle(
                   color: AppColors.textSubtle,
                   fontSize: AppSizes.p18,
-                  fontFamily: 'Inter',
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -457,7 +455,6 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
         style: const TextStyle(
           color: AppColors.textSubtle,
           fontSize: AppSizes.p18,
-          fontFamily: 'Inter',
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -511,7 +508,6 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
                           style: const TextStyle(
                             color: AppColors.textMutedDark,
                             fontSize: AppSizes.p12,
-                            fontFamily: 'Inter',
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -533,7 +529,6 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
                               style: const TextStyle(
                                 color: AppColors.keyYellow,
                                 fontSize: AppSizes.p11,
-                                fontFamily: 'Inter',
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -549,7 +544,6 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
                   style: const TextStyle(
                     color: AppColors.textOnDark,
                     fontSize: AppSizes.p16,
-                    fontFamily: 'Inter',
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -663,7 +657,6 @@ class _FilterChip extends StatelessWidget {
           style: TextStyle(
             color: active ? color : AppColors.textMutedDark,
             fontSize: AppSizes.p13,
-            fontFamily: 'Inter',
             fontWeight: active ? FontWeight.w700 : FontWeight.w500,
           ),
         ),
@@ -697,7 +690,6 @@ class _SpesaAvatar extends StatelessWidget {
               style: const TextStyle(
                 color: AppColors.textOnDark,
                 fontSize: AppSizes.p15,
-                fontFamily: 'Inter',
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -748,7 +740,6 @@ class _SpesaStatusChip extends StatelessWidget {
         style: TextStyle(
           color: fg,
           fontSize: AppSizes.p11,
-          fontFamily: 'Inter',
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -783,7 +774,6 @@ class _BalanceMetric extends StatelessWidget {
               style: const TextStyle(
                 color: AppColors.textMutedSoft,
                 fontSize: AppSizes.p14,
-                fontFamily: 'Inter',
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -798,7 +788,6 @@ class _BalanceMetric extends StatelessWidget {
             style: TextStyle(
               color: valueColor,
               fontSize: AppSizes.p22,
-              fontFamily: 'Inter',
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -844,7 +833,6 @@ class _EmptyExpensesContent extends StatelessWidget {
             style: const TextStyle(
               color: AppColors.featureAccent,
               fontSize: AppSizes.p23,
-              fontFamily: 'Inter',
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -873,7 +861,6 @@ class _EmptyExpensesContent extends StatelessWidget {
             style: TextStyle(
               color: AppColors.textOnDark,
               fontSize: AppSizes.p23,
-              fontFamily: 'Inter',
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -884,7 +871,6 @@ class _EmptyExpensesContent extends StatelessWidget {
             style: TextStyle(
               color: AppColors.textMutedSoft,
               fontSize: AppSizes.p21,
-              fontFamily: 'Inter',
               fontWeight: FontWeight.w500,
               height: 1.18,
             ),
@@ -910,13 +896,11 @@ class _TitleWithDate extends StatelessWidget {
   static const _titleStyle = TextStyle(
     color: AppColors.textOnDark,
     fontSize: AppSizes.p16,
-    fontFamily: 'Inter',
     fontWeight: FontWeight.w600,
   );
   static const _dateStyle = TextStyle(
     color: AppColors.textMutedDark,
     fontSize: AppSizes.p11,
-    fontFamily: 'Inter',
     fontWeight: FontWeight.w400,
   );
 

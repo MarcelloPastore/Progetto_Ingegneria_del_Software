@@ -199,7 +199,7 @@ class _DettaglioTurnoAdminScreenState
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return Scaffold(
-            backgroundColor: AppColors.darkBackground,
+            backgroundColor: Theme.of(context).colorScheme.surface,
             body: SafeArea(
               child: Center(
                 child: Padding(
@@ -234,7 +234,7 @@ class _DettaglioTurnoAdminScreenState
         final canDeleteTurno = isCreator || isAdmin;
 
         return Scaffold(
-          backgroundColor: AppColors.darkBackground,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           bottomNavigationBar: const HouseQuickNav(currentRoute: '/turni'),
           body: isLoading
               ? const Center(
@@ -818,7 +818,6 @@ class _CreatorRow extends StatelessWidget {
             style: const TextStyle(
               color: AppColors.textOnDark,
               fontSize: AppSizes.p15,
-              fontFamily: 'Inter',
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -832,7 +831,6 @@ class _CreatorRow extends StatelessWidget {
             style: const TextStyle(
               color: AppColors.textSubtle,
               fontSize: AppSizes.p15,
-              fontFamily: 'Inter',
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -850,7 +848,7 @@ class TurnoRimossoScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(
@@ -955,7 +953,6 @@ class TurnoRimossoScreen extends StatelessWidget {
                       // As per requested style
                       color: AppColors.textOnDark,
                       fontSize: AppSizes.p22,
-                      fontFamily: 'Inter',
                       fontWeight: FontWeight.w600,
                     ),
                   ),

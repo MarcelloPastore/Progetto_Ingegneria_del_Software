@@ -11,7 +11,7 @@ class ProfiloCoinquilinoScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F5FB),
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         elevation: 0,
         centerTitle: true,
@@ -87,7 +87,7 @@ class _ProfileCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
       decoration: BoxDecoration(
-        color: const Color(0xFF17213B),
+        color: AppColors.surfaceDark,
         borderRadius: BorderRadius.circular(5),
         boxShadow: const [
           BoxShadow(
@@ -170,7 +170,7 @@ class _InfoCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFF17213B),
+        color: AppColors.surfaceDark,
         borderRadius: BorderRadius.circular(8),
         boxShadow: const [
           BoxShadow(
@@ -265,10 +265,10 @@ class _AdminActions extends StatelessWidget {
                 showPromuoviCoinquilinoDialog(context);
               },
               style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF5A2FC5),
+                backgroundColor: AppColors.brandPrimary,
                 foregroundColor: Colors.white,
                 elevation: 3,
-                shadowColor: const Color(0x665A2FC5),
+                shadowColor: AppColors.brandPrimary.withValues(alpha: 0.4),
                 padding: const EdgeInsets.symmetric(horizontal: 18),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),

@@ -77,7 +77,6 @@ class InserisciSpesaSuccessoScreen extends StatelessWidget {
                         style: TextStyle(
                           color: AppColors.textOnDark,
                           fontSize: AppSizes.p24,
-                          fontFamily: 'Inter',
                           fontWeight: FontWeight.w700,
                         ),
                         textAlign: TextAlign.center,
@@ -93,7 +92,6 @@ class InserisciSpesaSuccessoScreen extends StatelessWidget {
                         style: TextStyle(
                           color: AppColors.textMutedSoft,
                           fontSize: AppSizes.p14,
-                          fontFamily: 'Inter',
                           fontWeight: FontWeight.w500,
                         ),
                         textAlign: TextAlign.center,
@@ -131,7 +129,6 @@ class InserisciSpesaSuccessoScreen extends StatelessWidget {
                             style: TextStyle(
                               color: AppColors.textOnDark,
                               fontSize: AppSizes.p16,
-                              fontFamily: 'Inter',
                               fontWeight: FontWeight.w600,
                             ),
                           ),

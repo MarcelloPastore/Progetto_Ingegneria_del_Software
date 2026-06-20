@@ -65,7 +65,7 @@ class _CondividiCodiceScreenState extends State<CondividiCodiceScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF09031F),
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         elevation: 0,
         centerTitle: true,
@@ -206,7 +206,7 @@ class _InviteCodeCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
       decoration: BoxDecoration(
-        color: const Color(0xFF17213B),
+        color: AppColors.surfaceDark,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFF9CA5DA), width: 2),
       ),
@@ -230,7 +230,7 @@ class _InviteCodeCard extends StatelessWidget {
                 child: IconButton.filledTonal(
                   onPressed: onCopy,
                   style: IconButton.styleFrom(
-                    backgroundColor: const Color(0xFF2B2463),
+                    backgroundColor: AppColors.surfaceDarkMuted,
                     foregroundColor: Colors.white,
                     side: const BorderSide(
                       color: AppColors.brandAccent,
@@ -318,7 +318,7 @@ class _RegenerateButton extends StatelessWidget {
       child: OutlinedButton(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
-          backgroundColor: const Color(0xFF09031F),
+          backgroundColor: AppColors.darkBackground,
           foregroundColor: Colors.white,
           disabledForegroundColor: Colors.white54,
           side: BorderSide(

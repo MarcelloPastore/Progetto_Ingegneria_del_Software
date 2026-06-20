@@ -18,7 +18,7 @@ class ModificheSpeseSuccessoScreen extends StatelessWidget {
     final spesa = args is Spesa ? args : null;
 
     return Scaffold(
-      backgroundColor: AppColors.textMutedDark,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       bottomNavigationBar: const HouseQuickNav(currentRoute: '/spese'),
       body: SafeArea(
         child: SingleChildScrollView(

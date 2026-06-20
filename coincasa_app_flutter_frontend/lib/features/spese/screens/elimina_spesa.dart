@@ -100,7 +100,7 @@ class _EliminaSpesaScreenState extends ConsumerState<EliminaSpesaScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.textMutedDark,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       bottomNavigationBar: const HouseQuickNav(currentRoute: '/spese'),
       body: SafeArea(
         child: FutureBuilder<_DeleteData?>(

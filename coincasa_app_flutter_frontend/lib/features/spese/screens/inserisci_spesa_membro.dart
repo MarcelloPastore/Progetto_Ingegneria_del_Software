@@ -85,7 +85,7 @@ class _InserisciSpesaMembroScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       bottomNavigationBar: const HouseQuickNav(currentRoute: '/spese'),
       body: SafeArea(child: _buildContent()),
     );
@@ -343,7 +343,6 @@ mixin _InserisciSpesaMembroFormMixin<T extends ConsumerStatefulWidget>
                             ? AppColors.brandPrimaryDark
                             : AppColors.textDisabled,
                         fontSize: AppSizes.p20,
-                        fontFamily: 'Inter',
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -433,7 +432,6 @@ class _BackTitle extends StatelessWidget {
           style: TextStyle(
             color: AppColors.featureAccent,
             fontSize: AppSizes.p22,
-            fontFamily: 'Inter',
             fontWeight: FontWeight.w800,
           ),
         ),
@@ -598,7 +596,6 @@ class _DateButton extends StatelessWidget {
               style: const TextStyle(
                 color: AppColors.textOnDark,
                 fontSize: AppSizes.p16,
-                fontFamily: 'Inter',
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -623,7 +620,6 @@ class _DescriptionField extends StatelessWidget {
         style: const TextStyle(
           color: AppColors.textOnDark,
           fontSize: AppSizes.p16,
-          fontFamily: 'Inter',
           fontWeight: FontWeight.w600,
         ),
         decoration: const InputDecoration(
@@ -766,7 +762,6 @@ class _ParticipantRow extends StatelessWidget {
                 style: TextStyle(
                   color: muted ? AppColors.textMutedDark : AppColors.textOnDark,
                   fontSize: AppSizes.p13,
-                  fontFamily: 'Inter',
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -792,7 +787,6 @@ class _ParticipantRow extends StatelessWidget {
                 style: const TextStyle(
                   color: AppColors.textOnDark,
                   fontSize: AppSizes.p16,
-                  fontFamily: 'Inter',
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -832,7 +826,6 @@ class _MemberSwitchRow extends StatelessWidget {
                 style: TextStyle(
                   color: popup ? AppColors.dividerDark : AppColors.textDisabled,
                   fontSize: AppSizes.p17,
-                  fontFamily: 'Inter',
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -843,7 +836,6 @@ class _MemberSwitchRow extends StatelessWidget {
                       ? AppColors.textMutedDark
                       : AppColors.textMutedDark,
                   fontSize: AppSizes.p12,
-                  fontFamily: 'Inter',
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -883,7 +875,6 @@ class _RecurringDisabledRow extends StatelessWidget {
                       ? AppColors.textMutedDark
                       : AppColors.textMutedDark,
                   fontSize: AppSizes.p17,
-                  fontFamily: 'Inter',
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -894,7 +885,6 @@ class _RecurringDisabledRow extends StatelessWidget {
                       ? AppColors.textMutedDark
                       : AppColors.textMutedDark,
                   fontSize: AppSizes.p12,
-                  fontFamily: 'Inter',
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -905,7 +895,6 @@ class _RecurringDisabledRow extends StatelessWidget {
                     style: TextStyle(
                       color: AppColors.warningDark,
                       fontSize: AppSizes.p12,
-                      fontFamily: 'Inter',
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -975,7 +964,6 @@ class _SubmitButton extends StatelessWidget {
           style: const TextStyle(
             color: AppColors.textOnDark,
             fontSize: AppSizes.p22,
-            fontFamily: 'Inter',
             fontWeight: FontWeight.w800,
           ),
         ),
@@ -1045,7 +1033,6 @@ class _ErrorText extends StatelessWidget {
               style: const TextStyle(
                 color: AppColors.errorStrong,
                 fontSize: AppSizes.p16,
-                fontFamily: 'Inter',
                 fontWeight: FontWeight.w800,
               ),
             ),

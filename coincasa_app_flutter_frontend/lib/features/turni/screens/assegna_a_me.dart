@@ -16,7 +16,7 @@ class AssegnaAMeSuccessScreen extends StatelessWidget {
         : 'Turno assegnato a te!';
 
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(

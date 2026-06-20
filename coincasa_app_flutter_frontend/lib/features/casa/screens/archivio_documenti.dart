@@ -42,7 +42,7 @@ class _ArchivioDocumentiScreenState extends State<ArchivioDocumentiScreen> {
         ),
         content: Text(
           'Sei sicuro di voler eliminare "${_documenti[index].nome}"? Questa azione non può essere annullata.',
-          style: const TextStyle(color: Color(0xFFD7D3E8)),
+          style: const TextStyle(color: AppColors.textOnDarkMuted),
         ),
         actions: [
           TextButton(
@@ -76,7 +76,7 @@ class _ArchivioDocumentiScreenState extends State<ArchivioDocumentiScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF09031F),
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: Stack(
           children: [
@@ -118,7 +118,7 @@ class _ArchivioDocumentiScreenState extends State<ArchivioDocumentiScreen> {
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF151127),
+                      color: AppColors.surfaceDark,
                       borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(10),
                         topRight: Radius.circular(10),
@@ -140,7 +140,7 @@ class _ArchivioDocumentiScreenState extends State<ArchivioDocumentiScreen> {
 
                   Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFF151127),
+                      color: AppColors.surfaceDark,
                       border: Border(
                         left: BorderSide(
                           color: AppColors.brandAccent.withValues(alpha: 0.4),
@@ -256,7 +256,7 @@ class _DocRow extends StatelessWidget {
                 Text(
                   'file ${doc.tipo}',
                   style: const TextStyle(
-                    color: Color(0xFFD7D3E8),
+                    color: AppColors.textOnDarkMuted,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),

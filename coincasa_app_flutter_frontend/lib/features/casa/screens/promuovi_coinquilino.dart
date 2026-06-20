@@ -63,7 +63,7 @@ class _PromotionCard extends StatelessWidget {
             'Francesco P. otterra il ruolo Amministratore e potra gestire coinquilini turni e documenti. I permessi saranno attivi al suo prossimo accesso.',
             textAlign: TextAlign.left,
             style: TextStyle(
-              color: Color(0xFFE0E3F2),
+              color: AppColors.textOnDark,
               fontSize: 13,
               height: 1.15,
               fontWeight: FontWeight.w500,
@@ -78,7 +78,7 @@ class _PromotionCard extends StatelessWidget {
             child: FilledButton(
               onPressed: () => Navigator.of(context).pop(),
               style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF43B83E),
+                backgroundColor: AppColors.statusPositive,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),

@@ -108,10 +108,11 @@ class _CasaWelcomeScreenState extends State<CasaWelcomeScreen> {
         ? _userName
         : (_isLoading ? '...' : 'utente');
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: Scaffold(
-        backgroundColor: AppColors.darkBackground,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         body: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) {
@@ -135,7 +136,7 @@ class _CasaWelcomeScreenState extends State<CasaWelcomeScreen> {
                             customBorder: const CircleBorder(),
                             child: const CircleAvatar(
                               radius: 20,
-                              backgroundColor: Color(0xFF1D254E),
+                              backgroundColor: AppColors.surfaceDarkMuted,
                               child: Icon(
                                 Icons.person_rounded,
                                 color: AppColors.textOnDark,

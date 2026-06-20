@@ -118,7 +118,7 @@ class _DettaglioSpesaAdminScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       bottomNavigationBar: const HouseQuickNav(currentRoute: '/spese'),
       body: SafeArea(
         child: FutureBuilder<_SpesaDetailData?>(
@@ -344,7 +344,6 @@ class _LockedBanner extends StatelessWidget {
               style: TextStyle(
                 color: AppColors.statusWarning,
                 fontSize: AppSizes.p13,
-                fontFamily: 'Inter',
                 fontWeight: FontWeight.w600,
                 height: AppSizes.p1_4,
               ),
@@ -384,7 +383,6 @@ class _CreatorAvatarRow extends StatelessWidget {
             style: const TextStyle(
               color: AppColors.textOnDark,
               fontSize: AppSizes.p17,
-              fontFamily: 'Inter',
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -395,7 +393,6 @@ class _CreatorAvatarRow extends StatelessWidget {
           style: const TextStyle(
             color: AppColors.textSubtle,
             fontSize: AppSizes.p15,
-            fontFamily: 'Inter',
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -641,7 +638,6 @@ class _QuoteStatusRow extends StatelessWidget {
             style: TextStyle(
               color: muted ? AppColors.textSubtle : AppColors.textOnDark,
               fontSize: AppSizes.p19,
-              fontFamily: 'Inter',
               fontStyle: muted ? FontStyle.italic : FontStyle.normal,
               fontWeight: FontWeight.w600,
             ),
@@ -703,7 +699,6 @@ class _QuoteStatusRow extends StatelessWidget {
                     style: TextStyle(
                       color: AppColors.lockOrange,
                       fontSize: AppSizes.p14,
-                      fontFamily: 'Inter',
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -716,7 +711,6 @@ class _QuoteStatusRow extends StatelessWidget {
             style: TextStyle(
               color: statusColor,
               fontSize: AppSizes.p18,
-              fontFamily: 'Inter',
               fontStyle: muted ? FontStyle.italic : FontStyle.normal,
               fontWeight: FontWeight.w500,
             ),

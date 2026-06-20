@@ -69,7 +69,7 @@ class _PareggiaContiScreenState extends ConsumerState<PareggiaContiScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       bottomNavigationBar: const HouseQuickNav(currentRoute: '/spese'),
       body: SafeArea(
         child: Column(
@@ -221,7 +221,6 @@ class _PareggiaContent extends StatelessWidget {
                     style: TextStyle(
                       color: AppColors.textMutedSoft,
                       fontSize: AppSizes.p13,
-                      fontFamily: 'Inter',
                       fontWeight: FontWeight.w500,
                       height: 1.45,
                     ),
@@ -357,7 +356,6 @@ class _BalanceTile extends StatelessWidget {
                 style: TextStyle(
                   color: saldoColor,
                   fontSize: AppSizes.p19,
-                  fontFamily: 'Inter',
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -419,7 +417,6 @@ class _BreakdownChip extends StatelessWidget {
       child: RichText(
         text: TextSpan(
           style: const TextStyle(
-            fontFamily: 'Inter',
             fontSize: AppSizes.p12,
             fontWeight: FontWeight.w500,
           ),
@@ -535,7 +532,6 @@ class _TransferTile extends StatelessWidget {
             style: const TextStyle(
               color: AppColors.lockOrange,
               fontSize: AppSizes.p16,
-              fontFamily: 'Inter',
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -596,7 +592,6 @@ class _TransferTile extends StatelessWidget {
                     style: TextStyle(
                       color: AppColors.lockOrange,
                       fontSize: AppSizes.p13,
-                      fontFamily: 'Inter',
                       fontWeight: FontWeight.w800,
                     ),
                   ),

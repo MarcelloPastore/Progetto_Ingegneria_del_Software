@@ -92,7 +92,7 @@ class _InserisciSpesaScreenState extends ConsumerState<InserisciSpesaScreen> {
     );
 
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       bottomNavigationBar: const HouseQuickNav(currentRoute: '/spese'),
       body: SafeArea(
         child: GestureDetector(
@@ -778,7 +778,6 @@ class _ImportoCardState extends State<_ImportoCard> {
                     ? AppColors.brandAccent
                     : AppColors.textOnDark.withValues(alpha: 0.55),
                 fontSize: _hasFocus ? 13 : 12,
-                fontFamily: 'Inter',
                 fontWeight: FontWeight.w700,
               ),
               child: Text('Importo'),
@@ -1052,7 +1051,6 @@ class _SpesaAggiuntaDialog extends StatelessWidget {
               style: TextStyle(
                 color: AppColors.textOnDark.withValues(alpha: 0.65),
                 fontSize: AppSizes.p14,
-                fontFamily: 'Inter',
                 height: AppSizes.p1_4,
               ),
             ),
@@ -1122,7 +1120,6 @@ class _SummaryRow extends StatelessWidget {
             style: TextStyle(
               color: AppColors.textOnDark.withValues(alpha: 0.7),
               fontSize: AppSizes.p15,
-              fontFamily: 'Inter',
               fontWeight: FontWeight.w500,
             ),
           ),

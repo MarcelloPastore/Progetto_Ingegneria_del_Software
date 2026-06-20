@@ -191,7 +191,7 @@ class LasciaCasaSuccessScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
@@ -232,7 +232,7 @@ class LasciaCasaSuccessScreen extends StatelessWidget {
                   vertical: 16,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1A2341),
+                  color: AppColors.surfaceDark,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: const Color(0xFF4ADE80),

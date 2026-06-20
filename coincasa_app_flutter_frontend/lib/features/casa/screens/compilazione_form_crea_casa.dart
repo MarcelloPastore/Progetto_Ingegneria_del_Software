@@ -112,10 +112,11 @@ class _CompilazioneFormCreaCasaScreenState
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: Scaffold(
-        backgroundColor: AppColors.darkBackground,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -188,7 +189,7 @@ class _CompilazioneFormCreaCasaScreenState
                             Container(
                               decoration: const BoxDecoration(
                                 gradient: LinearGradient(
-                                  colors: [Color(0xFF21154C), Color(0xFF0F0A27)],
+                                  colors: [AppColors.surfaceDark, AppColors.darkBackground],
                                   begin: Alignment.topCenter,
                                   end: Alignment.bottomCenter,
                                 ),

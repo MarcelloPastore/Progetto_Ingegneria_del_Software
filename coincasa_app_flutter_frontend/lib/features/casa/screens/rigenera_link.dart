@@ -12,7 +12,7 @@ class RigeneraLinkScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF09031F),
+      backgroundColor: Theme.of(context).colorScheme.surface,
       bottomNavigationBar: const HouseQuickNav(currentRoute: '/dashboard'),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -100,7 +100,7 @@ class _CodeCard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
         decoration: BoxDecoration(
-          color: const Color(0xFF17213B),
+          color: AppColors.surfaceDark,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: const Color(0xFF9CA5DA), width: 2),
         ),
@@ -156,7 +156,7 @@ class _CopyCodeButton extends StatelessWidget {
             ).showSnackBar(const SnackBar(content: Text('Codice copiato')));
           },
           style: FilledButton.styleFrom(
-            backgroundColor: const Color(0xFF7C30E8),
+            backgroundColor: AppColors.brandSecondary,
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),

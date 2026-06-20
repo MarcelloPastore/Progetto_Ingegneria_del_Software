@@ -9,7 +9,7 @@ class ArchivioDocumentiVuotoScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF09031F),
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: Stack(
           children: [
@@ -51,7 +51,7 @@ class ArchivioDocumentiVuotoScreen extends StatelessWidget {
                     errorBuilder: (context, error, stackTrace) => const Icon(
                       Icons.folder_open_rounded,
                       size: 96,
-                      color: Color(0xFFFFB300),
+                      color: AppColors.keyYellow,
                     ),
                   ),
                   const SizedBox(height: 22),
@@ -69,7 +69,7 @@ class ArchivioDocumentiVuotoScreen extends StatelessWidget {
                     'Nessun documento ancora. Solo\nl\'Amministratore può caricare',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: Color(0xFFD7D3E8),
+                      color: AppColors.textOnDarkMuted,
                       fontSize: 13,
                       height: 1.15,
                       fontWeight: FontWeight.w600,

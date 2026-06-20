@@ -123,10 +123,11 @@ class _ListaTurniScreenState extends ConsumerState<ListaTurniScreen>
         _cachedTurni ??
         const <Turno>[];
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: Scaffold(
-        backgroundColor: AppColors.darkBackground,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         bottomNavigationBar: const HouseQuickNav(currentRoute: '/turni'),
         body: SafeArea(
           child: Column(
@@ -155,7 +156,6 @@ class _ListaTurniScreenState extends ConsumerState<ListaTurniScreen>
                                 style: const TextStyle(
                                   color: AppColors.textMutedDark,
                                   fontSize: AppSizes.p20,
-                                  fontFamily: 'Inter',
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),

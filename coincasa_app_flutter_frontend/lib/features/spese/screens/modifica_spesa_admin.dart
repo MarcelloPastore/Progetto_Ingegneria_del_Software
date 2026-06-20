@@ -111,7 +111,7 @@ class _ModificaSpesaAdminScreenState
         : ref.watch(spesaEditInquiliniProvider(form.casa!.id));
 
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       bottomNavigationBar: const HouseQuickNav(currentRoute: '/spese'),
       body: SafeArea(
         child: Column(
@@ -370,7 +370,6 @@ class _SpesaFormImportoCardState extends State<SpesaFormImportoCard> {
               style: TextStyle(
                 color: AppColors.textOnDark.withValues(alpha: 0.75),
                 fontSize: AppSizes.p13,
-                fontFamily: 'Inter',
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -558,7 +557,6 @@ class SpesaFormDateField extends StatelessWidget {
               textStyle: const TextStyle(
                 color: AppColors.textOnDark,
                 fontSize: AppSizes.p12,
-                fontFamily: 'Inter',
                 height: AppSizes.p1_5,
               ),
               padding: const EdgeInsets.symmetric(
@@ -925,7 +923,6 @@ class SpesaFormPaidForAllRow extends StatelessWidget {
                   style: TextStyle(
                     color: AppColors.textOnDark.withValues(alpha: 0.5),
                     fontSize: AppSizes.p12,
-                    fontFamily: 'Inter',
                   ),
                 ),
               ],
@@ -1006,7 +1003,6 @@ class SpesaFormRecurringRow extends StatelessWidget {
                         style: TextStyle(
                           color: AppColors.textOnDark.withValues(alpha: 0.5),
                           fontSize: AppSizes.p12,
-                          fontFamily: 'Inter',
                         ),
                       ),
                       if (!isAdmin)
@@ -1015,7 +1011,6 @@ class SpesaFormRecurringRow extends StatelessWidget {
                           style: TextStyle(
                             color: AppColors.lockOrange,
                             fontSize: AppSizes.p11,
-                            fontFamily: 'Inter',
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -1228,7 +1223,6 @@ class SpesaFormConfermaButton extends StatelessWidget {
             style: const TextStyle(
               color: AppColors.textOnDark,
               fontSize: AppSizes.p18,
-              fontFamily: 'Inter',
               fontWeight: FontWeight.w700,
             ),
           ),
