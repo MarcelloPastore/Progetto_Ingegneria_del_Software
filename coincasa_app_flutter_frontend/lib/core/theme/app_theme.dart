@@ -94,6 +94,26 @@ abstract final class AppColors {
   static const lockShackle = Color(0xFFB9B4C0);
   static const envelopeRed = Color(0xFFE84545);
 
+  // Invite screen
+  static const inviteCardBorder = Color(0xFF9CA5DA);
+  static const inviteSubtitleText = Color(0xFFE5E7F5);
+
+  // Status text
+  static const errorTextSoft = Color(0xFFFFB3B3);
+
+  // Disabled state
+  static const disabledButtonFill = Color(0xFF5A4B7E);
+  static const disabledButtonForeground = Color(0xFFE9E1FF);
+
+  // Warning circle
+  static const warningCircleDark = Color(0xFF2A1F00);
+
+  // Shadow
+  static const shadowHeavy = Color(0x66000000);
+
+  // Popup tab bar
+  static const dialogTabBarSurface = Color(0xFFD2D2D2);
+
   // Feature specific (Legacy/Migration)
   static const turniTabSurface = Color(0xFFE1E0E7);
   static const featureAccent = Color(0xFF996CFA);

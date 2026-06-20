@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/problema.dart';
@@ -8,17 +9,19 @@ import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/app_outlined_button.dart';
 import 'package:coincasa_app/core/widgets/common/delete_confirm_dialog.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/domain/viewmodel/problemi_viewmodel.dart';
 
-class EliminaProblemaScreen extends StatefulWidget {
+class EliminaProblemaScreen extends ConsumerStatefulWidget {
   const EliminaProblemaScreen({super.key});
 
   static const String routeName = '/problemi/elimina';
 
   @override
-  State<EliminaProblemaScreen> createState() => _EliminaProblemaScreenState();
+  ConsumerState<EliminaProblemaScreen> createState() =>
+      _EliminaProblemaScreenState();
 }
 
-class _EliminaProblemaScreenState extends State<EliminaProblemaScreen> {
+class _EliminaProblemaScreenState extends ConsumerState<EliminaProblemaScreen> {
   @override
   void initState() {
     super.initState();
@@ -60,15 +63,15 @@ class _EliminaProblemaScreenState extends State<EliminaProblemaScreen> {
       return;
     }
 
+    final casaId = ActiveCasaScope.read(context).selectedCasaId ?? '';
     await showDeleteConfirmDialog(
       context: context,
       title: 'Eliminare il problema?',
       description:
           '"${problema.titolo}" verrà rimosso definitivamente. Tutti i coinquilini verranno avvisati.',
-      onConfirm: () {
-        final casaId = ActiveCasaScope.read(context).selectedCasaId ?? '';
-        return ApiProvider.problemi.delete(casaId, problema.id);
-      },
+      onConfirm: () => ref
+          .read(problemiViewModelProvider(casaId).notifier)
+          .deleteProblema(problema.id),
       onSuccess: () =>
           Navigator.of(context).pushReplacementNamed('/problemi'),
     );

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
-import 'carica_documenti.dart'; // ← import corretto senza "s"
+import 'carica_documenti.dart';
 
 class ArchivioDocumentiScreen extends StatefulWidget {
   const ArchivioDocumentiScreen({super.key});
@@ -13,32 +13,25 @@ class ArchivioDocumentiScreen extends StatefulWidget {
 
 class _ArchivioDocumentiScreenState extends State<ArchivioDocumentiScreen> {
   final List<_Documento> _documenti = [
-    _Documento(
-      nome: 'Contratto affitto',
-      tipo: 'PDF',
-      icona: '',
-    ),
-    _Documento(
-      nome: 'Bolletta gas',
-      tipo: 'PDF',
-      icona: '',
-    ),
-    _Documento(
-      nome: 'Scontrino spesa',
-      tipo: 'IMG',
-      icona: '',
-    ),
+    _Documento(nome: 'Contratto affitto', tipo: 'PDF', icona: ''),
+    _Documento(nome: 'Bolletta gas', tipo: 'PDF', icona: ''),
+    _Documento(nome: 'Scontrino spesa', tipo: 'IMG', icona: ''),
   ];
 
   Future<void> _elimina(int index) async {
     final confermato = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF151127),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        backgroundColor: AppColors.darkBackground,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.p15),
+        ),
         title: const Text(
           'Elimina documento',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: AppColors.textOnDark,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         content: Text(
           'Sei sicuro di voler eliminare "${_documenti[index].nome}"? Questa azione non può essere annullata.',
@@ -56,7 +49,10 @@ class _ArchivioDocumentiScreenState extends State<ArchivioDocumentiScreen> {
             onPressed: () => Navigator.pop(context, true),
             child: const Text(
               'Elimina',
-              style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: AppColors.errorStrong,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
@@ -81,7 +77,12 @@ class _ArchivioDocumentiScreenState extends State<ArchivioDocumentiScreen> {
         child: Stack(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 18, 20, 104),
+              padding: const EdgeInsets.fromLTRB(
+                AppSizes.p20,
+                AppSizes.p18,
+                AppSizes.p20,
+                AppSizes.p104,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -91,8 +92,8 @@ class _ArchivioDocumentiScreenState extends State<ArchivioDocumentiScreen> {
                         onPressed: () => Navigator.of(context).pop(),
                         icon: const Icon(
                           Icons.arrow_back_ios_new,
-                          color: Colors.white,
-                          size: 20,
+                          color: AppColors.textOnDark,
+                          size: AppSizes.p20,
                         ),
                       ),
                       const Expanded(
@@ -100,28 +101,28 @@ class _ArchivioDocumentiScreenState extends State<ArchivioDocumentiScreen> {
                           'Documenti',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
+                            color: AppColors.textOnDark,
+                            fontSize: AppSizes.p18,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
                       ),
-                      const SizedBox(width: 48),
+                      const SizedBox(width: AppSizes.p48),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSizes.p12),
 
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
+                      horizontal: AppSizes.p12,
+                      vertical: AppSizes.p8,
                     ),
                     decoration: BoxDecoration(
                       color: AppColors.surfaceDark,
                       borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(10),
-                        topRight: Radius.circular(10),
+                        topLeft: Radius.circular(AppSizes.radius10),
+                        topRight: Radius.circular(AppSizes.radius10),
                       ),
                       border: Border.all(
                         color: AppColors.brandAccent.withValues(alpha: 0.4),
@@ -130,10 +131,10 @@ class _ArchivioDocumentiScreenState extends State<ArchivioDocumentiScreen> {
                     child: const Text(
                       'ARCHIVIO CONDIVISO',
                       style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
+                        color: AppColors.textOnDark,
+                        fontSize: AppSizes.p12,
                         fontWeight: FontWeight.w700,
-                        letterSpacing: 1.1,
+                        letterSpacing: AppSizes.p1_1,
                       ),
                     ),
                   ),
@@ -153,8 +154,8 @@ class _ArchivioDocumentiScreenState extends State<ArchivioDocumentiScreen> {
                         ),
                       ),
                       borderRadius: const BorderRadius.only(
-                        bottomLeft: Radius.circular(10),
-                        bottomRight: Radius.circular(10),
+                        bottomLeft: Radius.circular(AppSizes.radius10),
+                        bottomRight: Radius.circular(AppSizes.radius10),
                       ),
                     ),
                     child: ListView.separated(
@@ -171,7 +172,7 @@ class _ArchivioDocumentiScreenState extends State<ArchivioDocumentiScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: AppSizes.p28),
 
                   FilledButton.icon(
                     onPressed: () => Navigator.push(
@@ -180,27 +181,30 @@ class _ArchivioDocumentiScreenState extends State<ArchivioDocumentiScreen> {
                         builder: (_) => const CaricaDocumentoScreen(),
                       ),
                     ),
-                    icon: const Icon(Icons.add, color: Colors.white, size: 20),
+                    icon: const Icon(
+                      Icons.add,
+                      color: AppColors.textOnDark,
+                      size: AppSizes.p20,
+                    ),
                     label: const Text(
                       'Carica documento',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: AppSizes.p16,
                         fontWeight: FontWeight.w800,
-                        color: Colors.white,
+                        color: AppColors.textOnDark,
                       ),
                     ),
                     style: FilledButton.styleFrom(
-                      minimumSize: const Size.fromHeight(50),
+                      minimumSize: const Size.fromHeight(AppSizes.p50),
                       backgroundColor: AppColors.brandAccent,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppSizes.radius12),
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-
           ],
         ),
       ),
@@ -218,28 +222,31 @@ class _DocRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isPdf = doc.tipo == 'PDF';
-    final mainColor = isPdf ? Colors.red : Colors.blue;
+    final mainColor = isPdf ? AppColors.errorStrong : AppColors.statusInfo;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.p12,
+        vertical: AppSizes.p10,
+      ),
       child: Row(
         children: [
           Container(
-            width: 44,
-            height: 44,
+            width: AppSizes.p44,
+            height: AppSizes.p44,
             decoration: BoxDecoration(
               color: mainColor.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppSizes.radius8),
             ),
             child: Center(
               child: Icon(
                 isPdf ? Icons.picture_as_pdf_rounded : Icons.image_rounded,
                 color: mainColor,
-                size: 24,
+                size: AppSizes.p24,
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSizes.p12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -247,8 +254,8 @@ class _DocRow extends StatelessWidget {
                 Text(
                   doc.nome,
                   style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
+                    color: AppColors.textOnDark,
+                    fontSize: AppSizes.p15,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -257,7 +264,7 @@ class _DocRow extends StatelessWidget {
                   'file ${doc.tipo}',
                   style: const TextStyle(
                     color: AppColors.textOnDarkMuted,
-                    fontSize: 12,
+                    fontSize: AppSizes.p12,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -268,8 +275,8 @@ class _DocRow extends StatelessWidget {
             onPressed: onElimina,
             icon: const Icon(
               Icons.delete_outline_rounded,
-              color: Color(0xFFF75C6C), // Rosso coordinato con il resto dell'app
-              size: 24,
+              color: AppColors.statusNegative,
+              size: AppSizes.p24,
             ),
           ),
         ],
@@ -289,5 +296,3 @@ class _Documento {
     required this.icona,
   });
 }
-
-

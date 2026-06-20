@@ -1,23 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
+import 'package:coincasa_app/core/api/spese_repository_provider.dart';
 import 'package:coincasa_app/core/models/spesa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/pending_debts_banner.dart';
+import 'package:coincasa_app/data/repository/casa_repository_impl.dart';
 
-class EliminaAccountSuccessScreen extends StatefulWidget {
+class EliminaAccountSuccessScreen extends ConsumerStatefulWidget {
   const EliminaAccountSuccessScreen({super.key});
 
   static const routeName = '/account/eliminato';
 
   @override
-  State<EliminaAccountSuccessScreen> createState() =>
+  ConsumerState<EliminaAccountSuccessScreen> createState() =>
       _EliminaAccountSuccessScreenState();
 }
 
 class _EliminaAccountSuccessScreenState
-    extends State<EliminaAccountSuccessScreen> {
+    extends ConsumerState<EliminaAccountSuccessScreen> {
   late final Future<List<Spesa>> _spesePendentiFuture;
 
   @override
@@ -28,13 +31,15 @@ class _EliminaAccountSuccessScreenState
 
   Future<List<Spesa>> _loadSpesePendenti() async {
     try {
-      final caseUtente = await ApiProvider.casa.list();
+      final casaRepo = ref.read(casaRepositoryProvider);
+      final speseRepo = ref.read(speseRepositoryProvider);
+      final caseUtente = await casaRepo.getCase();
       final userId = ApiProvider.client.currentUserId;
       final userEmail = ApiProvider.client.currentUserEmail;
       final pendenti = <Spesa>[];
 
       for (final casa in caseUtente) {
-        final spese = await ApiProvider.spese.list(casa.id);
+        final spese = await speseRepo.getSpese(casa.id);
         for (final spesa in spese) {
           final isAnticipataAltri =
               _hasAnticipatore(spesa.raw) &&
@@ -125,13 +130,18 @@ class _EliminaAccountSuccessScreenState
                 children: [
                   Expanded(
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSizes.p24,
+                        AppSizes.p48,
+                        AppSizes.p24,
+                        AppSizes.p24,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Container(
-                            width: 80,
-                            height: 80,
+                            width: AppSizes.p80,
+                            height: AppSizes.p80,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               border: Border.all(
@@ -142,27 +152,27 @@ class _EliminaAccountSuccessScreenState
                             child: const Icon(
                               Icons.close_rounded,
                               color: AppColors.errorStrong,
-                              size: 44,
+                              size: AppSizes.p44,
                             ),
                           ),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: AppSizes.p24),
 
                           const Text(
                             'Hai eliminato il tuo account',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
+                              color: AppColors.textOnDark,
+                              fontSize: AppSizes.p22,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
-                          const SizedBox(height: 20),
+                          const SizedBox(height: AppSizes.p20),
 
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 14,
+                              horizontal: AppSizes.p16,
+                              vertical: AppSizes.p14,
                             ),
                             decoration: BoxDecoration(
                               color: AppColors.errorContainerDark,
@@ -170,22 +180,22 @@ class _EliminaAccountSuccessScreenState
                                 color: AppColors.errorStrong,
                                 width: 1.5,
                               ),
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(AppSizes.radius10),
                             ),
                             child: const Text(
                               'I tuoi dati sono stati resi anonimi.\nOra puoi tornare alla schermata di Login.',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                color: Color(0xFFFFB3B3),
-                                fontSize: 15,
+                                color: AppColors.errorTextSoft,
+                                fontSize: AppSizes.p15,
                                 fontWeight: FontWeight.w500,
-                                height: 1.5,
+                                height: AppSizes.p1_5,
                               ),
                             ),
                           ),
 
                           if (hasPendenti) ...[
-                            const SizedBox(height: 16),
+                            const SizedBox(height: AppSizes.p16),
                             PendingDebtsBanner(spese: spesePendenti),
                           ],
                         ],
@@ -194,10 +204,15 @@ class _EliminaAccountSuccessScreenState
                   ),
 
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSizes.p24,
+                      AppSizes.p8,
+                      AppSizes.p24,
+                      AppSizes.p24,
+                    ),
                     child: SizedBox(
                       width: double.infinity,
-                      height: 54,
+                      height: AppSizes.p54,
                       child: DecoratedBox(
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
@@ -208,7 +223,7 @@ class _EliminaAccountSuccessScreenState
                               AppColors.brandPrimaryDark,
                             ],
                           ),
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(AppSizes.radius14),
                           boxShadow: const [
                             BoxShadow(
                               color: AppColors.shadowOverlay,
@@ -225,14 +240,14 @@ class _EliminaAccountSuccessScreenState
                             backgroundColor: Colors.transparent,
                             shadowColor: Colors.transparent,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(AppSizes.radius14),
                             ),
                           ),
                           child: const Text(
                             'Torna al Login',
                             style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
+                              color: AppColors.textOnDark,
+                              fontSize: AppSizes.p16,
                               fontWeight: FontWeight.w700,
                             ),
                           ),

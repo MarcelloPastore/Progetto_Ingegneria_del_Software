@@ -991,14 +991,7 @@ class _EliminaAccountButton extends StatelessWidget {
       width: double.infinity,
       child: DecoratedBox(
         decoration: ShapeDecoration(
-          gradient: LinearGradient(
-            begin: const Alignment(0.50, 0.00),
-            end: const Alignment(0.50, 1.00),
-            colors: [
-              Colors.white.withValues(alpha: 0.18),
-              Colors.white.withValues(alpha: 0.00),
-            ],
-          ),
+          gradient: AppGradients.whiteOverlay(),
           shape: const RoundedRectangleBorder(
             side: BorderSide(
               width: 2,
@@ -1053,7 +1046,7 @@ class _EasterEggSheet extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         boxShadow: [
           BoxShadow(
-            color: Color(0x66000000),
+            color: AppColors.shadowHeavy,
             blurRadius: 20,
             offset: Offset(0, -4),
           ),
@@ -1153,7 +1146,7 @@ class _EliminaAccountDialogState extends ConsumerState<_EliminaAccountDialog> {
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: const Color(0xFF2A1F00),
+                color: AppColors.warningCircleDark,
                 shape: BoxShape.circle,
                 border: Border.all(color: AppColors.keyYellow, width: 2),
               ),

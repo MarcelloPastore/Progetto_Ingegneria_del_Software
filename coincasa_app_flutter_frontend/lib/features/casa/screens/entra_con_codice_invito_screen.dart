@@ -3,16 +3,17 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:coincasa_app/core/api/api_client.dart';
-import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/data/repository/casa_repository_impl.dart';
+import 'package:coincasa_app/domain/repositories/i_casa_repository.dart';
 import 'package:coincasa_app/features/casa/screens/casa_pre_schermata_hub_casa.dart';
 
 final inviteCodeEntryControllerProvider =
     StateNotifierProvider.autoDispose<
       InviteCodeEntryController,
       InviteCodeEntryState
-    >((ref) => InviteCodeEntryController());
+    >((ref) => InviteCodeEntryController(ref.read(casaRepositoryProvider)));
 
 @immutable
 class InviteCodeEntryState {
@@ -50,7 +51,9 @@ class InviteCodeEntryState {
 }
 
 class InviteCodeEntryController extends StateNotifier<InviteCodeEntryState> {
-  InviteCodeEntryController() : super(const InviteCodeEntryState());
+  InviteCodeEntryController(this._casaRepo) : super(const InviteCodeEntryState());
+
+  final ICasaRepository _casaRepo;
 
   static final RegExp _inviteCodePattern = RegExp(r'^CX-[A-Z0-9]{8}$');
 
@@ -75,7 +78,7 @@ class InviteCodeEntryController extends StateNotifier<InviteCodeEntryState> {
     );
 
     try {
-      final casa = await ApiProvider.casa.joinWithInviteCode(normalizedCode);
+      final casa = await _casaRepo.joinCasa(normalizedCode);
       state = state.copyWith(isSubmitting: false, clearError: true);
       return casa;
     } on ApiException catch (error) {

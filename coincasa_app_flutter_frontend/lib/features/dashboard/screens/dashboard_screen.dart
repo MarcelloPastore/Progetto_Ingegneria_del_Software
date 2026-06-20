@@ -799,21 +799,14 @@ class _TodayTurnSection extends StatelessWidget {
       height: 38,
       child: DecoratedBox(
         decoration: ShapeDecoration(
-          gradient: LinearGradient(
-            begin: const Alignment(0.50, 0.00),
-            end: const Alignment(0.50, 1.00),
-            colors: [
-              Colors.white.withValues(alpha: 0.20),
-              Colors.white.withValues(alpha: 0),
-            ],
-          ),
+          gradient: AppGradients.whiteOverlay(topAlpha: 0.20),
           shape: RoundedRectangleBorder(
             side: const BorderSide(
               width: 2,
               strokeAlign: BorderSide.strokeAlignOutside,
               color: AppColors.lockOrange,
             ),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppSizes.radius12),
           ),
           shadows: const [
             BoxShadow(

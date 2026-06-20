@@ -29,45 +29,50 @@ class _DashboardCreatePopupState extends State<DashboardCreatePopup> {
       backgroundColor: Colors.transparent,
       child: Center(
         child: Container(
-        width: popupWidth,
-        height: popupHeight,
-        decoration: ShapeDecoration(
-          color: Colors.white,
-          shape: RoundedRectangleBorder(
-            side: const BorderSide(width: 2, color: Color(0xFF996CFA)),
-            borderRadius: BorderRadius.circular(15),
-          ),
-          shadows: const [
-            BoxShadow(
-              color: Color(0x3F000000),
-              blurRadius: 4,
-              offset: Offset(0, 4),
+          width: popupWidth,
+          height: popupHeight,
+          decoration: ShapeDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            shape: RoundedRectangleBorder(
+              side: const BorderSide(width: 2, color: AppColors.featureAccent),
+              borderRadius: BorderRadius.circular(AppSizes.p15),
             ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(13),
-          child: Column(
-            children: [
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: _CreateTabBar(
-                  selectedTab: _selectedTab,
-                  onChanged: (tab) => setState(() => _selectedTab = tab),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 22),
-                  child: _PopupBody(tab: _selectedTab),
-                ),
+            shadows: const [
+              BoxShadow(
+                color: AppColors.shadowOverlay,
+                blurRadius: 4,
+                offset: Offset(0, 4),
               ),
             ],
           ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppSizes.p13),
+            child: Column(
+              children: [
+                const SizedBox(height: AppSizes.p8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSizes.p12),
+                  child: _CreateTabBar(
+                    selectedTab: _selectedTab,
+                    onChanged: (tab) => setState(() => _selectedTab = tab),
+                  ),
+                ),
+                const SizedBox(height: AppSizes.p8),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSizes.p12,
+                      AppSizes.p0,
+                      AppSizes.p12,
+                      AppSizes.p22,
+                    ),
+                    child: _PopupBody(tab: _selectedTab),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-      ),
       ),
     );
   }
@@ -82,13 +87,13 @@ class _CreateTabBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 42,
+      height: AppSizes.p42,
       decoration: BoxDecoration(
-        color: const Color(0xFFD2D2D2),
-        borderRadius: BorderRadius.circular(15),
+        color: AppColors.dialogTabBarSurface,
+        borderRadius: BorderRadius.circular(AppSizes.p15),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x33000000),
+            color: AppColors.shadowPressed,
             blurRadius: 4,
             offset: Offset(0, 3),
           ),
@@ -100,15 +105,15 @@ class _CreateTabBar extends StatelessWidget {
           return Expanded(
             child: InkWell(
               onTap: () => onChanged(tab),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(AppSizes.radius14),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 160),
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? const Color(0xFF996CFA)
+                      ? AppColors.featureAccent
                       : Colors.transparent,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(AppSizes.radius14),
                 ),
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
@@ -116,9 +121,9 @@ class _CreateTabBar extends StatelessWidget {
                     _labelFor(tab),
                     style: AppTextStyles.screenTitleStrong.copyWith(
                       color: isSelected
-                          ? Colors.white
-                          : const Color(0xFF727272),
-                      fontSize: 13,
+                          ? AppColors.textOnDark
+                          : AppColors.textMuted,
+                      fontSize: AppSizes.p13,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
