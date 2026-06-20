@@ -928,28 +928,7 @@ class SpesaFormPaidForAllRow extends StatelessWidget {
               ],
             ),
           ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-            activeThumbColor: AppColors.textOnDark,
-            activeTrackColor: AppColors.brandPrimary,
-            inactiveThumbColor: AppColors.textOnDark,
-            inactiveTrackColor: AppColors.dividerDark,
-            thumbIcon: WidgetStateProperty.resolveWith<Icon?>((states) {
-              if (states.contains(WidgetState.selected)) {
-                return const Icon(
-                  Icons.check_rounded,
-                  size: AppSizes.p14,
-                  color: AppColors.brandSecondary,
-                );
-              }
-              return const Icon(
-                Icons.close_rounded,
-                size: AppSizes.p14,
-                color: AppColors.textMutedDark,
-              );
-            }),
-          ),
+          AppSwitch(value: value, onChanged: onChanged),
         ],
       ),
     );
@@ -1019,28 +998,7 @@ class SpesaFormRecurringRow extends StatelessWidget {
                 ],
               ),
             ),
-            Switch(
-              value: value,
-              onChanged: onChanged,
-              activeThumbColor: AppColors.textOnDark,
-              activeTrackColor: AppColors.brandPrimary,
-              inactiveThumbColor: AppColors.textOnDark,
-              inactiveTrackColor: AppColors.dividerDark,
-              thumbIcon: WidgetStateProperty.resolveWith<Icon?>((states) {
-                if (states.contains(WidgetState.selected)) {
-                  return const Icon(
-                    Icons.check_rounded,
-                    size: AppSizes.p14,
-                    color: AppColors.brandSecondary,
-                  );
-                }
-                return const Icon(
-                  Icons.close_rounded,
-                  size: AppSizes.p14,
-                  color: AppColors.textMutedDark,
-                );
-              }),
-            ),
+            AppSwitch(value: value, onChanged: onChanged),
           ],
         ),
       ),

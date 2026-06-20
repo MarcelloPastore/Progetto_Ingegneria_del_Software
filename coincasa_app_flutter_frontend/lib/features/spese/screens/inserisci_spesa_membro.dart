@@ -7,6 +7,7 @@ import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/widgets/common/app_switch.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 import 'package:coincasa_app/features/spese/screens/inserisci_spesa_successo.dart';
@@ -842,14 +843,7 @@ class _MemberSwitchRow extends StatelessWidget {
             ],
           ),
         ),
-        Switch(
-          value: value,
-          onChanged: onChanged,
-          activeThumbColor: AppColors.textOnDark,
-          activeTrackColor: AppColors.brandPrimaryDark,
-          inactiveThumbColor: AppColors.textOnDark,
-          inactiveTrackColor: AppColors.textMutedDark,
-        ),
+        AppSwitch(value: value, onChanged: onChanged),
       ],
     );
   }
@@ -909,12 +903,7 @@ class _RecurringDisabledRow extends StatelessWidget {
             ],
           ),
         ),
-        Switch(
-          value: false,
-          onChanged: null,
-          inactiveThumbColor: AppColors.textMutedDark,
-          inactiveTrackColor: AppColors.textMutedDark,
-        ),
+        AppSwitch(value: false, onChanged: null),
       ],
     );
   }

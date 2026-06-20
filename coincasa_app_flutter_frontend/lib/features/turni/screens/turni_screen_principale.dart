@@ -1026,19 +1026,11 @@ class _AssigneeDropdownState extends State<_AssigneeDropdown> {
                 ),
               ),
               const SizedBox(width: AppSizes.p10),
-              Switch(
+              AppSwitch(
                 value: widget.rotazioneAutomatica,
                 onChanged: widget.canAssignOthers
                     ? widget.onRotazioneChanged
                     : null,
-                activeThumbColor: widget.canAssignOthers
-                    ? AppColors.textOnDark
-                    : AppColors.textMutedDark,
-                activeTrackColor: widget.canAssignOthers
-                    ? AppColors.brandSecondary
-                    : AppColors.dividerDark,
-                inactiveThumbColor: AppColors.textMutedLight,
-                inactiveTrackColor: AppColors.dividerDark,
               ),
             ],
           ),

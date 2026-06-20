@@ -9,6 +9,7 @@ import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/utils/formatters.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/core/widgets/common/app_switch.dart';
 import 'package:coincasa_app/core/widgets/common/screen_back_header.dart';
 import 'package:coincasa_app/features/spese/screens/modifiche_spese_successo.dart';
 import 'package:coincasa_app/domain/viewmodel/lista_case_viewmodel.dart';
@@ -714,12 +715,7 @@ class _SwitchRow extends StatelessWidget {
             ],
           ),
         ),
-        Switch(
-          value: value,
-          onChanged: onChanged,
-          activeThumbColor: AppColors.textOnDark,
-          activeTrackColor: AppColors.brandPrimary,
-        ),
+        AppSwitch(value: value, onChanged: onChanged),
       ],
     );
   }

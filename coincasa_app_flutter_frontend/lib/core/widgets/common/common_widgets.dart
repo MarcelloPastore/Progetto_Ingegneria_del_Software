@@ -17,6 +17,7 @@ export 'primary_button.dart';
 export 'screen_back_header.dart';
 export 'user_avatar.dart';
 export 'app_cancel_button.dart';
+export 'app_switch.dart';
 export 'app_submit_button.dart';
 export 'app_priority_chip.dart';
 export 'app_task_field.dart';

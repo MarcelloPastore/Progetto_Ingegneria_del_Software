@@ -779,17 +779,9 @@ class _AutoRotationRow extends StatelessWidget {
             ],
           ),
         ),
-        Switch(
+        AppSwitch(
           value: value,
           onChanged: enabled ? onChanged : null,
-          activeThumbColor: enabled
-              ? AppColors.textOnDark
-              : AppColors.textMutedDark,
-          activeTrackColor: enabled
-              ? AppColors.brandAccent
-              : AppColors.dividerDark,
-          inactiveThumbColor: AppColors.textOnDark,
-          inactiveTrackColor: AppColors.textMutedDark,
         ),
       ],
     );

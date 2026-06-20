@@ -674,11 +674,7 @@ class _PopupPaidForAllRow extends StatelessWidget {
               ],
             ),
           ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-            activeThumbColor: AppColors.brandAccent,
-          ),
+          AppSwitch(value: value, onChanged: onChanged),
         ],
       ),
     );
