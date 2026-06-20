@@ -1,13 +1,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/domain/viewmodel/auth_view_model.dart';
 
 import '../../../core/widgets/auth/auth_widgets.dart';
 import 'inserisci_codice_screen.dart';
 
-class AttesaInvioCodiceScreen extends StatefulWidget {
+class AttesaInvioCodiceScreen extends ConsumerStatefulWidget {
   const AttesaInvioCodiceScreen({
     super.key,
     this.email = 'marco@gmail.com',
@@ -18,11 +19,11 @@ class AttesaInvioCodiceScreen extends StatefulWidget {
   final bool alreadySent;
 
   @override
-  State<AttesaInvioCodiceScreen> createState() =>
+  ConsumerState<AttesaInvioCodiceScreen> createState() =>
       _AttesaInvioCodiceScreenState();
 }
 
-class _AttesaInvioCodiceScreenState extends State<AttesaInvioCodiceScreen> {
+class _AttesaInvioCodiceScreenState extends ConsumerState<AttesaInvioCodiceScreen> {
   int _activeIndex = 0;
   Timer? _timer;
 
@@ -44,7 +45,7 @@ class _AttesaInvioCodiceScreenState extends State<AttesaInvioCodiceScreen> {
     final normalizedEmail = widget.email.trim().toLowerCase();
     try {
       if (!widget.alreadySent) {
-        await ApiProvider.auth.requestPasswordReset(normalizedEmail);
+        await ref.read(authViewModelProvider.notifier).requestPasswordReset(normalizedEmail);
       }
       await Future<void>.delayed(const Duration(milliseconds: 600));
       if (!mounted) {

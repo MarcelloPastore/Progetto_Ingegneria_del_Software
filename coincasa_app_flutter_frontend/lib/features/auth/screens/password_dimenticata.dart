@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/utils/validation_utils.dart';
 
 import '../../../core/widgets/auth/auth_widgets.dart';
 import 'attesa_invio_codice_screen.dart';
@@ -76,8 +77,8 @@ class _PasswordDimenticataScreenState extends State<PasswordDimenticataScreen> {
           AuthPrimaryButton(
             text: 'Invia codice',
             onPressed: () {
-              final normalizedEmail = _normalizeEmail(_emailController.text);
-              if (!_isValidEmail(normalizedEmail)) {
+              final email = _emailController.text.trim().toLowerCase();
+              if (!ValidationUtils.isValidEmail(email)) {
                 setState(() {
                   _showEmailError = true;
                 });
@@ -99,7 +100,7 @@ class _PasswordDimenticataScreenState extends State<PasswordDimenticataScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (context) =>
-                      AttesaInvioCodiceScreen(email: normalizedEmail),
+                      AttesaInvioCodiceScreen(email: email),
                 ),
               );
             },
@@ -138,11 +139,6 @@ class _PasswordDimenticataScreenState extends State<PasswordDimenticataScreen> {
         ],
       ),
     );
-  }
-
-  bool _isValidEmail(String email) {
-    final normalized = _normalizeEmail(email);
-    return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(normalized);
   }
 
   String _normalizeEmail(String email) {

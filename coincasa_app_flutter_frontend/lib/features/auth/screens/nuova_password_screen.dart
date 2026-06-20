@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/utils/validation_utils.dart';
+import 'package:coincasa_app/domain/viewmodel/auth_view_model.dart';
 
 import '../../../core/widgets/auth/auth_widgets.dart';
 import 'inserisci_codice_screen.dart';
 import 'login_screen.dart';
 import 'successo_nuova_password_screen.dart';
 
-class NuovaPasswordScreen extends StatefulWidget {
+class NuovaPasswordScreen extends ConsumerStatefulWidget {
   const NuovaPasswordScreen({
     super.key,
     this.email = '',
@@ -23,10 +25,10 @@ class NuovaPasswordScreen extends StatefulWidget {
   final VoidCallback? onCancel;
 
   @override
-  State<NuovaPasswordScreen> createState() => _NuovaPasswordScreenState();
+  ConsumerState<NuovaPasswordScreen> createState() => _NuovaPasswordScreenState();
 }
 
-class _NuovaPasswordScreenState extends State<NuovaPasswordScreen> {
+class _NuovaPasswordScreenState extends ConsumerState<NuovaPasswordScreen> {
   late final TextEditingController _passwordController;
   late final TextEditingController _confirmPasswordController;
   bool _showPasswordError = false;
@@ -162,7 +164,7 @@ class _NuovaPasswordScreenState extends State<NuovaPasswordScreen> {
   Future<void> _savePassword() async {
     final password = _passwordController.text;
     final confirmPassword = _confirmPasswordController.text;
-    if (password.length < 10) {
+    if (!ValidationUtils.isValidPassword(password)) {
       setState(() {
         _passwordErrorMessage =
             'La password deve contenere almeno 10 caratteri.';
@@ -185,7 +187,7 @@ class _NuovaPasswordScreenState extends State<NuovaPasswordScreen> {
     });
 
     try {
-      await ApiProvider.auth.resetPassword(
+      await ref.read(authViewModelProvider.notifier).resetPassword(
         email: widget.email,
         code: widget.code,
         newPassword: password,

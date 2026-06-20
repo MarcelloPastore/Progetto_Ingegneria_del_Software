@@ -3,24 +3,25 @@ import 'dart:async';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/domain/viewmodel/auth_view_model.dart';
 import 'package:coincasa_app/features/auth/screens/login_screen.dart';
 
 import '../../../core/widgets/auth/auth_widgets.dart';
 
-class CheckEmailScreen extends StatefulWidget {
+class CheckEmailScreen extends ConsumerStatefulWidget {
   final String email;
 
   const CheckEmailScreen({super.key, required this.email});
 
   @override
-  State<CheckEmailScreen> createState() => _CheckEmailScreenState();
+  ConsumerState<CheckEmailScreen> createState() => _CheckEmailScreenState();
 }
 
-class _CheckEmailScreenState extends State<CheckEmailScreen> {
+class _CheckEmailScreenState extends ConsumerState<CheckEmailScreen> {
   static const _pollInterval = Duration(seconds: 4);
 
   Timer? _pollTimer;
@@ -40,7 +41,7 @@ class _CheckEmailScreenState extends State<CheckEmailScreen> {
   void _startPolling() {
     _pollTimer = Timer.periodic(_pollInterval, (_) async {
       try {
-        final verified = await ApiProvider.auth.checkEmailVerificata(
+        final verified = await ref.read(authViewModelProvider.notifier).checkEmailVerificata(
           widget.email.trim().toLowerCase(),
         );
         if (verified && mounted) {

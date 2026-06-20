@@ -6,9 +6,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:coincasa_app/core/api/api_client.dart';
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/providers/theme_provider.dart';
-import 'package:coincasa_app/core/services/session_manager.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/utils/validation_utils.dart';
+import 'package:coincasa_app/domain/viewmodel/account_view_model.dart';
+import 'package:coincasa_app/domain/viewmodel/auth_view_model.dart';
 import 'package:coincasa_app/features/auth/screens/check_email_screen.dart';
 import 'package:coincasa_app/features/auth/screens/elimina_account_success_screen.dart';
 import 'package:coincasa_app/features/auth/screens/modifica_password_screen.dart';
@@ -98,8 +100,7 @@ class _GestioneAccountScreenState extends ConsumerState<GestioneAccountScreen> {
       _usernameError = null;
     });
     try {
-      final saved = await ApiProvider.account.patchUsername(newUsername);
-      await SessionManager.updateUsername(saved);
+      await ref.read(accountViewModelProvider.notifier).patchUsername(newUsername);
       if (!mounted) return;
       setState(() {
         _isEditingUsername = false;
@@ -153,7 +154,7 @@ class _GestioneAccountScreenState extends ConsumerState<GestioneAccountScreen> {
       );
       return;
     }
-    if (!newEmail.contains('@') || !newEmail.contains('.')) {
+    if (!ValidationUtils.isValidEmail(newEmail)) {
       setState(() => _emailError = 'Inserisci un indirizzo email valido.');
       return;
     }
@@ -163,8 +164,7 @@ class _GestioneAccountScreenState extends ConsumerState<GestioneAccountScreen> {
       _emailError = null;
     });
     try {
-      final confirmedEmail = await ApiProvider.account.patchEmail(newEmail);
-      await SessionManager.clear();
+      final confirmedEmail = await ref.read(accountViewModelProvider.notifier).patchEmail(newEmail);
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
@@ -281,7 +281,7 @@ class _GestioneAccountScreenState extends ConsumerState<GestioneAccountScreen> {
                           child: Text(
                             'DATI ACCOUNT',
                             style: GoogleFonts.inter(
-                              color: const Color(0xFFB6B6D2),
+                              color: AppColors.textMutedDark,
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
                               letterSpacing: 0.5,
@@ -294,7 +294,7 @@ class _GestioneAccountScreenState extends ConsumerState<GestioneAccountScreen> {
                         Container(
                           width: double.infinity,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF141A3A),
+                            color: AppColors.inputFillDark,
                             borderRadius: BorderRadius.circular(15),
                           ),
                           child: Column(
@@ -332,7 +332,7 @@ class _GestioneAccountScreenState extends ConsumerState<GestioneAccountScreen> {
                           child: Text(
                             'PREFERENZE',
                             style: GoogleFonts.inter(
-                              color: const Color(0xFFB6B6D2),
+                              color: AppColors.textMutedDark,
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
                               letterSpacing: 0.5,
@@ -344,7 +344,7 @@ class _GestioneAccountScreenState extends ConsumerState<GestioneAccountScreen> {
                         Container(
                           width: double.infinity,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF141A3A),
+                            color: AppColors.inputFillDark,
                             borderRadius: BorderRadius.circular(15),
                           ),
                           child: _ThemeModeRow(
@@ -437,7 +437,7 @@ class _GestioneAccountScreenState extends ConsumerState<GestioneAccountScreen> {
 
   Future<void> _handleLogout(BuildContext context) async {
     ActiveCasaScope.read(context).clear();
-    await SessionManager.clear();
+    await ref.read(authViewModelProvider.notifier).logout();
     if (!context.mounted) return;
     Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
   }
@@ -516,7 +516,7 @@ class _FieldEditPanel extends StatelessWidget {
         _InlineField(
           value: currentValue,
           tag: 'Attuale',
-          tagColor: const Color(0xFFD4A800),
+          tagColor: AppColors.warning,
           readOnly: true,
         ),
         const SizedBox(height: 10),
@@ -687,7 +687,7 @@ class _AccountRow extends StatelessWidget {
           Text(
             label,
             style: GoogleFonts.inter(
-              color: const Color(0xFF8A8AB0),
+              color: AppColors.textMutedDark,
               fontSize: 13,
               fontWeight: FontWeight.w500,
             ),
@@ -732,7 +732,7 @@ class _AccountDivider extends StatelessWidget {
     return const Divider(
       height: 1,
       thickness: 1,
-      color: Color(0xFF252B50),
+      color: AppColors.dividerDark,
       indent: 16,
       endIndent: 16,
     );
@@ -746,9 +746,6 @@ class _LogoutButton extends StatelessWidget {
 
   static const _radius = BorderRadius.all(Radius.circular(12));
   static const _borderColor = AppColors.brandAccent;
-  static const _fillTop = Color(0xFF6F4DBB);
-  static const _fillBase = AppColors.brandPrimary;
-  static const _fillBottom = Color(0xFF5228AD);
 
   @override
   Widget build(BuildContext context) {
@@ -756,16 +753,7 @@ class _LogoutButton extends StatelessWidget {
       height: 48,
       child: DecoratedBox(
         decoration: ShapeDecoration(
-          gradient: LinearGradient(
-            begin: const Alignment(0.50, 0.00),
-            end: const Alignment(0.50, 1.00),
-            colors: [
-              Color.lerp(_fillTop, _fillBase, 0.15)!,
-              _fillBase,
-              _fillBottom,
-            ],
-            stops: const [0.0, 0.5, 1.0],
-          ),
+          gradient: AppGradients.logoutButton,
           shape: const RoundedRectangleBorder(
             side: BorderSide(
               width: 2,
@@ -776,7 +764,7 @@ class _LogoutButton extends StatelessWidget {
           ),
           shadows: const [
             BoxShadow(
-              color: Color(0x3F000000),
+              color: AppColors.shadowOverlay,
               blurRadius: 4,
               offset: Offset(0, 4),
             ),
@@ -838,7 +826,7 @@ class _EliminaAccountButton extends StatelessWidget {
           ),
           shadows: const [
             BoxShadow(
-              color: Color(0x3F000000),
+              color: AppColors.shadowOverlay,
               blurRadius: 4,
               offset: Offset(0, 4),
             ),
@@ -878,11 +866,11 @@ class _EasterEggSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: Color(0xFF1A1630),
+        color: AppColors.surfaceDarkCard,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         boxShadow: [
           BoxShadow(
-            color: Color(0x66000000),
+            color: AppColors.shadowHeavy,
             blurRadius: 20,
             offset: Offset(0, -4),
           ),
@@ -928,15 +916,15 @@ class _EasterEggSheet extends StatelessWidget {
 // Popup di conferma eliminazione account
 // ---------------------------------------------------------------------------
 
-class _EliminaAccountDialog extends StatefulWidget {
+class _EliminaAccountDialog extends ConsumerStatefulWidget {
   const _EliminaAccountDialog();
 
   @override
-  State<_EliminaAccountDialog> createState() => _EliminaAccountDialogState();
+  ConsumerState<_EliminaAccountDialog> createState() => _EliminaAccountDialogState();
 }
 
-class _EliminaAccountDialogState extends State<_EliminaAccountDialog> {
-  static const _red = Color(0xFFFF0202);
+class _EliminaAccountDialogState extends ConsumerState<_EliminaAccountDialog> {
+  static const _red = AppColors.errorStrong;
   static const _borderRadius = BorderRadius.all(Radius.circular(16));
 
   bool _isDeleting = false;
@@ -949,8 +937,7 @@ class _EliminaAccountDialogState extends State<_EliminaAccountDialog> {
       _errorMessage = null;
     });
     try {
-      await ApiProvider.account.deleteAccount();
-      await SessionManager.clear();
+      await ref.read(accountViewModelProvider.notifier).deleteAccount();
       if (!mounted) return;
       Navigator.of(context).pushNamedAndRemoveUntil(
         EliminaAccountSuccessScreen.routeName,
@@ -968,10 +955,10 @@ class _EliminaAccountDialogState extends State<_EliminaAccountDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: const Color(0xFF1A1630),
+      backgroundColor: AppColors.surfaceDarkCard,
       shape: const RoundedRectangleBorder(
         borderRadius: _borderRadius,
-        side: BorderSide(color: _red, width: 2),
+        side: BorderSide(color: AppColors.errorStrong, width: 2),
       ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
@@ -983,13 +970,13 @@ class _EliminaAccountDialogState extends State<_EliminaAccountDialog> {
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: const Color(0xFF2A1F00),
+                color: AppColors.warningCircleDark,
                 shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFFFFD31A), width: 2),
+                border: Border.all(color: AppColors.keyYellow, width: 2),
               ),
               child: const Icon(
                 Icons.warning_amber_rounded,
-                color: Color(0xFFFFD31A),
+                color: AppColors.keyYellow,
                 size: 30,
               ),
             ),
@@ -1040,15 +1027,11 @@ class _EliminaAccountDialogState extends State<_EliminaAccountDialog> {
               height: 50,
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Color(0xFF7B55E0), Color(0xFF4A2BAE)],
-                  ),
+                  gradient: AppGradients.primaryPurple,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: const [
                     BoxShadow(
-                      color: Color(0x3F000000),
+                      color: AppColors.shadowOverlay,
                       blurRadius: 4,
                       offset: Offset(0, 3),
                     ),

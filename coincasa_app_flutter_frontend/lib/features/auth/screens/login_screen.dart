@@ -1,26 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:coincasa_app/core/api/api_client.dart';
-import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/casa.dart';
-import 'package:coincasa_app/core/services/session_manager.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/utils/validation_utils.dart';
 import 'package:coincasa_app/core/widgets/auth/auth_widgets.dart';
+import 'package:coincasa_app/domain/viewmodel/auth_view_model.dart';
+import 'package:coincasa_app/domain/viewmodel/lista_case_viewmodel.dart';
 import 'package:coincasa_app/features/casa/screens/casa_welcome_screen.dart';
 import 'package:coincasa_app/features/dashboard/screens/dashboard_screen.dart';
 
 import 'password_dimenticata.dart';
 import 'register_screen.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _obscurePassword = true;
   bool _hasLoginError = false;
   bool _isLoggingIn = false;
@@ -59,13 +60,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final email = _emailController.text.trim().toLowerCase();
     final password = _passwordController.text;
 
-    // Simple email validation using RegExp
-    final bool emailValid = RegExp(
-      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-    ).hasMatch(email);
-    final bool passwordValid = password.isNotEmpty;
-
-    if (!emailValid || !passwordValid) {
+    if (!ValidationUtils.isValidEmail(email) || password.isEmpty) {
       setState(() {
         _hasLoginError = true;
       });
@@ -78,33 +73,20 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      final loginResult = await ApiProvider.auth.login(
-        email: email,
-        password: password,
-      );
+      await ref.read(authViewModelProvider.notifier).login(email, password);
+      
+      final authState = ref.read(authViewModelProvider);
+      if (authState.hasError) {
+        throw authState.error!;
+      }
 
-      ApiProvider.client.setAuthToken(loginResult.token);
-      ApiProvider.client.setCurrentUserIdentity(
-        id: loginResult.user.id,
-        email: email,
-        name: loginResult.user.nome,
-        surname: loginResult.user.cognome,
-        displayName: loginResult.user.displayName,
-        username: loginResult.user.username,
-      );
-      await SessionManager.save(
-        token: loginResult.token,
-        userId: loginResult.user.id,
-        email: email,
-        username: loginResult.user.username,
-        nome: loginResult.user.nome,
-        cognome: loginResult.user.cognome,
-      );
+      final user = authState.value;
+      if (user == null) throw Exception('Login failed');
 
       // Verifica se l'utente ha almeno una casa
       List<Casa> caseUtente = [];
       try {
-        caseUtente = await ApiProvider.casa.list();
+        caseUtente = await ref.read(listaCaseViewModelProvider.future);
       } catch (_) {
         // In caso di errore, naviga alla Dashboard come fallback
       }
@@ -116,7 +98,7 @@ class _LoginScreenState extends State<LoginScreen> {
         // un JWT con il contesto casa valido, indipendentemente dallo stato precedente.
         try {
           final firstCasaId = caseUtente.first.id;
-          final ruolo = await SessionManager.selectCasa(casaId: firstCasaId);
+          final ruolo = await ref.read(listaCaseViewModelProvider.notifier).selectCasa(firstCasaId);
           if (mounted) {
             ActiveCasaScope.read(context).setCasaContext(
               casaId: firstCasaId,
@@ -137,21 +119,15 @@ class _LoginScreenState extends State<LoginScreen> {
           MaterialPageRoute(
             builder: (context) => CasaWelcomeScreen(
               email: email,
-              userId: loginResult.user.id,
-              username: loginResult.user.username,
-              firstName: loginResult.user.nome,
-              lastName: loginResult.user.cognome,
-              displayName: loginResult.user.displayName,
+              userId: user.id,
+              username: user.username,
+              firstName: user.nome,
+              lastName: user.cognome,
+              displayName: user.displayName,
             ),
           ),
         );
       }
-    } on ApiException {
-      if (!mounted) return;
-      setState(() {
-        _hasLoginError = true;
-        _isLoggingIn = false;
-      });
     } catch (_) {
       if (!mounted) return;
       setState(() {

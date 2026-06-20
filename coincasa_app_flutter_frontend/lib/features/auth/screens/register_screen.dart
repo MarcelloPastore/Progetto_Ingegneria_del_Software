@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:coincasa_app/core/api/api_client.dart';
-import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/utils/validation_utils.dart';
+import 'package:coincasa_app/domain/viewmodel/auth_view_model.dart';
 
 import '../../../core/widgets/auth/auth_widgets.dart';
 import 'check_email_screen.dart';
 
-class RegisterScreen extends StatefulWidget {
+class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
 
   @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
+  ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _campiNonCompilati = false;
@@ -60,24 +62,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final password = _passwordController.text;
     final confirmPassword = _confirmPasswordController.text;
 
-    final invalidEmail = !RegExp(
-      r'^[\w-.]+@([\w-]+\.)+[\w-]{2,}$',
-    ).hasMatch(email);
-    final passwordTooShort =
-        (password.isNotEmpty && password.length < 10) ||
-        (confirmPassword.isNotEmpty && confirmPassword.length < 10);
-    final passwordMismatch =
+    final bool invalidEmail = !ValidationUtils.isValidEmail(email);
+    final bool passwordTooShort =
+        (password.isNotEmpty && !ValidationUtils.isValidPassword(password)) ||
+        (confirmPassword.isNotEmpty && !ValidationUtils.isValidPassword(confirmPassword));
+    final bool passwordMismatch =
         password.isNotEmpty &&
         confirmPassword.isNotEmpty &&
         password != confirmPassword;
 
     final invalidForm =
-        username.length < 3 ||
-        username.length > 50 ||
-        nome.isEmpty ||
-        nome.length > 100 ||
-        cognome.isEmpty ||
-        cognome.length > 100 ||
+        !ValidationUtils.isValidUsername(username) ||
+        !ValidationUtils.isValidName(nome) ||
+        !ValidationUtils.isValidName(cognome) ||
         email.isEmpty ||
         password.isEmpty ||
         confirmPassword.isEmpty ||
@@ -99,7 +96,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => _isSubmitting = true);
 
     try {
-      await ApiProvider.auth.register(
+      await ref.read(authViewModelProvider.notifier).register(
         username: username,
         nome: nome,
         cognome: cognome,

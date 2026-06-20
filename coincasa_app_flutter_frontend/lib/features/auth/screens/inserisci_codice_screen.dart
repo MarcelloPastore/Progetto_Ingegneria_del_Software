@@ -1,8 +1,9 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/domain/viewmodel/auth_view_model.dart';
 
 import '../../../core/widgets/auth/auth_widgets.dart';
 import '../../../core/widgets/common/common_widgets.dart';
@@ -11,7 +12,7 @@ import 'login_screen.dart';
 import 'nuova_password_screen.dart';
 import 'password_dimenticata.dart';
 
-class InserisciCodiceScreen extends StatefulWidget {
+class InserisciCodiceScreen extends ConsumerStatefulWidget {
   const InserisciCodiceScreen({
     super.key,
     this.email = 'marco@gmail.com',
@@ -26,10 +27,10 @@ class InserisciCodiceScreen extends StatefulWidget {
   final VoidCallback? onResend;
 
   @override
-  State<InserisciCodiceScreen> createState() => _InserisciCodiceScreenState();
+  ConsumerState<InserisciCodiceScreen> createState() => _InserisciCodiceScreenState();
 }
 
-class _InserisciCodiceScreenState extends State<InserisciCodiceScreen> {
+class _InserisciCodiceScreenState extends ConsumerState<InserisciCodiceScreen> {
   late final TextEditingController _codeController;
   late final FocusNode _codeFocusNode;
   bool _showCodeError = false;
@@ -189,7 +190,7 @@ class _InserisciCodiceScreenState extends State<InserisciCodiceScreen> {
     });
 
     try {
-      await ApiProvider.auth.verifyPasswordResetCode(email: email, code: code);
+      await ref.read(authViewModelProvider.notifier).verifyPasswordResetCode(email: email, code: code);
       if (!mounted) {
         return;
       }

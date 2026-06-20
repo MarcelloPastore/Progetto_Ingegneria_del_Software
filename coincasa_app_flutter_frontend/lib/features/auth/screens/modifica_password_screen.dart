@@ -1,24 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:coincasa_app/core/api/api_client.dart';
-import 'package:coincasa_app/core/api/api_provider.dart';
-import 'package:coincasa_app/core/services/session_manager.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/utils/validation_utils.dart';
+import 'package:coincasa_app/domain/viewmodel/account_view_model.dart';
 
 import '../../../core/widgets/auth/auth_widgets.dart';
 import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
 
-class ModificaPasswordScreen extends StatefulWidget {
+class ModificaPasswordScreen extends ConsumerStatefulWidget {
   const ModificaPasswordScreen({super.key});
 
   static const routeName = '/account/modifica-password';
 
   @override
-  State<ModificaPasswordScreen> createState() => _ModificaPasswordScreenState();
+  ConsumerState<ModificaPasswordScreen> createState() => _ModificaPasswordScreenState();
 }
 
-class _ModificaPasswordScreenState extends State<ModificaPasswordScreen> {
+class _ModificaPasswordScreenState extends ConsumerState<ModificaPasswordScreen> {
   final _vecchiaController = TextEditingController();
   final _nuovaController = TextEditingController();
   final _confermaController = TextEditingController();
@@ -61,7 +62,7 @@ class _ModificaPasswordScreenState extends State<ModificaPasswordScreen> {
       );
       return;
     }
-    if (nuova.length < 10) {
+    if (!ValidationUtils.isValidPassword(nuova)) {
       setState(
         () =>
             _errorMessage = 'La nuova password deve avere almeno 10 caratteri.',
@@ -75,11 +76,10 @@ class _ModificaPasswordScreenState extends State<ModificaPasswordScreen> {
     });
 
     try {
-      await ApiProvider.account.patchPassword(
+      await ref.read(accountViewModelProvider.notifier).patchPassword(
         oldPassword: vecchia,
         newPassword: nuova,
       );
-      await SessionManager.clear();
       if (!mounted) return;
       Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
     } on ApiException catch (e) {
