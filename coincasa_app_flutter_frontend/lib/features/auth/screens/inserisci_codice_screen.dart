@@ -1,6 +1,5 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
@@ -53,9 +52,6 @@ class _InserisciCodiceScreenState extends State<InserisciCodiceScreen> {
   @override
   Widget build(BuildContext context) {
     final normalizedEmail = widget.email.trim().toLowerCase();
-    final codeBorderColor = _showCodeError
-        ? AppColors.error
-        : AppColors.inputBorderDark;
 
     return AuthRecoveryScaffold(
       padding: AppSizes.pageHorizontal,

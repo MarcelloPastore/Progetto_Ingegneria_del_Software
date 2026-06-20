@@ -18,6 +18,7 @@ import 'package:coincasa_app/core/widgets/dashboard/house_health_section.dart';
 import 'package:coincasa_app/core/widgets/dashboard/open_problems_section.dart';
 import 'package:coincasa_app/domain/entities/dashboard_data.dart';
 import 'package:coincasa_app/domain/viewmodel/dashboard_viewmodel.dart';
+import 'package:coincasa_app/domain/viewmodel/scadenze_viewmodel.dart';
 import 'package:coincasa_app/features/casa/screens/casa_welcome_screen.dart';
 import 'package:coincasa_app/features/icone_fab.dart';
 
@@ -159,7 +160,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                       ),
                       const SizedBox(height: AppSizes.p28),
                       _ProssimeScadenzeSection(
-                        entries: state.prossimeScadenze,
+                        casaId: state.data.casaSelezionataId,
+                        spese: state.data.spese,
                       ),
                       const SizedBox(height: AppSizes.p28),
                       const OpenProblemsSection(),
@@ -586,13 +588,66 @@ class _BalanceMetric extends StatelessWidget {
   }
 }
 
-class _ProssimeScadenzeSection extends StatelessWidget {
-  const _ProssimeScadenzeSection({required this.entries});
+class _ProssimeScadenzeSection extends ConsumerWidget {
+  const _ProssimeScadenzeSection({
+    required this.casaId,
+    required this.spese,
+  });
 
-  final List<ProssimeScadenzeEntry> entries;
+  final String? casaId;
+  final List<Spesa> spese;
+
+  List<ProssimeScadenzeEntry> _compute(List<Scadenza> scadenze) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final entries = <ProssimeScadenzeEntry>[];
+
+    final idScadenzeConSpesa = spese
+        .map((s) => s.idScadenza)
+        .whereType<String>()
+        .toSet();
+
+    for (final spesa in spese) {
+      final d = spesa.dataScadenza;
+      if (d == null) continue;
+      if (d.year == now.year && d.month == now.month) {
+        entries.add(
+          ProssimeScadenzeEntry(
+            nome: spesa.descrizione,
+            date: DateTime(d.year, d.month, d.day),
+          ),
+        );
+      }
+    }
+
+    for (final sc in scadenze) {
+      if (idScadenzeConSpesa.contains(sc.id)) continue;
+      final d = sc.dataScadenza;
+      if (d.year == now.year && d.month == now.month) {
+        entries.add(
+          ProssimeScadenzeEntry(
+            nome: sc.nome,
+            date: DateTime(d.year, d.month, d.day),
+          ),
+        );
+      }
+    }
+
+    entries.sort((a, b) => a.date.compareTo(b.date));
+    return entries.where((e) => !e.date.isBefore(today)).take(3).toList();
+  }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final id = casaId;
+    List<ProssimeScadenzeEntry> entries = const [];
+    if (id != null && id.isNotEmpty) {
+      final scadenzeAsync = ref.watch(scadenzeViewModelProvider(id));
+      if (scadenzeAsync.hasValue) {
+        entries = _compute(scadenzeAsync.requireValue.scadenze);
+      }
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [

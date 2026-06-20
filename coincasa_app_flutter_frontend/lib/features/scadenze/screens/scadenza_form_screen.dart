@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
+import 'package:coincasa_app/core/theme/app_theme.dart';
+import 'package:coincasa_app/core/widgets/common/app_cancel_button.dart';
+import 'package:coincasa_app/core/widgets/common/app_submit_button.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
-import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
+import 'package:coincasa_app/domain/viewmodel/scadenze_viewmodel.dart';
 
-class ScadenzaFormScreen extends StatefulWidget {
+class ScadenzaFormScreen extends ConsumerStatefulWidget {
   final bool isEditing;
   final String initialNome;
   final String initialDescrizione;
@@ -39,10 +42,10 @@ class ScadenzaFormScreen extends StatefulWidget {
        initialFrequenza = frequenza;
 
   @override
-  State<ScadenzaFormScreen> createState() => _ScadenzaFormScreenState();
+  ConsumerState<ScadenzaFormScreen> createState() => _ScadenzaFormScreenState();
 }
 
-class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
+class _ScadenzaFormScreenState extends ConsumerState<ScadenzaFormScreen> {
   late final TextEditingController _nomeController;
   late final TextEditingController _descrizioneController;
   late final TextEditingController _dataController;
@@ -52,12 +55,6 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
   bool _hasNameError = false;
   bool _isSaving = false;
 
-  static const _primary = Color(0xFF5A2BBF);
-  static const _danger = Color(0xFFFF1744);
-  static const _fieldColor = Color(0xFF302A4C);
-  static const _disabled = Color(0xFF9D9D9D);
-  static const _accent = Color(0xFF996CFA);
-  static const _dropdownColor = Color(0xFF403865);
   static const _frequencyOptions = [
     'Non ripetere',
     'Settimanale',
@@ -74,9 +71,11 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
     _descrizioneController = TextEditingController(
       text: widget.initialDescrizione,
     );
-    _dataController = TextEditingController(
-      text: _formatDate(widget.initialData ?? DateTime.now()),
-    );
+    final now = DateTime.now();
+    final defaultDate = widget.isEditing
+        ? (widget.initialData ?? now)
+        : DateTime(now.year, now.month, now.day + 1);
+    _dataController = TextEditingController(text: _formatDate(defaultDate));
     _frequenza = widget.initialFrequenza;
   }
 
@@ -90,37 +89,41 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cs = Theme.of(context).colorScheme;
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light.copyWith(
-        statusBarColor: Colors.transparent,
-      ),
+      value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: Scaffold(
-        backgroundColor: const Color(0xFF151127),
+        backgroundColor: cs.surface,
         bottomNavigationBar: const HouseQuickNav(currentRoute: '/scadenze'),
         appBar: AppBar(
-          systemOverlayStyle: SystemUiOverlayStyle.light.copyWith(
-            statusBarColor: Colors.transparent,
-          ),
+          systemOverlayStyle: isDark
+              ? SystemUiOverlayStyle.light
+              : SystemUiOverlayStyle.dark,
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: widget.isEditing
               ? IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Color(0xFFAC86FF)),
+                  icon: Icon(Icons.arrow_back, color: AppColors.brandAccent),
                   onPressed: () => Navigator.of(context).maybePop(),
                 )
               : null,
           title: Text(
             widget.isEditing ? 'Modifica scadenza' : 'Nuova Scadenza',
-            style: const TextStyle(
-              color: Color(0xFFAC86FF),
-              fontSize: 22,
+            style: TextStyle(
+              color: AppColors.brandAccent,
+              fontSize: AppSizes.p22,
               fontWeight: FontWeight.w700,
             ),
           ),
           centerTitle: true,
         ),
         body: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSizes.p20,
+            vertical: AppSizes.p8,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -135,50 +138,51 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
                       controller: _nomeController,
                       onChanged: (_) => _clearNameErrorIfValid(),
                       style: TextStyle(
-                        color: _hasNameError ? _danger : Colors.white,
-                        fontSize: 18,
+                        color: _hasNameError
+                            ? AppColors.errorStrong
+                            : cs.onSurface,
+                        fontSize: AppSizes.p18,
                       ),
                       decoration: _inputDecoration(
+                        cs,
                         'Es. Revisione caldaia',
                         hasError: _hasNameError,
                       ),
                     ),
                     if (_hasNameError)
-                      const _ErrorMessage(text: 'Inserisci un nome'),
+                      _ErrorMessage(text: 'Inserisci un nome'),
                   ],
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSizes.p12),
               _LabeledField(
                 label: 'Descrizione',
                 child: TextFormField(
                   controller: _descrizioneController,
                   minLines: 1,
                   maxLines: 2,
-                  style: const TextStyle(color: Colors.white, fontSize: 18),
-                  decoration: _inputDecoration('Es. Revisione annuale'),
+                  style: TextStyle(color: cs.onSurface, fontSize: AppSizes.p18),
+                  decoration: _inputDecoration(cs, 'Es. Revisione annuale'),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSizes.p12),
               _LabeledField(
                 label: 'Data di scadenza',
                 child: TextFormField(
                   controller: _dataController,
                   readOnly: true,
                   onTap: _pickDate,
-                  style: const TextStyle(color: Colors.white, fontSize: 18),
-                  decoration: _inputDecoration('GG/MM/AAAA'),
+                  style: TextStyle(color: cs.onSurface, fontSize: AppSizes.p18),
+                  decoration: _inputDecoration(cs, 'GG/MM/AAAA'),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSizes.p12),
               _LabeledField(
                 label: 'Frequenza',
                 child: _FrequencySelector(
                   selectedValue: _frequenza,
                   options: _frequencyOptions,
                   isExpanded: _showFrequencyOptions,
-                  accent: _accent,
-                  dropdownColor: _dropdownColor,
                   onToggle: () => setState(
                     () => _showFrequencyOptions = !_showFrequencyOptions,
                   ),
@@ -188,46 +192,18 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
                   }),
                 ),
               ),
-              const SizedBox(height: 28),
-              SizedBox(
-                height: 54,
-                child: ElevatedButton(
-                  onPressed: (_hasErrors || _isSaving) ? null : _save,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _primary,
-                    disabledBackgroundColor: _disabled,
-                    disabledForegroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    elevation: 4,
-                  ),
-                  child: _isSaving
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : Text(
-                          widget.isEditing
-                              ? 'Salva modifiche'
-                              : 'Salva scadenza',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                ),
+              const SizedBox(height: AppSizes.p28),
+              AppSubmitButton(
+                label: widget.isEditing ? 'Salva modifiche' : 'Salva scadenza',
+                isLoading: _isSaving,
+                enabled: !_hasErrors && !_isSaving,
+                onPressed: _save,
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: AppSizes.p14),
               AppCancelButton(
                 onPressed: () => Navigator.of(context).maybePop(),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSizes.p24),
             ],
           ),
         ),
@@ -235,19 +211,29 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
     );
   }
 
-  InputDecoration _inputDecoration(String? hint, {bool hasError = false}) {
+  InputDecoration _inputDecoration(
+    ColorScheme cs,
+    String? hint, {
+    bool hasError = false,
+  }) {
     final border = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(7),
+      borderRadius: BorderRadius.circular(AppSizes.p7),
       borderSide: hasError
-          ? const BorderSide(color: _danger, width: 2)
+          ? BorderSide(color: AppColors.errorStrong, width: 2)
           : BorderSide.none,
     );
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(color: Color(0xFFBDB7CC), fontSize: 18),
+      hintStyle: TextStyle(
+        color: cs.onSurfaceVariant,
+        fontSize: AppSizes.p18,
+      ),
       filled: true,
-      fillColor: _fieldColor,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      fillColor: AppColors.surfaceDarkMuted,
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.p12,
+        vertical: AppSizes.p10,
+      ),
       border: border,
       enabledBorder: border,
       focusedBorder: border,
@@ -256,11 +242,13 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
 
   Future<void> _pickDate() async {
     final now = DateTime.now();
-    final initial = widget.initialData ?? now;
+    final tomorrow = DateTime(now.year, now.month, now.day + 1);
+    final firstDate = widget.isEditing ? DateTime(now.year, now.month, now.day) : tomorrow;
+    final initial = widget.initialData ?? tomorrow;
     final selected = await showDatePicker(
       context: context,
-      initialDate: initial.isAfter(now) ? initial : now,
-      firstDate: DateTime(now.year, now.month, now.day),
+      initialDate: initial.isAfter(firstDate) ? initial : firstDate,
+      firstDate: firstDate,
       lastDate: DateTime(now.year + 10),
     );
     if (selected == null) return;
@@ -281,44 +269,51 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
         ? selectedDate
         : null;
 
-    // Capture context-dependent values before any async gap
     final activeCasa = ActiveCasaScope.read(context);
     final cadenzaGiorni = _cadenzaFromFrequenza(_frequenza);
     final isRicorrente = cadenzaGiorni != null;
     final nome = _nomeController.text.trim();
     final descrizione = _descrizioneController.text.trim();
-    final dataIso = validDate != null ? _payloadDate(validDate).toIso8601String() : null;
+    final dataIso = validDate != null
+        ? _payloadDate(validDate).toIso8601String()
+        : null;
+
+    final casaId = (widget.casaId?.isNotEmpty == true
+            ? widget.casaId
+            : activeCasa.selectedCasaId) ??
+        '';
+    if (casaId.isEmpty) {
+      setState(() => _isSaving = false);
+      return;
+    }
 
     setState(() => _isSaving = true);
     try {
-      final casaId =
-          (widget.casaId?.isNotEmpty == true
-              ? widget.casaId
-              : activeCasa.selectedCasaId) ??
-          '';
-      if (casaId.isEmpty) {
-        setState(() => _isSaving = false);
-        return;
-      }
       if (widget.isEditing && widget.idScadenza != null) {
-        await ApiProvider.scadenze.update(casaId, widget.idScadenza!, {
-          'nome': nome,
-          'descrizione': descrizione,
-          if (dataIso != null) 'dataScadenza': dataIso,
-        });
-        await ApiProvider.scadenze
-            .updateRicorrenza(casaId, widget.idScadenza!, {
+        await ref
+            .read(scadenzeViewModelProvider(casaId).notifier)
+            .updateScadenza(
+              widget.idScadenza!,
+              datiPayload: {
+                'nome': nome,
+                'descrizione': descrizione,
+                if (dataIso != null) 'dataScadenza': dataIso,
+              },
+              ricorrenzaPayload: {
+                'isRicorrente': isRicorrente,
+                if (cadenzaGiorni != null) 'cadenzaGiorni': cadenzaGiorni,
+              },
+            );
+      } else {
+        await ref
+            .read(scadenzeViewModelProvider(casaId).notifier)
+            .createScadenza({
+              'nome': nome,
+              'descrizione': descrizione,
+              if (dataIso != null) 'dataScadenza': dataIso,
               'isRicorrente': isRicorrente,
               if (cadenzaGiorni != null) 'cadenzaGiorni': cadenzaGiorni,
             });
-      } else {
-        await ApiProvider.scadenze.create(casaId, {
-          'nome': nome,
-          'descrizione': descrizione,
-          if (dataIso != null) 'dataScadenza': dataIso,
-          'isRicorrente': isRicorrente,
-          if (cadenzaGiorni != null) 'cadenzaGiorni': cadenzaGiorni,
-        });
       }
 
       if (mounted) Navigator.of(context).pop(true);
@@ -383,13 +378,15 @@ class _ScadenzaFormScreenState extends State<ScadenzaFormScreen> {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Sub-widgets
+// ---------------------------------------------------------------------------
+
 class _FrequencySelector extends StatelessWidget {
   const _FrequencySelector({
     required this.selectedValue,
     required this.options,
     required this.isExpanded,
-    required this.accent,
-    required this.dropdownColor,
     required this.onToggle,
     required this.onSelect,
   });
@@ -397,8 +394,6 @@ class _FrequencySelector extends StatelessWidget {
   final String selectedValue;
   final List<String> options;
   final bool isExpanded;
-  final Color accent;
-  final Color dropdownColor;
   final VoidCallback onToggle;
   final ValueChanged<String> onSelect;
 
@@ -407,22 +402,22 @@ class _FrequencySelector extends StatelessWidget {
     return Column(
       children: [
         Material(
-          color: const Color(0xFF302A4C),
-          borderRadius: BorderRadius.circular(7),
+          color: AppColors.surfaceDarkMuted,
+          borderRadius: BorderRadius.circular(AppSizes.p7),
           elevation: 4,
           shadowColor: Colors.black45,
           child: SizedBox(
             height: 41,
             child: Padding(
-              padding: const EdgeInsets.only(left: 12, right: 4),
+              padding: const EdgeInsets.only(left: AppSizes.p12, right: AppSizes.p4),
               child: Row(
                 children: [
                   Expanded(
                     child: Text(
                       selectedValue,
-                      style: const TextStyle(
-                        color: Color(0xFFBDB7CC),
-                        fontSize: 18,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontSize: AppSizes.p18,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -438,8 +433,8 @@ class _FrequencySelector extends StatelessWidget {
                       isExpanded
                           ? Icons.keyboard_arrow_up
                           : Icons.keyboard_arrow_down,
-                      color: accent,
-                      size: 26,
+                      color: AppColors.featureAccent,
+                      size: AppSizes.p26,
                     ),
                   ),
                 ],
@@ -451,9 +446,9 @@ class _FrequencySelector extends StatelessWidget {
           Container(
             width: double.infinity,
             decoration: BoxDecoration(
-              color: dropdownColor,
+              color: AppColors.surfaceDarkMuted,
               borderRadius: const BorderRadius.vertical(
-                bottom: Radius.circular(7),
+                bottom: Radius.circular(AppSizes.p7),
               ),
               border: Border.all(color: const Color(0x668B7BC7)),
             ),
@@ -465,7 +460,9 @@ class _FrequencySelector extends StatelessWidget {
                   child: Container(
                     height: 34,
                     alignment: Alignment.centerLeft,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSizes.p12,
+                    ),
                     decoration: const BoxDecoration(
                       border: Border(
                         bottom: BorderSide(color: Color(0x338B7BC7)),
@@ -475,12 +472,11 @@ class _FrequencySelector extends StatelessWidget {
                       option,
                       style: TextStyle(
                         color: selected
-                            ? const Color(0xFFC493FF)
-                            : const Color(0xFFD4D0DF),
-                        fontSize: 16,
-                        fontWeight: selected
-                            ? FontWeight.w700
-                            : FontWeight.w600,
+                            ? AppColors.featureAccent
+                            : Theme.of(context).colorScheme.onSurface,
+                        fontSize: AppSizes.p16,
+                        fontWeight:
+                            selected ? FontWeight.w700 : FontWeight.w600,
                       ),
                     ),
                   ),
@@ -513,20 +509,20 @@ class _LabeledField extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: 5, bottom: 5),
+          padding: const EdgeInsets.only(left: AppSizes.p5, bottom: AppSizes.p5),
           child: RichText(
             text: TextSpan(
               text: label,
-              style: const TextStyle(
-                color: Color(0xFF5A2BBF),
-                fontSize: 16,
+              style: TextStyle(
+                color: AppColors.brandPrimary,
+                fontSize: AppSizes.p16,
                 fontWeight: FontWeight.w800,
               ),
               children: showAsterisk
-                  ? const [
+                  ? [
                       TextSpan(
                         text: ' *',
-                        style: TextStyle(color: Color(0xFFFF1744)),
+                        style: TextStyle(color: AppColors.errorStrong),
                       ),
                     ]
                   : const [],
@@ -546,16 +542,20 @@ class _ErrorMessage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(top: 5),
+      padding: const EdgeInsets.only(top: AppSizes.p5),
       child: Row(
         children: [
-          const Icon(Icons.error_rounded, color: Color(0xFFFF1744), size: 14),
-          const SizedBox(width: 5),
+          Icon(
+            Icons.error_rounded,
+            color: AppColors.errorStrong,
+            size: AppSizes.p14,
+          ),
+          const SizedBox(width: AppSizes.p5),
           Text(
             text,
-            style: const TextStyle(
-              color: Color(0xFFFF1744),
-              fontSize: 12,
+            style: TextStyle(
+              color: AppColors.errorStrong,
+              fontSize: AppSizes.p12,
               fontWeight: FontWeight.w700,
             ),
           ),

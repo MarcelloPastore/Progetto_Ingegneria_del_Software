@@ -29,10 +29,11 @@ class ProblemaSuccessoFABDialog extends StatelessWidget {
         ? 'Ti sei assegnato correttamente questo problema. Da ora risulti come assegnatario corrente.'
         : 'Il problema è stato segnalato correttamente. Qualcuno se ne occuperà.';
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: Scaffold(
-        backgroundColor: AppColors.darkBackground,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         body: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(
@@ -55,8 +56,8 @@ class ProblemaSuccessoFABDialog extends StatelessWidget {
                   title,
                   textAlign: TextAlign.center,
                   style: AppTextStyles.screenTitleStrong.copyWith(
-                    color: AppColors.textOnDark,
-                    fontSize: 26,
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontSize: AppSizes.p26,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -68,9 +69,9 @@ class ProblemaSuccessoFABDialog extends StatelessWidget {
                   description,
                   textAlign: TextAlign.center,
                   style: AppTextStyles.bodyMutedLarge.copyWith(
-                    color: AppColors.textMutedLight,
-                    fontSize: 18,
-                    height: 1.3,
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontSize: AppSizes.p18,
+                    height: AppSizes.p1_3,
                   ),
                 ),
 
@@ -109,7 +110,7 @@ class ProblemaSuccessoFABDialog extends StatelessWidget {
                             'Vai ai Problemi',
                             style: AppTextStyles.screenTitleStrong.copyWith(
                               color: AppColors.textOnDark,
-                              fontSize: 22,
+                              fontSize: AppSizes.p22,
                               fontWeight: FontWeight.w800,
                             ),
                           ),

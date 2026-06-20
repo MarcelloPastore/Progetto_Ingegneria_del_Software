@@ -260,7 +260,7 @@ class _InserisciSpesaScreenState extends ConsumerState<InserisciSpesaScreen> {
                   AppSizes.p16,
                   AppSizes.p8,
                   AppSizes.p16,
-                  AppSizes.p14,
+                  AppSizes.p8,
                 ),
                 child: SpesaFormConfermaButton(
                   label: 'Conferma e aggiungi',
@@ -269,6 +269,12 @@ class _InserisciSpesaScreenState extends ConsumerState<InserisciSpesaScreen> {
                   onPressed: _submit,
                 ),
               ),
+              AppCancelButton(
+                onPressed: form.isSubmitting
+                    ? null
+                    : () => Navigator.of(context).pop(),
+              ),
+              const SizedBox(height: AppSizes.p14),
             ],
           ),
         ),

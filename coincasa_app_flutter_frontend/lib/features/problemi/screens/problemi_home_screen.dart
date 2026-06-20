@@ -2,124 +2,99 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/problema.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
-import 'package:coincasa_app/core/widgets/dashboard/open_problems_section.dart';
+import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
+import 'package:coincasa_app/domain/viewmodel/problemi_viewmodel.dart';
 import 'package:coincasa_app/features/problemi/screens/problema_dettaglio_screen.dart';
 import 'package:coincasa_app/features/problemi/screens/segnala_problema_screen.dart';
-import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 
 // ---------------------------------------------------------------------------
 // Screen
 // ---------------------------------------------------------------------------
 
-class ProblemiHomeScreen extends ConsumerStatefulWidget {
+class ProblemiHomeScreen extends ConsumerWidget {
   const ProblemiHomeScreen({super.key});
 
   static const String routeName = '/problemi';
 
   @override
-  ConsumerState<ProblemiHomeScreen> createState() => _ProblemiHomeScreenState();
-}
-
-class _ProblemiHomeScreenState extends ConsumerState<ProblemiHomeScreen> {
-  late Future<List<Problema>> _future;
-  int _loadedRevision = -1;
-  bool _showTutti = false;
-  bool _hasRisolti = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadedRevision = ref.read(problemiRevisionProvider);
-    _future = _loadProblemi();
-  }
-
-  Future<List<Problema>> _loadProblemi() async {
-    final casaId = ActiveCasaScope.read(context).selectedCasaId;
-    if (casaId == null || casaId.isEmpty) return const [];
-    
-    final allList = await ApiProvider.problemi.list(casaId);
-    
-    if (mounted) {
-      _hasRisolti = allList.any((p) => p.stato.toLowerCase() == 'risolto');
-    }
-
-    final list = _showTutti
-        ? allList
-        : allList.where((p) => p.stato.toLowerCase() != 'risolto').toList();
-        
-    return list..sort(Problema.compareByPriority);
-  }
-
-  void _refresh() {
-    if (!mounted) return;
-    final next = _loadProblemi();
-    setState(() { _future = next; });
-  }
-
-  void _toggleShowTutti() {
-    setState(() => _showTutti = !_showTutti);
-    _refresh();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final revision = ref.watch(problemiRevisionProvider);
-    if (_loadedRevision != revision) {
-      _loadedRevision = revision;
-      _future = _loadProblemi();
-    }
+  Widget build(BuildContext context, WidgetRef ref) {
+    final casaScope = ActiveCasaScope.of(context);
+    final casaId = casaScope.selectedCasaId ?? '';
+    final vmAsync = ref.watch(problemiViewModelProvider(casaId));
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: Scaffold(
-        backgroundColor: AppColors.darkBackground,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         bottomNavigationBar: const HouseQuickNav(currentRoute: '/problemi'),
-        body: FutureBuilder<List<Problema>>(
-          future: _future,
-          builder: (context, snapshot) {
-            final problemi = snapshot.data ?? const <Problema>[];
-            final isLoading = snapshot.connectionState != ConnectionState.done;
-            final isEmpty = !isLoading && problemi.isEmpty;
-
-            return SafeArea(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _ProblemiHomeHeader(
-                    isEmpty: isEmpty,
-                    showTutti: _showTutti,
-                    onToggleShowTutti: _toggleShowTutti,
-                    hasRisolti: _hasRisolti,
+        body: vmAsync.when(
+          loading: () => _buildShell(
+            context,
+            casaId: casaId,
+            ref: ref,
+            body: const Center(
+              child: CircularProgressIndicator(),
+            ),
+            state: null,
+          ),
+          error: (e, _) => _buildShell(
+            context,
+            casaId: casaId,
+            ref: ref,
+            body: _ErrorBody(
+              onRetry: () => ref.invalidate(problemiViewModelProvider(casaId)),
+            ),
+            state: null,
+          ),
+          data: (state) => _buildShell(
+            context,
+            casaId: casaId,
+            ref: ref,
+            body: state.problemi.isEmpty
+                ? _EmptyBody(showTutti: state.mostraTutti)
+                : _ListBody(
+                    problemi: state.problemi,
+                    onBack: () =>
+                        ref.invalidate(problemiViewModelProvider(casaId)),
                   ),
-                  Expanded(
-                    child: isLoading
-                        ? const Center(
-                            child: CircularProgressIndicator(
-                              color: AppColors.brandAccent,
-                            ),
-                          )
-                        : snapshot.hasError
-                        ? _ErrorBody(onRetry: _refresh)
-                        : isEmpty
-                        ? _EmptyBody(showTutti: _showTutti)
-                        : _ListBody(problemi: problemi, onBack: _refresh),
-                  ),
-                  _SegnalaButton(
-                    onPressed: () => Navigator.of(context)
-                        .pushNamed(SegnalaProblemaScreen.routeName)
-                        .then((_) => _refresh()),
-                  ),
-                ],
-              ),
-            );
-          },
+            state: state,
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildShell(
+    BuildContext context, {
+    required String casaId,
+    required WidgetRef ref,
+    required Widget body,
+    required ProblemiState? state,
+  }) {
+    final vm = ref.read(problemiViewModelProvider(casaId).notifier);
+
+    return SafeArea(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _ProblemiHomeHeader(
+            showTutti: state?.mostraTutti ?? false,
+            hasRisolti: state?.hasRisolti ?? false,
+            onToggleShowTutti: vm.toggleMostraTutti,
+          ),
+          Expanded(child: body),
+          _SegnalaButton(
+            onPressed: () => Navigator.of(context)
+                .pushNamed(SegnalaProblemaScreen.routeName)
+                .then((_) => ref.invalidate(problemiViewModelProvider(casaId))),
+          ),
+        ],
       ),
     );
   }
@@ -131,13 +106,11 @@ class _ProblemiHomeScreenState extends ConsumerState<ProblemiHomeScreen> {
 
 class _ProblemiHomeHeader extends StatelessWidget {
   const _ProblemiHomeHeader({
-    required this.isEmpty,
     required this.showTutti,
     required this.onToggleShowTutti,
     required this.hasRisolti,
   });
 
-  final bool isEmpty;
   final bool showTutti;
   final VoidCallback onToggleShowTutti;
   final bool hasRisolti;
@@ -145,6 +118,7 @@ class _ProblemiHomeHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final nomeCasa = ActiveCasaScope.read(context).selectedCasa?.nome ?? '';
+    final cs = Theme.of(context).colorScheme;
 
     return Padding(
       padding: const EdgeInsets.only(top: AppSizes.p12, bottom: AppSizes.p12),
@@ -155,20 +129,20 @@ class _ProblemiHomeHeader extends StatelessWidget {
             children: [
               Text(
                 nomeCasa,
-                style: const TextStyle(
-                  color: AppColors.textMutedDark,
-                  fontSize: 20,
+                style: TextStyle(
+                  color: cs.onSurfaceVariant,
+                  fontSize: AppSizes.p20,
                   fontFamily: 'Inter',
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: AppSizes.p4),
               Text(
                 'Problemi',
                 textAlign: TextAlign.center,
                 style: AppTextStyles.screenTitleStrong.copyWith(
                   color: AppColors.brandAccent,
-                  fontSize: 40,
+                  fontSize: AppSizes.p40,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -183,27 +157,29 @@ class _ProblemiHomeHeader extends StatelessWidget {
                 message: showTutti ? 'Nascondi risolti' : 'Mostra risolti',
                 child: InkWell(
                   onTap: onToggleShowTutti,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppSizes.radius8),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSizes.p4,
+                    ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
                           Icons.assignment_outlined,
-                          size: 28,
+                          size: AppSizes.p28,
                           color: showTutti
                               ? AppColors.brandAccent
-                              : AppColors.textMutedDark,
+                              : cs.onSurfaceVariant,
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: AppSizes.p2),
                         Text(
                           showTutti ? 'Nascondi risolti' : 'Mostra risolti',
                           style: TextStyle(
                             color: showTutti
                                 ? AppColors.brandAccent
-                                : AppColors.textMutedDark,
-                            fontSize: 10,
+                                : cs.onSurfaceVariant,
+                            fontSize: AppSizes.p10,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -230,6 +206,7 @@ class _EmptyBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: AppSizes.p32),
@@ -238,15 +215,17 @@ class _EmptyBody extends StatelessWidget {
           children: [
             Text(
               showTutti ? '✅' : '🥱',
-              style: const TextStyle(fontSize: 96, height: 1),
+              style: const TextStyle(fontSize: AppSizes.p80, height: 1),
             ),
             const SizedBox(height: AppSizes.p32),
             Text(
-              showTutti ? 'Nessun problema registrato' : 'Nessun problema aperto',
+              showTutti
+                  ? 'Nessun problema registrato'
+                  : 'Nessun problema aperto',
               textAlign: TextAlign.center,
               style: AppTextStyles.screenTitleStrong.copyWith(
-                color: AppColors.textOnDark,
-                fontSize: 23,
+                color: cs.onSurface,
+                fontSize: AppSizes.p23,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -257,9 +236,9 @@ class _EmptyBody extends StatelessWidget {
                   : 'La casa è in ottimo stato.\nSegnala un problema se qualcosa non funziona.',
               textAlign: TextAlign.center,
               style: AppTextStyles.bodyMuted.copyWith(
-                color: AppColors.textMutedDark,
-                fontSize: 15.5,
-                height: 1.5,
+                color: cs.onSurfaceVariant,
+                fontSize: AppSizes.p15,
+                height: AppSizes.p1_5,
               ),
             ),
           ],
@@ -276,6 +255,7 @@ class _ErrorBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: AppSizes.p32),
@@ -286,8 +266,8 @@ class _ErrorBody extends StatelessWidget {
               'Impossibile caricare i problemi',
               textAlign: TextAlign.center,
               style: AppTextStyles.screenTitleStrong.copyWith(
-                color: AppColors.textOnDark,
-                fontSize: 22,
+                color: cs.onSurface,
+                fontSize: AppSizes.p22,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -320,8 +300,11 @@ class _ListBody extends StatelessWidget {
         AppSizes.p16,
       ),
       itemCount: problemi.length,
-      separatorBuilder: (context, _) =>
-          Divider(height: 1, thickness: 1, color: AppColors.dividerOnDark),
+      separatorBuilder: (context, _) => Divider(
+        height: 1,
+        thickness: 1,
+        color: Theme.of(context).colorScheme.outlineVariant,
+      ),
       itemBuilder: (ctx, index) {
         return _ProblemaCard(problema: problemi[index], onBack: onBack);
       },
@@ -359,54 +342,44 @@ class _ProblemaCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Avatar
               UserAvatar(
                 userId: assegnatarioId,
                 username: assegnatarioNome,
-                radius: 22,
+                radius: AppSizes.p22,
                 fallback: '?',
               ),
               const SizedBox(width: AppSizes.p12),
-
-              // Content
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Title
                     Text(
                       problema.titolo,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyles.screenTitleStrong.copyWith(
-                        color: AppColors.textOnDark,
-                        fontSize: 18,
+                        color: Theme.of(context).colorScheme.onSurface,
+                        fontSize: AppSizes.p18,
                         fontWeight: FontWeight.w700,
-                        height: 1.25,
+                        height: AppSizes.p1_25,
                       ),
                     ),
                     const SizedBox(height: AppSizes.p6),
-
-                    // Priority chip
                     _PrioritaChip(priorita: problema.priorita),
                     const SizedBox(height: AppSizes.p5),
-
-                    // Assignee label
                     Text(
                       assegnatarioNome != null
                           ? 'Assegnato a $assegnatarioNome'
                           : 'Nessuno assegnato',
                       style: AppTextStyles.bodyMuted.copyWith(
-                        color: AppColors.textMutedDark,
-                        fontSize: 14,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontSize: AppSizes.p14,
                       ),
                     ),
                   ],
                 ),
               ),
               const SizedBox(width: AppSizes.p10),
-
-              // Status badge
               _StatoBadge(stato: problema.stato),
             ],
           ),
@@ -457,9 +430,9 @@ class _PrioritaChip extends StatelessWidget {
         config.label,
         style: TextStyle(
           color: config.foreground,
-          fontSize: 15,
+          fontSize: AppSizes.p15,
           fontWeight: FontWeight.w800,
-          height: 1.2,
+          height: AppSizes.p1_2,
         ),
       ),
     );
@@ -526,9 +499,9 @@ class _StatoBadge extends StatelessWidget {
         config.label,
         style: TextStyle(
           color: config.foreground,
-          fontSize: 15,
+          fontSize: AppSizes.p15,
           fontWeight: FontWeight.w700,
-          height: 1.2,
+          height: AppSizes.p1_2,
         ),
       ),
     );
@@ -536,7 +509,6 @@ class _StatoBadge extends StatelessWidget {
 
   _ChipConfig _resolveConfig(String stato) {
     final lower = stato.toLowerCase();
-
     if (lower.contains('assegn')) {
       return _ChipConfig(
         label: 'Assegnato',
@@ -558,7 +530,6 @@ class _StatoBadge extends StatelessWidget {
         foreground: AppColors.statusSuccess,
       );
     }
-    // default: Segnalato
     return _ChipConfig(
       label: 'Segnalato',
       background: AppColors.statusPositive.withValues(alpha: 0.18),

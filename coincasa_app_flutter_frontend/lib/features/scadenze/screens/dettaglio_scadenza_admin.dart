@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:coincasa_app/core/api/api_provider.dart';
+import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/delete_confirm_dialog.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
+import 'package:coincasa_app/core/widgets/common/info_row.dart';
 import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
+import 'package:coincasa_app/domain/viewmodel/scadenze_viewmodel.dart';
 import 'scadenza_form_screen.dart';
 
-class DettaglioScadenzaAdminScreen extends StatelessWidget {
+class DettaglioScadenzaAdminScreen extends ConsumerWidget {
   final String titolo;
   final String descrizione;
   final DateTime? dataScadenza;
@@ -42,30 +45,30 @@ class DettaglioScadenzaAdminScreen extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final data = dataScadenza ?? DateTime(2026, 6, 25);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cs = Theme.of(context).colorScheme;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light.copyWith(
-        statusBarColor: Colors.transparent,
-      ),
+      value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: Scaffold(
-        backgroundColor: const Color(0xFF151127),
+        backgroundColor: cs.surface,
         appBar: AppBar(
-          systemOverlayStyle: SystemUiOverlayStyle.light.copyWith(
-            statusBarColor: Colors.transparent,
-          ),
+          systemOverlayStyle: isDark
+              ? SystemUiOverlayStyle.light
+              : SystemUiOverlayStyle.dark,
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Color(0xFFAC86FF)),
+            icon: Icon(Icons.arrow_back, color: AppColors.brandAccent),
             onPressed: () => Navigator.of(context).maybePop(),
           ),
-          title: const Text(
+          title: Text(
             'Dettaglio scadenza',
             style: TextStyle(
-              color: Color(0xFFAC86FF),
-              fontSize: 20,
+              color: AppColors.brandAccent,
+              fontSize: AppSizes.p20,
               fontFamily: 'Inter',
               fontWeight: FontWeight.w600,
             ),
@@ -77,60 +80,62 @@ class DettaglioScadenzaAdminScreen extends StatelessWidget {
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+                  horizontal: AppSizes.p16,
+                  vertical: AppSizes.p12,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Card(
-                      color: const Color(0xFF37325A),
+                      color: cs.surfaceContainerHighest,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(AppSizes.radius10),
                       ),
                       elevation: 4,
                       child: Padding(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(AppSizes.p16),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               titolo,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
+                              style: TextStyle(
+                                color: cs.onSurface,
+                                fontSize: AppSizes.p20,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: AppSizes.p8),
                             Text(
                               descrizione,
-                              style: const TextStyle(
-                                color: Color(0xFFC9C9C9),
-                                fontSize: 16,
+                              style: TextStyle(
+                                color: cs.onSurfaceVariant,
+                                fontSize: AppSizes.p16,
                               ),
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: AppSizes.p16),
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceBetween,
                               children: [
                                 Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
+                                    Text(
                                       'Data scadenza',
                                       style: TextStyle(
-                                        color: Color(0xFFC9C9C9),
-                                        fontSize: 18,
+                                        color: cs.onSurfaceVariant,
+                                        fontSize: AppSizes.p18,
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
-                                    const SizedBox(height: 6),
+                                    const SizedBox(height: AppSizes.p6),
                                     Text(
                                       _formatDate(data),
-                                      style: const TextStyle(
-                                        color: Color(0xFFFF860E),
-                                        fontSize: 16,
+                                      style: TextStyle(
+                                        color: AppColors.lockOrange,
+                                        fontSize: AppSizes.p16,
                                         fontWeight: FontWeight.w700,
                                       ),
                                     ),
@@ -138,20 +143,23 @@ class DettaglioScadenzaAdminScreen extends StatelessWidget {
                                 ),
                                 StatusBadge(
                                   text: stato,
-                                  color: const Color(0xFFFF860E),
+                                  color: AppColors.lockOrange,
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 12),
-                            _infoRow('Frequenza', frequenza),
+                            const SizedBox(height: AppSizes.p12),
+                            InfoRow(label: 'Frequenza', value: frequenza),
                             if (isAdmin) ...[
-                              const SizedBox(height: 8),
-                              _infoRow('Ricorrente', ricorrente ? 'Sì' : 'No'),
+                              const SizedBox(height: AppSizes.p8),
+                              InfoRow(
+                                label: 'Ricorrente',
+                                value: ricorrente ? 'Sì' : 'No',
+                              ),
                             ],
-                            const SizedBox(height: 8),
-                            _infoRow('Creata da', creatoDa),
-                            const SizedBox(height: 8),
-                            _infoRow('Visibile a', visibileA),
+                            const SizedBox(height: AppSizes.p8),
+                            InfoRow(label: 'Creata da', value: creatoDa),
+                            const SizedBox(height: AppSizes.p8),
+                            InfoRow(label: 'Visibile a', value: visibileA),
                           ],
                         ),
                       ),
@@ -186,10 +194,15 @@ class DettaglioScadenzaAdminScreen extends StatelessWidget {
                 onConfirm: () {
                   final id = idScadenza;
                   final cId = casaId;
-                  if (id == null || cId == null || id.isEmpty || cId.isEmpty) {
+                  if (id == null ||
+                      cId == null ||
+                      id.isEmpty ||
+                      cId.isEmpty) {
                     return Future.value();
                   }
-                  return ApiProvider.scadenze.delete(cId, id);
+                  return ref
+                      .read(scadenzeViewModelProvider(cId).notifier)
+                      .deleteScadenza(id);
                 },
                 onSuccess: () => Navigator.of(context).maybePop(),
               ),
@@ -199,34 +212,6 @@ class DettaglioScadenzaAdminScreen extends StatelessWidget {
         ),
         bottomNavigationBar: const HouseQuickNav(currentRoute: '/scadenze'),
       ),
-    );
-  }
-
-  Widget _infoRow(String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: Color(0xFFC9C9C9),
-            fontSize: 18,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-            ),
-            textAlign: TextAlign.right,
-          ),
-        ),
-      ],
     );
   }
 }
@@ -240,17 +225,20 @@ class StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.p10,
+        vertical: AppSizes.p6,
+      ),
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(AppSizes.p6),
       ),
       child: Text(
         text,
         style: const TextStyle(
-          color: Colors.white,
+          color: AppColors.textOnDark,
           fontWeight: FontWeight.w600,
-          fontSize: 14,
+          fontSize: AppSizes.p14,
         ),
       ),
     );

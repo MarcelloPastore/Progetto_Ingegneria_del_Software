@@ -2,14 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/problema.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
-import 'package:coincasa_app/core/widgets/common/app_outlined_button.dart';
+import 'package:coincasa_app/core/widgets/common/app_cancel_button.dart';
+import 'package:coincasa_app/core/widgets/common/app_priority_chip.dart';
+import 'package:coincasa_app/core/widgets/common/app_submit_button.dart';
+import 'package:coincasa_app/core/widgets/common/app_text_field.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
-import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
-import 'package:coincasa_app/core/widgets/dashboard/open_problems_section.dart';
+import 'package:coincasa_app/core/widgets/common/screen_back_header.dart';
+import 'package:coincasa_app/core/widgets/common/section_label.dart';
+import 'package:coincasa_app/domain/viewmodel/problemi_viewmodel.dart';
 
 // ---------------------------------------------------------------------------
 // Form state
@@ -43,7 +46,6 @@ class _ModificaFormState {
 
   bool get hasNomeError => showErrors && nome.trim().isEmpty;
   bool get hasDescrizioneError => showErrors && descrizione.trim().isEmpty;
-  bool get hasPrioritaError => showErrors && priorita == null;
 
   _ModificaFormState copyWith({
     String? nome,
@@ -183,13 +185,14 @@ class _ModificaProblemaScreenState
         controller.setSubmitError('Nessuna casa selezionata.');
         return;
       }
-      final updated = await ApiProvider.problemi.update(casaId, _problema.id, {
-        'nome': form.nome.trim(),
-        'descrizione': form.descrizione.trim(),
-        'priorita': prioritaStr,
-      });
 
-      ref.read(problemiRevisionProvider.notifier).state++;
+      final updated = await ref
+          .read(problemiViewModelProvider(casaId).notifier)
+          .updateProblema(_problema.id, {
+            'nome': form.nome.trim(),
+            'descrizione': form.descrizione.trim(),
+            'priorita': prioritaStr,
+          });
 
       if (!mounted) return;
       controller.setSubmitting(false);
@@ -204,13 +207,14 @@ class _ModificaProblemaScreenState
     if (!_initialized) return const SizedBox.shrink();
     final form = ref.watch(_modificaFormProvider(_problema));
     final ctrl = ref.read(_modificaFormProvider(_problema).notifier);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: Scaffold(
-          backgroundColor: AppColors.darkBackground,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           bottomNavigationBar: const HouseQuickNav(currentRoute: '/problemi'),
           body: SafeArea(
             child: SingleChildScrollView(
@@ -224,67 +228,51 @@ class _ModificaProblemaScreenState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Header back
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                        color: AppColors.brandAccent,
-                        iconSize: 20,
-                        onPressed: () => Navigator.of(context).maybePop(),
-                      ),
-                      Text(
-                        'Problemi',
-                        style: AppTextStyles.screenTitleStrong.copyWith(
-                          color: AppColors.brandAccent,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
+                  ScreenBackHeader(
+                    title: 'Problemi',
+                    onBack: () => Navigator.of(context).maybePop(),
                   ),
                   const SizedBox(height: AppSizes.p16),
 
-                  // Title
                   Text(
                     'Modifica problema',
                     style: AppTextStyles.screenTitle.copyWith(
-                      color: AppColors.textOnDark,
-                      fontSize: 26,
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontSize: AppSizes.p26,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: AppSizes.p24),
 
-                  // Nome field
-                  _FormTextField(
+                  AppTextField(
                     controller: _nomeCtrl,
+                    label: 'Nome problema',
                     hintText: 'Nome problema...',
                     hasError: form.hasNomeError,
+                    showRequired: true,
                     maxLines: 1,
                     onChanged: ctrl.setNome,
+                    errorText: form.hasNomeError ? 'Inserisci il nome' : null,
                   ),
                   const SizedBox(height: AppSizes.p16),
 
-                  // Descrizione field
-                  _FormTextField(
+                  AppTextField(
                     controller: _descrCtrl,
                     hintText: 'Descrizione problema...',
                     hasError: form.hasDescrizioneError,
                     minLines: 4,
                     maxLines: 4,
                     onChanged: ctrl.setDescrizione,
+                    errorText: form.hasDescrizioneError
+                        ? 'Inserisci una descrizione'
+                        : null,
                   ),
                   const SizedBox(height: AppSizes.p20),
 
-                  // Priorità
-                  Text(
+                  SectionLabel(
                     'Priorità',
-                    style: AppTextStyles.screenTitleStrong.copyWith(
-                      color: AppColors.brandAccent,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                    ),
+                    color: AppColors.brandAccent,
+                    fontSize: AppSizes.p20,
                   ),
                   const SizedBox(height: AppSizes.p10),
                   Row(
@@ -321,7 +309,6 @@ class _ModificaProblemaScreenState
                     ],
                   ),
 
-                  // Error banner
                   if (form.showErrors && !form.canSubmit) ...[
                     const SizedBox(height: AppSizes.p14),
                     Row(
@@ -329,7 +316,7 @@ class _ModificaProblemaScreenState
                         const Icon(
                           Icons.error_rounded,
                           color: AppColors.errorStrong,
-                          size: 20,
+                          size: AppSizes.p20,
                         ),
                         const SizedBox(width: AppSizes.p6),
                         Expanded(
@@ -338,7 +325,7 @@ class _ModificaProblemaScreenState
                                 'Dati mancanti: compila i campi necessari',
                             style: AppTextStyles.error.copyWith(
                               color: AppColors.errorStrong,
-                              fontSize: 14,
+                              fontSize: AppSizes.p14,
                               fontStyle: FontStyle.italic,
                             ),
                           ),
@@ -349,8 +336,7 @@ class _ModificaProblemaScreenState
 
                   const SizedBox(height: AppSizes.p28),
 
-                  // Submit
-                  _SubmitButton(
+                  AppSubmitButton(
                     label: 'Salva modifiche',
                     isLoading: form.isSubmitting,
                     enabled: form.showErrors ? form.canSubmit : true,
@@ -364,7 +350,6 @@ class _ModificaProblemaScreenState
                   ),
                   const SizedBox(height: AppSizes.p12),
 
-                  // Annulla
                   AppCancelButton(
                     onPressed: () => Navigator.of(context).maybePop(),
                   ),
@@ -377,142 +362,3 @@ class _ModificaProblemaScreenState
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Widgets (identici a segnala_problema_screen per coerenza visiva)
-// ---------------------------------------------------------------------------
-
-class _FormTextField extends StatelessWidget {
-  const _FormTextField({
-    required this.controller,
-    required this.hintText,
-    required this.hasError,
-    required this.onChanged,
-    this.minLines = 1,
-    this.maxLines = 1,
-  });
-
-  final TextEditingController controller;
-  final String hintText;
-  final bool hasError;
-  final ValueChanged<String> onChanged;
-  final int minLines;
-  final int maxLines;
-
-  @override
-  Widget build(BuildContext context) {
-    final borderColor = hasError
-        ? AppColors.errorStrong
-        : AppColors.primaryBorder;
-    return Stack(
-      children: [
-        TextField(
-          controller: controller,
-          cursorColor: AppColors.brandAccent,
-          style: AppTextStyles.input.copyWith(color: AppColors.textOnDark),
-          minLines: minLines,
-          maxLines: maxLines,
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: AppColors.surfaceDarkElevated,
-            hintText: hintText,
-            hintStyle: AppTextStyles.inputHint.copyWith(
-              color: AppColors.textMutedLight.withValues(alpha: 0.72),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: AppSizes.p14,
-              vertical: AppSizes.p14,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppSizes.radius12),
-              borderSide: BorderSide(color: borderColor, width: 1.6),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppSizes.radius12),
-              borderSide: BorderSide(color: borderColor, width: 2),
-            ),
-          ),
-          onChanged: onChanged,
-        ),
-        if (hasError)
-          Positioned(
-            top: AppSizes.p10,
-            right: AppSizes.p12,
-            child: Text(
-              '*',
-              style: TextStyle(
-                color: AppColors.errorStrong,
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _SubmitButton extends StatelessWidget {
-  const _SubmitButton({
-    required this.label,
-    required this.isLoading,
-    required this.enabled,
-    required this.onPressed,
-  });
-
-  final String label;
-  final bool isLoading;
-  final bool enabled;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final effectiveEnabled = enabled && !isLoading;
-    return Opacity(
-      opacity: effectiveEnabled ? 1.0 : 0.45,
-      child: SizedBox(
-        width: double.infinity,
-        height: 58,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [AppColors.brandAccent, AppColors.brandPrimary],
-            ),
-            borderRadius: BorderRadius.circular(AppSizes.radius16),
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(AppSizes.radius16),
-              onTap: effectiveEnabled ? onPressed : null,
-              child: Center(
-                child: isLoading
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            AppColors.textOnDark,
-                          ),
-                        ),
-                      )
-                    : Text(
-                        label,
-                        style: AppTextStyles.button.copyWith(
-                          color: AppColors.textOnDark,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-

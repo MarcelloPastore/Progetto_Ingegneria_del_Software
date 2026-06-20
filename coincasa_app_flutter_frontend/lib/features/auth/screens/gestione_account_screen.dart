@@ -9,7 +9,6 @@ import 'package:coincasa_app/core/providers/theme_provider.dart';
 import 'package:coincasa_app/core/services/session_manager.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
-import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 import 'package:coincasa_app/features/auth/screens/check_email_screen.dart';
 import 'package:coincasa_app/features/auth/screens/elimina_account_success_screen.dart';
 import 'package:coincasa_app/features/auth/screens/modifica_password_screen.dart';

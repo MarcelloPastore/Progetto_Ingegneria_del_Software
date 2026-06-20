@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
-import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
+import 'package:coincasa_app/core/widgets/common/app_cancel_button.dart';
+import 'package:coincasa_app/core/widgets/common/fab_buttons.dart';
+import 'package:coincasa_app/domain/viewmodel/scadenze_viewmodel.dart';
 
 import 'fab_sacdenza_creata.dart';
 
-class FabScadenzaPanel extends StatefulWidget {
+class FabScadenzaPanel extends ConsumerStatefulWidget {
   const FabScadenzaPanel({super.key});
 
   @override
-  State<FabScadenzaPanel> createState() => _FabScadenzaPanelState();
+  ConsumerState<FabScadenzaPanel> createState() => _FabScadenzaPanelState();
 }
 
-class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
+class _FabScadenzaPanelState extends ConsumerState<FabScadenzaPanel> {
   final _nomeController = TextEditingController();
   final _descrizioneController = TextEditingController();
   final _dataController = TextEditingController();
@@ -25,8 +27,6 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
   bool _isCreated = false;
   bool _isSaving = false;
 
-  static const _danger = Color(0xFFFF1744);
-  static const _fieldColor = Color(0xFF302A4C);
   static const _frequencyOptions = [
     'Non ripetere',
     'Settimanale',
@@ -40,8 +40,9 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
   void initState() {
     super.initState();
     final now = DateTime.now();
+    final tomorrow = DateTime(now.year, now.month, now.day + 1);
     _dataController.text =
-        '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}';
+        '${tomorrow.day.toString().padLeft(2, '0')}/${tomorrow.month.toString().padLeft(2, '0')}/${tomorrow.year}';
   }
 
   @override
@@ -68,11 +69,11 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
           'Nuova Scadenza',
           style: AppTextStyles.screenTitleStrong.copyWith(
             color: AppColors.brandPrimary,
-            fontSize: 23,
+            fontSize: AppSizes.p23,
             fontWeight: FontWeight.w800,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSizes.p12),
         _LabeledField(
           label: 'Nome scadenza',
           required: true,
@@ -83,41 +84,51 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
                 controller: _nomeController,
                 onChanged: (_) => _clearNameErrorIfValid(),
                 style: TextStyle(
-                  color: _hasNameError ? _danger : Colors.white,
-                  fontSize: 18,
+                  color: _hasNameError
+                      ? AppColors.errorStrong
+                      : Theme.of(context).colorScheme.onSurface,
+                  fontSize: AppSizes.p18,
                 ),
                 decoration: _inputDecoration(
+                  context,
                   'Es. Revisione caldaia',
                   hasError: _hasNameError,
                 ),
               ),
-              if (_hasNameError) const _ErrorMessage(text: 'Inserisci un nome'),
+              if (_hasNameError)
+                const _ErrorMessage(text: 'Inserisci un nome'),
             ],
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSizes.p8),
         _LabeledField(
           label: 'Descrizione (opzionale)',
           child: TextFormField(
             controller: _descrizioneController,
             minLines: 1,
             maxLines: 2,
-            style: const TextStyle(color: Colors.white, fontSize: 18),
-            decoration: _inputDecoration('Es. Revisione annuale'),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
+              fontSize: AppSizes.p18,
+            ),
+            decoration: _inputDecoration(context, 'Es. Revisione annuale'),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSizes.p8),
         _LabeledField(
           label: 'Data di scadenza',
           child: TextFormField(
             controller: _dataController,
             readOnly: true,
             onTap: _pickDate,
-            style: const TextStyle(color: Colors.white, fontSize: 18),
-            decoration: _inputDecoration('GG/MM/AAAA'),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
+              fontSize: AppSizes.p18,
+            ),
+            decoration: _inputDecoration(context, 'GG/MM/AAAA'),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSizes.p8),
         _LabeledField(
           label: 'Frequenza',
           child: _FrequencySelector(
@@ -135,32 +146,42 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
             },
           ),
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: AppSizes.p18),
         FabSaveButton(
           label: 'Salva scadenza',
           onPressed: _hasErrors ? null : _save,
           isLoading: _isSaving,
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: AppSizes.p14),
         AppCancelButton(onPressed: () => Navigator.of(context).maybePop()),
       ],
     );
   }
 
-  InputDecoration _inputDecoration(String? hint, {bool hasError = false}) {
+  InputDecoration _inputDecoration(
+    BuildContext context,
+    String? hint, {
+    bool hasError = false,
+  }) {
     final border = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(7),
+      borderRadius: BorderRadius.circular(AppSizes.p7),
       borderSide: hasError
-          ? const BorderSide(color: _danger, width: 2)
+          ? BorderSide(color: AppColors.errorStrong, width: 2)
           : BorderSide.none,
     );
 
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(color: Color(0xFFBDB7CC), fontSize: 18),
+      hintStyle: TextStyle(
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+        fontSize: AppSizes.p18,
+      ),
       filled: true,
-      fillColor: _fieldColor,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      fillColor: AppColors.surfaceDarkMuted,
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.p12,
+        vertical: AppSizes.p10,
+      ),
       border: border,
       enabledBorder: border,
       focusedBorder: border,
@@ -169,16 +190,15 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
 
   Future<void> _pickDate() async {
     final now = DateTime.now();
+    final tomorrow = DateTime(now.year, now.month, now.day + 1);
     final selected = await showDatePicker(
       context: context,
-      initialDate: now,
-      firstDate: DateTime(now.year, now.month, now.day),
+      initialDate: tomorrow,
+      firstDate: tomorrow,
       lastDate: DateTime(now.year + 10),
     );
 
-    if (selected == null) {
-      return;
-    }
+    if (selected == null) return;
 
     final day = selected.day.toString().padLeft(2, '0');
     final month = selected.month.toString().padLeft(2, '0');
@@ -200,7 +220,6 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
         ? selectedDate
         : null;
 
-    // Capture context-dependent values before any async gap
     final casaId = ActiveCasaScope.read(context).selectedCasaId ?? '';
     if (casaId.isEmpty) {
       if (mounted) setState(() => _isSaving = false);
@@ -210,11 +229,13 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
     final isRicorrente = cadenzaGiorni != null;
     final nome = _nomeController.text.trim();
     final descrizione = _descrizioneController.text.trim();
-    final dataIso = validDate != null ? _payloadDate(validDate).toIso8601String() : null;
+    final dataIso = validDate != null
+        ? _payloadDate(validDate).toIso8601String()
+        : null;
 
     setState(() => _isSaving = true);
     try {
-      await ApiProvider.scadenze.create(casaId, {
+      await ref.read(scadenzeViewModelProvider(casaId).notifier).createScadenza({
         'nome': nome,
         'descrizione': descrizione,
         if (dataIso != null) 'dataScadenza': dataIso,
@@ -257,10 +278,13 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
   }
 
   void _resetForm() {
+    final now = DateTime.now();
+    final tomorrow = DateTime(now.year, now.month, now.day + 1);
     setState(() {
       _nomeController.clear();
       _descrizioneController.clear();
-      _dataController.clear();
+      _dataController.text =
+          '${tomorrow.day.toString().padLeft(2, '0')}/${tomorrow.month.toString().padLeft(2, '0')}/${tomorrow.year}';
       _frequenza = 'Non ripetere';
       _showFrequencyOptions = false;
       _hasNameError = false;
@@ -269,25 +293,18 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
   }
 
   void _clearNameErrorIfValid() {
-    if (!_hasNameError || _nomeController.text.trim().isEmpty) {
-      return;
-    }
-
+    if (!_hasNameError || _nomeController.text.trim().isEmpty) return;
     setState(() => _hasNameError = false);
   }
 
   DateTime? _parseDate(String value) {
     final parts = value.split('/');
-    if (parts.length != 3) {
-      return null;
-    }
+    if (parts.length != 3) return null;
 
     final day = int.tryParse(parts[0]);
     final month = int.tryParse(parts[1]);
     final year = int.tryParse(parts[2]);
-    if (day == null || month == null || year == null) {
-      return null;
-    }
+    if (day == null || month == null || year == null) return null;
 
     final date = DateTime(year, month, day);
     if (date.day != day || date.month != month || date.year != year) {
@@ -304,6 +321,10 @@ class _FabScadenzaPanelState extends State<FabScadenzaPanel> {
     return normalizedDate.isAfter(normalizedToday);
   }
 }
+
+// ---------------------------------------------------------------------------
+// Sub-widgets
+// ---------------------------------------------------------------------------
 
 class _FrequencySelector extends StatelessWidget {
   const _FrequencySelector({
@@ -325,22 +346,25 @@ class _FrequencySelector extends StatelessWidget {
     return Column(
       children: [
         Material(
-          color: _FabColors.fieldColor,
-          borderRadius: BorderRadius.circular(7),
+          color: AppColors.surfaceDarkMuted,
+          borderRadius: BorderRadius.circular(AppSizes.p7),
           elevation: 4,
           shadowColor: Colors.black45,
           child: SizedBox(
             height: 41,
             child: Padding(
-              padding: const EdgeInsets.only(left: 12, right: 4),
+              padding: const EdgeInsets.only(
+                left: AppSizes.p12,
+                right: AppSizes.p4,
+              ),
               child: Row(
                 children: [
                   Expanded(
                     child: Text(
                       selectedValue,
-                      style: const TextStyle(
-                        color: Color(0xFFBDB7CC),
-                        fontSize: 18,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontSize: AppSizes.p18,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -356,10 +380,11 @@ class _FrequencySelector extends StatelessWidget {
                       isExpanded
                           ? Icons.keyboard_arrow_up
                           : Icons.keyboard_arrow_down,
-                      color: _FabColors.accent,
-                      size: 26,
+                      color: AppColors.featureAccent,
+                      size: AppSizes.p26,
                     ),
-                    tooltip: isExpanded ? 'Chiudi frequenza' : 'Apri frequenza',
+                    tooltip:
+                        isExpanded ? 'Chiudi frequenza' : 'Apri frequenza',
                   ),
                 ],
               ),
@@ -370,9 +395,9 @@ class _FrequencySelector extends StatelessWidget {
           Container(
             width: double.infinity,
             decoration: BoxDecoration(
-              color: _FabColors.dropdownColor,
+              color: AppColors.surfaceDarkMuted,
               borderRadius: const BorderRadius.vertical(
-                bottom: Radius.circular(7),
+                bottom: Radius.circular(AppSizes.p7),
               ),
               border: Border.all(color: const Color(0x668B7BC7)),
             ),
@@ -384,7 +409,9 @@ class _FrequencySelector extends StatelessWidget {
                   child: Container(
                     height: 34,
                     alignment: Alignment.centerLeft,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSizes.p12,
+                    ),
                     decoration: const BoxDecoration(
                       border: Border(
                         bottom: BorderSide(color: Color(0x338B7BC7)),
@@ -394,12 +421,11 @@ class _FrequencySelector extends StatelessWidget {
                       option,
                       style: TextStyle(
                         color: selected
-                            ? const Color(0xFFC493FF)
-                            : const Color(0xFFD4D0DF),
-                        fontSize: 13,
-                        fontWeight: selected
-                            ? FontWeight.w700
-                            : FontWeight.w600,
+                            ? AppColors.featureAccent
+                            : Theme.of(context).colorScheme.onSurface,
+                        fontSize: AppSizes.p13,
+                        fontWeight:
+                            selected ? FontWeight.w700 : FontWeight.w600,
                       ),
                     ),
                   ),
@@ -429,21 +455,21 @@ class _LabeledField extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: 2, bottom: 4),
+          padding: const EdgeInsets.only(left: AppSizes.p2, bottom: AppSizes.p4),
           child: RichText(
             text: TextSpan(
               text: label.toUpperCase(),
-              style: const TextStyle(
-                color: _primaryLabel,
-                fontSize: 13,
+              style: TextStyle(
+                color: AppColors.brandPrimary,
+                fontSize: AppSizes.p13,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.5,
               ),
               children: required
-                  ? const [
+                  ? [
                       TextSpan(
                         text: ' *',
-                        style: TextStyle(color: _FabColors.danger),
+                        style: TextStyle(color: AppColors.errorStrong),
                       ),
                     ]
                   : const [],
@@ -454,8 +480,6 @@ class _LabeledField extends StatelessWidget {
       ],
     );
   }
-
-  static const _primaryLabel = Color(0xFF5228AD);
 }
 
 class _ErrorMessage extends StatelessWidget {
@@ -466,16 +490,20 @@ class _ErrorMessage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(top: 5),
+      padding: const EdgeInsets.only(top: AppSizes.p5),
       child: Row(
         children: [
-          const Icon(Icons.error_rounded, color: _FabColors.danger, size: 14),
-          const SizedBox(width: 5),
+          Icon(
+            Icons.error_rounded,
+            color: AppColors.errorStrong,
+            size: AppSizes.p14,
+          ),
+          const SizedBox(width: AppSizes.p5),
           Text(
             text,
-            style: const TextStyle(
-              color: _FabColors.danger,
-              fontSize: 12,
+            style: TextStyle(
+              color: AppColors.errorStrong,
+              fontSize: AppSizes.p12,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -483,13 +511,4 @@ class _ErrorMessage extends StatelessWidget {
       ),
     );
   }
-}
-
-class _FabColors {
-  const _FabColors._();
-
-  static const accent = Color(0xFF996CFA);
-  static const danger = Color(0xFFFF1744);
-  static const fieldColor = Color(0xFF302A4C);
-  static const dropdownColor = Color(0xFF403865);
 }

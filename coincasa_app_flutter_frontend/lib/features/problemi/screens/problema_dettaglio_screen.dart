@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/problema.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
+import 'package:coincasa_app/domain/viewmodel/problemi_viewmodel.dart';
 import 'package:coincasa_app/features/problemi/screens/deassegnazione_successo_screen.dart';
 import 'package:coincasa_app/features/problemi/screens/modifica_problema_screen.dart';
 
 // ---------------------------------------------------------------------------
-// Entry point mantenuto per compatibilità con dashboard_screen
+// Entry point maintained for dashboard_screen compatibility
 // ---------------------------------------------------------------------------
 
 Future<void> showProblemaDettaglio(BuildContext context, Problema problema) {
@@ -50,12 +52,14 @@ class ProblemaDettaglioScreen extends StatelessWidget {
     }
 
     if (problema == null) {
-      return const Scaffold(
-        backgroundColor: AppColors.darkBackground,
+      return Scaffold(
+        backgroundColor: Theme.of(context).colorScheme.surface,
         body: Center(
           child: Text(
             'Problema non disponibile',
-            style: AppTextStyles.bodyStrong,
+            style: AppTextStyles.bodyStrong.copyWith(
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
           ),
         ),
       );
@@ -69,15 +73,16 @@ class ProblemaDettaglioScreen extends StatelessWidget {
 // Page
 // ---------------------------------------------------------------------------
 
-class _ProblemaDettaglioPage extends StatefulWidget {
+class _ProblemaDettaglioPage extends ConsumerStatefulWidget {
   const _ProblemaDettaglioPage({required this.problema});
   final Problema problema;
 
   @override
-  State<_ProblemaDettaglioPage> createState() => _ProblemaDettaglioPageState();
+  ConsumerState<_ProblemaDettaglioPage> createState() =>
+      _ProblemaDettaglioPageState();
 }
 
-class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
+class _ProblemaDettaglioPageState extends ConsumerState<_ProblemaDettaglioPage> {
   bool _isProcessing = false;
   bool _isLoadingDetail = true;
   late String _priorityOverride;
@@ -87,20 +92,22 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
   void initState() {
     super.initState();
     _problema = widget.problema;
-    _priorityOverride = _problema.priorita.isNotEmpty
-        ? _problema.priorita
-        : 'Media';
+    _priorityOverride =
+        _problema.priorita.isNotEmpty ? _problema.priorita : 'Media';
     _fetchDetail();
   }
 
   Future<void> _fetchDetail() async {
     try {
       final casaId = ActiveCasaScope.read(context).selectedCasaId ?? '';
-      final fresco = await ApiProvider.problemi.getById(casaId, _problema.id);
+      final fresco = await ref
+          .read(problemiViewModelProvider(casaId).notifier)
+          .getById(_problema.id);
       if (!mounted) return;
       setState(() {
         _problema = fresco;
-        _priorityOverride = fresco.priorita.isNotEmpty ? fresco.priorita : 'Media';
+        _priorityOverride =
+            fresco.priorita.isNotEmpty ? fresco.priorita : 'Media';
         _isLoadingDetail = false;
       });
     } catch (_) {
@@ -131,19 +138,17 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
   bool get _isRisolto => _problema.stato.toLowerCase().contains('risolt');
 
   bool get _isCurrentUserAssignee {
-    final problema = _problema;
     final currentId = ApiProvider.client.currentUserId?.trim();
     final rawId = _firstString([
-      problema.raw['assegnatarioId'],
-      problema.raw['assegnatario_id'],
-      problema.raw['responsabileId'],
+      _problema.raw['assegnatarioId'],
+      _problema.raw['assegnatario_id'],
+      _problema.raw['responsabileId'],
     ]);
     if (currentId != null && currentId.isNotEmpty && rawId == currentId) {
       return true;
     }
-    final currentName = ApiProvider.client.currentUserName
-        ?.trim()
-        .toLowerCase();
+    final currentName =
+        ApiProvider.client.currentUserName?.trim().toLowerCase();
     final assigneeName = _responsabileNome?.trim().toLowerCase();
     if (currentName != null &&
         currentName.isNotEmpty &&
@@ -227,7 +232,6 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
       }).toList();
     }
 
-    // Fallback sintetico se il backend non ha ancora storico
     final events = <_HistoryEvent>[];
     events.add(
       _HistoryEvent(
@@ -253,12 +257,11 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
   Future<void> _handleAssignMe() async {
     if (_isProcessing) return;
     setState(() => _isProcessing = true);
+    final casaId = ActiveCasaScope.read(context).selectedCasaId ?? '';
     try {
-      final casaId = ActiveCasaScope.read(context).selectedCasaId ?? '';
-      final updated = await ApiProvider.problemi.autoAssegna(
-        casaId,
-        _problema.id,
-      );
+      final updated = await ref
+          .read(problemiViewModelProvider(casaId).notifier)
+          .autoAssegnaEsistente(_problema.id);
       if (!mounted) return;
       setState(() {
         _problema = updated;
@@ -281,9 +284,11 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
   Future<void> _handleDeassign() async {
     if (_isProcessing) return;
     setState(() => _isProcessing = true);
+    final casaId = ActiveCasaScope.read(context).selectedCasaId ?? '';
     try {
-      final casaId = ActiveCasaScope.read(context).selectedCasaId ?? '';
-      await ApiProvider.problemi.rinuncia(casaId, _problema.id);
+      await ref
+          .read(problemiViewModelProvider(casaId).notifier)
+          .rinuncia(_problema.id);
       if (mounted) {
         setState(() => _isProcessing = false);
         Navigator.of(
@@ -294,27 +299,9 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
       if (mounted) {
         setState(() => _isProcessing = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Impossibile deassegnare il problema.')),
-        );
-      }
-    }
-  }
-
-  Future<void> _handleElimina() async {
-    if (_isProcessing) return;
-    setState(() => _isProcessing = true);
-    try {
-      final casaId = ActiveCasaScope.read(context).selectedCasaId ?? '';
-      await ApiProvider.problemi.delete(casaId, _problema.id);
-      if (mounted) {
-        setState(() => _isProcessing = false);
-        Navigator.of(context).pushReplacementNamed('/problemi');
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(() => _isProcessing = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Impossibile eliminare il problema.')),
+          const SnackBar(
+            content: Text('Impossibile deassegnare il problema.'),
+          ),
         );
       }
     }
@@ -323,11 +310,11 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
   Future<void> _handleRiapri() async {
     if (_isProcessing) return;
     setState(() => _isProcessing = true);
+    final casaId = ActiveCasaScope.read(context).selectedCasaId ?? '';
     try {
-      final casaId = ActiveCasaScope.read(context).selectedCasaId ?? '';
-      final updated = await ApiProvider.problemi.aggiornaStato(casaId, _problema.id, {
-        'stato': 'Segnalato',
-      });
+      final updated = await ref
+          .read(problemiViewModelProvider(casaId).notifier)
+          .aggiornaStato(_problema.id, {'stato': 'Segnalato'});
       if (mounted) {
         setState(() {
           _problema = updated;
@@ -348,11 +335,11 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
   Future<void> _handleRisolto() async {
     if (_isProcessing) return;
     setState(() => _isProcessing = true);
+    final casaId = ActiveCasaScope.read(context).selectedCasaId ?? '';
     try {
-      final casaId = ActiveCasaScope.read(context).selectedCasaId ?? '';
-      await ApiProvider.problemi.aggiornaStato(casaId, _problema.id, {
-        'stato': 'Risolto',
-      });
+      await ref
+          .read(problemiViewModelProvider(casaId).notifier)
+          .aggiornaStato(_problema.id, {'stato': 'Risolto'});
       if (mounted) {
         setState(() => _isProcessing = false);
         Navigator.of(context).pushReplacementNamed('/problemi');
@@ -370,13 +357,11 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
   Future<void> _handlePriorita(String priorita) async {
     if (_isProcessing || priorita == _normalizedPriority) return;
     setState(() => _isProcessing = true);
+    final casaId = ActiveCasaScope.read(context).selectedCasaId ?? '';
     try {
-      final casaId = ActiveCasaScope.read(context).selectedCasaId ?? '';
-      final updated = await ApiProvider.problemi.aggiornaPriorita(
-        casaId,
-        _problema.id,
-        {'priorita': priorita},
-      );
+      final updated = await ref
+          .read(problemiViewModelProvider(casaId).notifier)
+          .aggiornaPriorita(_problema.id, {'priorita': priorita});
       if (!mounted) return;
       setState(() {
         _problema = updated;
@@ -399,6 +384,7 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
     required String confirmLabel,
     required VoidCallback onConfirm,
   }) {
+    final cs = Theme.of(context).colorScheme;
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
@@ -407,16 +393,16 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
       transitionDuration: const Duration(milliseconds: 220),
       pageBuilder: (ctx, a1, a2) => Center(
         child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 24),
-          padding: const EdgeInsets.all(24),
+          margin: const EdgeInsets.symmetric(horizontal: AppSizes.p24),
+          padding: const EdgeInsets.all(AppSizes.p24),
           decoration: BoxDecoration(
-            color: const Color(0xFF1C192E),
-            borderRadius: BorderRadius.circular(20),
+            color: cs.surface,
+            borderRadius: BorderRadius.circular(AppSizes.p20),
             border: Border.all(color: accentColor, width: 2),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.4),
-                blurRadius: 20,
+                blurRadius: AppSizes.p20,
                 offset: const Offset(0, 10),
               ),
             ],
@@ -432,32 +418,32 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
                     Icon(
                       Icons.warning_amber_rounded,
                       color: accentColor,
-                      size: 26,
+                      size: AppSizes.p26,
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: AppSizes.p10),
                     Expanded(
                       child: Text(
                         title,
                         style: TextStyle(
                           color: accentColor,
-                          fontSize: 20,
+                          fontSize: AppSizes.p20,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSizes.p16),
                 Text(
                   body,
                   style: TextStyle(
                     color: accentColor.withValues(alpha: 0.85),
-                    fontSize: 16,
+                    fontSize: AppSizes.p16,
                     fontWeight: FontWeight.w500,
-                    height: 1.4,
+                    height: AppSizes.p1_4,
                   ),
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: AppSizes.p28),
                 Row(
                   children: [
                     Expanded(
@@ -466,14 +452,14 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
                         child: Text(
                           'Annulla',
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.45),
-                            fontSize: 15,
+                            color: cs.onSurface.withValues(alpha: 0.45),
+                            fontSize: AppSizes.p15,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: AppSizes.p12),
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () {
@@ -482,16 +468,16 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: accentColor,
-                          foregroundColor: Colors.white,
+                          foregroundColor: AppColors.textOnDark,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppSizes.radius12),
                           ),
                           elevation: 0,
                         ),
                         child: Text(
                           confirmLabel,
                           style: const TextStyle(
-                            fontSize: 15,
+                            fontSize: AppSizes.p15,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
@@ -511,13 +497,11 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
     final currentId = ApiProvider.client.currentUserId?.trim();
     if (currentId == null || currentId.isEmpty) return false;
 
-    // Prova prima il campo pre-estratto da fromJson
     final segnalatoDaId = _problema.raw['segnalatoDaId']?.toString().trim();
     if (segnalatoDaId != null && segnalatoDaId.isNotEmpty) {
       return segnalatoDaId == currentId;
     }
 
-    // Fallback: estrai id dall'oggetto segnalataDa se ancora presente nel raw
     final segnalataDa = _problema.raw['segnalataDa'];
     if (segnalataDa is Map<String, dynamic>) {
       final id = segnalataDa['id']?.toString().trim();
@@ -534,16 +518,29 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
     final isAdmin = ActiveCasaScope.of(context).isHomeAdmin;
     final canDelete = _isRisolto ? isAdmin : (isAdmin || _isCreator);
     final canModify = !_isRisolto && _isCreator;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final casaId = ActiveCasaScope.read(context).selectedCasaId ?? '';
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: Scaffold(
-        backgroundColor: AppColors.darkBackground,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         bottomNavigationBar: const HouseQuickNav(currentRoute: '/problemi'),
         body: SafeArea(
           child: Column(
             children: [
-              _buildHeader(context),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSizes.p8,
+                  AppSizes.p16,
+                  AppSizes.p20,
+                  AppSizes.p8,
+                ),
+                child: ScreenBackHeader(
+                  title: 'Problemi',
+                  onBack: () => Navigator.of(context).maybePop(),
+                ),
+              ),
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(
@@ -579,7 +576,6 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
                   ),
                 ),
               ),
-              // Barra azioni fissa in fondo
               DetailActionsBar(
                 modifyLabel: 'Modifica problema',
                 deleteLabel: 'Elimina problema',
@@ -604,11 +600,11 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
                         title: 'Eliminare il problema?',
                         description:
                             '"${_problema.titolo}" verrà rimosso definitivamente. Tutti i coinquilini verranno avvisati.',
-                        onConfirm: () async {
-                          final casaId = ActiveCasaScope.read(context).selectedCasaId ?? '';
-                          await ApiProvider.problemi.delete(casaId, _problema.id);
-                        },
-                        onSuccess: () => Navigator.of(context).pushReplacementNamed('/problemi'),
+                        onConfirm: () => ref
+                            .read(problemiViewModelProvider(casaId).notifier)
+                            .deleteProblema(_problema.id),
+                        onSuccess: () =>
+                            Navigator.of(context).pushReplacementNamed('/problemi'),
                       )
                     : null,
                 onBack: () => Navigator.of(context).maybePop(),
@@ -620,45 +616,14 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
     );
   }
 
-  // ── Header with back nav ──────────────────────────────────────────────────
-
-  Widget _buildHeader(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSizes.p8,
-        AppSizes.p16,
-        AppSizes.p20,
-        AppSizes.p8,
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new_rounded),
-            color: AppColors.brandAccent,
-            iconSize: 20,
-            onPressed: () => Navigator.of(context).maybePop(),
-          ),
-          Text(
-            'Problemi',
-            style: AppTextStyles.screenTitleStrong.copyWith(
-              color: AppColors.brandAccent,
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── Title + chips row ─────────────────────────────────────────────────────
+  // ── Title ─────────────────────────────────────────────────────────────────
 
   Widget _buildTitleRow() {
     return Text(
       _problema.titolo,
       style: AppTextStyles.screenTitleStrong.copyWith(
-        color: AppColors.textOnDark,
-        fontSize: 26,
+        color: Theme.of(context).colorScheme.onSurface,
+        fontSize: AppSizes.p26,
         fontWeight: FontWeight.w800,
       ),
     );
@@ -673,18 +638,14 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
       title: label,
       child: Row(
         children: [
-          UserAvatar(
-            userId: _responsabileId,
-            username: nome,
-            radius: 20,
-          ),
+          UserAvatar(userId: _responsabileId, username: nome, radius: 20),
           const SizedBox(width: AppSizes.p12),
           Expanded(
             child: Text(
               nome,
               style: AppTextStyles.screenTitleStrong.copyWith(
-                color: AppColors.textMutedLight,
-                fontSize: 18,
+                color: Theme.of(context).colorScheme.onSurface,
+                fontSize: AppSizes.p18,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -702,15 +663,15 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
       child: Text(
         _descrizione,
         style: AppTextStyles.bodyMutedRelaxed.copyWith(
-          color: AppColors.textMutedLight,
-          fontSize: 16,
-          height: 1.5,
+          color: Theme.of(context).colorScheme.onSurface,
+          fontSize: AppSizes.p16,
+          height: AppSizes.p1_5,
         ),
       ),
     );
   }
 
-  // ── Segnalato da card (solo stato segnalato) ──────────────────────────────
+  // ── Segnalato da card ─────────────────────────────────────────────────────
 
   Widget _buildSegnalatoInfoCard() {
     return _InfoCard(
@@ -731,17 +692,17 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
                 Text(
                   _segnalatoDa,
                   style: AppTextStyles.screenTitleStrong.copyWith(
-                    color: AppColors.textMutedLight,
-                    fontSize: 16,
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontSize: AppSizes.p16,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: AppSizes.p3),
                 Text(
                   '$_segnalatoData - $_segnalatoOre',
                   style: AppTextStyles.bodyMuted.copyWith(
-                    color: AppColors.textMutedDark,
-                    fontSize: 13,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: AppSizes.p13,
                   ),
                 ),
               ],
@@ -758,15 +719,17 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
     return _InfoCard(
       title: 'Storico stato',
       child: _isLoadingDetail
-          ? const Center(
+          ? Center(
               child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 8),
+                padding: const EdgeInsets.symmetric(vertical: AppSizes.p8),
                 child: SizedBox(
-                  width: 20,
-                  height: 20,
+                  width: AppSizes.p20,
+                  height: AppSizes.p20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.brandAccent),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      AppColors.brandAccent,
+                    ),
                   ),
                 ),
               ),
@@ -783,13 +746,13 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
           _HistoryRow(event: events[i]),
           if (i < events.length - 1)
             Padding(
-              padding: const EdgeInsets.only(left: 5),
+              padding: const EdgeInsets.only(left: AppSizes.p5),
               child: Row(
                 children: [
                   Container(
                     width: 2,
-                    height: 14,
-                    margin: const EdgeInsets.symmetric(horizontal: 4.5),
+                    height: AppSizes.p14,
+                    margin: const EdgeInsets.symmetric(horizontal: AppSizes.p4_5),
                     color: AppColors.dividerOnDark,
                   ),
                 ],
@@ -800,7 +763,7 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
     );
   }
 
-  // ── Modifica priorità ─────────────────────────────────────────────────────
+  // ── Priorità ──────────────────────────────────────────────────────────────
 
   Widget _buildPrioritaSection() {
     return IgnorePointer(
@@ -820,7 +783,7 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
           'Modifica Priorità',
           style: AppTextStyles.screenTitleStrong.copyWith(
             color: AppColors.brandAccent,
-            fontSize: 18,
+            fontSize: AppSizes.p18,
             fontWeight: FontWeight.w800,
           ),
         ),
@@ -862,7 +825,7 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
     );
   }
 
-  // ── Separatore elegante ───────────────────────────────────────────────────
+  // ── Divider ───────────────────────────────────────────────────────────────
 
   Widget _buildElegantDivider() {
     return Row(
@@ -885,16 +848,15 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
     );
   }
 
-  // ── Azione contestuale (stato-dipendente) ─────────────────────────────────
+  // ── Action button (state-dependent) ──────────────────────────────────────
 
   Widget _buildContextualActionButton() {
-    // Stato: Risolto → solo admin può riaprire, nessun altro vede azioni
     if (_isRisolto) {
       final isAdmin = ActiveCasaScope.of(context).isHomeAdmin;
       if (!isAdmin) return const SizedBox.shrink();
       return _ActionButton(
         label: 'Riapri problema',
-        color: const Color(0xFFBE2C2C),
+        color: AppColors.statusNegative,
         isLoading: _isProcessing,
         onPressed: _isProcessing
             ? () {}
@@ -909,25 +871,23 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
       );
     }
 
-    // Stato: Segnalato → chiunque può assegnarsi
     if (_isSegnalato) {
       return _ActionButton(
         label: 'Assegna a me',
-        gradient: const LinearGradient(
-          colors: [Color(0xFF4CAF50), Color(0xFF2E7D32)],
+        gradient: LinearGradient(
+          colors: [AppColors.statusSuccess, AppColors.statusPositive],
         ),
         isLoading: _isProcessing,
         onPressed: _handleAssignMe,
       );
     }
 
-    // Stato: Assegnato a me → Rinuncia + Risolto
     if (_isCurrentUserAssignee) {
       return Column(
         children: [
           _ActionButton(
             label: 'Rinuncia al problema',
-            color: const Color(0xFFBE2C2C),
+            color: AppColors.statusNegative,
             isLoading: _isProcessing,
             onPressed: _isProcessing
                 ? () {}
@@ -943,8 +903,8 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
           const SizedBox(height: AppSizes.p10),
           _ActionButton(
             label: 'Segna come risolto',
-            gradient: const LinearGradient(
-              colors: [Color(0xFF4CAF50), Color(0xFF2E7D32)],
+            gradient: LinearGradient(
+              colors: [AppColors.statusSuccess, AppColors.statusPositive],
             ),
             isLoading: _isProcessing,
             onPressed: _isProcessing
@@ -953,7 +913,7 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
                     title: 'Segna come risolto',
                     body:
                         'Confermi che il problema è stato risolto? Tutti i coinquilini verranno avvisati.',
-                    accentColor: const Color(0xFF4CAF50),
+                    accentColor: AppColors.statusSuccess,
                     confirmLabel: 'Conferma',
                     onConfirm: _handleRisolto,
                   ),
@@ -962,7 +922,6 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
       );
     }
 
-    // Stato: Assegnato a qualcun altro
     final stato = _problema.stato.toLowerCase();
     if (stato.contains('assegn')) {
       final nome = _responsabileNome ?? 'un coinquilino';
@@ -974,7 +933,7 @@ class _ProblemaDettaglioPageState extends State<_ProblemaDettaglioPage> {
             const SizedBox(height: AppSizes.p10),
             _ActionButton(
               label: 'De-assegna $nome',
-              color: const Color(0xFF7B2020),
+              color: AppColors.statusNegative,
               isLoading: _isProcessing,
               onPressed: _isProcessing
                   ? () {}
@@ -1006,38 +965,40 @@ class _GiaPresoInCaricoBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const red = Color(0xFFFF3B44);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.p18,
+        vertical: AppSizes.p16,
+      ),
       decoration: BoxDecoration(
-        color: const Color(0xFF2A0A0A),
+        color: AppColors.errorContainerDark,
         borderRadius: BorderRadius.circular(AppSizes.radius16),
-        border: Border.all(color: red, width: 1.8),
+        border: Border.all(color: AppColors.errorStrong, width: 1.8),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Text('⚡', style: TextStyle(fontSize: 18)),
-              const SizedBox(width: 8),
+              const Text('⚡', style: TextStyle(fontSize: AppSizes.p18)),
+              const SizedBox(width: AppSizes.p8),
               Text(
                 'Già preso in carico',
                 style: AppTextStyles.screenTitleStrong.copyWith(
-                  color: red,
-                  fontSize: 17,
+                  color: AppColors.errorStrong,
+                  fontSize: AppSizes.p17,
                   fontWeight: FontWeight.w800,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppSizes.p10),
           Text(
             '$nome si è appena assegnato questo problema. Non puoi assegnartelo mentre è in carico a un coinquilino.',
             style: AppTextStyles.bodyMutedRelaxed.copyWith(
-              color: Colors.white.withValues(alpha: 0.80),
-              fontSize: 15,
-              height: 1.45,
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.80),
+              fontSize: AppSizes.p15,
+              height: AppSizes.p1_45,
             ),
             textAlign: TextAlign.left,
           ),
@@ -1056,7 +1017,7 @@ class _InfoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surfaceDarkElevated,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(AppSizes.radius12),
       ),
       padding: const EdgeInsets.all(AppSizes.p16),
@@ -1067,7 +1028,7 @@ class _InfoCard extends StatelessWidget {
             title,
             style: AppTextStyles.screenTitleStrong.copyWith(
               color: AppColors.brandAccent,
-              fontSize: 16,
+              fontSize: AppSizes.p16,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -1089,10 +1050,10 @@ class _HistoryRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(top: 5),
+          padding: const EdgeInsets.only(top: AppSizes.p5),
           child: Container(
-            width: 12,
-            height: 12,
+            width: AppSizes.p12,
+            height: AppSizes.p12,
             decoration: BoxDecoration(
               color: event.color,
               shape: BoxShape.circle,
@@ -1107,15 +1068,15 @@ class _HistoryRow extends StatelessWidget {
               Text(
                 event.label,
                 style: AppTextStyles.bodyStrong.copyWith(
-                  color: AppColors.textMutedLight,
-                  fontSize: 15,
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontSize: AppSizes.p15,
                 ),
               ),
               Text(
                 event.timestamp,
                 style: AppTextStyles.bodyMuted.copyWith(
-                  color: AppColors.textMutedDark,
-                  fontSize: 13,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: AppSizes.p13,
                 ),
               ),
             ],
@@ -1144,7 +1105,7 @@ class _ActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      height: 58,
+      height: AppSizes.p58,
       child: DecoratedBox(
         decoration: BoxDecoration(
           gradient: gradient,
@@ -1159,8 +1120,8 @@ class _ActionButton extends StatelessWidget {
             child: Center(
               child: isLoading
                   ? const SizedBox(
-                      width: 22,
-                      height: 22,
+                      width: AppSizes.p22,
+                      height: AppSizes.p22,
                       child: CircularProgressIndicator(
                         strokeWidth: 2.5,
                         valueColor: AlwaysStoppedAnimation<Color>(
@@ -1172,7 +1133,7 @@ class _ActionButton extends StatelessWidget {
                       label,
                       style: AppTextStyles.button.copyWith(
                         color: AppColors.textOnDark,
-                        fontSize: 19,
+                        fontSize: AppSizes.p19,
                         fontWeight: FontWeight.w800,
                       ),
                     ),

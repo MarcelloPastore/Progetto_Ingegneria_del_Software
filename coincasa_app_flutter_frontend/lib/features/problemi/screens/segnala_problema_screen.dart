@@ -6,10 +6,13 @@ import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
-import 'package:coincasa_app/core/widgets/common/app_outlined_button.dart';
+import 'package:coincasa_app/core/widgets/common/app_cancel_button.dart';
+import 'package:coincasa_app/core/widgets/common/app_submit_button.dart';
+import 'package:coincasa_app/core/widgets/common/app_text_field.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
-import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
-import 'package:coincasa_app/core/widgets/dashboard/open_problems_section.dart';
+import 'package:coincasa_app/core/widgets/common/app_priority_chip.dart';
+import 'package:coincasa_app/core/widgets/common/section_label.dart';
+import 'package:coincasa_app/domain/viewmodel/problemi_viewmodel.dart';
 import 'package:coincasa_app/features/problemi/screens/popup_successo_FAB.dart';
 
 // ---------------------------------------------------------------------------
@@ -55,8 +58,6 @@ class _SegnalaFormState {
 
   bool get hasNomeError => showErrors && nome.trim().isEmpty;
   bool get hasDescrizioneError => showErrors && descrizione.trim().isEmpty;
-  bool get hasPrioritaError => false;
-  bool get hasAssignmentError => false;
   bool get hasAnyError => submitError != null || hasNomeError;
 
   _SegnalaFormState copyWith({
@@ -147,8 +148,6 @@ class _SegnalaProblemaScreenState extends ConsumerState<SegnalaProblemaScreen> {
     super.dispose();
   }
 
-  // -- Submit ---------------------------------------------------------------
-
   Future<void> _submit() async {
     final form = ref.read(_segnalaFormProvider);
     if (form.isSubmitting) return;
@@ -166,7 +165,6 @@ class _SegnalaProblemaScreenState extends ConsumerState<SegnalaProblemaScreen> {
         return;
       }
 
-      // Risolviamo l'id dell'assegnatario prima di procedere
       final assigneeId = await _resolveAssigneeId(form.assignmentMode, casaId);
       if (form.assignmentMode == _AssignmentMode.me &&
           (assigneeId == null || assigneeId.isEmpty)) {
@@ -176,27 +174,29 @@ class _SegnalaProblemaScreenState extends ConsumerState<SegnalaProblemaScreen> {
         return;
       }
 
-      final problema = await ApiProvider.problemi.create(casaId, {
-        'nome': form.nome.trim(),
-        'descrizione': form.descrizione.trim(),
-        'priorita': _priorityPayload(form.priorita!),
-      });
+      final autoAssegna =
+          assigneeId != null &&
+          assigneeId.isNotEmpty &&
+          form.assignmentMode == _AssignmentMode.me;
 
-      if (assigneeId != null && assigneeId.isNotEmpty) {
-        await ApiProvider.problemi.autoAssegna(casaId, problema.id);
-      }
-
-      ref.read(problemiRevisionProvider.notifier).state++;
+      await ref
+          .read(problemiViewModelProvider(casaId).notifier)
+          .segnalaProblema(
+            {
+              'nome': form.nome.trim(),
+              'descrizione': form.descrizione.trim(),
+              'priorita': _priorityPayload(form.priorita!),
+            },
+            autoAssegna: autoAssegna,
+          );
 
       if (!mounted) return;
 
-      final wasAssignedToMe = form.assignmentMode == _AssignmentMode.me;
-
-      // Navighiamo verso la schermata di successo
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
-          builder: (_) =>
-              ProblemaSuccessoFABDialog(assignedToMe: wasAssignedToMe),
+          builder: (_) => ProblemaSuccessoFABDialog(
+            assignedToMe: form.assignmentMode == _AssignmentMode.me,
+          ),
         ),
       );
     } catch (e) {
@@ -244,19 +244,18 @@ class _SegnalaProblemaScreenState extends ConsumerState<SegnalaProblemaScreen> {
     _Priorita.low => 'Bassa',
   };
 
-  // -- Build ----------------------------------------------------------------
-
   @override
   Widget build(BuildContext context) {
     final form = ref.watch(_segnalaFormProvider);
     final ctrl = ref.read(_segnalaFormProvider.notifier);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: Scaffold(
-          backgroundColor: AppColors.darkBackground,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           bottomNavigationBar: const HouseQuickNav(currentRoute: '/problemi'),
           body: SafeArea(
             child: SingleChildScrollView(
@@ -270,64 +269,48 @@ class _SegnalaProblemaScreenState extends ConsumerState<SegnalaProblemaScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Title
                   Text(
                     'Segnala problema',
                     style: AppTextStyles.screenTitle.copyWith(
-                      color: AppColors.textOnDark,
-                      fontSize: 26,
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontSize: AppSizes.p26,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: AppSizes.p24),
 
                   // Nome field
-                  Row(
-                    children: [
-                      Text(
-                        'Nome problema',
-                        style: AppTextStyles.screenTitleStrong.copyWith(
-                          color: AppColors.textMutedLight,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      const Text(
-                        '*',
-                        style: TextStyle(
-                          color: AppColors.errorStrong,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSizes.p6),
-                  _SegnalaTextField(
+                  AppTextField(
                     controller: _nomeCtrl,
+                    label: 'Nome problema',
                     hintText: 'Nome problema...',
                     hasError: form.hasNomeError,
+                    showRequired: true,
                     maxLines: 1,
                     onChanged: ctrl.setNome,
+                    errorText:
+                        form.hasNomeError ? 'Inserisci il nome' : null,
                   ),
                   const SizedBox(height: AppSizes.p16),
 
                   // Descrizione field
-                  _SegnalaTextField(
+                  AppTextField(
                     controller: _descrCtrl,
                     hintText: 'Descrizione problema...',
                     hasError: form.hasDescrizioneError,
                     minLines: 4,
                     maxLines: 4,
                     onChanged: ctrl.setDescrizione,
+                    errorText: form.hasDescrizioneError
+                        ? 'Inserisci una descrizione'
+                        : null,
                   ),
                   const SizedBox(height: AppSizes.p20),
 
-                  // Priorità section
-                  _SectionLabel(
-                    label: 'Priorità',
+                  SectionLabel(
+                    'Priorità',
                     color: AppColors.brandAccent,
+                    fontSize: AppSizes.p20,
                   ),
                   const SizedBox(height: AppSizes.p10),
                   _PriorityRow(
@@ -336,23 +319,22 @@ class _SegnalaProblemaScreenState extends ConsumerState<SegnalaProblemaScreen> {
                   ),
                   const SizedBox(height: AppSizes.p24),
 
-                  // Chi se ne occupa? card
                   _AssigneeCard(
-                    hasError: form.hasAssignmentError,
                     selected: form.assignmentMode,
                     onChanged: ctrl.setAssignment,
                   ),
 
-                  // Error banner
                   if (form.hasAnyError) ...[
                     const SizedBox(height: AppSizes.p14),
-                    _SegnalaErrorBanner(message: _buildErrorMessage(form)),
+                    _ErrorBanner(
+                      message: form.submitError ??
+                          'Dati mancanti: compila i campi necessari',
+                    ),
                   ],
 
                   const SizedBox(height: AppSizes.p20),
 
-                  // Submit button
-                  _SubmitButton(
+                  AppSubmitButton(
                     label: form.showErrors && !form.canSubmit
                         ? 'Salva Problema'
                         : 'Segnala problema',
@@ -369,10 +351,7 @@ class _SegnalaProblemaScreenState extends ConsumerState<SegnalaProblemaScreen> {
                   ),
                   const SizedBox(height: AppSizes.p12),
 
-                  // Annulla button
-                  AppOutlinedButton(
-                    label: 'Annulla',
-                    color: AppColors.errorStrong,
+                  AppCancelButton(
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -383,113 +362,10 @@ class _SegnalaProblemaScreenState extends ConsumerState<SegnalaProblemaScreen> {
       ),
     );
   }
-
-  String _buildErrorMessage(_SegnalaFormState form) {
-    if (form.submitError != null) return form.submitError!;
-    return 'Dati mancanti: compila i campi necessari';
-  }
 }
 
 // ---------------------------------------------------------------------------
-// Text field
-// ---------------------------------------------------------------------------
-
-class _SegnalaTextField extends StatelessWidget {
-  const _SegnalaTextField({
-    required this.controller,
-    required this.hintText,
-    required this.hasError,
-    required this.onChanged,
-    this.minLines = 1,
-    this.maxLines = 1,
-  });
-
-  final TextEditingController controller;
-  final String hintText;
-  final bool hasError;
-  final ValueChanged<String> onChanged;
-  final int minLines;
-  final int maxLines;
-
-  @override
-  Widget build(BuildContext context) {
-    final borderColor = hasError
-        ? AppColors.errorStrong
-        : AppColors.primaryBorder;
-
-    return Stack(
-      children: [
-        TextField(
-          controller: controller,
-          cursorColor: AppColors.brandAccent,
-          style: AppTextStyles.input.copyWith(color: AppColors.textOnDark),
-          minLines: minLines,
-          maxLines: maxLines,
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: AppColors.surfaceDarkElevated,
-            hintText: hintText,
-            hintStyle: AppTextStyles.inputHint.copyWith(
-              color: AppColors.textMutedLight.withValues(alpha: 0.72),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: AppSizes.p14,
-              vertical: AppSizes.p14,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppSizes.radius12),
-              borderSide: BorderSide(color: borderColor, width: 1.6),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppSizes.radius12),
-              borderSide: BorderSide(color: borderColor, width: 2),
-            ),
-          ),
-          onChanged: onChanged,
-        ),
-        if (hasError)
-          Positioned(
-            top: AppSizes.p10,
-            right: AppSizes.p12,
-            child: Text(
-              '*',
-              style: TextStyle(
-                color: AppColors.errorStrong,
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Section label
-// ---------------------------------------------------------------------------
-
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel({required this.label, required this.color});
-
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      label,
-      style: AppTextStyles.screenTitleStrong.copyWith(
-        color: color,
-        fontSize: 20,
-        fontWeight: FontWeight.w800,
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Priority row & chip
+// Priority row
 // ---------------------------------------------------------------------------
 
 class _PriorityRow extends StatelessWidget {
@@ -541,84 +417,58 @@ class _PriorityRow extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _AssigneeCard extends StatelessWidget {
-  const _AssigneeCard({
-    required this.hasError,
-    required this.selected,
-    required this.onChanged,
-  });
+  const _AssigneeCard({required this.selected, required this.onChanged});
 
-  final bool hasError;
   final _AssignmentMode? selected;
   final ValueChanged<_AssignmentMode> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    final borderColor = hasError
-        ? AppColors.errorStrong
-        : AppColors.primaryBorder;
-
-    return Stack(
-      children: [
-        Container(
-          padding: const EdgeInsets.fromLTRB(
-            AppSizes.p14,
-            AppSizes.p12,
-            AppSizes.p14,
-            AppSizes.p16,
-          ),
-          decoration: BoxDecoration(
-            color: AppColors.surfaceDarkElevated,
-            borderRadius: BorderRadius.circular(AppSizes.radius12),
-            border: Border.all(color: borderColor, width: 2),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Chi se ne occupa?',
-                style: AppTextStyles.screenTitleStrong.copyWith(
-                  color: AppColors.warning,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: AppSizes.p12),
-              _AssigneeButton(
-                label: 'Assegna a me',
-                icon: Icons.pan_tool_alt_rounded,
-                fillColor: AppColors.turniAssignMeSurface,
-                textColor: AppColors.statusPositive,
-                borderColor: AppColors.statusPositive,
-                selected: selected == _AssignmentMode.me,
-                onTap: () => onChanged(_AssignmentMode.me),
-              ),
-              const SizedBox(height: AppSizes.p10),
-              _AssigneeButton(
-                label: 'Chiedi a tutti',
-                icon: Icons.groups_rounded,
-                fillColor: AppColors.turniAssigneeSurface,
-                textColor: AppColors.warning,
-                borderColor: AppColors.turniAssigneeBorder,
-                selected: selected == _AssignmentMode.everyone,
-                onTap: () => onChanged(_AssignmentMode.everyone),
-              ),
-            ],
-          ),
-        ),
-        if (hasError)
-          Positioned(
-            top: AppSizes.p10,
-            right: AppSizes.p12,
-            child: Text(
-              '*',
-              style: TextStyle(
-                color: AppColors.errorStrong,
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-              ),
+    return Container(
+      padding: const EdgeInsets.fromLTRB(
+        AppSizes.p14,
+        AppSizes.p12,
+        AppSizes.p14,
+        AppSizes.p16,
+      ),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(AppSizes.radius12),
+        border: Border.all(color: AppColors.primaryBorder, width: 2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Chi se ne occupa?',
+            style: AppTextStyles.screenTitleStrong.copyWith(
+              color: AppColors.warning,
+              fontSize: AppSizes.p17,
+              fontWeight: FontWeight.w700,
             ),
           ),
-      ],
+          const SizedBox(height: AppSizes.p12),
+          _AssigneeButton(
+            label: 'Assegna a me',
+            icon: Icons.pan_tool_alt_rounded,
+            fillColor: AppColors.turniAssignMeSurface,
+            textColor: AppColors.statusPositive,
+            borderColor: AppColors.statusPositive,
+            selected: selected == _AssignmentMode.me,
+            onTap: () => onChanged(_AssignmentMode.me),
+          ),
+          const SizedBox(height: AppSizes.p10),
+          _AssigneeButton(
+            label: 'Chiedi a tutti',
+            icon: Icons.groups_rounded,
+            fillColor: AppColors.turniAssigneeSurface,
+            textColor: AppColors.warning,
+            borderColor: AppColors.turniAssigneeBorder,
+            selected: selected == _AssignmentMode.everyone,
+            onTap: () => onChanged(_AssignmentMode.everyone),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -649,18 +499,20 @@ class _AssigneeButton extends StatelessWidget {
       borderRadius: BorderRadius.circular(AppSizes.radius12),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 140),
-        height: 54,
+        height: AppSizes.p54,
         decoration: BoxDecoration(
           color: fillColor,
           borderRadius: BorderRadius.circular(AppSizes.radius12),
           border: Border.all(
-            color: selected ? borderColor : AppColors.surfaceDarkElevated,
-            width: selected ? 3 : 2.5,
+            color: selected
+                ? borderColor
+                : AppColors.surfaceDarkElevated,
+            width: selected ? 3 : AppSizes.p2_5,
           ),
           boxShadow: const [
             BoxShadow(
               color: AppColors.shadowStrong,
-              blurRadius: 5,
+              blurRadius: AppSizes.p5,
               offset: Offset(0, 3),
             ),
           ],
@@ -668,13 +520,13 @@ class _AssigneeButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: textColor, size: 24),
+            Icon(icon, color: textColor, size: AppSizes.p24),
             const SizedBox(width: AppSizes.p8),
             Text(
               label,
               style: AppTextStyles.screenTitleStrong.copyWith(
                 color: textColor,
-                fontSize: 17,
+                fontSize: AppSizes.p17,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -689,8 +541,8 @@ class _AssigneeButton extends StatelessWidget {
 // Error banner
 // ---------------------------------------------------------------------------
 
-class _SegnalaErrorBanner extends StatelessWidget {
-  const _SegnalaErrorBanner({required this.message});
+class _ErrorBanner extends StatelessWidget {
+  const _ErrorBanner({required this.message});
 
   final String message;
 
@@ -698,16 +550,20 @@ class _SegnalaErrorBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const Icon(Icons.error_rounded, color: AppColors.errorStrong, size: 20),
+        const Icon(
+          Icons.error_rounded,
+          color: AppColors.errorStrong,
+          size: AppSizes.p20,
+        ),
         const SizedBox(width: AppSizes.p6),
         Expanded(
           child: Text(
             message,
             style: AppTextStyles.error.copyWith(
               color: AppColors.errorStrong,
-              fontSize: 14,
+              fontSize: AppSizes.p14,
               fontStyle: FontStyle.italic,
-              height: 1.3,
+              height: AppSizes.p1_3,
             ),
           ),
         ),
@@ -715,74 +571,3 @@ class _SegnalaErrorBanner extends StatelessWidget {
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Submit button (purple gradient)
-// ---------------------------------------------------------------------------
-
-class _SubmitButton extends StatelessWidget {
-  const _SubmitButton({
-    required this.label,
-    required this.isLoading,
-    required this.enabled,
-    required this.onPressed,
-  });
-
-  final String label;
-  final bool isLoading;
-  final bool enabled;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final effectiveEnabled = enabled && !isLoading;
-    final opacity = effectiveEnabled ? 1.0 : 0.45;
-
-    return Opacity(
-      opacity: opacity,
-      child: SizedBox(
-        width: double.infinity,
-        height: 58,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [AppColors.brandAccent, AppColors.brandPrimary],
-            ),
-            borderRadius: BorderRadius.circular(AppSizes.radius16),
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(AppSizes.radius16),
-              onTap: effectiveEnabled ? onPressed : null,
-              child: Center(
-                child: isLoading
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            AppColors.textOnDark,
-                          ),
-                        ),
-                      )
-                    : Text(
-                        label,
-                        style: AppTextStyles.button.copyWith(
-                          color: AppColors.textOnDark,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-

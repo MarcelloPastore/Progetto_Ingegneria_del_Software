@@ -7,11 +7,8 @@ import 'package:coincasa_app/core/models/casa.dart';
 import 'package:coincasa_app/core/models/inquilino.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
-import 'package:coincasa_app/core/widgets/common/app_cancel_button.dart';
-import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
-import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
-import 'package:coincasa_app/core/widgets/dashboard/open_problems_section.dart';
+import 'package:coincasa_app/domain/viewmodel/problemi_viewmodel.dart';
 import 'package:coincasa_app/features/problemi/screens/popup_successo_FAB.dart';
 
 final _problemiCasaProvider = FutureProvider.family<Casa?, String?>((
@@ -52,7 +49,7 @@ Future<void> showProblemiScreenPrincipaleDialog(BuildContext context) {
   return showDialog<void>(
     context: context,
     barrierDismissible: true,
-    barrierColor: AppColors.darkBackground.withValues(alpha: 0.42),
+    barrierColor: Colors.black.withValues(alpha: 0.42),
     builder: (_) => Align(
       alignment: Alignment.topCenter,
       child: Padding(
@@ -190,10 +187,10 @@ class ProblemiScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: AppColors.pageBackground,
-      bottomNavigationBar: HouseQuickNav(currentRoute: '/problemi'),
-      body: Center(
+    return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      bottomNavigationBar: const HouseQuickNav(currentRoute: '/problemi'),
+      body: const Center(
         child: ProblemiPopupPanel(
           useSafeArea: true,
           showTabs: true,
@@ -238,23 +235,16 @@ class _ProblemiPopupPanelState extends ConsumerState<ProblemiPopupPanel> {
     final controller = ref.read(problemiCreateFormProvider.notifier);
     final form = ref.read(problemiCreateFormProvider);
     final activeCasaController = ActiveCasaScope.of(context);
-    final loadedCasa = await ref.read(
-      _problemiCasaProvider(activeCasaController.selectedCasaId).future,
-    );
+    final casaId = activeCasaController.selectedCasaId ?? '';
 
-    if (!controller.validateBeforeSubmit()) {
-      return;
-    }
+    if (!controller.validateBeforeSubmit()) return;
 
-    if (loadedCasa == null || loadedCasa.id.isEmpty) {
+    if (casaId.isEmpty) {
       controller.setSubmitError('Nessuna casa disponibile.');
       return;
     }
 
-    final assigneeId = await _resolveAssigneeId(
-      form.assignmentMode,
-      loadedCasa.id,
-    );
+    final assigneeId = await _resolveAssigneeId(form.assignmentMode, casaId);
     if (form.assignmentMode == _ProblemaAssignmentMode.me &&
         (assigneeId == null || assigneeId.isEmpty)) {
       controller.setSubmitError(
@@ -263,22 +253,25 @@ class _ProblemiPopupPanelState extends ConsumerState<ProblemiPopupPanel> {
       return;
     }
 
+    final autoAssegna =
+        assigneeId != null &&
+        assigneeId.isNotEmpty &&
+        form.assignmentMode == _ProblemaAssignmentMode.me;
+
     controller.setSubmitting(true);
     try {
-      final problema = await ApiProvider.problemi.create(loadedCasa.id, {
-        'nome': form.nome.trim(),
-        'descrizione': form.descrizione.trim(),
-        'priorita': _priorityPayload(form.priorita!),
-      });
-      if (assigneeId != null && assigneeId.isNotEmpty) {
-        await ApiProvider.problemi.autoAssegna(loadedCasa.id, problema.id);
-      }
+      await ref
+          .read(problemiViewModelProvider(casaId).notifier)
+          .segnalaProblema(
+            {
+              'nome': form.nome.trim(),
+              'descrizione': form.descrizione.trim(),
+              'priorita': _priorityPayload(form.priorita!),
+            },
+            autoAssegna: autoAssegna,
+          );
 
-      ref.read(problemiRevisionProvider.notifier).state++;
-
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       controller.reset();
       _nomeController.clear();
@@ -426,8 +419,9 @@ class _ProblemiPopupPanelState extends ConsumerState<ProblemiPopupPanel> {
       ],
     );
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final panel = AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark,
+      value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: widget.showFrame
@@ -803,7 +797,7 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     final textColor = hasError
         ? AppColors.errorStrong
-        : (color ?? const Color(0xFF5228AD));
+        : (color ?? AppColors.brandPrimary);
     return Row(
       children: [
         Expanded(
@@ -811,7 +805,7 @@ class _SectionTitle extends StatelessWidget {
             title.toUpperCase(),
             style: AppTextStyles.screenTitleStrong.copyWith(
               color: textColor,
-              fontSize: 13,
+              fontSize: AppSizes.p13,
               fontWeight: FontWeight.w800,
               letterSpacing: 0.5,
             ),
@@ -822,7 +816,7 @@ class _SectionTitle extends StatelessWidget {
             '*',
             style: AppTextStyles.screenTitleStrong.copyWith(
               color: textColor,
-              fontSize: 13,
+              fontSize: AppSizes.p13,
               fontWeight: FontWeight.w800,
             ),
           ),
