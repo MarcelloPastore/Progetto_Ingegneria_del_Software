@@ -9,16 +9,16 @@ import 'core/services/session_manager.dart';
 import 'core/state/active_casa.dart';
 import 'core/theme/app_theme.dart';
 import 'core/widgets/common/no_connection_screen.dart';
-import 'features/auth/auth.dart';
-import 'features/account/screens/elimina_account_success_screen.dart';
-import 'features/account/screens/account_screen.dart';
-import 'features/account/screens/modifica_password_screen.dart';
-import 'features/casa/casa.dart';
-import 'features/dashboard/dashboard.dart';
-import 'features/problemi/problemi.dart';
-import 'features/scadenze/scadenze.dart';
-import 'features/spese/spese.dart';
-import 'features/turni/turni.dart';
+import 'ui/auth/auth.dart';
+import 'ui/account/screens/elimina_account_success_screen.dart';
+import 'ui/account/screens/account_screen.dart';
+import 'ui/account/screens/modifica_password_screen.dart';
+import 'ui/casa/casa.dart';
+import 'ui/dashboard/dashboard.dart';
+import 'ui/problemi/problemi.dart';
+import 'ui/scadenze/scadenze.dart';
+import 'ui/spese/spese.dart';
+import 'ui/turni/turni.dart';
 
 /// Observer globale usato dalle schermate per rilevare
 /// il ritorno al focus (didPopNext) e aggiornare i dati.

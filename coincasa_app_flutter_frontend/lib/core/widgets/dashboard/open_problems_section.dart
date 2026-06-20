@@ -5,7 +5,7 @@ import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/problema.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
-import 'package:coincasa_app/features/problemi/screens/problema_dettaglio_dashboard_screen.dart';
+import 'package:coincasa_app/ui/problemi/screens/problema_dettaglio_dashboard_screen.dart';
 
 final problemiRevisionProvider = StateProvider<int>((ref) => 0);
 

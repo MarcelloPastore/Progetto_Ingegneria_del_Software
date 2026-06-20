@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:coincasa_app/core/theme/app_theme.dart';
-import 'package:coincasa_app/features/problemi/screens/segnala_problema_screen.dart';
+import 'package:coincasa_app/ui/problemi/screens/segnala_problema_screen.dart';
 
 class HouseQuickNav extends StatelessWidget {
   const HouseQuickNav({super.key, required this.currentRoute});
