@@ -3,9 +3,12 @@ import 'package:flutter/material.dart';
 abstract final class AppSizes {
   static const double p0 = 0;
   static const double p1 = 1;
+  static const double p1_1 = 1.1;
   static const double p1_2 = 1.2;
+  static const double p1_25 = 1.25;
   static const double p1_3 = 1.3;
   static const double p1_4 = 1.4;
+  static const double p1_45 = 1.45;
   static const double p1_5 = 1.5;
   static const double p1_7 = 1.7;
   static const double p1_8 = 1.8;
@@ -15,6 +18,7 @@ abstract final class AppSizes {
   static const double p2_5 = 2.5;
   static const double p3 = 3;
   static const double p4 = 4;
+  static const double p4_5 = 4.5;
   static const double p5 = 5;
   static const double p6 = 6;
   static const double p7 = 7;
@@ -64,11 +68,13 @@ abstract final class AppSizes {
   static const double p56 = 56;
   static const double p58 = 58;
   static const double p60 = 60;
+  static const double p64 = 64;
   static const double p66 = 66;
   static const double p68 = 68;
   static const double p70 = 70;
   static const double p72 = 72;
   static const double p73 = 73;
+  static const double p76 = 76;
   static const double p78 = 78;
   static const double p80 = 80;
   static const double p82 = 82;
