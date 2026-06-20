@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/models/spesa.dart';
+import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/pending_debts_banner.dart';
 
 class EliminaAccountSuccessScreen extends StatefulWidget {
@@ -113,7 +114,7 @@ class _EliminaAccountSuccessScreenState
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: const Color(0xFF100D22),
+        backgroundColor: AppColors.darkBackgroundDeep,
         body: SafeArea(
           child: FutureBuilder<List<Spesa>>(
             future: _spesePendentiFuture,
@@ -136,13 +137,13 @@ class _EliminaAccountSuccessScreenState
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: const Color(0xFFFF333B),
+                                color: AppColors.errorStrong,
                                 width: 2.5,
                               ),
                             ),
                             child: const Icon(
                               Icons.close_rounded,
-                              color: Color(0xFFFF333B),
+                              color: AppColors.errorStrong,
                               size: 44,
                             ),
                           ),
@@ -153,7 +154,7 @@ class _EliminaAccountSuccessScreenState
                             'Hai eliminato il tuo account',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              color: Colors.white,
+                              color: AppColors.textOnDark,
                               fontSize: 22,
                               fontFamily: 'Inter',
                               fontWeight: FontWeight.w700,
@@ -169,9 +170,9 @@ class _EliminaAccountSuccessScreenState
                               vertical: 14,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF1F0505),
+                              color: AppColors.errorContainerDeep,
                               border: Border.all(
-                                color: const Color(0xFFFF333B),
+                                color: AppColors.errorStrong,
                                 width: 1.5,
                               ),
                               borderRadius: BorderRadius.circular(10),
@@ -180,7 +181,7 @@ class _EliminaAccountSuccessScreenState
                               'I tuoi dati sono stati resi anonimi.\nOra puoi tornare alla schermata di Login.',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                color: Color(0xFFFFB3B3),
+                                color: AppColors.errorTextSoft,
                                 fontSize: 15,
                                 fontFamily: 'Inter',
                                 fontWeight: FontWeight.w500,
@@ -207,15 +208,11 @@ class _EliminaAccountSuccessScreenState
                       height: 54,
                       child: DecoratedBox(
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [Color(0xFF7B55E0), Color(0xFF4A2BAE)],
-                          ),
+                          gradient: AppGradients.primaryPurple,
                           borderRadius: BorderRadius.circular(14),
                           boxShadow: const [
                             BoxShadow(
-                              color: Color(0x3F000000),
+                              color: AppColors.shadowOverlay,
                               blurRadius: 6,
                               offset: Offset(0, 3),
                             ),
@@ -235,7 +232,7 @@ class _EliminaAccountSuccessScreenState
                           child: const Text(
                             'Torna al Login',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: AppColors.textOnDark,
                               fontSize: 16,
                               fontFamily: 'Inter',
                               fontWeight: FontWeight.w700,

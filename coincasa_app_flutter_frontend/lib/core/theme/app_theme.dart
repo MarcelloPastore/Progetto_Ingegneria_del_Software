@@ -22,6 +22,7 @@ abstract final class AppColors {
   static const surface = Color(0xFFFFFFFF);
   static const pageBackground = Color(0xFFF6F5FB);
   static const darkBackground = Color(0xFF151127);
+  static const darkBackgroundDeep = Color(0xFF100D22);
   static const surfaceDark = Color(0xFF151528);
   static const surfaceDarkElevated = Color(0xFF1F2848);
   static const surfaceDarkCard = Color(0xFF1E1A2D);
@@ -62,6 +63,7 @@ abstract final class AppColors {
   static const errorStrong = Color(0xFFFF333B);
   static const errorContainerDark = Color(0xFF3A0B0B);
   static const errorContainerStrong = Color(0xFF580300);
+  static const errorContainerDeep = Color(0xFF1F0505);
   static const warning = Color(0xFFFFC21A);
   static const warningSoft = Color(0xFFF9A825);
   static const warningDark = Color(0xFFC09A00);
