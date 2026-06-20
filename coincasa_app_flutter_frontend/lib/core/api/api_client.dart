@@ -47,6 +47,10 @@ class ApiClient {
   String? _currentCasaId;
   String? _currentCasaRuolo;
 
+  /// Chiamato quando il server risponde 401. Deve pulire la sessione
+  /// persistente e reindirizzare al login. Va registrato in main().
+  Future<void> Function()? onUnauthorized;
+
   // ── Interceptor autenticazione ───────────────────────────────────────────
 
   InterceptorsWrapper _authInterceptor() {
@@ -234,6 +238,12 @@ class ApiClient {
 
   dynamic _processResponse(Response<dynamic> response) {
     final status = response.statusCode ?? 0;
+    if (status == 401) {
+      clearSession();
+      // ignore: discarded_futures
+      onUnauthorized?.call();
+      throw ApiException(statusCode: 401, body: response.data?.toString());
+    }
     if (status < 200 || status >= 300) {
       throw ApiException(
         statusCode: status,
