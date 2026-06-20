@@ -91,14 +91,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<AsyncValue<DashboardState>>(
-      dashboardViewModelProvider,
-      (_, next) {
-        if (next case AsyncError(:final error) when error is StateError) {
-          _navigateToWelcome();
-        }
-      },
-    );
+    ref.listen<AsyncValue<DashboardState>>(dashboardViewModelProvider, (
+      _,
+      next,
+    ) {
+      if (next case AsyncError(:final error) when error is StateError) {
+        _navigateToWelcome();
+      }
+    });
 
     final vmAsync = ref.watch(dashboardViewModelProvider);
 
@@ -133,16 +133,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                               .read(dashboardViewModelProvider.notifier)
                               .selectCasa(id)
                               .catchError((_) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Impossibile cambiare casa. Riprova.',
-                                  ),
-                                ),
-                              );
-                            }
-                          });
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Impossibile cambiare casa. Riprova.',
+                                      ),
+                                    ),
+                                  );
+                                }
+                              });
                         },
                       ),
                       const SizedBox(height: AppSizes.p12),
@@ -379,10 +379,7 @@ class _HouseSelector extends StatelessWidget {
             value: selectedCasaId,
             isExpanded: true,
             borderRadius: BorderRadius.circular(AppSizes.radius8),
-            icon: Icon(
-              Icons.keyboard_arrow_down,
-              color: colorScheme.primary,
-            ),
+            icon: Icon(Icons.keyboard_arrow_down, color: colorScheme.primary),
             dropdownColor: colorScheme.surface,
             style: AppTextStyles.dashboardHeaderTitle.copyWith(
               color: colorScheme.onSurface,
@@ -457,7 +454,9 @@ class _EmptyBalanceCard extends StatelessWidget {
           Text(
             'IL TUO SALDO',
             style: AppTextStyles.dashboardHeaderSubtitle.copyWith(
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.6),
               fontSize: 18,
               fontWeight: FontWeight.w800,
             ),
@@ -492,6 +491,7 @@ class _EmptyBalanceCard extends StatelessWidget {
                       child: Text(
                         'Totale',
                         style: AppTextStyles.dashboardBalanceTitle.copyWith(
+                          color: AppColors.textOnDark,
                           fontSize: 20,
                         ),
                         textAlign: TextAlign.center,
@@ -589,10 +589,7 @@ class _BalanceMetric extends StatelessWidget {
 }
 
 class _ProssimeScadenzeSection extends ConsumerWidget {
-  const _ProssimeScadenzeSection({
-    required this.casaId,
-    required this.spese,
-  });
+  const _ProssimeScadenzeSection({required this.casaId, required this.spese});
 
   final String? casaId;
   final List<Spesa> spese;
@@ -957,11 +954,27 @@ class _EmptyCalendarSection extends StatelessWidget {
   final DashboardData data;
 
   static const List<String> _weekDays = [
-    'Lu', 'Ma', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom',
+    'Lu',
+    'Ma',
+    'Mer',
+    'Gio',
+    'Ven',
+    'Sab',
+    'Dom',
   ];
   static const List<String> _monthNames = [
-    'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
-    'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre',
+    'Gennaio',
+    'Febbraio',
+    'Marzo',
+    'Aprile',
+    'Maggio',
+    'Giugno',
+    'Luglio',
+    'Agosto',
+    'Settembre',
+    'Ottobre',
+    'Novembre',
+    'Dicembre',
   ];
 
   @override

@@ -130,24 +130,21 @@ abstract final class AppColors {
 /// Da utilizzare preferibilmente tramite Theme.of(context).textTheme.
 abstract final class AppTextStyles {
   static const brandTitle = TextStyle(
-    color: AppColors.textOnDark,
     fontSize: 28,
     fontWeight: FontWeight.w600,
   );
 
   static const screenTitle = TextStyle(
-    color: AppColors.textOnDark,
     fontSize: 28,
     fontWeight: FontWeight.w600,
   );
 
   static const screenTitleStrong = TextStyle(
-    color: AppColors.textOnDark,
     fontSize: 26,
     fontWeight: FontWeight.w700,
   );
 
-  static const subtitle = TextStyle(color: AppColors.textOnDark, fontSize: 20);
+  static const subtitle = TextStyle(fontSize: 20);
 
   static const backHeader = TextStyle(
     color: AppColors.brandAccent,
@@ -155,27 +152,20 @@ abstract final class AppTextStyles {
     fontWeight: FontWeight.w500,
   );
 
-  static const title = TextStyle(
-    color: AppColors.textOnDark,
-    fontSize: 22,
-    fontWeight: FontWeight.w600,
-  );
+  static const title = TextStyle(fontSize: 22, fontWeight: FontWeight.w600);
 
   static const strongTitle = TextStyle(
-    color: AppColors.textOnDark,
     fontSize: 21,
     fontWeight: FontWeight.w700,
   );
 
   static const body = TextStyle(
-    color: AppColors.textMutedLight,
     fontSize: 17,
     height: 1.14,
     fontWeight: FontWeight.w500,
   );
 
   static const bodyStrong = TextStyle(
-    color: AppColors.textMutedLight,
     fontSize: 17,
     height: 1.12,
     fontWeight: FontWeight.w600,
@@ -187,7 +177,6 @@ abstract final class AppTextStyles {
   );
 
   static const bodyMutedLarge = TextStyle(
-    color: AppColors.textMutedSoft,
     fontSize: 20,
     height: 1.18,
     fontWeight: FontWeight.w500,
@@ -211,13 +200,9 @@ abstract final class AppTextStyles {
     fontWeight: FontWeight.w500,
   );
 
-  static const input = TextStyle(
-    color: AppColors.textOnDark,
-    fontSize: 19,
-    fontWeight: FontWeight.w500,
-  );
+  static const input = TextStyle(fontSize: 19, fontWeight: FontWeight.w500);
 
-  static const inputCompact = TextStyle(color: AppColors.textOnDark);
+  static const inputCompact = TextStyle();
 
   static const inputHint = TextStyle(
     color: AppColors.textMuted,
@@ -225,14 +210,9 @@ abstract final class AppTextStyles {
     fontWeight: FontWeight.w500,
   );
 
-  static const button = TextStyle(
-    color: AppColors.textOnDark,
-    fontSize: 22,
-    fontWeight: FontWeight.w700,
-  );
+  static const button = TextStyle(fontSize: 22, fontWeight: FontWeight.w700);
 
   static const buttonCompact = TextStyle(
-    color: AppColors.textOnDark,
     fontSize: 20,
     fontWeight: FontWeight.w600,
   );
@@ -285,7 +265,6 @@ abstract final class AppTextStyles {
   );
 
   static const dashboardBalanceTitle = TextStyle(
-    color: AppColors.textOnDark,
     fontSize: 18,
     fontWeight: FontWeight.w800,
   );
@@ -645,14 +624,22 @@ abstract final class AppTheme {
         displayColor: AppColors.textPrimary,
       )
       .copyWith(
-        displayLarge: AppTextStyles.brandTitle,
-        headlineLarge: AppTextStyles.screenTitle,
-        headlineMedium: AppTextStyles.screenTitleStrong,
-        titleLarge: AppTextStyles.title,
-        titleMedium: AppTextStyles.strongTitle,
-        bodyLarge: AppTextStyles.body,
+        displayLarge: AppTextStyles.brandTitle.copyWith(
+          color: AppColors.textPrimary,
+        ),
+        headlineLarge: AppTextStyles.screenTitle.copyWith(
+          color: AppColors.textPrimary,
+        ),
+        headlineMedium: AppTextStyles.screenTitleStrong.copyWith(
+          color: AppColors.textPrimary,
+        ),
+        titleLarge: AppTextStyles.title.copyWith(color: AppColors.textPrimary),
+        titleMedium: AppTextStyles.strongTitle.copyWith(
+          color: AppColors.textPrimary,
+        ),
+        bodyLarge: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
         bodyMedium: AppTextStyles.bodyMuted,
-        labelLarge: AppTextStyles.button,
+        labelLarge: AppTextStyles.button.copyWith(color: AppColors.textPrimary),
       );
 
   static final ThemeData lightTheme = ThemeData(

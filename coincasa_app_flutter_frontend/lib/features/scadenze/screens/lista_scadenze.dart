@@ -83,11 +83,8 @@ class _ScadenzeData {
 // Provider — aggregation logic outside the widget
 // ---------------------------------------------------------------------------
 
-final _scadenzeDataProvider =
-    FutureProvider.autoDispose.family<_ScadenzeData, String>((
-      ref,
-      casaId,
-    ) async {
+final _scadenzeDataProvider = FutureProvider.autoDispose
+    .family<_ScadenzeData, String>((ref, casaId) async {
       if (casaId.isEmpty) throw Exception('Nessuna casa selezionata');
 
       final results = await Future.wait([
@@ -233,10 +230,12 @@ class _ListaScadenzeState extends ConsumerState<ListaScadenze> {
     if (saved != null && mounted) {
       setState(() {
         _activeFilters = saved
-            .map((s) => ScadenzaTipo.values.firstWhere(
-                  (e) => e.name == s,
-                  orElse: () => ScadenzaTipo.scadenza,
-                ))
+            .map(
+              (s) => ScadenzaTipo.values.firstWhere(
+                (e) => e.name == s,
+                orElse: () => ScadenzaTipo.scadenza,
+              ),
+            )
             .toSet();
       });
     }
@@ -287,7 +286,7 @@ class _ListaScadenzeState extends ConsumerState<ListaScadenze> {
                       Text(
                         nomeCasa,
                         style: TextStyle(
-                          color: AppColors.textMutedDark,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontSize: AppSizes.p20,
                           fontFamily: 'Inter',
                           fontWeight: FontWeight.w600,
@@ -307,10 +306,7 @@ class _ListaScadenzeState extends ConsumerState<ListaScadenze> {
                   ),
                 ),
                 const SizedBox(height: AppSizes.p8),
-                _Legend(
-                  activeFilters: _activeFilters,
-                  onToggle: _toggleFilter,
-                ),
+                _Legend(activeFilters: _activeFilters, onToggle: _toggleFilter),
                 const SizedBox(height: AppSizes.p12),
                 Expanded(
                   child: dataAsync.when(
@@ -329,8 +325,7 @@ class _ListaScadenzeState extends ConsumerState<ListaScadenze> {
                           Text(
                             'Errore nel caricamento',
                             style: TextStyle(
-                              color:
-                                  Theme.of(context).colorScheme.onSurface,
+                              color: Theme.of(context).colorScheme.onSurface,
                               fontSize: AppSizes.p16,
                             ),
                           ),
@@ -399,7 +394,12 @@ class _ListaScadenzeState extends ConsumerState<ListaScadenze> {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(0, AppSizes.p8, 0, AppSizes.p14),
+                  padding: const EdgeInsets.fromLTRB(
+                    0,
+                    AppSizes.p8,
+                    0,
+                    AppSizes.p14,
+                  ),
                   child: MainCtaButton(
                     label: 'Inserisci nuova scadenza',
                     onPressed: () async {
@@ -434,10 +434,9 @@ class _ListaScadenzeState extends ConsumerState<ListaScadenze> {
           },
         );
       case ScadenzaTipo.spesa:
-        Navigator.of(context).pushNamed(
-          DettaglioSpesaAdminScreen.routeName,
-          arguments: s.spesa,
-        );
+        Navigator.of(
+          context,
+        ).pushNamed(DettaglioSpesaAdminScreen.routeName, arguments: s.spesa);
       case ScadenzaTipo.scadenza:
         final activeCasa = ActiveCasaScope.of(context);
         Navigator.of(context)
@@ -489,7 +488,9 @@ class _ScadenzaCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: cs.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(AppSizes.radius10),
-          border: Border(left: BorderSide(width: AppSizes.p6, color: s.sideColor)),
+          border: Border(
+            left: BorderSide(width: AppSizes.p6, color: s.sideColor),
+          ),
           boxShadow: const [
             BoxShadow(
               color: AppColors.shadowStrong,
@@ -678,7 +679,11 @@ class _Legend extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.filter_list, color: AppColors.textMutedDark, size: AppSizes.p18),
+            Icon(
+              Icons.filter_list,
+              color: AppColors.textMutedDark,
+              size: AppSizes.p18,
+            ),
             const SizedBox(width: AppSizes.p6),
             Text(
               'Filtra per',
@@ -758,10 +763,7 @@ class _LegendDot extends StatelessWidget {
               Container(
                 width: AppSizes.p10,
                 height: AppSizes.p10,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                ),
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
               ),
               const SizedBox(width: AppSizes.p5),
               Text(

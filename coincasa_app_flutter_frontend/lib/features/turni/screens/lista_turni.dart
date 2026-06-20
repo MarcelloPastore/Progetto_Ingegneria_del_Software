@@ -153,8 +153,10 @@ class _ListaTurniScreenState extends ConsumerState<ListaTurniScreen>
                                       context,
                                     ).selectedCasa?.nome ??
                                     '',
-                                style: const TextStyle(
-                                  color: AppColors.textMutedDark,
+                                style: TextStyle(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
                                   fontSize: AppSizes.p20,
                                   fontWeight: FontWeight.w600,
                                 ),

@@ -198,8 +198,8 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
                 children: [
                   Text(
                     ActiveCasaScope.read(context).selectedCasa?.nome ?? '',
-                    style: const TextStyle(
-                      color: AppColors.textMutedDark,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontSize: AppSizes.p20,
                       fontWeight: FontWeight.w600,
                     ),
@@ -541,8 +541,8 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
                 const SizedBox(width: AppSizes.p8),
                 Text(
                   '€${spesa.importo.toStringAsFixed(2)}',
-                  style: const TextStyle(
-                    color: AppColors.textOnDark,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: AppSizes.p16,
                     fontWeight: FontWeight.w600,
                   ),
@@ -855,11 +855,11 @@ class _EmptyExpensesContent extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSizes.p24),
-          const Text(
+          Text(
             'Nessuna spesa registrata',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: AppColors.textOnDark,
+              color: Theme.of(context).colorScheme.onSurface,
               fontSize: AppSizes.p23,
               fontWeight: FontWeight.w700,
             ),
@@ -893,23 +893,23 @@ class _TitleWithDate extends StatelessWidget {
   final String title;
   final String date;
 
-  static const _titleStyle = TextStyle(
-    color: AppColors.textOnDark,
-    fontSize: AppSizes.p16,
-    fontWeight: FontWeight.w600,
-  );
-  static const _dateStyle = TextStyle(
-    color: AppColors.textMutedDark,
-    fontSize: AppSizes.p11,
-    fontWeight: FontWeight.w400,
-  );
-
   @override
   Widget build(BuildContext context) {
+    final titleStyle = TextStyle(
+      color: Theme.of(context).colorScheme.onSurface,
+      fontSize: AppSizes.p16,
+      fontWeight: FontWeight.w600,
+    );
+    final dateStyle = TextStyle(
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
+      fontSize: AppSizes.p11,
+      fontWeight: FontWeight.w400,
+    );
+
     if (date.isEmpty) {
       return Text(
         title,
-        style: _titleStyle,
+        style: titleStyle,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       );
@@ -917,13 +917,13 @@ class _TitleWithDate extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final titlePainter = TextPainter(
-          text: TextSpan(text: title, style: _titleStyle),
+          text: TextSpan(text: title, style: titleStyle),
           textDirection: TextDirection.ltr,
           maxLines: 1,
         )..layout(maxWidth: double.infinity);
 
         final datePainter = TextPainter(
-          text: TextSpan(text: '  $date', style: _dateStyle),
+          text: TextSpan(text: '  $date', style: dateStyle),
           textDirection: TextDirection.ltr,
           maxLines: 1,
         )..layout(maxWidth: double.infinity);
@@ -936,14 +936,14 @@ class _TitleWithDate extends StatelessWidget {
             Flexible(
               child: Text(
                 title,
-                style: _titleStyle,
+                style: titleStyle,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
             if (showDate) ...[
               const SizedBox(width: AppSizes.p6),
-              Text(date, style: _dateStyle),
+              Text(date, style: dateStyle),
             ],
           ],
         );

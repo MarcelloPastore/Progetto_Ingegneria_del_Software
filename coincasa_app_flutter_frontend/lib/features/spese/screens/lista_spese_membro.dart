@@ -345,8 +345,8 @@ class _ExpenseTile extends StatelessWidget {
               ),
               Text(
                 formatCurrency(spesa.importo),
-                style: const TextStyle(
-                  color: AppColors.textOnDark,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontSize: AppSizes.p15,
                   fontWeight: FontWeight.w800,
                 ),
@@ -369,10 +369,14 @@ class _MonthTitle extends StatelessWidget {
     final closed = month.isBefore(
       DateTime(DateTime.now().year, DateTime.now().month),
     );
+    final color = closed
+        ? AppColors.textMutedDark
+        : Theme.of(context).colorScheme.onSurface;
+
     return Text(
       '${monthName(month.month).toUpperCase()} ${month.year}${closed ? ' (chiuso)' : ''}',
       style: TextStyle(
-        color: closed ? AppColors.textMutedDark : AppColors.textDisabled,
+        color: color,
         fontSize: AppSizes.p17,
         fontWeight: FontWeight.w800,
       ),
@@ -401,7 +405,10 @@ class _StateMessage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Text(message, style: const TextStyle(color: AppColors.textOnDark)),
+      child: Text(
+        message,
+        style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+      ),
     );
   }
 }
@@ -412,23 +419,23 @@ class _TitleWithDate extends StatelessWidget {
   final String title;
   final String date;
 
-  static const _titleStyle = TextStyle(
-    color: AppColors.textOnDark,
-    fontSize: AppSizes.p15,
-    fontWeight: FontWeight.w800,
-  );
-  static const _dateStyle = TextStyle(
-    color: AppColors.textMutedDark,
-    fontSize: AppSizes.p11,
-    fontWeight: FontWeight.w400,
-  );
-
   @override
   Widget build(BuildContext context) {
+    final titleStyle = TextStyle(
+      color: Theme.of(context).colorScheme.onSurface,
+      fontSize: AppSizes.p15,
+      fontWeight: FontWeight.w800,
+    );
+    final dateStyle = TextStyle(
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
+      fontSize: AppSizes.p11,
+      fontWeight: FontWeight.w400,
+    );
+
     if (date.isEmpty) {
       return Text(
         title,
-        style: _titleStyle,
+        style: titleStyle,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       );
@@ -436,13 +443,13 @@ class _TitleWithDate extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final titlePainter = TextPainter(
-          text: TextSpan(text: title, style: _titleStyle),
+          text: TextSpan(text: title, style: titleStyle),
           textDirection: TextDirection.ltr,
           maxLines: 1,
         )..layout(maxWidth: double.infinity);
 
         final datePainter = TextPainter(
-          text: TextSpan(text: '  $date', style: _dateStyle),
+          text: TextSpan(text: '  $date', style: dateStyle),
           textDirection: TextDirection.ltr,
           maxLines: 1,
         )..layout(maxWidth: double.infinity);
@@ -455,14 +462,14 @@ class _TitleWithDate extends StatelessWidget {
             Flexible(
               child: Text(
                 title,
-                style: _titleStyle,
+                style: titleStyle,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
             if (showDate) ...[
               const SizedBox(width: AppSizes.p6),
-              Text(date, style: _dateStyle),
+              Text(date, style: dateStyle),
             ],
           ],
         );
