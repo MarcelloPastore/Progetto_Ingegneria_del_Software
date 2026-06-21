@@ -1,6 +1,7 @@
 # CoinCasa 🏠
 
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=MarcelloPastore_Progetto_Ingegneria_del_Software&metric=alert_status&organization=marcellopastore)](https://sonarcloud.io/summary/new_code?id=MarcelloPastore_Progetto_Ingegneria_del_Software)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=MarcelloPastore_Progetto_Ingegneria_del_Software&metric=coverage)](https://sonarcloud.io/summary/new_code?id=MarcelloPastore_Progetto_Ingegneria_del_Software)
 
 **CoinCasa** è una piattaforma progettata per semplificare la convivenza in case condivise. Permette agli inquilini di gestire in modo coordinato spese, turni, scadenze e problemi domestici.
 
