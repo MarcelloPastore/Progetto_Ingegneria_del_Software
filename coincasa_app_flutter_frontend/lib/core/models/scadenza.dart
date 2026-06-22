@@ -8,6 +8,7 @@ class Scadenza {
     this.cadenzaGiorni,
     required this.idCasa,
     required this.dataCreazione,
+    this.idCreatore,
   });
 
   final String id;
@@ -18,6 +19,7 @@ class Scadenza {
   final int? cadenzaGiorni;
   final String idCasa;
   final DateTime dataCreazione;
+  final String? idCreatore;
 
   factory Scadenza.fromJson(Map<String, dynamic> json) {
     return Scadenza(
@@ -29,6 +31,7 @@ class Scadenza {
       cadenzaGiorni: (json['cadenzaGiorni'] as num?)?.toInt(),
       idCasa: json['idCasa']?.toString() ?? '',
       dataCreazione: _parseDate(json['dataCreazione']),
+      idCreatore: json['idCreatore']?.toString(),
     );
   }
 

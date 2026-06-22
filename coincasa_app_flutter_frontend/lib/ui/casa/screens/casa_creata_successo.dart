@@ -125,7 +125,8 @@ class CasaCreataSuccessoScreen extends StatelessWidget {
                                             AppSizes.p12,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: AppColors.surfaceDarkElevated,
+                                            color:
+                                                AppColors.surfaceDarkElevated,
                                             borderRadius: BorderRadius.circular(
                                               AppSizes.radius12,
                                             ),
@@ -180,7 +181,9 @@ class CasaCreataSuccessoScreen extends StatelessWidget {
                           },
                           style: OutlinedButton.styleFrom(
                             minimumSize: const Size.fromHeight(AppSizes.p56),
-                            side: const BorderSide(color: AppColors.brandPrimary),
+                            side: const BorderSide(
+                              color: AppColors.brandPrimary,
+                            ),
                             foregroundColor: AppColors.textOnDark,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(
@@ -219,7 +222,7 @@ class CasaCreataSuccessoScreen extends StatelessWidget {
       ..showSnackBar(
         const SnackBar(
           content: Text('Codice copiato negli appunti'),
-          backgroundColor: AppColors.brandPrimary,
+          backgroundColor: AppColors.brandSecondary,
         ),
       );
   }

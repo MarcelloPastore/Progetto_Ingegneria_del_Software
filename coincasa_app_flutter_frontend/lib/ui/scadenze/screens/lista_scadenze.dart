@@ -71,8 +71,8 @@ class ScadenzaItem {
 // Internal async data
 // ---------------------------------------------------------------------------
 
-class _ScadenzeData {
-  const _ScadenzeData({required this.inScadenza, required this.prossime});
+class ScadenzeData {
+  const ScadenzeData({required this.inScadenza, required this.prossime});
   final List<ScadenzaItem> inScadenza;
   final List<ScadenzaItem> prossime;
 }
@@ -81,8 +81,8 @@ class _ScadenzeData {
 // Provider — aggregation logic outside the widget
 // ---------------------------------------------------------------------------
 
-final _scadenzeDataProvider = FutureProvider.autoDispose
-    .family<_ScadenzeData, String>((ref, casaId) async {
+final scadenzeDataProvider = FutureProvider.autoDispose
+    .family<ScadenzeData, String>((ref, casaId) async {
       if (casaId.isEmpty) throw Exception('Nessuna casa selezionata');
 
       final results = await Future.wait([
@@ -114,7 +114,7 @@ final _scadenzeDataProvider = FutureProvider.autoDispose
       ]..sort((a, b) => a.sortDate.compareTo(b.sortDate));
 
       final today = _normDate(DateTime.now());
-      return _ScadenzeData(
+      return ScadenzeData(
         inScadenza: items
             .where((i) => !_normDate(i.sortDate).isAfter(today))
             .toList(),
@@ -263,7 +263,7 @@ class _ListaScadenzeState extends ConsumerState<ListaScadenze> {
     final nomeCasa = ActiveCasaScope.read(context).selectedCasa?.nome ?? '';
     final casaId = ActiveCasaScope.read(context).selectedCasaId ?? '';
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final dataAsync = ref.watch(_scadenzeDataProvider(casaId));
+    final dataAsync = ref.watch(scadenzeDataProvider(casaId));
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
@@ -306,7 +306,7 @@ class _ListaScadenzeState extends ConsumerState<ListaScadenze> {
                           const SizedBox(height: AppSizes.p12),
                           TextButton(
                             onPressed: () =>
-                                ref.invalidate(_scadenzeDataProvider(casaId)),
+                                ref.invalidate(scadenzeDataProvider(casaId)),
                             child: const Text('Riprova'),
                           ),
                         ],
@@ -329,7 +329,7 @@ class _ListaScadenzeState extends ConsumerState<ListaScadenze> {
 
                       return RefreshIndicator(
                         onRefresh: () async =>
-                            ref.invalidate(_scadenzeDataProvider(casaId)),
+                            ref.invalidate(scadenzeDataProvider(casaId)),
                         child: ListView(
                           children: [
                             if (inScadenza.isNotEmpty) ...[
@@ -383,7 +383,7 @@ class _ListaScadenzeState extends ConsumerState<ListaScadenze> {
                         ),
                       );
                       if (mounted) {
-                        ref.invalidate(_scadenzeDataProvider(casaId));
+                        ref.invalidate(scadenzeDataProvider(casaId));
                       }
                     },
                   ),
@@ -413,6 +413,11 @@ class _ListaScadenzeState extends ConsumerState<ListaScadenze> {
         ).pushNamed(DettaglioSpesaAdminScreen.routeName, arguments: s.spesa);
       case ScadenzaTipo.scadenza:
         final activeCasa = ActiveCasaScope.of(context);
+        final currentUserId = ApiProvider.client.currentUserId;
+        final isCreator =
+            s.scadenzaObj?.idCreatore != null &&
+            s.scadenzaObj?.idCreatore == currentUserId;
+
         Navigator.of(context)
             .push(
               MaterialPageRoute(
@@ -423,6 +428,10 @@ class _ListaScadenzeState extends ConsumerState<ListaScadenze> {
                   stato: s.badgeText,
                   frequenza: s.frequenza,
                   isAdmin: activeCasa.isHomeAdmin,
+                  isCreator: isCreator,
+                  creatoDa: isCreator
+                      ? (activeCasa.isHomeAdmin ? 'Tu (Admin)' : 'Tu')
+                      : 'Altro coinquilino',
                   idScadenza: s.scadenzaObj?.id,
                   casaId: activeCasa.selectedCasaId,
                 ),
@@ -431,7 +440,7 @@ class _ListaScadenzeState extends ConsumerState<ListaScadenze> {
             .then((_) {
               if (mounted) {
                 ref.invalidate(
-                  _scadenzeDataProvider(
+                  scadenzeDataProvider(
                     ActiveCasaScope.read(context).selectedCasaId ?? '',
                   ),
                 );
@@ -454,13 +463,17 @@ class _ScadenzaCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = item;
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return InkWell(
       borderRadius: BorderRadius.circular(AppSizes.radius10),
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: AppSizes.p6),
         decoration: BoxDecoration(
-          color: cs.surfaceContainerHighest,
+          color: isDark
+              ? AppColors.surfaceDarkMuted
+              : cs.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(AppSizes.radius10),
           border: Border(
             left: BorderSide(width: AppSizes.p6, color: s.sideColor),

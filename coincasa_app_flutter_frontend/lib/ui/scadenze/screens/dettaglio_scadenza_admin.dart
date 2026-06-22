@@ -8,6 +8,7 @@ import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/info_row.dart';
 import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
 import 'package:coincasa_app/domain/viewmodel/scadenze_viewmodel.dart';
+import 'package:coincasa_app/ui/scadenze/screens/lista_scadenze.dart';
 import 'scadenza_form_screen.dart';
 
 class DettaglioScadenzaAdminScreen extends ConsumerWidget {
@@ -20,6 +21,7 @@ class DettaglioScadenzaAdminScreen extends ConsumerWidget {
   final String creatoDa;
   final String visibileA;
   final bool isAdmin;
+  final bool isCreator;
   final String? idScadenza;
   final String? casaId;
 
@@ -34,6 +36,7 @@ class DettaglioScadenzaAdminScreen extends ConsumerWidget {
     this.creatoDa = 'Tu (Admin)',
     this.visibileA = 'Tutti i coinquilini',
     this.isAdmin = true,
+    this.isCreator = false,
     this.idScadenza,
     this.casaId,
   });
@@ -46,9 +49,36 @@ class DettaglioScadenzaAdminScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final data = dataScadenza ?? DateTime(2026, 6, 25);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Se abbiamo idScadenza e casaId, osserviamo il provider per aggiornamenti real-time
+    final AsyncValue<ScadenzeData>? dataAsync =
+        (idScadenza != null && casaId != null)
+        ? ref.watch(scadenzeDataProvider(casaId!))
+        : null;
+
+    ScadenzaItem? updatedItem;
+    if (dataAsync != null && dataAsync.hasValue) {
+      final data = dataAsync.value!;
+      // Cerchiamo l'item nelle liste inScadenza o prossime
+      final items = [...data.inScadenza, ...data.prossime];
+      try {
+        updatedItem = items.firstWhere((i) => i.scadenzaObj?.id == idScadenza);
+      } catch (_) {
+        // Item non trovato
+      }
+    }
+
+    final displayTitolo = updatedItem?.title ?? titolo;
+    final displayDescrizione =
+        updatedItem?.scadenzaObj?.descrizione ?? descrizione;
+    final displayData =
+        updatedItem?.sortDate ?? dataScadenza ?? DateTime(2026, 6, 25);
+    final displayStato = updatedItem?.badgeText ?? stato;
+    final displayFrequenza = updatedItem?.frequenza ?? frequenza;
+    final displayRicorrente =
+        updatedItem?.scadenzaObj?.isRicorrente ?? ricorrente;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
@@ -98,7 +128,7 @@ class DettaglioScadenzaAdminScreen extends ConsumerWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              titolo,
+                              displayTitolo,
                               style: TextStyle(
                                 color: cs.onSurface,
                                 fontSize: AppSizes.p20,
@@ -107,7 +137,7 @@ class DettaglioScadenzaAdminScreen extends ConsumerWidget {
                             ),
                             const SizedBox(height: AppSizes.p8),
                             Text(
-                              descrizione,
+                              displayDescrizione,
                               style: TextStyle(
                                 color: cs.onSurfaceVariant,
                                 fontSize: AppSizes.p16,
@@ -115,12 +145,10 @@ class DettaglioScadenzaAdminScreen extends ConsumerWidget {
                             ),
                             const SizedBox(height: AppSizes.p16),
                             Row(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.spaceBetween,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
                                       'Data scadenza',
@@ -132,7 +160,7 @@ class DettaglioScadenzaAdminScreen extends ConsumerWidget {
                                     ),
                                     const SizedBox(height: AppSizes.p6),
                                     Text(
-                                      _formatDate(data),
+                                      _formatDate(displayData),
                                       style: TextStyle(
                                         color: AppColors.lockOrange,
                                         fontSize: AppSizes.p16,
@@ -142,18 +170,21 @@ class DettaglioScadenzaAdminScreen extends ConsumerWidget {
                                   ],
                                 ),
                                 StatusBadge(
-                                  text: stato,
+                                  text: displayStato,
                                   color: AppColors.lockOrange,
                                 ),
                               ],
                             ),
                             const SizedBox(height: AppSizes.p12),
-                            InfoRow(label: 'Frequenza', value: frequenza),
+                            InfoRow(
+                              label: 'Frequenza',
+                              value: displayFrequenza,
+                            ),
                             if (isAdmin) ...[
                               const SizedBox(height: AppSizes.p8),
                               InfoRow(
                                 label: 'Ricorrente',
-                                value: ricorrente ? 'Sì' : 'No',
+                                value: displayRicorrente ? 'Sì' : 'No',
                               ),
                             ],
                             const SizedBox(height: AppSizes.p8),
@@ -172,32 +203,34 @@ class DettaglioScadenzaAdminScreen extends ConsumerWidget {
               modifyLabel: 'Modifica scadenza',
               deleteLabel: 'Elimina scadenza',
               backLabel: 'Torna alle scadenze',
-              isCreator: false,
+              isCreator: isCreator,
               canDelete: isAdmin,
-              onModify: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => ScadenzaFormScreen.modifica(
-                    nome: titolo,
-                    descrizione: descrizione,
-                    data: dataScadenza,
-                    frequenza: frequenza,
-                    idScadenza: idScadenza ?? '',
-                    casaId: casaId ?? '',
+              onModify: () async {
+                final result = await Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => ScadenzaFormScreen.modifica(
+                      nome: displayTitolo,
+                      descrizione: displayDescrizione,
+                      data: displayData,
+                      frequenza: displayFrequenza,
+                      idScadenza: idScadenza ?? '',
+                      casaId: casaId ?? '',
+                    ),
                   ),
-                ),
-              ),
+                );
+                if (result == true && casaId != null) {
+                  ref.invalidate(scadenzeDataProvider(casaId!));
+                }
+              },
               onDelete: () => showDeleteConfirmDialog(
                 context: context,
                 title: 'Eliminare la scadenza?',
                 description:
-                    '"$titolo" verrà rimossa definitivamente. Tutti i coinquilini verranno avvisati.',
+                    '"$displayTitolo" verrà rimossa definitivamente. Tutti i coinquilini verranno avvisati.',
                 onConfirm: () {
                   final id = idScadenza;
                   final cId = casaId;
-                  if (id == null ||
-                      cId == null ||
-                      id.isEmpty ||
-                      cId.isEmpty) {
+                  if (id == null || cId == null || id.isEmpty || cId.isEmpty) {
                     return Future.value();
                   }
                   return ref
