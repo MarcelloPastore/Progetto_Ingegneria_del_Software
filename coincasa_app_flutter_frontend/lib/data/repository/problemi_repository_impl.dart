@@ -1,6 +1,6 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:coincasa_app/core/api/api_provider.dart';
-import 'package:coincasa_app/core/models/problema.dart';
+import 'package:coincasa_app/data/models/problema.dart';
 import 'package:coincasa_app/domain/repositories/i_problemi_repository.dart';
 
 class ProblemiRepositoryImpl implements IProblemiRepository {

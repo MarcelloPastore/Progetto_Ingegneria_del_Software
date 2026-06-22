@@ -1,14 +1,11 @@
-import 'package:coincasa_app/core/models/casa.dart';
-import 'package:coincasa_app/core/models/scadenza.dart';
-import 'package:coincasa_app/core/models/salute_casa_item.dart';
-import 'package:coincasa_app/core/models/spesa.dart';
-import 'package:coincasa_app/core/models/turno.dart';
-import 'package:coincasa_app/domain/entities/dashboard_data.dart';
+import 'package:coincasa_app/data/models/casa.dart';
+import 'package:coincasa_app/data/models/scadenza.dart';
+import 'package:coincasa_app/data/models/salute_casa_item.dart';
+import 'package:coincasa_app/data/models/spesa.dart';
+import 'package:coincasa_app/data/models/turno.dart';
 
 abstract interface class IDashboardRepository {
   Future<List<Casa>> getCase();
-
-  Future<DashboardData> getDashboardData(String casaId);
 
   Future<List<Turno>> getTurni(String casaId);
 

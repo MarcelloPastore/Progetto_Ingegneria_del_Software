@@ -1,11 +1,11 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:coincasa_app/core/models/auth_user.dart';
+import 'package:coincasa_app/data/models/auth_user.dart';
 import 'package:coincasa_app/core/api/spese_repository_provider.dart';
-import 'package:coincasa_app/core/models/casa.dart';
-import 'package:coincasa_app/core/models/quota.dart';
-import 'package:coincasa_app/core/models/spesa.dart';
-import 'package:coincasa_app/core/models/inquilino.dart';
+import 'package:coincasa_app/data/models/casa.dart';
+import 'package:coincasa_app/data/models/quota.dart';
+import 'package:coincasa_app/data/models/spesa.dart';
+import 'package:coincasa_app/data/models/inquilino.dart';
 import 'package:coincasa_app/data/repository/casa_repository_impl.dart';
 import 'package:coincasa_app/domain/repositories/i_casa_repository.dart';
 import 'package:coincasa_app/domain/repositories/i_spese_repository.dart';

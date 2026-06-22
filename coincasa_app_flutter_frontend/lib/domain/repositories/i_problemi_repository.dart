@@ -1,4 +1,4 @@
-import 'package:coincasa_app/core/models/problema.dart';
+import 'package:coincasa_app/data/models/problema.dart';
 
 abstract interface class IProblemiRepository {
   Future<List<Problema>> getProblemi(String casaId);

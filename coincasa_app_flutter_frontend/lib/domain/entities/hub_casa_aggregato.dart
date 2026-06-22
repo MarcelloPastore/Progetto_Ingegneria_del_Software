@@ -1,5 +1,5 @@
-import 'package:coincasa_app/core/models/casa.dart';
-import 'package:coincasa_app/core/models/inquilino.dart';
+﻿import 'package:coincasa_app/data/models/casa.dart';
+import 'package:coincasa_app/data/models/inquilino.dart';
 import 'package:coincasa_app/domain/value_objects/ruolo_casa.dart';
 
 /// Dati aggregati restituiti dall'endpoint GET /case/:casaId/hub.

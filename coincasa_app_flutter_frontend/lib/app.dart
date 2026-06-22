@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/api/api_provider.dart';
-import 'core/models/casa.dart';
+import 'data/models/casa.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/services/session_manager.dart';
 import 'core/state/active_casa.dart';

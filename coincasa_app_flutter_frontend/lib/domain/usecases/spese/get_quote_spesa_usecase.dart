@@ -1,4 +1,4 @@
-import 'package:coincasa_app/core/models/quota.dart';
+﻿import 'package:coincasa_app/data/models/quota.dart';
 import 'package:coincasa_app/domain/repositories/i_spese_repository.dart';
 
 class GetQuoteSpesaUseCase {

@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:coincasa_app/core/models/inquilino.dart';
-import 'package:coincasa_app/core/models/quota.dart';
-import 'package:coincasa_app/core/models/spesa.dart';
-import 'package:coincasa_app/core/models/turno.dart';
+import 'package:coincasa_app/data/models/inquilino.dart';
+import 'package:coincasa_app/data/models/quota.dart';
+import 'package:coincasa_app/data/models/spesa.dart';
+import 'package:coincasa_app/data/models/turno.dart';
 import 'package:coincasa_app/domain/viewmodel/spese_viewmodel.dart';
 import 'package:coincasa_app/domain/viewmodel/turni_viewmodel.dart';
 

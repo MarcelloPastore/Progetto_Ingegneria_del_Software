@@ -1,4 +1,4 @@
-import 'package:coincasa_app/core/models/problema.dart';
+﻿import 'package:coincasa_app/data/models/problema.dart';
 import 'package:coincasa_app/domain/repositories/i_problemi_repository.dart';
 
 class AutoAssegnaProblemaUseCase {

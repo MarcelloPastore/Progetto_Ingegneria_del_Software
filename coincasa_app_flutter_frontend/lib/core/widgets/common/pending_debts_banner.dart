@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-import 'package:coincasa_app/core/models/spesa.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:coincasa_app/data/models/spesa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 
 class PendingDebtsBanner extends StatelessWidget {

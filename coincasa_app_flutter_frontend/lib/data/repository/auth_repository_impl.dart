@@ -1,5 +1,5 @@
 import 'package:coincasa_app/core/api/auth_api.dart';
-import '../../core/models/auth_user.dart' as domain;
+import '../../data/models/auth_user.dart' as domain;
 import '../../domain/repositories/i_auth_repository.dart';
 
 class AuthRepositoryImpl implements AuthRepository {

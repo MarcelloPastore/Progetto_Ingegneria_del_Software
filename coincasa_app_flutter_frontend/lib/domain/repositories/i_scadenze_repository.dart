@@ -1,4 +1,4 @@
-import 'package:coincasa_app/core/models/scadenza.dart';
+import 'package:coincasa_app/data/models/scadenza.dart';
 
 abstract interface class IScadenzeRepository {
   Future<List<Scadenza>> getScadenze(String casaId);

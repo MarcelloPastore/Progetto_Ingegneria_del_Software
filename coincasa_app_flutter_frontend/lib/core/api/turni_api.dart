@@ -1,5 +1,5 @@
-import '../models/turno.dart';
-import '../models/salute_casa_item.dart';
+import '../../data/models/turno.dart';
+import '../../data/models/salute_casa_item.dart';
 import 'api_client.dart';
 
 class TurniApi {

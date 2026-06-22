@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import 'package:coincasa_app/core/utils/formatters.dart';
-import 'package:coincasa_app/core/models/spesa.dart';
+import 'package:coincasa_app/data/models/spesa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/coinquilini_notified_banner.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';

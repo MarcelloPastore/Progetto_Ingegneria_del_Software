@@ -1,6 +1,6 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:coincasa_app/core/models/auth_user.dart';
+import 'package:coincasa_app/data/models/auth_user.dart';
 import 'package:coincasa_app/core/api/auth_repository_provider.dart';
 import 'package:coincasa_app/core/services/session_manager.dart';
 import 'package:coincasa_app/core/api/api_provider.dart';

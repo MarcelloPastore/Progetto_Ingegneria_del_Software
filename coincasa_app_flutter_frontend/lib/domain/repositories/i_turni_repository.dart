@@ -1,5 +1,5 @@
-import 'package:coincasa_app/core/models/salute_casa_item.dart';
-import 'package:coincasa_app/core/models/turno.dart';
+import 'package:coincasa_app/data/models/salute_casa_item.dart';
+import 'package:coincasa_app/data/models/turno.dart';
 
 abstract interface class ITurniRepository {
   Future<List<Turno>> getTurni(String casaId);

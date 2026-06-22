@@ -1,5 +1,5 @@
-import 'package:coincasa_app/core/models/quota.dart';
-import 'package:coincasa_app/core/models/spesa.dart';
+import 'package:coincasa_app/data/models/quota.dart';
+import 'package:coincasa_app/data/models/spesa.dart';
 
 abstract interface class ISpeseRepository {
   Future<List<Spesa>> getSpese(

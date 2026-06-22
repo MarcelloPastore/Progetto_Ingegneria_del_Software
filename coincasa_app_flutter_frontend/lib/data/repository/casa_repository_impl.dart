@@ -1,7 +1,7 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:coincasa_app/core/api/api_provider.dart';
-import 'package:coincasa_app/core/models/casa.dart';
-import 'package:coincasa_app/core/models/inquilino.dart';
+import 'package:coincasa_app/data/models/casa.dart';
+import 'package:coincasa_app/data/models/inquilino.dart';
 import 'package:coincasa_app/core/services/session_manager.dart';
 import 'package:coincasa_app/domain/entities/hub_casa_aggregato.dart';
 import 'package:coincasa_app/domain/repositories/i_casa_repository.dart';

@@ -1,5 +1,5 @@
-import '../models/casa.dart';
-import '../models/inquilino.dart';
+import '../../data/models/casa.dart';
+import '../../data/models/inquilino.dart';
 import 'api_client.dart';
 
 class CasaApi {

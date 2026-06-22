@@ -1,12 +1,12 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:coincasa_app/core/api/api_provider.dart';
-import 'package:coincasa_app/core/models/scadenza.dart';
-import 'package:coincasa_app/core/models/spesa.dart';
-import 'package:coincasa_app/core/models/turno.dart';
+import 'package:coincasa_app/data/models/scadenza.dart';
+import 'package:coincasa_app/data/models/spesa.dart';
+import 'package:coincasa_app/data/models/turno.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/common_widgets.dart';

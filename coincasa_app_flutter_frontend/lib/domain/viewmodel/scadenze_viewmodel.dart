@@ -1,5 +1,5 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:coincasa_app/core/models/scadenza.dart';
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:coincasa_app/data/models/scadenza.dart';
 import 'package:coincasa_app/data/repository/scadenze_repository_impl.dart';
 import 'package:coincasa_app/domain/repositories/i_scadenze_repository.dart';
 import 'package:coincasa_app/domain/usecases/scadenze/get_scadenze_usecase.dart';

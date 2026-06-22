@@ -1,4 +1,4 @@
-import 'package:coincasa_app/core/models/spesa.dart';
+﻿import 'package:coincasa_app/data/models/spesa.dart';
 import 'package:coincasa_app/domain/repositories/i_spese_repository.dart';
 
 class GetSpesaByIdUseCase {
