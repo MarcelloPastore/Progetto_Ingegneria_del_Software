@@ -6,7 +6,7 @@ import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
 import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
-import 'package:coincasa_app/ui/spese/screens/lista_spese_admin.dart';
+import 'package:coincasa_app/ui/spese/screens/lista_spese.dart';
 import 'package:coincasa_app/domain/viewmodel/spese_viewmodel.dart';
 
 class PareggiaContiScreen extends ConsumerStatefulWidget {

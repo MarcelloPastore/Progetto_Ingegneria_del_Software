@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 import 'package:coincasa_app/core/theme/app_theme.dart';
-import 'package:coincasa_app/ui/problemi/screens/FAB_problemi_screen.dart';
-import 'package:coincasa_app/ui/scadenze/screens/fab_scadenza.dart';
-import 'package:coincasa_app/ui/spese/screens/inserisci_spesa_admin.dart';
-import 'package:coincasa_app/ui/turni/screens/turni_screen_principale.dart';
+import 'package:coincasa_app/ui/problemi/screens/fab_segnala_problema_screen.dart';
+import 'package:coincasa_app/ui/scadenze/screens/fab_crea_scadenza.dart';
+import 'package:coincasa_app/ui/spese/screens/form_crea_spesa.dart';
+import 'package:coincasa_app/ui/turni/screens/crea_turno_dialog.dart';
 
 enum DashboardCreateTab { spesa, problema, turno, scadenza }
 

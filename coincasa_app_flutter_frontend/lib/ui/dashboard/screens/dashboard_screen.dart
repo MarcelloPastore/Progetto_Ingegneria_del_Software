@@ -22,7 +22,7 @@ import 'package:coincasa_app/domain/viewmodel/scadenze_viewmodel.dart';
 import 'package:coincasa_app/domain/viewmodel/spese_viewmodel.dart';
 import 'package:coincasa_app/domain/viewmodel/turni_viewmodel.dart';
 import 'package:coincasa_app/ui/casa/screens/casa_welcome_screen.dart';
-import 'package:coincasa_app/ui/icone_fab.dart';
+import 'package:coincasa_app/ui/dashboard_crea_popup.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});

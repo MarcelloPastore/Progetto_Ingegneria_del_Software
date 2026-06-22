@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
-import 'package:coincasa_app/ui/spese/screens/inserisci_spesa_admin.dart';
+import 'package:coincasa_app/ui/spese/screens/form_crea_spesa.dart';
 
 class NessunaSpeseRegistrataScreen extends StatelessWidget {
   const NessunaSpeseRegistrataScreen({super.key});

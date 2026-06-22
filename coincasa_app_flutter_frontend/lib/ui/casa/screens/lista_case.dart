@@ -9,9 +9,9 @@ import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 import 'package:coincasa_app/domain/viewmodel/dashboard_viewmodel.dart';
 import 'package:coincasa_app/domain/viewmodel/lista_case_viewmodel.dart';
-import 'package:coincasa_app/ui/casa/screens/compilazione_form_crea_casa.dart';
+import 'package:coincasa_app/ui/casa/screens/form_crea_casa.dart';
 import 'package:coincasa_app/ui/casa/screens/entra_con_codice_invito_screen.dart';
-import 'package:coincasa_app/ui/casa/screens/hub_casa_admin.dart';
+import 'package:coincasa_app/ui/casa/screens/hub_casa.dart';
 
 class ListaCaseScreen extends ConsumerWidget {
   const ListaCaseScreen({super.key});

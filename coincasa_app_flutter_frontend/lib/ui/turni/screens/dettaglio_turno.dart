@@ -10,8 +10,8 @@ import 'package:coincasa_app/core/widgets/common/delete_confirm_dialog.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
 import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
-import 'package:coincasa_app/ui/turni/screens/assegna_a_me.dart';
-import 'package:coincasa_app/ui/turni/screens/turno_create_screen.dart';
+import 'package:coincasa_app/ui/turni/screens/turno_assegnato_a_me.dart';
+import 'package:coincasa_app/ui/turni/screens/form_crea_turno.dart';
 import 'package:coincasa_app/domain/viewmodel/auth_view_model.dart';
 import 'package:coincasa_app/domain/viewmodel/turni_viewmodel.dart';
 

@@ -11,8 +11,8 @@ import 'package:coincasa_app/domain/viewmodel/lista_case_viewmodel.dart';
 import 'package:coincasa_app/ui/casa/screens/casa_welcome_screen.dart';
 import 'package:coincasa_app/ui/dashboard/screens/dashboard_screen.dart';
 
-import 'password_dimenticata.dart';
-import 'register_screen.dart';
+import 'password_dimenticata_screen.dart';
+import 'registrazione_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});

@@ -10,7 +10,7 @@ import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/app_switch.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
-import 'package:coincasa_app/ui/spese/screens/inserisci_spesa_successo.dart';
+import 'package:coincasa_app/ui/spese/screens/spesa_inserita_successo.dart';
 import 'package:coincasa_app/domain/viewmodel/auth_view_model.dart';
 import 'package:coincasa_app/domain/viewmodel/lista_case_viewmodel.dart';
 import 'package:coincasa_app/domain/viewmodel/spese_viewmodel.dart';

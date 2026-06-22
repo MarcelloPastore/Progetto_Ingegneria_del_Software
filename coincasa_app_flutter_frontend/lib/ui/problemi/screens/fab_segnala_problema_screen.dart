@@ -9,7 +9,7 @@ import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
 import 'package:coincasa_app/domain/viewmodel/problemi_viewmodel.dart';
-import 'package:coincasa_app/ui/problemi/screens/popup_successo_FAB.dart';
+import 'package:coincasa_app/ui/problemi/screens/fab_problema_successo_screen.dart';
 
 final _problemiCasaProvider = FutureProvider.family<Casa?, String?>((
   ref,

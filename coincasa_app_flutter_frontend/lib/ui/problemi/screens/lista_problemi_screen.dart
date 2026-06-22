@@ -7,7 +7,7 @@ import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
 import 'package:coincasa_app/domain/viewmodel/problemi_viewmodel.dart';
-import 'package:coincasa_app/ui/problemi/screens/problema_dettaglio_screen.dart';
+import 'package:coincasa_app/ui/problemi/screens/dettaglio_problema_screen.dart';
 import 'package:coincasa_app/ui/problemi/screens/segnala_problema_screen.dart';
 
 // ---------------------------------------------------------------------------

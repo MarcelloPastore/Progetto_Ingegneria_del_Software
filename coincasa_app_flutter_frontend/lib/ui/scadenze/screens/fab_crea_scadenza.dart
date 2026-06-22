@@ -4,10 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/app_cancel_button.dart';
-import 'package:coincasa_app/core/widgets/common/fab_buttons.dart';
+import 'package:coincasa_app/core/widgets/common/fab_salva_button.dart';
 import 'package:coincasa_app/domain/viewmodel/scadenze_viewmodel.dart';
 
-import 'fab_sacdenza_creata.dart';
+import 'fab_scadenza_creata.dart';
 
 class FabScadenzaPanel extends ConsumerStatefulWidget {
   const FabScadenzaPanel({super.key});

@@ -9,9 +9,9 @@ import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
 import 'package:coincasa_app/domain/viewmodel/account_view_model.dart';
-import 'package:coincasa_app/ui/account/screens/elimina_account_success_screen.dart';
+import 'package:coincasa_app/ui/account/screens/elimina_account_successo_screen.dart';
 import 'package:coincasa_app/ui/account/screens/modifica_password_screen.dart';
-import 'package:coincasa_app/ui/auth/screens/check_email_screen.dart';
+import 'package:coincasa_app/ui/auth/screens/controlla_email_screen.dart';
 
 class GestioneAccountScreen extends ConsumerStatefulWidget {
   const GestioneAccountScreen({super.key});

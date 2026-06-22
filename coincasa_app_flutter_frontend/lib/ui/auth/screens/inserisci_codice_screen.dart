@@ -10,7 +10,7 @@ import '../../../core/widgets/common/common_widgets.dart';
 import 'attesa_invio_codice_screen.dart';
 import 'login_screen.dart';
 import 'nuova_password_screen.dart';
-import 'password_dimenticata.dart';
+import 'password_dimenticata_screen.dart';
 
 class InserisciCodiceScreen extends ConsumerStatefulWidget {
   const InserisciCodiceScreen({

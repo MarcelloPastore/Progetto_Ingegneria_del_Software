@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
-import 'package:coincasa_app/ui/spese/screens/lista_spese_admin.dart';
+import 'package:coincasa_app/ui/spese/screens/lista_spese.dart';
 import 'package:coincasa_app/ui/spese/screens/lista_spese_membro.dart';
 
 class InserisciSpesaSuccessoArgs {

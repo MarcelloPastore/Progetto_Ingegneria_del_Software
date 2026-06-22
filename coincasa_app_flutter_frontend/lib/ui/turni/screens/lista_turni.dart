@@ -8,8 +8,8 @@ import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/utils/route_observer.dart';
 import 'package:coincasa_app/core/utils/user_initials.dart';
 import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
-import 'package:coincasa_app/ui/turni/screens/dettaglio_turno_admin.dart';
-import 'package:coincasa_app/ui/turni/screens/turno_create_screen.dart';
+import 'package:coincasa_app/ui/turni/screens/dettaglio_turno.dart';
+import 'package:coincasa_app/ui/turni/screens/form_crea_turno.dart';
 import 'package:coincasa_app/domain/viewmodel/auth_view_model.dart';
 import 'package:coincasa_app/domain/viewmodel/turni_viewmodel.dart';
 

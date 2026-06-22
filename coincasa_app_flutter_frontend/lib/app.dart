@@ -10,7 +10,7 @@ import 'core/state/active_casa.dart';
 import 'core/theme/app_theme.dart';
 import 'core/widgets/common/no_connection_screen.dart';
 import 'ui/auth/auth.dart';
-import 'ui/account/screens/elimina_account_success_screen.dart';
+import 'ui/account/screens/elimina_account_successo_screen.dart';
 import 'ui/account/screens/account_screen.dart';
 import 'ui/account/screens/modifica_password_screen.dart';
 import 'ui/casa/casa.dart';

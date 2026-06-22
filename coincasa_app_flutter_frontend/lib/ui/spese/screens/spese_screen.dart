@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'lista_spese_admin.dart';
+import 'lista_spese.dart';
 
 /// Schermata principale delle spese.
 /// Utilizza sempre [ListaSpeseAdminScreen] per tutti gli utenti;

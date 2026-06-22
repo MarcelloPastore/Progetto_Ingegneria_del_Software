@@ -7,7 +7,7 @@ import 'package:coincasa_app/core/utils/validation_utils.dart';
 import 'package:coincasa_app/domain/viewmodel/auth_view_model.dart';
 
 import '../../../core/widgets/auth/auth_widgets.dart';
-import 'check_email_screen.dart';
+import 'controlla_email_screen.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});

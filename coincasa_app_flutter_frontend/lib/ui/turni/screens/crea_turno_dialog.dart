@@ -5,7 +5,7 @@ import 'package:coincasa_app/data/models/inquilino.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
-import 'package:coincasa_app/ui/turni/screens/turno_salvato_con_successo.dart';
+import 'package:coincasa_app/ui/turni/screens/turno_salvato_successo.dart';
 import 'package:coincasa_app/domain/viewmodel/auth_view_model.dart';
 import 'package:coincasa_app/domain/viewmodel/turni_viewmodel.dart';
 

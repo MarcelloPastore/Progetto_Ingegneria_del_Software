@@ -9,7 +9,7 @@ import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/utils/formatters.dart';
 import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
 import 'package:coincasa_app/ui/spese/screens/dettaglio_spesa_debitore.dart';
-import 'package:coincasa_app/ui/spese/screens/inserisci_spesa_membro.dart';
+import 'package:coincasa_app/ui/spese/screens/form_crea_spesa_membro.dart';
 import 'package:coincasa_app/ui/spese/screens/pareggia_conti.dart';
 import 'package:coincasa_app/domain/viewmodel/spese_viewmodel.dart';
 

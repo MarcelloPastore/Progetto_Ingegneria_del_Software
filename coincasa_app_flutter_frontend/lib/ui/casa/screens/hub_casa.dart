@@ -9,12 +9,12 @@ import 'package:coincasa_app/domain/viewmodel/dashboard_viewmodel.dart';
 import 'package:coincasa_app/domain/viewmodel/hub_casa_viewmodel.dart';
 import 'package:coincasa_app/domain/viewmodel/lista_case_viewmodel.dart';
 import 'package:coincasa_app/ui/casa/screens/archivio_documenti_vuoto.dart';
-import 'package:coincasa_app/ui/casa/screens/condividi_codice.dart';
+import 'package:coincasa_app/ui/casa/screens/condividi_codice_invito.dart';
 import 'package:coincasa_app/ui/casa/screens/elimina_casa.dart';
 import 'package:coincasa_app/ui/casa/screens/lista_case.dart';
 import 'package:coincasa_app/ui/casa/screens/lista_coinquilini.dart';
 import 'package:coincasa_app/ui/casa/screens/lascia_casa.dart';
-import 'package:coincasa_app/ui/casa/screens/modifica_casa.dart';
+import 'package:coincasa_app/ui/casa/screens/form_modifica_casa.dart';
 import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 
 class HubCasaAdminScreen extends ConsumerStatefulWidget {

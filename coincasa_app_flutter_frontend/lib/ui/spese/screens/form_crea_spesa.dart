@@ -7,8 +7,8 @@ import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/utils/user_initials.dart';
 import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
-import 'package:coincasa_app/ui/spese/screens/lista_spese_admin.dart';
-import 'package:coincasa_app/ui/spese/screens/modifica_spesa_admin.dart';
+import 'package:coincasa_app/ui/spese/screens/lista_spese.dart';
+import 'package:coincasa_app/ui/spese/screens/form_modifica_spesa.dart';
 import 'package:coincasa_app/domain/viewmodel/auth_view_model.dart';
 import 'package:coincasa_app/domain/viewmodel/spese_viewmodel.dart';
 

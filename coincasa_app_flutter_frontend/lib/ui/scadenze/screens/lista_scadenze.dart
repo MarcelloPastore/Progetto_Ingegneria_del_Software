@@ -10,10 +10,10 @@ import 'package:coincasa_app/data/models/turno.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
-import 'package:coincasa_app/ui/spese/screens/dettaglio_spesa_admin.dart';
-import 'package:coincasa_app/ui/turni/screens/dettaglio_turno_admin.dart';
-import 'dettaglio_scadenza_admin.dart';
-import 'scadenza_form_screen.dart';
+import 'package:coincasa_app/ui/spese/screens/dettaglio_spesa.dart';
+import 'package:coincasa_app/ui/turni/screens/dettaglio_turno.dart';
+import 'dettaglio_scadenza.dart';
+import 'form_modifica_scadenza.dart';
 
 // ---------------------------------------------------------------------------
 // Color coding — same as dashboard calendar

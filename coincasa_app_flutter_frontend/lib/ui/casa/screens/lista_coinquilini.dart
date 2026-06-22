@@ -8,7 +8,7 @@ import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 import 'package:coincasa_app/core/utils/user_initials.dart';
 import 'package:coincasa_app/domain/viewmodel/hub_casa_viewmodel.dart';
-import 'package:coincasa_app/ui/casa/screens/condividi_codice.dart';
+import 'package:coincasa_app/ui/casa/screens/condividi_codice_invito.dart';
 import 'package:coincasa_app/ui/casa/screens/elimina_coinquilino.dart'
     show showEliminaCoinquilinoDialog;
 

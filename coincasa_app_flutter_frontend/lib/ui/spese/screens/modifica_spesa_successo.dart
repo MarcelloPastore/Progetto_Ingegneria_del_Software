@@ -5,7 +5,7 @@ import 'package:coincasa_app/data/models/spesa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/widgets/common/coinquilini_notified_banner.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
-import 'package:coincasa_app/ui/spese/screens/dettaglio_spesa_admin.dart';
+import 'package:coincasa_app/ui/spese/screens/dettaglio_spesa.dart';
 
 class ModificheSpeseSuccessoScreen extends StatelessWidget {
   const ModificheSpeseSuccessoScreen({super.key});

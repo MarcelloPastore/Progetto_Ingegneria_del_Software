@@ -9,7 +9,7 @@ import 'package:coincasa_app/core/widgets/common/info_row.dart';
 import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
 import 'package:coincasa_app/domain/viewmodel/scadenze_viewmodel.dart';
 import 'package:coincasa_app/ui/scadenze/screens/lista_scadenze.dart';
-import 'scadenza_form_screen.dart';
+import 'form_modifica_scadenza.dart';
 
 class DettaglioScadenzaAdminScreen extends ConsumerWidget {
   final String titolo;

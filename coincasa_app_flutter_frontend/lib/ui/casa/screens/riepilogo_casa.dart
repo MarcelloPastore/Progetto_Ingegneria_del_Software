@@ -6,7 +6,7 @@ import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/domain/viewmodel/dashboard_viewmodel.dart';
 import 'package:coincasa_app/domain/viewmodel/lista_case_viewmodel.dart';
 import 'package:coincasa_app/ui/casa/screens/casa_creata_successo.dart';
-import 'package:coincasa_app/ui/casa/screens/compilazione_form_crea_casa.dart';
+import 'package:coincasa_app/ui/casa/screens/form_crea_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 
 class RiepilogoCasaScreen extends ConsumerStatefulWidget {

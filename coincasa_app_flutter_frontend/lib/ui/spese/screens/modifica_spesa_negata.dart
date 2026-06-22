@@ -11,7 +11,7 @@ import 'package:coincasa_app/core/utils/formatters.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/app_switch.dart';
 import 'package:coincasa_app/core/widgets/common/screen_back_header.dart';
-import 'package:coincasa_app/ui/spese/screens/modifiche_spese_successo.dart';
+import 'package:coincasa_app/ui/spese/screens/modifica_spesa_successo.dart';
 import 'package:coincasa_app/domain/viewmodel/lista_case_viewmodel.dart';
 import 'package:coincasa_app/domain/viewmodel/spese_viewmodel.dart';
 

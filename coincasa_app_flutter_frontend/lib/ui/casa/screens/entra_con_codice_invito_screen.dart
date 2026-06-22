@@ -7,7 +7,7 @@ import 'package:coincasa_app/data/models/casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/data/repository/casa_repository_impl.dart';
 import 'package:coincasa_app/domain/repositories/i_casa_repository.dart';
-import 'package:coincasa_app/ui/casa/screens/casa_pre_schermata_hub_casa.dart';
+import 'package:coincasa_app/ui/casa/screens/seleziona_casa.dart';
 
 final inviteCodeEntryControllerProvider =
     StateNotifierProvider.autoDispose<

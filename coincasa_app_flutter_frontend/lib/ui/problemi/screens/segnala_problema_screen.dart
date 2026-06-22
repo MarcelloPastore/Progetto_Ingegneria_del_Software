@@ -13,7 +13,7 @@ import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/common/app_priority_chip.dart';
 import 'package:coincasa_app/core/widgets/common/section_label.dart';
 import 'package:coincasa_app/domain/viewmodel/problemi_viewmodel.dart';
-import 'package:coincasa_app/ui/problemi/screens/popup_successo_FAB.dart';
+import 'package:coincasa_app/ui/problemi/screens/fab_problema_successo_screen.dart';
 
 // ---------------------------------------------------------------------------
 // Providers
