@@ -35,6 +35,13 @@ npm install
 cp .env.example .env
 # Modifica .env con la tua MONGODB_URI e JWT_SECRET
 
+### 📧 Configurazione Email (Autenticazione)
+Per abilitare l'invio delle email di verifica e recupero password tramite Gmail, configura i seguenti campi nel file `.env`:
+
+1. Inserisci lo stesso indirizzo Gmail in `MAIL_USER` e `MAIL_FROM_EMAIL`.
+2. Genera una **Password per le app** da questo link: [App Passwords - Google](https://myaccount.google.com/apppasswords).
+3. Copia la password generata nel campo `MAIL_PASSWORD`.
+
 # Genera il client database
 npx prisma generate
 
