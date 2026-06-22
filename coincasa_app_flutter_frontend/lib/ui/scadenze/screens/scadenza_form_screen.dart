@@ -140,7 +140,7 @@ class _ScadenzaFormScreenState extends ConsumerState<ScadenzaFormScreen> {
                       style: TextStyle(
                         color: _hasNameError
                             ? AppColors.errorStrong
-                            : cs.onSurface,
+                            : AppColors.textOnDark,
                         fontSize: AppSizes.p18,
                       ),
                       decoration: _inputDecoration(
@@ -161,7 +161,7 @@ class _ScadenzaFormScreenState extends ConsumerState<ScadenzaFormScreen> {
                   controller: _descrizioneController,
                   minLines: 1,
                   maxLines: 2,
-                  style: TextStyle(color: cs.onSurface, fontSize: AppSizes.p18),
+                  style: TextStyle(color: AppColors.textOnDark, fontSize: AppSizes.p18),
                   decoration: _inputDecoration(cs, 'Es. Revisione annuale'),
                 ),
               ),
@@ -172,7 +172,7 @@ class _ScadenzaFormScreenState extends ConsumerState<ScadenzaFormScreen> {
                   controller: _dataController,
                   readOnly: true,
                   onTap: _pickDate,
-                  style: TextStyle(color: cs.onSurface, fontSize: AppSizes.p18),
+                  style: TextStyle(color: AppColors.textOnDark, fontSize: AppSizes.p18),
                   decoration: _inputDecoration(cs, 'GG/MM/AAAA'),
                 ),
               ),
@@ -225,7 +225,7 @@ class _ScadenzaFormScreenState extends ConsumerState<ScadenzaFormScreen> {
     return InputDecoration(
       hintText: hint,
       hintStyle: TextStyle(
-        color: cs.onSurfaceVariant,
+        color: AppColors.textMutedLight,
         fontSize: AppSizes.p18,
       ),
       filled: true,
@@ -416,7 +416,7 @@ class _FrequencySelector extends StatelessWidget {
                     child: Text(
                       selectedValue,
                       style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        color: AppColors.textOnDark,
                         fontSize: AppSizes.p18,
                         fontWeight: FontWeight.w600,
                       ),
@@ -473,7 +473,7 @@ class _FrequencySelector extends StatelessWidget {
                       style: TextStyle(
                         color: selected
                             ? AppColors.featureAccent
-                            : Theme.of(context).colorScheme.onSurface,
+                            : AppColors.textOnDark,
                         fontSize: AppSizes.p16,
                         fontWeight:
                             selected ? FontWeight.w700 : FontWeight.w600,

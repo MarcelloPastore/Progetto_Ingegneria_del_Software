@@ -12,6 +12,9 @@ class CoinquiliniNotifiedBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bannerColor = isDark ? AppColors.statusPositive : AppColors.success;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(
@@ -22,7 +25,7 @@ class CoinquiliniNotifiedBanner extends StatelessWidget {
         color: AppColors.successBright.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(AppSizes.radius14),
         border: Border.all(
-          color: AppColors.statusPositive,
+          color: bannerColor,
           width: AppSizes.p1_5,
         ),
       ),
@@ -30,7 +33,7 @@ class CoinquiliniNotifiedBanner extends StatelessWidget {
         message,
         textAlign: TextAlign.center,
         style: AppTextStyles.bodyStrong.copyWith(
-          color: AppColors.statusPositive,
+          color: bannerColor,
           fontWeight: FontWeight.w800,
         ),
       ),

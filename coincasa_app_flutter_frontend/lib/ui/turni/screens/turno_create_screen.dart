@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:coincasa_app/data/models/inquilino.dart';
@@ -120,6 +120,7 @@ class _TurnoCreateScreenState extends ConsumerState<TurnoCreateScreen> {
                     Text(
                       isEditing ? 'Modifica turno' : 'Inserisci turno',
                       style: AppTextStyles.screenTitleStrong.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface,
                         fontSize: AppSizes.p24,
                         fontWeight: FontWeight.w800,
                       ),
@@ -162,7 +163,7 @@ class _TurnoCreateScreenState extends ConsumerState<TurnoCreateScreen> {
                       child: Text(
                         'Frequenza',
                         style: AppTextStyles.screenTitleStrong.copyWith(
-                          color: AppColors.textMutedLight,
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.65),
                           fontSize: AppSizes.p21,
                           fontWeight: FontWeight.w800,
                         ),
@@ -368,104 +369,73 @@ class _AssignMeButton extends StatelessWidget {
   const _AssignMeButton({required this.selected, required this.onTap});
 
   final bool selected;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return _AnimatedAssignMeButton(selected: selected, onTap: onTap);
-  }
-}
-
-class _AnimatedAssignMeButton extends StatefulWidget {
-  const _AnimatedAssignMeButton({required this.selected, required this.onTap});
-
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  State<_AnimatedAssignMeButton> createState() =>
-      _AnimatedAssignMeButtonState();
-}
-
-class _AnimatedAssignMeButtonState extends State<_AnimatedAssignMeButton> {
-  bool _pressed = false;
-
-  Color _topColor() {
-    if (_pressed) {
-      return widget.selected
-          ? AppColors.statusPositive
-          : AppColors.successBright;
-    }
-    return widget.selected ? AppColors.statusPositive : AppColors.successBright;
-  }
-
-  Color _bottomColor() {
-    if (_pressed) {
-      return widget.selected ? AppColors.success : AppColors.success;
-    }
-    return widget.selected ? AppColors.successBright : AppColors.success;
-  }
-
-  Color _textColor() {
-    if (_pressed) {
-      return AppColors.surfaceTint;
-    }
-    return widget.selected ? AppColors.surfaceTint : AppColors.statusPositive;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.transparent,
-      child: InkWell(
-        onTap: widget.onTap,
-        onHighlightChanged: (value) {
-          if (value != _pressed && mounted) {
-            setState(() => _pressed = value);
-          }
-        },
-        borderRadius: BorderRadius.circular(AppSizes.radius8),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 140),
-          curve: Curves.easeOut,
-          height: AppSizes.p46,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [_topColor(), _bottomColor()],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-            borderRadius: BorderRadius.circular(AppSizes.radius8),
-            border: Border.all(
-              color: widget.selected
-                  ? AppColors.statusPositive
-                  : AppColors.turniAssignMeSurface,
-              width: AppSizes.p1_3,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: _pressed
-                    ? AppColors.shadowPressed
-                    : AppColors.shadowMedium,
-                blurRadius: _pressed ? 4 : 10,
-                offset: Offset(0, _pressed ? 1 : 4),
-              ),
-            ],
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppSizes.radius8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+        height: selected ? 48 : 43,
+        decoration: BoxDecoration(
+          color: selected
+              ? AppColors.statusPositive.withValues(alpha: 0.15)
+              : AppColors.turniAssignMeSurface,
+          borderRadius: BorderRadius.circular(AppSizes.radius8),
+          border: Border.all(
+            color: selected ? AppColors.statusPositive : AppColors.transparent,
+            width: selected ? 2.5 : 1.5,
           ),
-          child: AnimatedScale(
-            duration: const Duration(milliseconds: 120),
-            scale: _pressed ? 0.985 : 1,
-            child: Text(
-              'Assegna a me',
-              style: AppTextStyles.bodyStrong.copyWith(
-                color: _textColor(),
-                fontSize: AppSizes.p20,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 0.2,
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: AppColors.statusPositive.withValues(alpha: 0.35),
+                    blurRadius: AppSizes.p12,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : [],
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: AppSizes.p18),
+        child: Row(
+          children: [
+            AnimatedScale(
+              scale: selected ? 1.15 : 1.0,
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutBack,
+              child: const Image(
+                image: AssetImage('assets/Icons/assegna_a_me_mano.png'),
+                width: AppSizes.p22,
+                height: AppSizes.p22,
+                fit: BoxFit.contain,
               ),
             ),
-          ),
+            Expanded(
+              child: AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 220),
+                textAlign: TextAlign.center,
+                style: AppTextStyles.bodyStrong.copyWith(
+                  color: AppColors.statusPositive,
+                  fontSize: selected ? 17 : 16,
+                  fontWeight: selected ? FontWeight.w900 : FontWeight.w800,
+                ),
+                child: const Text('Assegna a me'),
+              ),
+            ),
+            AnimatedOpacity(
+              duration: const Duration(milliseconds: 220),
+              opacity: selected ? 1.0 : 0.0,
+              child: const Icon(
+                Icons.check_circle_rounded,
+                color: AppColors.statusPositive,
+                size: AppSizes.p20,
+              ),
+            ),
+            if (!selected) const SizedBox(width: AppSizes.p20),
+          ],
         ),
       ),
     );
@@ -750,8 +720,8 @@ class _AutoRotationRow extends StatelessWidget {
                 overflow: TextOverflow.clip,
                 style: AppTextStyles.bodyStrong.copyWith(
                   color: enabled
-                      ? AppColors.textMutedLight
-                      : AppColors.textMutedDark,
+                      ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.65)
+                      : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
                   fontSize: AppSizes.p16,
                 ),
               ),

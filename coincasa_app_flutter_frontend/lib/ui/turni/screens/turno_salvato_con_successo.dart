@@ -73,6 +73,7 @@ class _TurnoSuccessScaffold extends StatelessWidget {
                 title,
                 textAlign: TextAlign.center,
                 style: AppTextStyles.screenTitleStrong.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontSize: AppSizes.p25,
                   fontWeight: FontWeight.w900,
                 ),
@@ -82,7 +83,7 @@ class _TurnoSuccessScaffold extends StatelessWidget {
                 description,
                 textAlign: TextAlign.center,
                 style: AppTextStyles.bodyStrong.copyWith(
-                  color: AppColors.textMutedLight,
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.65),
                   fontSize: AppSizes.p19,
                   height: 1.16,
                   fontWeight: FontWeight.w600,

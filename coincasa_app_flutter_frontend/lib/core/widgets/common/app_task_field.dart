@@ -28,7 +28,10 @@ class AppTaskField extends StatelessWidget {
       controller: controller,
       onChanged: onChanged,
       validator: validator,
-      style: AppTextStyles.input.copyWith(fontSize: AppSizes.p20),
+      style: AppTextStyles.input.copyWith(
+        color: AppColors.textOnDark,
+        fontSize: AppSizes.p20,
+      ),
       decoration: InputDecoration(
         hintText: 'Nome task...',
         suffixText: hasError ? '*' : null,
@@ -38,7 +41,9 @@ class AppTaskField extends StatelessWidget {
           fontWeight: FontWeight.w900,
         ),
         hintStyle: AppTextStyles.inputHint.copyWith(
-          color: hasError ? AppColors.errorStrong : AppColors.textMutedLight,
+          color: hasError
+              ? AppColors.errorStrong
+              : AppColors.textMutedLight,
           fontSize: AppSizes.p20,
         ),
         filled: true,
