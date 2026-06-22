@@ -260,7 +260,6 @@ class _ListaScadenzeState extends ConsumerState<ListaScadenze> {
 
   @override
   Widget build(BuildContext context) {
-    final nomeCasa = ActiveCasaScope.read(context).selectedCasa?.nome ?? '';
     final casaId = ActiveCasaScope.read(context).selectedCasaId ?? '';
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final dataAsync = ref.watch(scadenzeDataProvider(casaId));

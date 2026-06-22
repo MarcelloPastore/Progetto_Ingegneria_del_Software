@@ -113,7 +113,6 @@ class _ProblemiHomeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final nomeCasa = ActiveCasaScope.read(context).selectedCasa?.nome ?? '';
     final cs = Theme.of(context).colorScheme;
 
     return Padding(
