@@ -5,9 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:coincasa_app/core/models/problema.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
-import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
-import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
-import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
+import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
 import 'package:coincasa_app/domain/viewmodel/problemi_viewmodel.dart';
 import 'package:coincasa_app/ui/problemi/screens/problema_dettaglio_screen.dart';
 import 'package:coincasa_app/ui/problemi/screens/segnala_problema_screen.dart';
@@ -38,9 +36,7 @@ class ProblemiHomeScreen extends ConsumerWidget {
             context,
             casaId: casaId,
             ref: ref,
-            body: const Center(
-              child: CircularProgressIndicator(),
-            ),
+            body: const Center(child: CircularProgressIndicator()),
             state: null,
           ),
           error: (e, _) => _buildShell(
@@ -125,29 +121,7 @@ class _ProblemiHomeHeader extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          Column(
-            children: [
-              Text(
-                nomeCasa,
-                style: TextStyle(
-                  color: cs.onSurfaceVariant,
-                  fontSize: AppSizes.p20,
-                  fontFamily: 'Inter',
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: AppSizes.p4),
-              Text(
-                'Problemi',
-                textAlign: TextAlign.center,
-                style: AppTextStyles.screenTitleStrong.copyWith(
-                  color: AppColors.brandAccent,
-                  fontSize: AppSizes.p40,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
-          ),
+          const AppScreensHeader(title: 'Problemi'),
           if (hasRisolti)
             Positioned(
               right: AppSizes.p16,
@@ -325,10 +299,11 @@ class _ProblemaCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final assegnatarioNome = _resolveAssegnatario(problema.raw);
-    final assegnatarioId = (problema.raw['assegnatarioId'] ??
-            problema.raw['assegnatario_id'] ??
-            problema.raw['responsabileId'])
-        ?.toString();
+    final assegnatarioId =
+        (problema.raw['assegnatarioId'] ??
+                problema.raw['assegnatario_id'] ??
+                problema.raw['responsabileId'])
+            ?.toString();
 
     return Material(
       color: AppColors.transparent,

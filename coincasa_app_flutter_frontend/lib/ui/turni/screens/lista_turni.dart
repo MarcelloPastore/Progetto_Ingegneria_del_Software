@@ -7,9 +7,7 @@ import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/utils/route_observer.dart';
 import 'package:coincasa_app/core/utils/user_initials.dart';
-import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
-import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
-import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
+import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
 import 'package:coincasa_app/ui/turni/screens/dettaglio_turno_admin.dart';
 import 'package:coincasa_app/ui/turni/screens/turno_create_screen.dart';
 import 'package:coincasa_app/domain/viewmodel/auth_view_model.dart';
@@ -145,35 +143,7 @@ class _ListaTurniScreenState extends ConsumerState<ListaTurniScreen>
                     children: [
                       Padding(
                         padding: const EdgeInsets.only(top: AppSizes.p12),
-                        child: Center(
-                          child: Column(
-                            children: [
-                              Text(
-                                ActiveCasaScope.read(
-                                      context,
-                                    ).selectedCasa?.nome ??
-                                    '',
-                                style: TextStyle(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                                  fontSize: AppSizes.p20,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: AppSizes.p4),
-                              Text(
-                                'Turni',
-                                textAlign: TextAlign.center,
-                                style: AppTextStyles.screenTitleStrong.copyWith(
-                                  color: AppColors.brandAccent,
-                                  fontSize: AppSizes.p40,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        child: const AppScreensHeader(title: 'Turni'),
                       ),
                       const SizedBox(height: AppSizes.p14),
                       Text(

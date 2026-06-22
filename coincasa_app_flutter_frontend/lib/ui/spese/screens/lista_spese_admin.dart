@@ -8,8 +8,7 @@ import 'package:coincasa_app/core/models/spesa.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/utils/user_initials.dart';
-import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
-import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
+import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
 import 'package:coincasa_app/ui/spese/screens/dettaglio_spesa_admin.dart';
 import 'package:coincasa_app/ui/spese/screens/inserisci_spesa_admin.dart';
 import 'package:coincasa_app/ui/spese/screens/pareggia_conti.dart';
@@ -193,30 +192,7 @@ class _ListaSpeseAdminScreenState extends ConsumerState<ListaSpeseAdminScreen>
           // Header
           Padding(
             padding: const EdgeInsets.only(top: AppSizes.p12),
-            child: Center(
-              child: Column(
-                children: [
-                  Text(
-                    ActiveCasaScope.read(context).selectedCasa?.nome ?? '',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      fontSize: AppSizes.p20,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: AppSizes.p4),
-                  Text(
-                    'Spese',
-                    textAlign: TextAlign.center,
-                    style: AppTextStyles.screenTitleStrong.copyWith(
-                      color: AppColors.brandAccent,
-                      fontSize: AppSizes.p40,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            child: const AppScreensHeader(title: 'Spese'),
           ),
           const SizedBox(height: AppSizes.p24),
 
@@ -802,41 +778,18 @@ class _EmptyExpensesContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final selectedCasa = ActiveCasaScope.read(context).selectedCasa;
-    final casaNome = selectedCasa?.nome.trim().isNotEmpty == true
-        ? selectedCasa!.nome.trim()
-        : 'Casa';
-
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(
         AppSizes.p25,
-        AppSizes.p32,
+        AppSizes.p12,
         AppSizes.p25,
         AppSizes.p32,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            'Spese',
-            textAlign: TextAlign.center,
-            style: AppTextStyles.screenTitleStrong.copyWith(
-              color: AppColors.brandAccent,
-              fontSize: AppSizes.p40,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
+          const AppScreensHeader(title: 'Spese'),
           const SizedBox(height: AppSizes.p20),
-          Text(
-            casaNome,
-            textAlign: TextAlign.left,
-            style: const TextStyle(
-              color: AppColors.featureAccent,
-              fontSize: AppSizes.p23,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: AppSizes.p4),
           Center(
             child: Container(
               width: AppSizes.p145,

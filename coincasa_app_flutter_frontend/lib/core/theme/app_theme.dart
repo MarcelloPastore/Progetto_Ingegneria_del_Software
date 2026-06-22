@@ -146,6 +146,11 @@ abstract final class AppTextStyles {
     fontWeight: FontWeight.w700,
   );
 
+  static const houseNameHeader = TextStyle(
+    fontSize: 20,
+    fontWeight: FontWeight.w600,
+  );
+
   static const subtitle = TextStyle(fontSize: 20);
 
   static const backHeader = TextStyle(

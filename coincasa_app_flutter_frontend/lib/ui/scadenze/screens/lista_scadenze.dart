@@ -9,9 +9,7 @@ import 'package:coincasa_app/core/models/spesa.dart';
 import 'package:coincasa_app/core/models/turno.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
-import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
-import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
-import 'package:coincasa_app/core/widgets/common/section_label.dart';
+import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
 import 'package:coincasa_app/ui/spese/screens/dettaglio_spesa_admin.dart';
 import 'package:coincasa_app/ui/turni/screens/dettaglio_turno_admin.dart';
 import 'dettaglio_scadenza_admin.dart';
@@ -280,31 +278,7 @@ class _ListaScadenzeState extends ConsumerState<ListaScadenze> {
             child: Column(
               children: [
                 const SizedBox(height: AppSizes.p5),
-                Center(
-                  child: Column(
-                    children: [
-                      Text(
-                        nomeCasa,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          fontSize: AppSizes.p20,
-                          fontFamily: 'Inter',
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: AppSizes.p4),
-                      Text(
-                        'Scadenze',
-                        textAlign: TextAlign.center,
-                        style: AppTextStyles.screenTitleStrong.copyWith(
-                          color: AppColors.brandAccent,
-                          fontSize: AppSizes.p40,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                const AppScreensHeader(title: 'Scadenze'),
                 const SizedBox(height: AppSizes.p8),
                 _Legend(activeFilters: _activeFilters, onToggle: _toggleFilter),
                 const SizedBox(height: AppSizes.p12),

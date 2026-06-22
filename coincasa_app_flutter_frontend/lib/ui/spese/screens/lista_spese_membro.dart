@@ -7,9 +7,7 @@ import 'package:coincasa_app/core/models/spesa.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/utils/formatters.dart';
-import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
-import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
-import 'package:coincasa_app/core/widgets/common/main_cta_button.dart';
+import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
 import 'package:coincasa_app/ui/spese/screens/dettaglio_spesa_debitore.dart';
 import 'package:coincasa_app/ui/spese/screens/inserisci_spesa_membro.dart';
 import 'package:coincasa_app/ui/spese/screens/pareggia_conti.dart';
@@ -129,17 +127,7 @@ class _MemberSpeseContent extends StatelessWidget {
                     ),
                   ),
                 ),
-                Center(
-                  child: Text(
-                    'Spese',
-                    textAlign: TextAlign.center,
-                    style: AppTextStyles.screenTitleStrong.copyWith(
-                      color: AppColors.brandAccent,
-                      fontSize: AppSizes.p40,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
+                const AppScreensHeader(title: 'Spese'),
                 const SizedBox(height: AppSizes.p20),
                 _SummaryCard(data: data),
                 const SizedBox(height: AppSizes.p25),
