@@ -16,7 +16,7 @@ import 'package:coincasa_app/core/widgets/common/user_avatar.dart';
 import 'package:coincasa_app/core/widgets/common/house_quick_nav.dart';
 import 'package:coincasa_app/core/widgets/dashboard/house_health_section.dart';
 import 'package:coincasa_app/core/widgets/dashboard/open_problems_section.dart';
-import 'package:coincasa_app/domain/entities/dashboard_data.dart';
+import 'package:coincasa_app/data/models/dashboard_data.dart';
 import 'package:coincasa_app/domain/viewmodel/dashboard_viewmodel.dart';
 import 'package:coincasa_app/domain/viewmodel/scadenze_viewmodel.dart';
 import 'package:coincasa_app/ui/casa/screens/casa_welcome_screen.dart';

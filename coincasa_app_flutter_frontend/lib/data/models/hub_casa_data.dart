@@ -1,12 +1,8 @@
-﻿import 'package:coincasa_app/data/models/casa.dart';
+import 'package:coincasa_app/data/models/casa.dart';
 import 'package:coincasa_app/data/models/inquilino.dart';
-import 'package:coincasa_app/domain/value_objects/ruolo_casa.dart';
 
-/// Dati aggregati restituiti dall'endpoint GET /case/:casaId/hub.
-/// Include la casa con i suoi membri e i contatori di riepilogo.
-/// La deserializzazione JSON è responsabilità di CasaRepositoryImpl.
-class HubCasaAggregato {
-  const HubCasaAggregato({
+class HubCasaData {
+  const HubCasaData({
     required this.casa,
     required this.inquilini,
     required this.ruolo,
@@ -25,6 +21,4 @@ class HubCasaAggregato {
   final int scadenzeCount;
   final int problemiCount;
   final int turniCount;
-
-  bool get isAdmin => RuoloCasa.isAdmin(ruolo);
 }

@@ -6,7 +6,7 @@ import 'package:coincasa_app/data/models/turno.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/data/repository/casa_repository_impl.dart';
 import 'package:coincasa_app/data/repository/dashboard_repository_impl.dart';
-import 'package:coincasa_app/domain/entities/dashboard_data.dart';
+import 'package:coincasa_app/data/models/dashboard_data.dart';
 import 'package:coincasa_app/domain/repositories/i_dashboard_repository.dart';
 import 'package:coincasa_app/domain/usecases/casa/select_casa_usecase.dart';
 import 'package:coincasa_app/domain/usecases/dashboard/get_dashboard_data_usecase.dart';

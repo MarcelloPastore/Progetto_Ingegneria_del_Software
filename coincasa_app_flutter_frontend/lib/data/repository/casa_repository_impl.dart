@@ -1,9 +1,9 @@
-﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/data/models/casa.dart';
+import 'package:coincasa_app/data/models/hub_casa_data.dart';
 import 'package:coincasa_app/data/models/inquilino.dart';
 import 'package:coincasa_app/core/services/session_manager.dart';
-import 'package:coincasa_app/domain/entities/hub_casa_aggregato.dart';
 import 'package:coincasa_app/domain/repositories/i_casa_repository.dart';
 
 class CasaRepositoryImpl implements ICasaRepository {
@@ -30,14 +30,12 @@ class CasaRepositoryImpl implements ICasaRepository {
   Future<Casa> joinCasa(String inviteCodeOrLink) =>
       ApiProvider.casa.joinWithInviteCode(inviteCodeOrLink);
 
-  /// Effettua il cambio casa completo: chiamata HTTP, aggiornamento del token
-  /// JWT nel client e persistenza della sessione tramite SessionManager.
   @override
   Future<String> selectCasa(String casaId) =>
       SessionManager.selectCasa(casaId: casaId);
 
   @override
-  Future<HubCasaAggregato> getHub(String casaId) async {
+  Future<HubCasaData> getHub(String casaId) async {
     final hub = await ApiProvider.casa.getHub(casaId);
     final casaJson = hub['casa'] as Map<String, dynamic>? ?? {};
     final casa = Casa.fromJson(casaJson);
@@ -56,7 +54,7 @@ class CasaRepositoryImpl implements ICasaRepository {
     final isCurrentUserOwner =
         isOwner ?? inquilini.where((i) => i.isOwner).firstOrNull?.isOwner ?? false;
 
-    return HubCasaAggregato(
+    return HubCasaData(
       casa: casa,
       inquilini: inquilini,
       ruolo: ruolo,

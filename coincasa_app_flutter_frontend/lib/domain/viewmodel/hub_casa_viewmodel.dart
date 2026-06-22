@@ -1,13 +1,11 @@
-﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:coincasa_app/core/api/api_provider.dart';
+import 'package:coincasa_app/core/api/spese_repository_provider.dart';
 import 'package:coincasa_app/data/models/casa.dart';
 import 'package:coincasa_app/data/models/inquilino.dart';
 import 'package:coincasa_app/data/models/spesa.dart';
 import 'package:coincasa_app/data/repository/casa_repository_impl.dart';
-import 'package:coincasa_app/data/repository/dashboard_repository_impl.dart';
-import 'package:coincasa_app/domain/entities/hub_casa_aggregato.dart';
 import 'package:coincasa_app/domain/repositories/i_casa_repository.dart';
-import 'package:coincasa_app/domain/repositories/i_dashboard_repository.dart';
 import 'package:coincasa_app/domain/usecases/casa/get_hub_usecase.dart';
 import 'package:coincasa_app/domain/usecases/casa/update_casa_usecase.dart';
 import 'package:coincasa_app/domain/usecases/casa/delete_casa_usecase.dart';
@@ -17,27 +15,34 @@ import 'package:coincasa_app/domain/usecases/casa/lascia_casa_usecase.dart';
 import 'package:coincasa_app/domain/usecases/casa/update_ruolo_inquilino_usecase.dart';
 import 'package:coincasa_app/domain/usecases/casa/get_invite_link_usecase.dart';
 import 'package:coincasa_app/domain/usecases/casa/regenerate_invite_link_usecase.dart';
+import 'package:coincasa_app/domain/value_objects/ruolo_casa.dart';
 
 class HubCasaState {
   const HubCasaState({
-    required this.hub,
+    required this.casa,
+    required this.inquilini,
+    required this.ruolo,
+    required this.isCurrentUserOwner,
     required this.spese,
+    required this.speseCount,
+    required this.scadenzeCount,
+    required this.problemiCount,
+    required this.turniCount,
     this.inviteLink,
   });
 
-  final HubCasaAggregato hub;
+  final Casa casa;
+  final List<Inquilino> inquilini;
+  final String ruolo;
+  final bool isCurrentUserOwner;
   final List<Spesa> spese;
   final String? inviteLink;
+  final int speseCount;
+  final int scadenzeCount;
+  final int problemiCount;
+  final int turniCount;
 
-  Casa get casa => hub.casa;
-  List<Inquilino> get inquilini => hub.inquilini;
-  String get ruolo => hub.ruolo;
-  bool get isAdmin => hub.isAdmin;
-  bool get isCurrentUserOwner => hub.isCurrentUserOwner;
-  int get speseCount => hub.speseCount;
-  int get scadenzeCount => hub.scadenzeCount;
-  int get problemiCount => hub.problemiCount;
-  int get turniCount => hub.turniCount;
+  bool get isAdmin => RuoloCasa.isAdmin(ruolo);
 
   int get speseNonSaldateCount {
     return spese.where((s) {
@@ -67,21 +72,34 @@ class HubCasaState {
   }
 
   HubCasaState copyWith({
-    HubCasaAggregato? hub,
+    Casa? casa,
+    List<Inquilino>? inquilini,
+    String? ruolo,
+    bool? isCurrentUserOwner,
     List<Spesa>? spese,
     String? inviteLink,
+    int? speseCount,
+    int? scadenzeCount,
+    int? problemiCount,
+    int? turniCount,
   }) {
     return HubCasaState(
-      hub: hub ?? this.hub,
+      casa: casa ?? this.casa,
+      inquilini: inquilini ?? this.inquilini,
+      ruolo: ruolo ?? this.ruolo,
+      isCurrentUserOwner: isCurrentUserOwner ?? this.isCurrentUserOwner,
       spese: spese ?? this.spese,
       inviteLink: inviteLink ?? this.inviteLink,
+      speseCount: speseCount ?? this.speseCount,
+      scadenzeCount: scadenzeCount ?? this.scadenzeCount,
+      problemiCount: problemiCount ?? this.problemiCount,
+      turniCount: turniCount ?? this.turniCount,
     );
   }
 }
 
 class HubCasaViewModel extends FamilyAsyncNotifier<HubCasaState, String> {
   late ICasaRepository _casaRepo;
-  late IDashboardRepository _dashboardRepo;
   late GetHubUseCase _getHub;
   late UpdateCasaUseCase _updateCasa;
   late DeleteCasaUseCase _deleteCasa;
@@ -95,8 +113,7 @@ class HubCasaViewModel extends FamilyAsyncNotifier<HubCasaState, String> {
   @override
   Future<HubCasaState> build(String casaId) async {
     _casaRepo = ref.read(casaRepositoryProvider);
-    _dashboardRepo = ref.read(dashboardRepositoryProvider);
-    _getHub = GetHubUseCase(_casaRepo);
+    _getHub = GetHubUseCase(_casaRepo, ref.read(speseRepositoryProvider));
     _updateCasa = UpdateCasaUseCase(_casaRepo);
     _deleteCasa = DeleteCasaUseCase(_casaRepo);
     _getInquilini = GetInquiliniUseCase(_casaRepo);
@@ -106,16 +123,8 @@ class HubCasaViewModel extends FamilyAsyncNotifier<HubCasaState, String> {
     _getInviteLink = GetInviteLinkUseCase(_casaRepo);
     _regenerateInviteLink = RegenerateInviteLinkUseCase(_casaRepo);
 
-    // Due chiamate in parallelo: getHub (include casa + inquilini + contatori)
-    // e getSpese (necessaria per la logica di eliminazione/uscita dalla casa).
-    final results = await Future.wait([
-      _getHub(casaId),
-      _dashboardRepo.getSpese(casaId),
-    ]);
-
-    final hub = results[0] as HubCasaAggregato;
-    final spese = results[1] as List<Spesa>;
-    final current = _resolveCurrentInquilino(hub.inquilini);
+    final result = await _getHub(casaId);
+    final current = result.currentInquilino;
     if (current != null) {
       ApiProvider.client.setCurrentUserIdentity(
         id: current.id,
@@ -126,24 +135,18 @@ class HubCasaViewModel extends FamilyAsyncNotifier<HubCasaState, String> {
         username: current.username,
       );
     }
-    return HubCasaState(hub: hub, spese: spese);
-  }
 
-  Inquilino? _resolveCurrentInquilino(List<Inquilino> coinquilini) {
-    final currentId = ApiProvider.client.currentUserId?.trim();
-    if (currentId != null && currentId.isNotEmpty) {
-      for (final c in coinquilini) {
-        if (c.id.trim() == currentId) return c;
-      }
-    }
-    final currentEmail =
-        ApiProvider.client.currentUserEmail?.trim().toLowerCase();
-    if (currentEmail != null && currentEmail.isNotEmpty) {
-      for (final c in coinquilini) {
-        if (c.email.trim().toLowerCase() == currentEmail) return c;
-      }
-    }
-    return null;
+    return HubCasaState(
+      casa: result.hub.casa,
+      inquilini: result.hub.inquilini,
+      ruolo: result.hub.ruolo,
+      isCurrentUserOwner: result.hub.isCurrentUserOwner,
+      spese: result.spese,
+      speseCount: result.hub.speseCount,
+      scadenzeCount: result.hub.scadenzeCount,
+      problemiCount: result.hub.problemiCount,
+      turniCount: result.hub.turniCount,
+    );
   }
 
   Future<void> updateCasa(Map<String, dynamic> payload) async {
@@ -152,31 +155,18 @@ class HubCasaViewModel extends FamilyAsyncNotifier<HubCasaState, String> {
     ref.invalidateSelf();
   }
 
-  /// Elimina la casa. Il chiamante deve navigare via dopo la risoluzione.
   Future<void> deleteCasa() async {
     final casaId = state.requireValue.casa.id;
     await _deleteCasa(casaId);
   }
 
-  /// Rimuove un coinquilino e aggiorna la lista localmente.
   Future<void> removeInquilino(String inquilinoId) async {
     final casaId = state.requireValue.casa.id;
     await _removeInquilino(casaId, inquilinoId);
     final inquilini = await _getInquilini(casaId);
-    final updatedHub = HubCasaAggregato(
-      casa: state.requireValue.casa,
-      inquilini: inquilini,
-      ruolo: state.requireValue.ruolo,
-      isCurrentUserOwner: state.requireValue.isCurrentUserOwner,
-      speseCount: state.requireValue.speseCount,
-      scadenzeCount: state.requireValue.scadenzeCount,
-      problemiCount: state.requireValue.problemiCount,
-      turniCount: state.requireValue.turniCount,
-    );
-    state = AsyncData(state.requireValue.copyWith(hub: updatedHub));
+    state = AsyncData(state.requireValue.copyWith(inquilini: inquilini));
   }
 
-  /// Rimuove l'utente corrente dalla casa (lascia casa).
   Future<void> lasciaCasa(String currentUserId) async {
     final casaId = state.requireValue.casa.id;
     await _lasciaCasa(casaId, currentUserId);
@@ -189,17 +179,7 @@ class HubCasaViewModel extends FamilyAsyncNotifier<HubCasaState, String> {
     final casaId = state.requireValue.casa.id;
     await _updateRuolo(casaId, inquilinoId, payload);
     final inquilini = await _getInquilini(casaId);
-    final updatedHub = HubCasaAggregato(
-      casa: state.requireValue.casa,
-      inquilini: inquilini,
-      ruolo: state.requireValue.ruolo,
-      isCurrentUserOwner: state.requireValue.isCurrentUserOwner,
-      speseCount: state.requireValue.speseCount,
-      scadenzeCount: state.requireValue.scadenzeCount,
-      problemiCount: state.requireValue.problemiCount,
-      turniCount: state.requireValue.turniCount,
-    );
-    state = AsyncData(state.requireValue.copyWith(hub: updatedHub));
+    state = AsyncData(state.requireValue.copyWith(inquilini: inquilini));
   }
 
   Future<String> loadInviteLink() async {
