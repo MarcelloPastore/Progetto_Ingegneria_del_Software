@@ -19,6 +19,8 @@ import 'package:coincasa_app/core/widgets/dashboard/open_problems_section.dart';
 import 'package:coincasa_app/data/models/dashboard_data.dart';
 import 'package:coincasa_app/domain/viewmodel/dashboard_viewmodel.dart';
 import 'package:coincasa_app/domain/viewmodel/scadenze_viewmodel.dart';
+import 'package:coincasa_app/domain/viewmodel/spese_viewmodel.dart';
+import 'package:coincasa_app/domain/viewmodel/turni_viewmodel.dart';
 import 'package:coincasa_app/ui/casa/screens/casa_welcome_screen.dart';
 import 'package:coincasa_app/ui/icone_fab.dart';
 
@@ -146,10 +148,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                         },
                       ),
                       const SizedBox(height: AppSizes.p12),
-                      _EmptyBalanceCard(data: state.data),
+                      _EmptyBalanceCard(
+                        casaId: state.data.casaSelezionataId,
+                        data: state.data,
+                      ),
                       const SizedBox(height: AppSizes.p28),
-                      HouseHealthSection(
-                        badges: state.houseHealthBadges
+                      _ReactiveHouseHealthSection(
+                        casaId: state.data.casaSelezionataId,
+                        fallbackBadges: state.houseHealthBadges
                             .map(
                               (t) => HouseHealthBadgeData(
                                 caption: t.titolo,
@@ -167,8 +173,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                       const OpenProblemsSection(),
                       const SizedBox(height: AppSizes.p28),
                       _TodayTurnSection(
-                        turniOggi: state.data.turniOggi,
                         casaId: state.data.casaSelezionataId,
+                        fallbackTurniOggi: state.data.turniOggi,
                         completingTurnoIds: state.completingTurnoIds,
                         onCompletaTurno: (turnoId) => _completaTurno(
                           state.data.casaSelezionataId ?? '',
@@ -420,9 +426,10 @@ class _HouseSelector extends StatelessWidget {
   }
 }
 
-class _EmptyBalanceCard extends StatelessWidget {
-  const _EmptyBalanceCard({required this.data});
+class _EmptyBalanceCard extends ConsumerWidget {
+  const _EmptyBalanceCard({required this.casaId, required this.data});
 
+  final String? casaId;
   final DashboardData data;
 
   String _formatAmount(double? value, {bool showPlus = false}) {
@@ -445,7 +452,20 @@ class _EmptyBalanceCard extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    double? saldo = data.saldo;
+    double? credito = data.credito;
+    double? debito = data.debito;
+
+    if (casaId != null && casaId!.isNotEmpty) {
+      final speseAsync = ref.watch(speseViewModelProvider(casaId!));
+      if (speseAsync.hasValue) {
+        saldo = speseAsync.requireValue.saldo;
+        credito = speseAsync.requireValue.creditoTotale;
+        debito = speseAsync.requireValue.debitoTotale;
+      }
+    }
+
     return InkWell(
       onTap: () => Navigator.of(context).pushNamed('/spese'),
       borderRadius: BorderRadius.circular(AppSizes.radius8),
@@ -509,9 +529,9 @@ class _EmptyBalanceCard extends StatelessWidget {
                   ],
                 ),
                 Text(
-                  _formatAmount(data.saldo),
+                  _formatAmount(saldo),
                   style: AppTextStyles.dashboardBalanceAmount.copyWith(
-                    color: _saldoColor(data.saldo),
+                    color: _saldoColor(saldo),
                     fontSize: 25,
                   ),
                 ),
@@ -521,7 +541,7 @@ class _EmptyBalanceCard extends StatelessWidget {
                     Expanded(
                       child: _BalanceMetric(
                         label: 'Da ricevere',
-                        value: _formatAmount(data.credito, showPlus: true),
+                        value: _formatAmount(credito, showPlus: true),
                         valueColor: AppColors.statusPositive,
                         align: CrossAxisAlignment.center,
                       ),
@@ -534,7 +554,7 @@ class _EmptyBalanceCard extends StatelessWidget {
                     Expanded(
                       child: _BalanceMetric(
                         label: 'Devi pagare',
-                        value: _formatAmount(data.debito),
+                        value: _formatAmount(debito),
                         valueColor: AppColors.statusNegative,
                         align: CrossAxisAlignment.center,
                       ),
@@ -768,16 +788,16 @@ class _ScadenzaRow extends StatelessWidget {
   }
 }
 
-class _TodayTurnSection extends StatelessWidget {
+class _TodayTurnSection extends ConsumerWidget {
   const _TodayTurnSection({
-    required this.turniOggi,
     required this.casaId,
+    required this.fallbackTurniOggi,
     required this.completingTurnoIds,
     required this.onCompletaTurno,
   });
 
-  final List<Turno> turniOggi;
   final String? casaId;
+  final List<Turno> fallbackTurniOggi;
   final Set<String> completingTurnoIds;
   final void Function(String turnoId) onCompletaTurno;
 
@@ -873,7 +893,15 @@ class _TodayTurnSection extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    List<Turno> turniOggi = fallbackTurniOggi;
+    if (casaId != null && casaId!.isNotEmpty) {
+      final turniAsync = ref.watch(turniViewModelProvider(casaId!));
+      if (turniAsync.hasValue) {
+        turniOggi = turniAsync.requireValue.turniOggi;
+      }
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -948,7 +976,72 @@ class _TodayTurnSection extends StatelessWidget {
   }
 }
 
-class _EmptyCalendarSection extends StatelessWidget {
+// ---------------------------------------------------------------------------
+// Wrapper reattivo per HouseHealthSection — legge turni e salute dal
+// turniViewModelProvider in modo da aggiornarsi senza ricaricare tutta
+// la dashboard.
+// ---------------------------------------------------------------------------
+
+class _ReactiveHouseHealthSection extends ConsumerWidget {
+  const _ReactiveHouseHealthSection({
+    required this.casaId,
+    required this.fallbackBadges,
+  });
+
+  final String? casaId;
+  final List<HouseHealthBadgeData> fallbackBadges;
+
+  static int _colorGroup(int? giorni) {
+    if (giorni == null || giorni < -3) return 0;
+    if (giorni <= 0) return 1;
+    if (giorni <= 2) return 2;
+    return 3;
+  }
+
+  static int _compareBadges(HouseHealthBadgeData a, HouseHealthBadgeData b) {
+    final ga = _colorGroup(a.giorniRimanenti);
+    final gb = _colorGroup(b.giorniRimanenti);
+    if (ga != gb) return ga.compareTo(gb);
+    final da = a.giorniRimanenti;
+    final db = b.giorniRimanenti;
+    if (da == null && db == null) return 0;
+    if (da == null) return -1;
+    if (db == null) return 1;
+    if (ga <= 1) return db.abs().compareTo(da.abs());
+    return da.compareTo(db);
+  }
+
+  static List<HouseHealthBadgeData> _computeBadges(TurniState turniState) {
+    final saluteMap = {for (final s in turniState.saluteCasa) s.id: s};
+    final badges = turniState.turni
+        .map((turno) {
+          final titolo = turno.titolo.trim();
+          if (titolo.isEmpty) return null;
+          return HouseHealthBadgeData(
+            caption: titolo,
+            giorniRimanenti: saluteMap[turno.id]?.giorniRimanenti,
+          );
+        })
+        .whereType<HouseHealthBadgeData>()
+        .toList();
+    badges.sort(_compareBadges);
+    return badges;
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    var badges = fallbackBadges;
+    if (casaId != null && casaId!.isNotEmpty) {
+      final turniAsync = ref.watch(turniViewModelProvider(casaId!));
+      if (turniAsync.hasValue) {
+        badges = _computeBadges(turniAsync.requireValue);
+      }
+    }
+    return HouseHealthSection(badges: badges);
+  }
+}
+
+class _EmptyCalendarSection extends ConsumerWidget {
   const _EmptyCalendarSection({required this.data});
 
   final DashboardData data;
@@ -978,10 +1071,19 @@ class _EmptyCalendarSection extends StatelessWidget {
   ];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final now = DateTime.now();
     final month = DateTime(now.year, now.month);
     final days = _buildGridDays(month);
+
+    final casaId = data.casaSelezionataId;
+    List<Scadenza> scadenze = data.scadenze;
+    if (casaId != null && casaId.isNotEmpty) {
+      final scadenzeAsync = ref.watch(scadenzeViewModelProvider(casaId));
+      if (scadenzeAsync.hasValue) {
+        scadenze = scadenzeAsync.requireValue.scadenze;
+      }
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -991,10 +1093,19 @@ class _EmptyCalendarSection extends StatelessWidget {
         InkWell(
           onTap: () => Navigator.of(context).pushNamed('/scadenze'),
           borderRadius: BorderRadius.circular(AppSizes.radius8),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(AppSizes.radius8),
-            child: DecoratedBox(
-              decoration: const BoxDecoration(color: AppColors.surfaceDark),
+          child: Container(
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceDarkElevated,
+              borderRadius: BorderRadius.circular(AppSizes.radius8),
+              boxShadow: const [
+                BoxShadow(
+                  color: AppColors.shadowStrong,
+                  blurRadius: AppSizes.p8,
+                  offset: Offset(0, AppSizes.p5),
+                ),
+              ],
+            ),
               child: Column(
                 children: [
                   Container(
@@ -1057,7 +1168,7 @@ class _EmptyCalendarSection extends StatelessWidget {
                                     date,
                                     data.turni,
                                     data.spese,
-                                    data.scadenze,
+                                    scadenze,
                                   )
                                 : const <Color>[];
                             return _DashboardCalendarDay(
@@ -1093,7 +1204,6 @@ class _EmptyCalendarSection extends StatelessWidget {
               ),
             ),
           ),
-        ),
       ],
     );
   }
