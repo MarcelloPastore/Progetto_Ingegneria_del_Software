@@ -149,8 +149,7 @@ class _ScadenzaFormScreenState extends ConsumerState<ScadenzaFormScreen> {
                         hasError: _hasNameError,
                       ),
                     ),
-                    if (_hasNameError)
-                      _ErrorMessage(text: 'Inserisci un nome'),
+                    if (_hasNameError) _ErrorMessage(text: 'Inserisci un nome'),
                   ],
                 ),
               ),
@@ -161,7 +160,10 @@ class _ScadenzaFormScreenState extends ConsumerState<ScadenzaFormScreen> {
                   controller: _descrizioneController,
                   minLines: 1,
                   maxLines: 2,
-                  style: TextStyle(color: AppColors.textOnDark, fontSize: AppSizes.p18),
+                  style: TextStyle(
+                    color: AppColors.textOnDark,
+                    fontSize: AppSizes.p18,
+                  ),
                   decoration: _inputDecoration(cs, 'Es. Revisione annuale'),
                 ),
               ),
@@ -172,7 +174,10 @@ class _ScadenzaFormScreenState extends ConsumerState<ScadenzaFormScreen> {
                   controller: _dataController,
                   readOnly: true,
                   onTap: _pickDate,
-                  style: TextStyle(color: AppColors.textOnDark, fontSize: AppSizes.p18),
+                  style: TextStyle(
+                    color: AppColors.textOnDark,
+                    fontSize: AppSizes.p18,
+                  ),
                   decoration: _inputDecoration(cs, 'GG/MM/AAAA'),
                 ),
               ),
@@ -243,7 +248,9 @@ class _ScadenzaFormScreenState extends ConsumerState<ScadenzaFormScreen> {
   Future<void> _pickDate() async {
     final now = DateTime.now();
     final tomorrow = DateTime(now.year, now.month, now.day + 1);
-    final firstDate = widget.isEditing ? DateTime(now.year, now.month, now.day) : tomorrow;
+    final firstDate = widget.isEditing
+        ? DateTime(now.year, now.month, now.day)
+        : tomorrow;
     final initial = widget.initialData ?? tomorrow;
     final selected = await showDatePicker(
       context: context,
@@ -278,7 +285,8 @@ class _ScadenzaFormScreenState extends ConsumerState<ScadenzaFormScreen> {
         ? _payloadDate(validDate).toIso8601String()
         : null;
 
-    final casaId = (widget.casaId?.isNotEmpty == true
+    final casaId =
+        (widget.casaId?.isNotEmpty == true
             ? widget.casaId
             : activeCasa.selectedCasaId) ??
         '';
@@ -406,38 +414,37 @@ class _FrequencySelector extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppSizes.p7),
           elevation: 4,
           shadowColor: Colors.black45,
-          child: SizedBox(
-            height: 41,
-            child: Padding(
-              padding: const EdgeInsets.only(left: AppSizes.p12, right: AppSizes.p4),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      selectedValue,
-                      style: TextStyle(
-                        color: AppColors.textOnDark,
-                        fontSize: AppSizes.p18,
-                        fontWeight: FontWeight.w600,
+          child: InkWell(
+            onTap: onToggle,
+            borderRadius: BorderRadius.circular(AppSizes.p7),
+            child: SizedBox(
+              height: 41,
+              child: Padding(
+                padding: const EdgeInsets.only(
+                  left: AppSizes.p12,
+                  right: AppSizes.p12,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        selectedValue,
+                        style: TextStyle(
+                          color: AppColors.textOnDark,
+                          fontSize: AppSizes.p18,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
-                  ),
-                  IconButton(
-                    onPressed: onToggle,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 40,
-                      minHeight: 40,
-                    ),
-                    icon: Icon(
+                    Icon(
                       isExpanded
                           ? Icons.keyboard_arrow_up
                           : Icons.keyboard_arrow_down,
                       color: AppColors.featureAccent,
                       size: AppSizes.p26,
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -475,8 +482,9 @@ class _FrequencySelector extends StatelessWidget {
                             ? AppColors.featureAccent
                             : AppColors.textOnDark,
                         fontSize: AppSizes.p16,
-                        fontWeight:
-                            selected ? FontWeight.w700 : FontWeight.w600,
+                        fontWeight: selected
+                            ? FontWeight.w700
+                            : FontWeight.w600,
                       ),
                     ),
                   ),
@@ -509,7 +517,10 @@ class _LabeledField extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: AppSizes.p5, bottom: AppSizes.p5),
+          padding: const EdgeInsets.only(
+            left: AppSizes.p5,
+            bottom: AppSizes.p5,
+          ),
           child: RichText(
             text: TextSpan(
               text: label,

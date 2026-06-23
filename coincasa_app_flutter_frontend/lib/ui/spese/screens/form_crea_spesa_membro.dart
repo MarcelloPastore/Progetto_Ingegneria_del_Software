@@ -516,8 +516,8 @@ class _AmountFieldState extends State<_AmountField> {
                 'Importo',
                 style: AppTextStyles.screenTitleStrong.copyWith(
                   color: AppColors.textOnDark,
-                  fontSize: AppSizes.p19,
-                  fontWeight: FontWeight.w500,
+                  fontSize: AppSizes.p21,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
@@ -615,21 +615,37 @@ class _DescriptionField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _MiniFieldButton(
-      child: TextField(
-        controller: controller,
-        textAlign: TextAlign.center,
-        style: const TextStyle(
-          color: AppColors.textOnDark,
-          fontSize: AppSizes.p16,
-          fontWeight: FontWeight.w600,
-        ),
-        decoration: const InputDecoration(
-          hintText: 'Descrizione',
-          hintStyle: TextStyle(color: AppColors.textOnDarkMuted),
-          border: InputBorder.none,
-          isDense: true,
-          contentPadding: EdgeInsets.zero,
-        ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.edit_note_rounded,
+            color: AppColors.textOnDark.withValues(alpha: 0.7),
+            size: AppSizes.p20,
+          ),
+          const SizedBox(width: AppSizes.p6),
+          Expanded(
+            child: TextField(
+              controller: controller,
+              textAlign: TextAlign.left,
+              style: const TextStyle(
+                color: AppColors.textOnDark,
+                fontSize: AppSizes.p16,
+                fontWeight: FontWeight.w600,
+              ),
+              decoration: InputDecoration(
+                hintText: 'Descrizione',
+                hintStyle: TextStyle(
+                  color: AppColors.textOnDark.withValues(alpha: 0.6),
+                ),
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: AppSizes.p4,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -647,7 +663,7 @@ class _MiniFieldButton extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppSizes.radius7),
       child: Container(
-        height: AppSizes.p37,
+        height: AppSizes.p46,
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: AppColors.surfaceDarkMuted,

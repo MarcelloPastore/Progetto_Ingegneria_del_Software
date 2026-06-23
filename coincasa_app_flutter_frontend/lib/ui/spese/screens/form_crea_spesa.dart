@@ -144,25 +144,28 @@ class _InserisciSpesaScreenState extends ConsumerState<InserisciSpesaScreen> {
                       const SizedBox(height: AppSizes.p10),
 
                       // Data + Descrizione — shared widgets
-                      Row(
-                        children: [
-                          SpesaFormDateField(
-                            value: form.dataSpesa,
-                            onChanged: controller.setDataSpesa,
-                            onCleared: () => controller.clearDataSpesa(),
-                            minDate: DateTime.now(),
-                          ),
-                          const SizedBox(width: AppSizes.p8),
-                          Expanded(
-                            child: SpesaFormDescrizioneField(
-                              controller: _descCtrl,
-                              hasError:
-                                  form.showErrors &&
-                                  form.descrizione.trim().isEmpty,
-                              onChanged: controller.setDescrizione,
+                      IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            SpesaFormDateField(
+                              value: form.dataSpesa,
+                              onChanged: controller.setDataSpesa,
+                              onCleared: () => controller.clearDataSpesa(),
+                              minDate: DateTime.now(),
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: AppSizes.p8),
+                            Expanded(
+                              child: SpesaFormDescrizioneField(
+                                controller: _descCtrl,
+                                hasError:
+                                    form.showErrors &&
+                                    form.descrizione.trim().isEmpty,
+                                onChanged: controller.setDescrizione,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: AppSizes.p24),
 
@@ -463,7 +466,7 @@ class _PopupDescrizioneField extends StatelessWidget {
       decoration: InputDecoration(
         hintText: 'Descrizione spesa...',
         hintStyle: AppTextStyles.screenTitleStrong.copyWith(
-          color: AppColors.textOnDark.withValues(alpha: 0.55),
+          color: AppColors.textOnDark.withValues(alpha: 0.7),
           fontSize: AppSizes.p14,
         ),
         filled: true,
@@ -778,8 +781,8 @@ class _ImportoCardState extends State<_ImportoCard> {
               style: TextStyle(
                 color: _hasFocus
                     ? AppColors.brandAccent
-                    : AppColors.textOnDark.withValues(alpha: 0.55),
-                fontSize: _hasFocus ? 13 : 12,
+                    : AppColors.textOnDark.withValues(alpha: 0.75),
+                fontSize: _hasFocus ? 15 : 14,
                 fontWeight: FontWeight.w700,
               ),
               child: Text('Importo'),

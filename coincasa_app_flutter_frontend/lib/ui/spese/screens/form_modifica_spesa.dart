@@ -166,24 +166,27 @@ class _ModificaSpesaAdminScreenState
                           const SizedBox(height: AppSizes.p10),
 
                           // Data + Descrizione
-                          Row(
-                            children: [
-                              SpesaFormDateField(
-                                value: form.dataSpesa,
-                                onChanged: ctrl.setDataSpesa,
-                                onCleared: ctrl.clearDataSpesa,
-                              ),
-                              const SizedBox(width: AppSizes.p8),
-                              Expanded(
-                                child: SpesaFormDescrizioneField(
-                                  controller: _descCtrl,
-                                  hasError:
-                                      form.showErrors &&
-                                      form.descrizione.trim().isEmpty,
-                                  onChanged: ctrl.setDescrizione,
+                          IntrinsicHeight(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                SpesaFormDateField(
+                                  value: form.dataSpesa,
+                                  onChanged: ctrl.setDataSpesa,
+                                  onCleared: ctrl.clearDataSpesa,
                                 ),
-                              ),
-                            ],
+                                const SizedBox(width: AppSizes.p8),
+                                Expanded(
+                                  child: SpesaFormDescrizioneField(
+                                    controller: _descCtrl,
+                                    hasError:
+                                        form.showErrors &&
+                                        form.descrizione.trim().isEmpty,
+                                    onChanged: ctrl.setDescrizione,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                           const SizedBox(height: AppSizes.p24),
 
@@ -369,8 +372,8 @@ class _SpesaFormImportoCardState extends State<SpesaFormImportoCard> {
               'Importo',
               style: TextStyle(
                 color: AppColors.textOnDark.withValues(alpha: 0.75),
-                fontSize: AppSizes.p13,
-                fontWeight: FontWeight.w600,
+                fontSize: AppSizes.p15,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: AppSizes.p4),
@@ -479,6 +482,7 @@ class SpesaFormDateField extends StatelessWidget {
         if (picked != null) onChanged(picked);
       },
       child: Container(
+        alignment: Alignment.center,
         padding: const EdgeInsets.symmetric(
           horizontal: AppSizes.p10,
           vertical: AppSizes.p10,
@@ -498,7 +502,7 @@ class SpesaFormDateField extends StatelessWidget {
           children: [
             const Icon(
               Icons.calendar_today_rounded,
-              color: AppColors.brandPrimary,
+              color: AppColors.brandAccent,
               size: AppSizes.p15,
             ),
             const SizedBox(width: AppSizes.p5),
@@ -519,7 +523,7 @@ class SpesaFormDateField extends StatelessWidget {
                   child: Icon(
                     Icons.close_rounded,
                     size: AppSizes.p15,
-                    color: AppColors.textOnDark.withValues(alpha: 0.5),
+                    color: AppColors.textOnDark.withValues(alpha: 0.6),
                   ),
                 ),
               ],
@@ -527,16 +531,16 @@ class SpesaFormDateField extends StatelessWidget {
               Text(
                 'Scadenza',
                 style: AppTextStyles.screenTitleStrong.copyWith(
-                  color: AppColors.textOnDark.withValues(alpha: 0.38),
+                  color: AppColors.textOnDark.withValues(alpha: 0.6),
                   fontSize: AppSizes.p13,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(width: AppSizes.p4),
               Text(
                 '(opz.)',
                 style: AppTextStyles.screenTitleStrong.copyWith(
-                  color: AppColors.textOnDark.withValues(alpha: 0.25),
+                  color: AppColors.textOnDark.withValues(alpha: 0.45),
                   fontSize: AppSizes.p11,
                   fontWeight: FontWeight.w400,
                 ),
@@ -547,6 +551,8 @@ class SpesaFormDateField extends StatelessWidget {
               message: _tooltip,
               triggerMode: TooltipTriggerMode.tap,
               preferBelow: false,
+              showDuration: const Duration(seconds: 10),
+              margin: const EdgeInsets.symmetric(horizontal: AppSizes.p20),
               decoration: BoxDecoration(
                 color: AppColors.surfaceDarkMuted,
                 borderRadius: BorderRadius.circular(AppSizes.radius8),
@@ -558,7 +564,7 @@ class SpesaFormDateField extends StatelessWidget {
               textStyle: const TextStyle(
                 color: AppColors.textOnDark,
                 fontSize: AppSizes.p12,
-                height: AppSizes.p1_5,
+                height: AppSizes.p1_4,
               ),
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSizes.p12,
@@ -567,7 +573,7 @@ class SpesaFormDateField extends StatelessWidget {
               child: Icon(
                 Icons.info_outline_rounded,
                 size: AppSizes.p14,
-                color: AppColors.textOnDark.withValues(alpha: 0.35),
+                color: AppColors.textOnDark.withValues(alpha: 0.55),
               ),
             ),
           ],
@@ -604,9 +610,18 @@ class SpesaFormDescrizioneField extends StatelessWidget {
         fontWeight: FontWeight.w600,
       ),
       decoration: InputDecoration(
+        prefixIcon: Padding(
+          padding: const EdgeInsets.only(left: 10, right: 6),
+          child: Icon(
+            Icons.edit_note_rounded,
+            color: AppColors.textOnDark.withValues(alpha: 0.6),
+            size: AppSizes.p20,
+          ),
+        ),
+        prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
         hintText: 'Descrizione spesa',
         hintStyle: AppTextStyles.screenTitleStrong.copyWith(
-          color: AppColors.textOnDark.withValues(alpha: 0.4),
+          color: AppColors.textOnDark.withValues(alpha: 0.6),
           fontSize: AppSizes.p14,
         ),
         filled: true,
@@ -634,10 +649,7 @@ class SpesaFormDescrizioneField extends StatelessWidget {
             width: AppSizes.p2,
           ),
         ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppSizes.p12,
-          vertical: AppSizes.p13,
-        ),
+        contentPadding: const EdgeInsets.fromLTRB(0, 13, 12, 13),
       ),
     );
   }

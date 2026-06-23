@@ -310,7 +310,7 @@ class _AssigneeSection extends StatelessWidget {
                 style: AppTextStyles.input.copyWith(
                   color: showError
                       ? AppColors.errorStrong
-                      : AppColors.textOnDark,
+                      : Theme.of(context).colorScheme.onSurface,
                   fontSize: AppSizes.p20,
                 ),
               ),

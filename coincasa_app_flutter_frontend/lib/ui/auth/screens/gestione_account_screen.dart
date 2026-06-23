@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'package:coincasa_app/core/api/api_client.dart';
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/providers/theme_provider.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
-import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
+import 'package:coincasa_app/core/utils/validation_utils.dart';
 import 'package:coincasa_app/domain/viewmodel/account_view_model.dart';
-import 'package:coincasa_app/ui/account/screens/elimina_account_successo_screen.dart';
-import 'package:coincasa_app/ui/account/screens/modifica_password_screen.dart';
-import 'package:coincasa_app/ui/auth/screens/controlla_email_screen.dart';
+import 'package:coincasa_app/domain/viewmodel/auth_view_model.dart';
+import 'package:coincasa_app/ui/auth/screens/check_email_screen.dart';
+import 'package:coincasa_app/ui/auth/screens/elimina_account_success_screen.dart';
+import 'package:coincasa_app/ui/auth/screens/modifica_password_screen.dart';
+import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
 
 class GestioneAccountScreen extends ConsumerStatefulWidget {
   const GestioneAccountScreen({super.key});
@@ -153,7 +156,7 @@ class _GestioneAccountScreenState extends ConsumerState<GestioneAccountScreen> {
       );
       return;
     }
-    if (!newEmail.contains('@') || !newEmail.contains('.')) {
+    if (!ValidationUtils.isValidEmail(newEmail)) {
       setState(() => _emailError = 'Inserisci un indirizzo email valido.');
       return;
     }
@@ -168,7 +171,7 @@ class _GestioneAccountScreenState extends ConsumerState<GestioneAccountScreen> {
           .patchEmail(newEmail);
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute<void>(
+        MaterialPageRoute(
           builder: (_) => CheckEmailScreen(email: confirmedEmail),
         ),
         (_) => false,
@@ -193,224 +196,238 @@ class _GestioneAccountScreenState extends ConsumerState<GestioneAccountScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final colorScheme = Theme.of(context).colorScheme;
     final client = ApiProvider.client;
     final displayName = client.currentUserUsername ?? 'Utente';
     final email = client.currentUserEmail ?? 'email@esempio.com';
     final username = client.currentUserUsername ?? displayName;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
-      child: Scaffold(
-        backgroundColor: colorScheme.surface,
-        body: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(left: 8, top: 4),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: IconButton(
-                    icon: Icon(
-                      Icons.arrow_back_ios_new,
-                      color: colorScheme.onSurface,
-                      size: 20,
+      value: SystemUiOverlayStyle.light,
+      child: Theme(
+        data: AppTheme.darkTheme,
+        child: Scaffold(
+          backgroundColor: AppColors.darkBackground,
+          body: SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // ── Back arrow ───────────────────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.only(left: 8, top: 4),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: IconButton(
+                      icon: const Icon(
+                        Icons.arrow_back_ios_new,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      onPressed: () {
+                        if (_isEditingUsername) {
+                          _cancelEditUsername();
+                        } else if (_isEditingEmail) {
+                          _cancelEditEmail();
+                        } else {
+                          Navigator.of(
+                            context,
+                          ).pushReplacementNamed('/dashboard');
+                        }
+                      },
                     ),
-                    onPressed: () {
-                      if (_isEditingUsername) {
-                        _cancelEditUsername();
-                      } else if (_isEditingEmail) {
-                        _cancelEditEmail();
-                      } else {
-                        Navigator.of(
-                          context,
-                        ).pushReplacementNamed('/dashboard');
-                      }
-                    },
                   ),
                 ),
-              ),
 
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(24, 4, 24, 0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      GestureDetector(
-                        onTap: _onAvatarTap,
-                        child: UserAvatar(
-                          radius: 42,
-                          userId: client.currentUserAvatarSeed,
-                          username: username,
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      Text(
-                        displayName,
-                        style: TextStyle(
-                          color: colorScheme.onSurface,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      if (_isEditingUsername)
-                        _FieldEditPanel(
-                          fieldLabel: 'Nome Utente',
-                          currentValue: username,
-                          controller: _newUsernameController,
-                          error: _usernameError,
-                          hint: 'Nuovo username',
-                        )
-                      else if (_isEditingEmail)
-                        _FieldEditPanel(
-                          fieldLabel: 'Email',
-                          currentValue: email,
-                          controller: _newEmailController,
-                          error: _emailError,
-                          hint: 'nuova@email.com',
-                          keyboardType: TextInputType.emailAddress,
-                        )
-                      else ...[
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            'DATI ACCOUNT',
-                            style: TextStyle(
-                              color: colorScheme.onSurface.withValues(
-                                alpha: 0.55,
-                              ),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.8,
-                            ),
+                // ── Scrollable content ───────────────────────────────────────
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(24, 4, 24, 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        GestureDetector(
+                          onTap: _onAvatarTap,
+                          child: UserAvatar(
+                            radius: 42,
+                            userId: client.currentUserAvatarSeed,
+                            username: username,
                           ),
                         ),
-                        const SizedBox(height: 10),
-
-                        Container(
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: isDark ? colorScheme.surfaceContainerLow : colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                          child: Column(
-                            children: [
-                              _AccountRow(
-                                label: 'Nome utente',
-                                value: displayName,
-                                onModifica: _startEditUsername,
-                              ),
-                              _AccountDivider(
-                                color: colorScheme.outlineVariant,
-                              ),
-                              _AccountRow(
-                                label: 'Email',
-                                value: email,
-                                onModifica: _startEditEmail,
-                              ),
-                              _AccountDivider(
-                                color: colorScheme.outlineVariant,
-                              ),
-                              _AccountRow(
-                                label: 'Password',
-                                value: '••••••••',
-                                onModifica: () => Navigator.of(context).push(
-                                  MaterialPageRoute<void>(
-                                    builder: (_) =>
-                                        const ModificaPasswordScreen(),
-                                  ),
-                                ),
-                              ),
-                            ],
+                        const SizedBox(height: 14),
+                        Text(
+                          displayName,
+                          style: GoogleFonts.inter(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                         const SizedBox(height: 24),
 
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            'PREFERENZE',
-                            style: TextStyle(
-                              color: colorScheme.onSurface.withValues(
-                                alpha: 0.55,
+                        if (_isEditingUsername)
+                          _FieldEditPanel(
+                            fieldLabel: 'Nome Utente',
+                            currentValue: username,
+                            controller: _newUsernameController,
+                            error: _usernameError,
+                            hint: 'Nuovo username',
+                          )
+                        else if (_isEditingEmail)
+                          _FieldEditPanel(
+                            fieldLabel: 'Email',
+                            currentValue: email,
+                            controller: _newEmailController,
+                            error: _emailError,
+                            hint: 'nuova@email.com',
+                            keyboardType: TextInputType.emailAddress,
+                          )
+                        else ...[
+                          // ── Sezione label ────────────────────────────────
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'DATI ACCOUNT',
+                              style: GoogleFonts.inter(
+                                color: AppColors.textMutedDark,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                letterSpacing: 0.5,
                               ),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.8,
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 10),
+                          const SizedBox(height: 10),
 
-                        Container(
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: isDark ? colorScheme.surfaceContainerLow : colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(15),
+                          // ── Card dati ────────────────────────────────────
+                          Container(
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: AppColors.inputFillDark,
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            child: Column(
+                              children: [
+                                _AccountRow(
+                                  label: 'Nome utente',
+                                  value: displayName,
+                                  onModifica: _startEditUsername,
+                                ),
+                                const _AccountDivider(),
+                                _AccountRow(
+                                  label: 'Email',
+                                  value: email,
+                                  onModifica: _startEditEmail,
+                                ),
+                                const _AccountDivider(),
+                                _AccountRow(
+                                  label: 'Password',
+                                  value: '••••••••',
+                                  onModifica: () => Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          const ModificaPasswordScreen(),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                          child: const _ThemeSelectorRow(),
-                        ),
-                        const SizedBox(height: 20),
+                          const SizedBox(height: 24),
 
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: _LogoutButton(
-                            onPressed: () => _handleLogout(context),
+                          // ── Sezione Preferenze ───────────────────────────
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'PREFERENZE',
+                              style: GoogleFonts.inter(
+                                color: AppColors.textMutedDark,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
                           ),
-                        ),
+                          const SizedBox(height: 10),
+
+                          Container(
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: AppColors.inputFillDark,
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            child: _ThemeModeRow(
+                              label: 'Tema scuro',
+                              value: ref.watch(themeProvider) == ThemeMode.dark,
+                              onChanged: (isDark) {
+                                ref
+                                    .read(themeProvider.notifier)
+                                    .setThemeMode(
+                                      isDark ? ThemeMode.dark : ThemeMode.light,
+                                    );
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+
+                          // ── Logout ───────────────────────────────────────
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: _LogoutButton(
+                              onPressed: () => _handleLogout(context),
+                            ),
+                          ),
+                        ],
+
+                        const SizedBox(height: 80),
                       ],
+                    ),
+                  ),
+                ),
 
-                      const SizedBox(height: 80),
-                    ],
+                // ── Pulsanti fondo (cambiano in base alla modalità) ──────────
+                if (_isEditingUsername) ...[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 10),
+                    child: _ConfermaButton(
+                      isLoading: _isConfirming,
+                      onPressed: _isConfirming
+                          ? null
+                          : () {
+                              _confirmEditUsername(username);
+                            },
+                    ),
                   ),
-                ),
-              ),
-
-              if (_isEditingUsername) ...[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 10),
-                  child: _ConfermaButton(
-                    isLoading: _isConfirming,
-                    onPressed: _isConfirming
-                        ? null
-                        : () => _confirmEditUsername(username),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(52, 0, 52, 24),
+                    child: AppCancelButton(
+                      onPressed: _isConfirming ? null : _cancelEditUsername,
+                    ),
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(52, 0, 52, 24),
-                  child: AppCancelButton(
-                    onPressed: _isConfirming ? null : _cancelEditUsername,
+                ] else if (_isEditingEmail) ...[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 10),
+                    child: _ConfermaButton(
+                      isLoading: _isConfirming,
+                      onPressed: _isConfirming
+                          ? null
+                          : () {
+                              _confirmEditEmail(email);
+                            },
+                    ),
                   ),
-                ),
-              ] else if (_isEditingEmail) ...[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 10),
-                  child: _ConfermaButton(
-                    isLoading: _isConfirming,
-                    onPressed: _isConfirming
-                        ? null
-                        : () => _confirmEditEmail(email),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(52, 0, 52, 24),
+                    child: AppCancelButton(
+                      onPressed: _isConfirming ? null : _cancelEditEmail,
+                    ),
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(52, 0, 52, 24),
-                  child: AppCancelButton(
-                    onPressed: _isConfirming ? null : _cancelEditEmail,
+                ] else
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                    child: _EliminaAccountButton(
+                      onPressed: () => _showEliminaDialog(context),
+                    ),
                   ),
-                ),
-              ] else
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                  child: _EliminaAccountButton(
-                    onPressed: () => _showEliminaDialog(context),
-                  ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -427,243 +444,46 @@ class _GestioneAccountScreenState extends ConsumerState<GestioneAccountScreen> {
 
   Future<void> _handleLogout(BuildContext context) async {
     ActiveCasaScope.read(context).clear();
+    await ref.read(authViewModelProvider.notifier).logout();
     if (!context.mounted) return;
     Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
   }
 }
 
-// ---------------------------------------------------------------------------
-// Riga tema con toggle animato sole/luna
-// ---------------------------------------------------------------------------
+class _ThemeModeRow extends StatelessWidget {
+  const _ThemeModeRow({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
 
-class _ThemeSelectorRow extends ConsumerWidget {
-  const _ThemeSelectorRow();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            'Tema',
-            style: TextStyle(
-              color: colorScheme.onSurface,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const _AnimatedThemeToggle(),
-        ],
-      ),
-    );
-  }
-}
-
-// Toggle animato sole ↔ luna con spring physics
-class _AnimatedThemeToggle extends ConsumerStatefulWidget {
-  const _AnimatedThemeToggle();
-
-  @override
-  ConsumerState<_AnimatedThemeToggle> createState() =>
-      _AnimatedThemeToggleState();
-}
-
-class _AnimatedThemeToggleState extends ConsumerState<_AnimatedThemeToggle>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _anim;
-
-  // Traccia l'ultimo ThemeMode sincronizzato per gestire cambi esterni
-  ThemeMode? _lastSynced;
-
-  static const _w = 148.0;
-  static const _h = 52.0;
-  static const _thumbSize = 44.0;
-  static const _margin = 4.0;
-
-  // Half-range di alignment: (containerW/2 - thumbW/2 - margin) / (containerW/2)
-  static const _alignRange =
-      (_w / 2 - _thumbSize / 2 - _margin) / (_w / 2); // ≈ 0.905
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 440),
-    );
-    _anim = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOutBack,
-      reverseCurve: Curves.easeInOutBack,
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  bool _isDark(ThemeMode mode) {
-    if (mode == ThemeMode.dark) return true;
-    if (mode == ThemeMode.light) return false;
-    return MediaQuery.platformBrightnessOf(context) == Brightness.dark;
-  }
-
-  void _toggle() {
-    final dark = _isDark(ref.read(themeProvider));
-    HapticFeedback.lightImpact();
-    if (dark) {
-      _controller.reverse();
-      ref.read(themeProvider.notifier).setThemeMode(ThemeMode.light);
-    } else {
-      _controller.forward();
-      ref.read(themeProvider.notifier).setThemeMode(ThemeMode.dark);
-    }
-  }
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    final themeMode = ref.watch(themeProvider);
-
-    // Sincronizza il controller ad ogni cambio esterno (es. caricamento da prefs)
-    if (_lastSynced != themeMode && !_controller.isAnimating) {
-      _lastSynced = themeMode;
-      _controller.value = _isDark(themeMode) ? 1.0 : 0.0;
-    }
-
-    return GestureDetector(
-      onTap: _toggle,
-      child: AnimatedBuilder(
-        animation: _anim,
-        builder: (context, _) {
-          final t =
-              _anim.value; // può andare leggermente fuori [0,1] per l'overshoot
-          final tC = t.clamp(0.0, 1.0); // usato solo per colori
-
-          final bgColor = Color.lerp(
-            const Color(0xFFFFF8E7), // caldo diurno
-            const Color(0xFF0B0820), // profondo notturno
-            tC,
-          )!;
-          final borderColor = Color.lerp(
-            const Color(0xFFFFD54F), // amber
-            AppColors.brandPrimary,
-            tC,
-          )!;
-          final glowColor = Color.lerp(
-            const Color(0xFFFFD54F).withValues(alpha: 0.35),
-            AppColors.brandPrimary.withValues(alpha: 0.40),
-            tC,
-          )!;
-          final thumbColor = Color.lerp(
-            Colors.white,
-            AppColors.brandSecondary,
-            tC,
-          )!;
-          final thumbAlign = -_alignRange + t * 2 * _alignRange;
-
-          return Container(
-            width: _w,
-            height: _h,
-            clipBehavior: Clip.hardEdge,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(_h / 2),
-              color: bgColor,
-              border: Border.all(color: borderColor, width: 1.5),
-              boxShadow: [
-                BoxShadow(
-                  color: glowColor,
-                  blurRadius: 14,
-                  spreadRadius: 1,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: GoogleFonts.inter(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
             ),
-            child: Stack(
-              children: [
-                // ── Sole (sinistra) ───────────────────────────────────────
-                Positioned(
-                  left: 0,
-                  top: 0,
-                  bottom: 0,
-                  width: _w / 2,
-                  child: Center(
-                    child: Opacity(
-                      opacity: (1.0 - tC * 1.6).clamp(0.2, 1.0),
-                      child: const Icon(
-                        Icons.wb_sunny_rounded,
-                        color: Color(0xFFFFB300),
-                        size: 24,
-                      ),
-                    ),
-                  ),
-                ),
-                // ── Luna (destra) ─────────────────────────────────────────
-                Positioned(
-                  right: 0,
-                  top: 0,
-                  bottom: 0,
-                  width: _w / 2,
-                  child: Center(
-                    child: Opacity(
-                      opacity: (tC * 1.6 - 0.2).clamp(0.2, 1.0),
-                      child: Icon(
-                        Icons.nightlight_round,
-                        color: Color.lerp(
-                          AppColors.brandAccent.withValues(alpha: 0.3),
-                          AppColors.brandAccent,
-                          tC,
-                        ),
-                        size: 22,
-                      ),
-                    ),
-                  ),
-                ),
-                // ── Thumb scorrevole ──────────────────────────────────────
-                Align(
-                  alignment: Alignment(thumbAlign, 0),
-                  child: Container(
-                    width: _thumbSize,
-                    height: _thumbSize,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: thumbColor,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(
-                            alpha: 0.10 + tC * 0.14,
-                          ),
-                          blurRadius: 10,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 200),
-                        child: Icon(
-                          tC > 0.5
-                              ? Icons.nightlight_round
-                              : Icons.wb_sunny_rounded,
-                          key: ValueKey(tC > 0.5),
-                          color: tC > 0.5
-                              ? Colors.white
-                              : const Color(0xFFFF8F00),
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
+          ),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeThumbColor: AppColors.brandAccent,
+            activeTrackColor: AppColors.brandPrimary,
+          ),
+        ],
       ),
     );
   }
@@ -671,6 +491,7 @@ class _AnimatedThemeToggleState extends ConsumerState<_AnimatedThemeToggle>
 
 // ---------------------------------------------------------------------------
 // Pannello modifica campo generico (username / email)
+// Solo label + campi + errore; pulsanti rimangono in fondo alla pagina.
 // ---------------------------------------------------------------------------
 
 class _FieldEditPanel extends StatelessWidget {
@@ -697,13 +518,17 @@ class _FieldEditPanel extends StatelessWidget {
       children: [
         Text(fieldLabel, style: AppTextStyles.label),
         const SizedBox(height: 10),
+
+        // ── Campo Attuale (read-only) ────────────────────────────────────
         _InlineField(
           value: currentValue,
           tag: 'Attuale',
-          tagColor: AppColors.keyYellow,
+          tagColor: AppColors.warning,
           readOnly: true,
         ),
         const SizedBox(height: 10),
+
+        // ── Campo Nuovo (editabile) ──────────────────────────────────────
         _InlineField(
           controller: controller,
           hint: hint,
@@ -713,6 +538,7 @@ class _FieldEditPanel extends StatelessWidget {
           hasError: error != null,
           keyboardType: keyboardType,
         ),
+
         if (error != null) ...[
           const SizedBox(height: 6),
           Align(
@@ -725,6 +551,8 @@ class _FieldEditPanel extends StatelessWidget {
   }
 }
 
+/// Textbox con tag testuale a destra e supporto readOnly.
+/// Replica lo stile di [AuthField] con recoveryStyle:false.
 class _InlineField extends StatelessWidget {
   const _InlineField({
     this.value,
@@ -748,8 +576,9 @@ class _InlineField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Controller fittizio per il campo read-only (pre-compilato, non modificabile).
     final ctrl = readOnly
-        ? TextEditingController(text: value ?? '')
+        ? (TextEditingController(text: value ?? ''))
         : controller;
 
     return SizedBox(
@@ -763,16 +592,14 @@ class _InlineField extends StatelessWidget {
         decoration: InputDecoration(
           isDense: true,
           hintText: hint,
-          hintStyle: TextStyle(
-            color: Theme.of(
-              context,
-            ).colorScheme.onSurface.withValues(alpha: 0.3),
-          ),
+          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+          // Tag "Attuale" / "Nuovo" mostrato inline a destra
           suffix: Text(
             tag,
             style: TextStyle(
               color: tagColor,
               fontSize: 13,
+              fontFamily: 'Inter',
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -803,7 +630,7 @@ class _InlineField extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Pulsante Conferma
+// Pulsanti fondo modalità modifica
 // ---------------------------------------------------------------------------
 
 class _ConfermaButton extends StatelessWidget {
@@ -843,7 +670,7 @@ class _ConfermaButton extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Riga account (label + valore + pulsante modifica)
+// Componenti schermata principale
 // ---------------------------------------------------------------------------
 
 class _AccountRow extends StatelessWidget {
@@ -859,7 +686,6 @@ class _AccountRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       child: Column(
@@ -867,8 +693,8 @@ class _AccountRow extends StatelessWidget {
         children: [
           Text(
             label,
-            style: TextStyle(
-              color: colorScheme.onSurface.withValues(alpha: 0.55),
+            style: GoogleFonts.inter(
+              color: AppColors.textMutedDark,
               fontSize: 13,
               fontWeight: FontWeight.w500,
             ),
@@ -879,8 +705,8 @@ class _AccountRow extends StatelessWidget {
               Expanded(
                 child: Text(
                   value,
-                  style: TextStyle(
-                    color: colorScheme.onSurface,
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                   ),
@@ -890,7 +716,7 @@ class _AccountRow extends StatelessWidget {
                 onTap: onModifica,
                 child: Text(
                   'Modifica',
-                  style: TextStyle(
+                  style: GoogleFonts.inter(
                     color: AppColors.brandAccent,
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -906,25 +732,19 @@ class _AccountRow extends StatelessWidget {
 }
 
 class _AccountDivider extends StatelessWidget {
-  const _AccountDivider({required this.color});
-
-  final Color color;
+  const _AccountDivider();
 
   @override
   Widget build(BuildContext context) {
-    return Divider(
+    return const Divider(
       height: 1,
       thickness: 1,
-      color: color,
+      color: AppColors.dividerDark,
       indent: 16,
       endIndent: 16,
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Pulsante Logout
-// ---------------------------------------------------------------------------
 
 class _LogoutButton extends StatelessWidget {
   const _LogoutButton({required this.onPressed});
@@ -932,6 +752,7 @@ class _LogoutButton extends StatelessWidget {
   final VoidCallback onPressed;
 
   static const _radius = BorderRadius.all(Radius.circular(12));
+  static const _borderColor = AppColors.brandAccent;
 
   @override
   Widget build(BuildContext context) {
@@ -939,21 +760,12 @@ class _LogoutButton extends StatelessWidget {
       height: 48,
       child: DecoratedBox(
         decoration: ShapeDecoration(
-          gradient: LinearGradient(
-            begin: const Alignment(0.50, 0.00),
-            end: const Alignment(0.50, 1.00),
-            colors: [
-              AppColors.brandSecondary,
-              AppColors.brandPrimary,
-              AppColors.brandPrimaryDark,
-            ],
-            stops: const [0.0, 0.5, 1.0],
-          ),
+          gradient: AppGradients.logoutButton,
           shape: const RoundedRectangleBorder(
             side: BorderSide(
               width: 2,
               strokeAlign: BorderSide.strokeAlignOutside,
-              color: AppColors.brandAccent,
+              color: _borderColor,
             ),
             borderRadius: _radius,
           ),
@@ -974,9 +786,9 @@ class _LogoutButton extends StatelessWidget {
             shape: const RoundedRectangleBorder(borderRadius: _radius),
           ),
           icon: const Icon(Icons.logout_rounded, size: 17, color: Colors.white),
-          label: const Text(
+          label: Text(
             'Logout',
-            style: TextStyle(
+            style: GoogleFonts.inter(
               fontSize: 16,
               fontWeight: FontWeight.w800,
               color: Colors.white,
@@ -988,10 +800,6 @@ class _LogoutButton extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Pulsante Elimina account
-// ---------------------------------------------------------------------------
-
 class _EliminaAccountButton extends StatelessWidget {
   const _EliminaAccountButton({required this.onPressed});
 
@@ -1002,15 +810,19 @@ class _EliminaAccountButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return SizedBox(
       height: 52,
       width: double.infinity,
       child: DecoratedBox(
         decoration: ShapeDecoration(
-          color: isDark ? null : _color.withValues(alpha: 0.08),
-          gradient: isDark ? AppGradients.whiteOverlay() : null,
+          gradient: LinearGradient(
+            begin: const Alignment(0.50, 0.00),
+            end: const Alignment(0.50, 1.00),
+            colors: [
+              Colors.white.withValues(alpha: 0.18),
+              Colors.white.withValues(alpha: 0.00),
+            ],
+          ),
           shape: const RoundedRectangleBorder(
             side: BorderSide(
               width: 2,
@@ -1019,13 +831,11 @@ class _EliminaAccountButton extends StatelessWidget {
             ),
             borderRadius: _radius,
           ),
-          shadows: [
+          shadows: const [
             BoxShadow(
-              color: isDark
-                  ? AppColors.shadowOverlay
-                  : Colors.black.withValues(alpha: 0.05),
+              color: AppColors.shadowOverlay,
               blurRadius: 4,
-              offset: const Offset(0, 4),
+              offset: Offset(0, 4),
             ),
           ],
         ),
@@ -1038,9 +848,9 @@ class _EliminaAccountButton extends StatelessWidget {
             shape: const RoundedRectangleBorder(borderRadius: _radius),
           ),
           icon: const Icon(Icons.cancel_outlined, size: 20, color: _color),
-          label: const Text(
+          label: Text(
             'Elimina account',
-            style: TextStyle(
+            style: GoogleFonts.inter(
               fontSize: 16,
               fontWeight: FontWeight.w800,
               color: _color,
@@ -1053,7 +863,7 @@ class _EliminaAccountButton extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Easter egg
+// Easter egg — popup dal basso con festoni
 // ---------------------------------------------------------------------------
 
 class _EasterEggSheet extends StatelessWidget {
@@ -1061,18 +871,15 @@ class _EasterEggSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: const BoxDecoration(
+        color: AppColors.surfaceDarkCard,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         boxShadow: [
           BoxShadow(
-            color: isDark ? AppColors.shadowHeavy : Colors.black12,
+            color: AppColors.shadowHeavy,
             blurRadius: 20,
-            offset: const Offset(0, -4),
+            offset: Offset(0, -4),
           ),
         ],
       ),
@@ -1084,7 +891,7 @@ class _EasterEggSheet extends StatelessWidget {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: isDark ? Colors.white24 : Colors.black12,
+              color: Colors.white24,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -1100,8 +907,8 @@ class _EasterEggSheet extends StatelessWidget {
           Text(
             '🎉 Hai trovato l\'easter egg! 🎉',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: colorScheme.onSurface,
+            style: GoogleFonts.inter(
+              color: Colors.white,
               fontSize: 18,
               fontWeight: FontWeight.w700,
             ),
@@ -1113,7 +920,7 @@ class _EasterEggSheet extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Dialog conferma eliminazione account
+// Popup di conferma eliminazione account
 // ---------------------------------------------------------------------------
 
 class _EliminaAccountDialog extends ConsumerStatefulWidget {
@@ -1155,26 +962,23 @@ class _EliminaAccountDialogState extends ConsumerState<_EliminaAccountDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Dialog(
-      backgroundColor: colorScheme.surface,
-      shape: RoundedRectangleBorder(
+      backgroundColor: AppColors.surfaceDarkCard,
+      shape: const RoundedRectangleBorder(
         borderRadius: _borderRadius,
-        side: const BorderSide(color: _red, width: 2),
+        side: BorderSide(color: AppColors.errorStrong, width: 2),
       ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // ── Icona warning ────────────────────────────────────────────
             Container(
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? AppColors.warningCircleDark
-                    : AppColors.warning.withValues(alpha: 0.1),
+                color: AppColors.warningCircleDark,
                 shape: BoxShape.circle,
                 border: Border.all(color: AppColors.keyYellow, width: 2),
               ),
@@ -1186,21 +990,23 @@ class _EliminaAccountDialogState extends ConsumerState<_EliminaAccountDialog> {
             ),
             const SizedBox(height: 14),
 
+            // ── Titolo ───────────────────────────────────────────────────
             Text(
               'Elimina account?',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: colorScheme.onSurface,
+              style: GoogleFonts.inter(
+                color: Colors.white,
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 8),
 
-            const Text(
+            // ── Avviso irreversibile ─────────────────────────────────────
+            Text(
               'Azione irreversibile: i tuoi dati non potranno essere recuperati.',
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: GoogleFonts.inter(
                 color: _red,
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
@@ -1213,7 +1019,7 @@ class _EliminaAccountDialogState extends ConsumerState<_EliminaAccountDialog> {
               Text(
                 _errorMessage!,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: GoogleFonts.inter(
                   color: _red,
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
@@ -1223,19 +1029,13 @@ class _EliminaAccountDialogState extends ConsumerState<_EliminaAccountDialog> {
 
             const SizedBox(height: 20),
 
+            // ── Pulsante Annulla (primario) ──────────────────────────────
             SizedBox(
               width: double.infinity,
               height: 50,
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      AppColors.brandSecondary,
-                      AppColors.brandPrimaryDark,
-                    ],
-                  ),
+                  gradient: AppGradients.primaryPurple,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: const [
                     BoxShadow(
@@ -1256,9 +1056,9 @@ class _EliminaAccountDialogState extends ConsumerState<_EliminaAccountDialog> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Annulla',
-                    style: TextStyle(
+                    style: GoogleFonts.inter(
                       color: Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
@@ -1269,6 +1069,7 @@ class _EliminaAccountDialogState extends ConsumerState<_EliminaAccountDialog> {
             ),
             const SizedBox(height: 12),
 
+            // ── Link testuale Elimina account (secondario) ───────────────
             _isDeleting
                 ? const SizedBox(
                     width: 18,
@@ -1282,7 +1083,7 @@ class _EliminaAccountDialogState extends ConsumerState<_EliminaAccountDialog> {
                     onTap: _confermaEliminazione,
                     child: Text(
                       'Elimina comunque',
-                      style: TextStyle(
+                      style: GoogleFonts.inter(
                         color: _red.withValues(alpha: 0.7),
                         fontSize: 13,
                         fontWeight: FontWeight.w500,

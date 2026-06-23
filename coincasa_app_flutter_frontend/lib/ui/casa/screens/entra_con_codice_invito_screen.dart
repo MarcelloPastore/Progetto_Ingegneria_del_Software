@@ -51,7 +51,8 @@ class InviteCodeEntryState {
 }
 
 class InviteCodeEntryController extends StateNotifier<InviteCodeEntryState> {
-  InviteCodeEntryController(this._casaRepo) : super(const InviteCodeEntryState());
+  InviteCodeEntryController(this._casaRepo)
+    : super(const InviteCodeEntryState());
 
   final ICasaRepository _casaRepo;
 
@@ -174,6 +175,8 @@ class _EntraConCodiceInvitoScreenState
     final state = ref.watch(inviteCodeEntryControllerProvider);
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: Scaffold(
@@ -182,7 +185,8 @@ class _EntraConCodiceInvitoScreenState
           child: LayoutBuilder(
             builder: (context, constraints) {
               return SingleChildScrollView(
-                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
                 child: ConstrainedBox(
                   constraints: BoxConstraints(minHeight: constraints.maxHeight),
                   child: Padding(
@@ -199,11 +203,11 @@ class _EntraConCodiceInvitoScreenState
                         SizedBox(height: constraints.maxHeight * 0.07),
                         const _KeyBadge(),
                         const SizedBox(height: AppSizes.p25),
-                        const Text(
+                        Text(
                           'Codice Invito',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: AppColors.textOnDark,
+                            color: onSurface,
                             fontSize: 21,
                             fontWeight: FontWeight.w700,
                           ),
@@ -270,6 +274,7 @@ class _InviteCodeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
     return SizedBox(
       height: AppSizes.p40,
       child: Stack(
@@ -293,11 +298,11 @@ class _InviteCodeHeader extends StatelessWidget {
               ),
             ),
           ),
-          const Text(
+          Text(
             'Entra con codice',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: AppColors.textOnDark,
+              color: onSurface,
               fontSize: 27,
               fontWeight: FontWeight.w800,
             ),
@@ -338,9 +343,13 @@ class _CodeFieldLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
     final labelColor = hasError
         ? AppColors.errorStrong
-        : AppColors.textMutedLight;
+        : (isDark
+              ? AppColors.textMutedLight
+              : onSurface.withValues(alpha: 0.65));
 
     return Center(
       child: RichText(
@@ -550,6 +559,9 @@ class _InviteCodeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+
     if (filled) {
       return SizedBox(
         width: double.infinity,
@@ -579,7 +591,7 @@ class _InviteCodeButton extends StatelessWidget {
       child: OutlinedButton(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.textOnDark,
+          foregroundColor: onSurface,
           side: const BorderSide(color: AppColors.primaryBorder, width: 2),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppSizes.radius15),
@@ -587,7 +599,7 @@ class _InviteCodeButton extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: AppTextStyles.button,
+          style: AppTextStyles.button.copyWith(color: onSurface),
         ),
       ),
     );
@@ -622,11 +634,7 @@ class _ButtonContent extends StatelessWidget {
           ),
         ),
         const SizedBox(width: AppSizes.p12),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: AppTextStyles.button,
-        ),
+        Text(label, textAlign: TextAlign.center, style: AppTextStyles.button),
       ],
     );
   }

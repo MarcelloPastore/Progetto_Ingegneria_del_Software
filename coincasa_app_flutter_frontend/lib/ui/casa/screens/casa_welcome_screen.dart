@@ -57,7 +57,9 @@ class _CasaWelcomeScreenState extends State<CasaWelcomeScreen> {
         username: normalizedUsername,
         name: normalizedName,
         surname: normalizedSurname,
-        displayName: normalizedDisplayName.isNotEmpty ? normalizedDisplayName : null,
+        displayName: normalizedDisplayName.isNotEmpty
+            ? normalizedDisplayName
+            : null,
       );
       return;
     }
@@ -109,6 +111,8 @@ class _CasaWelcomeScreenState extends State<CasaWelcomeScreen> {
         : (_isLoading ? '...' : 'utente');
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: Scaffold(
@@ -134,12 +138,14 @@ class _CasaWelcomeScreenState extends State<CasaWelcomeScreen> {
                             onTap: () =>
                                 Navigator.of(context).pushNamed('/account'),
                             customBorder: const CircleBorder(),
-                            child: const CircleAvatar(
+                            child: CircleAvatar(
                               radius: 20,
-                              backgroundColor: AppColors.surfaceDarkMuted,
+                              backgroundColor: isDark
+                                  ? AppColors.surfaceDarkMuted
+                                  : AppColors.surfaceTint,
                               child: Icon(
                                 Icons.person_rounded,
-                                color: AppColors.textOnDark,
+                                color: onSurface,
                                 size: 22,
                               ),
                             ),
@@ -153,11 +159,11 @@ class _CasaWelcomeScreenState extends State<CasaWelcomeScreen> {
                           fit: BoxFit.contain,
                         ),
                         const SizedBox(height: AppSizes.p13),
-                        const Text(
+                        Text(
                           'Benvenuto in CoinCasa!',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: AppColors.textOnDark,
+                            color: onSurface,
                             fontSize: 21,
                             fontWeight: FontWeight.w800,
                           ),
@@ -165,11 +171,11 @@ class _CasaWelcomeScreenState extends State<CasaWelcomeScreen> {
                         const SizedBox(height: AppSizes.p28),
                         _WelcomeInfoBox(userName: displayName),
                         const SizedBox(height: AppSizes.p16),
-                        const Text(
+                        Text(
                           'Crea la tua casa o entra in quella di un\ncoinquilino',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: AppColors.textOnDark,
+                            color: onSurface,
                             fontSize: 16,
                             height: 1.18,
                             fontWeight: FontWeight.w700,
@@ -221,6 +227,8 @@ class _WelcomeInfoBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(
@@ -228,9 +236,12 @@ class _WelcomeInfoBox extends StatelessWidget {
         vertical: AppSizes.p15,
       ),
       decoration: BoxDecoration(
-        color: AppColors.inputFillDark,
+        color: isDark ? AppColors.inputFillDark : AppColors.surfaceDark,
         borderRadius: BorderRadius.circular(AppSizes.radius15),
-        border: Border.all(color: AppColors.inputBorderDark, width: 2),
+        border: Border.all(
+          color: isDark ? AppColors.inputBorderDark : AppColors.brandPrimary,
+          width: 2,
+        ),
       ),
       child: Column(
         children: [
@@ -275,6 +286,8 @@ class _CasaActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+
     return Material(
       color: filled ? AppColors.brandSecondary : Colors.transparent,
       borderRadius: BorderRadius.circular(AppSizes.radius15),
@@ -297,7 +310,7 @@ class _CasaActionButton extends StatelessWidget {
             children: [
               Icon(
                 icon,
-                color: filled ? AppColors.textMutedLight : AppColors.keyYellow,
+                color: filled ? AppColors.textOnDark : AppColors.brandPrimary,
                 size: AppSizes.p25,
               ),
               const SizedBox(width: AppSizes.p16),
@@ -307,8 +320,8 @@ class _CasaActionButton extends StatelessWidget {
                   textAlign: TextAlign.center,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.textOnDark,
+                  style: TextStyle(
+                    color: filled ? AppColors.textOnDark : onSurface,
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
                   ),
@@ -327,24 +340,31 @@ class _OrDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    return Row(
       children: [
         Expanded(
-          child: Divider(color: AppColors.inputBorderDark, thickness: 1),
+          child: Divider(
+            color: Theme.of(context).colorScheme.outline,
+            thickness: 1,
+          ),
         ),
         Padding(
-          padding: EdgeInsets.symmetric(horizontal: AppSizes.p11),
+          padding: const EdgeInsets.symmetric(horizontal: AppSizes.p11),
           child: Text(
             'oppure',
             style: TextStyle(
-              color: AppColors.textMutedLight,
+              color: onSurface.withValues(alpha: 0.6),
               fontSize: 17,
               fontWeight: FontWeight.w600,
             ),
           ),
         ),
         Expanded(
-          child: Divider(color: AppColors.inputBorderDark, thickness: 1),
+          child: Divider(
+            color: Theme.of(context).colorScheme.outline,
+            thickness: 1,
+          ),
         ),
       ],
     );

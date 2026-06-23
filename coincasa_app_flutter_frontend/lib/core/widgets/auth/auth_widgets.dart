@@ -18,13 +18,16 @@ class AuthRecoveryScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
-      child: GestureDetector(
-        onTap: () => FocusScope.of(context).unfocus(),
-        child: Scaffold(
-          backgroundColor: AppColors.darkBackground,
-          body: SafeArea(
-            child: SingleChildScrollView(
-              child: Padding(padding: padding, child: child),
+      child: Theme(
+        data: AppTheme.darkTheme,
+        child: GestureDetector(
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: Scaffold(
+            backgroundColor: AppColors.darkBackground,
+            body: SafeArea(
+              child: SingleChildScrollView(
+                child: Padding(padding: padding, child: child),
+              ),
             ),
           ),
         ),
@@ -371,9 +374,11 @@ class AuthField extends StatelessWidget {
           child: TextField(
             controller: controller,
             obscureText: obscureText,
-            style: recoveryStyle
-                ? AppTextStyles.input
-                : AppTextStyles.inputCompact,
+            style:
+                (recoveryStyle
+                        ? AppTextStyles.input
+                        : AppTextStyles.inputCompact)
+                    .copyWith(color: AppColors.textOnDark),
             cursorColor: AppColors.focus,
             decoration: InputDecoration(
               isDense: true,

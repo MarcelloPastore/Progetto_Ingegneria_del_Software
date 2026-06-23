@@ -31,6 +31,8 @@ class CasaPreSchermataHubCasaScreen extends StatelessWidget {
     final locationText = _formatLocationText(houseType: houseType, city: city);
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: Scaffold(
@@ -57,11 +59,11 @@ class CasaPreSchermataHubCasaScreen extends StatelessWidget {
                           fit: BoxFit.contain,
                         ),
                         const SizedBox(height: AppSizes.p22),
-                        const Text(
+                        Text(
                           'Codice valido!',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: AppColors.textOnDark,
+                            color: onSurface,
                             fontSize: 25,
                             fontWeight: FontWeight.w800,
                           ),
@@ -132,6 +134,8 @@ class _HousePreviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(
@@ -141,9 +145,12 @@ class _HousePreviewCard extends StatelessWidget {
         AppSizes.p20,
       ),
       decoration: BoxDecoration(
-        color: AppColors.inputFillDark,
+        color: isDark ? AppColors.inputFillDark : AppColors.surfaceDark,
         borderRadius: BorderRadius.circular(AppSizes.radius8),
-        border: Border.all(color: AppColors.inputBorderDark, width: 2),
+        border: Border.all(
+          color: isDark ? AppColors.inputBorderDark : AppColors.brandPrimary,
+          width: 2,
+        ),
       ),
       child: Column(
         children: [
@@ -260,13 +267,15 @@ class _CancelButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+
     return SizedBox(
       height: AppSizes.p56,
       child: OutlinedButton(
         onPressed: Navigator.of(context).pop,
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.brandAccent,
-          side: const BorderSide(color: AppColors.brandAccent, width: 2),
+          foregroundColor: onSurface,
+          side: const BorderSide(color: AppColors.primaryBorder, width: 2),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppSizes.radius15),
           ),

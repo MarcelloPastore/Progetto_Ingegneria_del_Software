@@ -95,8 +95,7 @@ class _FabScadenzaPanelState extends ConsumerState<FabScadenzaPanel> {
                   hasError: _hasNameError,
                 ),
               ),
-              if (_hasNameError)
-                const _ErrorMessage(text: 'Inserisci un nome'),
+              if (_hasNameError) const _ErrorMessage(text: 'Inserisci un nome'),
             ],
           ),
         ),
@@ -235,13 +234,15 @@ class _FabScadenzaPanelState extends ConsumerState<FabScadenzaPanel> {
 
     setState(() => _isSaving = true);
     try {
-      await ref.read(scadenzeViewModelProvider(casaId).notifier).createScadenza({
-        'nome': nome,
-        'descrizione': descrizione,
-        if (dataIso != null) 'dataScadenza': dataIso,
-        'isRicorrente': isRicorrente,
-        if (cadenzaGiorni != null) 'cadenzaGiorni': cadenzaGiorni,
-      });
+      await ref
+          .read(scadenzeViewModelProvider(casaId).notifier)
+          .createScadenza({
+            'nome': nome,
+            'descrizione': descrizione,
+            if (dataIso != null) 'dataScadenza': dataIso,
+            'isRicorrente': isRicorrente,
+            if (cadenzaGiorni != null) 'cadenzaGiorni': cadenzaGiorni,
+          });
 
       if (mounted) setState(() => _isCreated = true);
     } catch (e) {
@@ -350,43 +351,34 @@ class _FrequencySelector extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppSizes.p7),
           elevation: 4,
           shadowColor: Colors.black45,
-          child: SizedBox(
-            height: 41,
-            child: Padding(
-              padding: const EdgeInsets.only(
-                left: AppSizes.p12,
-                right: AppSizes.p4,
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      selectedValue,
-                      style: TextStyle(
-                        color: AppColors.textOnDark,
-                        fontSize: AppSizes.p18,
-                        fontWeight: FontWeight.w600,
+          child: InkWell(
+            onTap: onToggle,
+            borderRadius: BorderRadius.circular(AppSizes.p7),
+            child: SizedBox(
+              height: 41,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSizes.p12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        selectedValue,
+                        style: TextStyle(
+                          color: AppColors.textOnDark,
+                          fontSize: AppSizes.p18,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
-                  ),
-                  IconButton(
-                    onPressed: onToggle,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 40,
-                      minHeight: 40,
-                    ),
-                    icon: Icon(
+                    Icon(
                       isExpanded
                           ? Icons.keyboard_arrow_up
                           : Icons.keyboard_arrow_down,
                       color: AppColors.featureAccent,
                       size: AppSizes.p26,
                     ),
-                    tooltip:
-                        isExpanded ? 'Chiudi frequenza' : 'Apri frequenza',
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -424,8 +416,9 @@ class _FrequencySelector extends StatelessWidget {
                             ? AppColors.featureAccent
                             : AppColors.textOnDark,
                         fontSize: AppSizes.p13,
-                        fontWeight:
-                            selected ? FontWeight.w700 : FontWeight.w600,
+                        fontWeight: selected
+                            ? FontWeight.w700
+                            : FontWeight.w600,
                       ),
                     ),
                   ),
@@ -455,7 +448,10 @@ class _LabeledField extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: AppSizes.p2, bottom: AppSizes.p4),
+          padding: const EdgeInsets.only(
+            left: AppSizes.p2,
+            bottom: AppSizes.p4,
+          ),
           child: RichText(
             text: TextSpan(
               text: label.toUpperCase(),

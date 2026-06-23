@@ -53,6 +53,7 @@ class AppOtpInput extends StatelessWidget {
             focusedErrorBorder: InputBorder.none,
             counterText: '',
             isCollapsed: true,
+            filled: false,
           ),
         ),
       ),
