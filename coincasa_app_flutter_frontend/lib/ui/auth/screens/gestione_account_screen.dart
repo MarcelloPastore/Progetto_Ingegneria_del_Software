@@ -11,8 +11,8 @@ import 'package:coincasa_app/core/theme/app_theme.dart';
 import 'package:coincasa_app/core/utils/validation_utils.dart';
 import 'package:coincasa_app/domain/viewmodel/account_view_model.dart';
 import 'package:coincasa_app/domain/viewmodel/auth_view_model.dart';
-import 'package:coincasa_app/ui/auth/screens/check_email_screen.dart';
-import 'package:coincasa_app/ui/auth/screens/elimina_account_success_screen.dart';
+import 'package:coincasa_app/ui/auth/screens/controlla_email_screen.dart';
+import 'package:coincasa_app/ui/auth/screens/elimina_account_successo_screen.dart';
 import 'package:coincasa_app/ui/auth/screens/modifica_password_screen.dart';
 import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
 
