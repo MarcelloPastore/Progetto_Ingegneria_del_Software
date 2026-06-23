@@ -9,6 +9,9 @@ import 'package:coincasa_app/core/utils/user_initials.dart';
 import 'package:coincasa_app/core/widgets/common/common_widgets.dart';
 import 'package:coincasa_app/ui/spese/screens/lista_spese.dart';
 import 'package:coincasa_app/ui/spese/screens/form_modifica_spesa.dart';
+import 'package:coincasa_app/ui/spese/screens/ocr_ricevuta_screen.dart';
+import 'package:coincasa_app/ui/spese/widgets/spesa_ocr_button.dart';
+import 'package:coincasa_app/ui/spese/widgets/spesa_allega_scontrino_button.dart';
 import 'package:coincasa_app/domain/viewmodel/auth_view_model.dart';
 import 'package:coincasa_app/domain/viewmodel/spese_viewmodel.dart';
 
@@ -29,6 +32,7 @@ class InserisciSpesaScreen extends ConsumerStatefulWidget {
 class _InserisciSpesaScreenState extends ConsumerState<InserisciSpesaScreen> {
   final _importoCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
+  bool _hasScontrino = false;
 
   @override
   void dispose() {
@@ -167,7 +171,15 @@ class _InserisciSpesaScreenState extends ConsumerState<InserisciSpesaScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: AppSizes.p24),
+                      const SizedBox(height: AppSizes.p10),
+
+                      // Allega scontrino
+                      SpesaAllegaScontrinoButton(
+                        hasAttachment: _hasScontrino,
+                        onTap: () => setState(() => _hasScontrino = true),
+                        onRemove: () => setState(() => _hasScontrino = false),
+                      ),
+                      const SizedBox(height: AppSizes.p14),
 
                       // Dividi tra — shared widget
                       inquiliniAsync.when(
@@ -257,6 +269,38 @@ class _InserisciSpesaScreenState extends ConsumerState<InserisciSpesaScreen> {
                 ),
               ),
 
+              // OCR button — bottom-right above confirm
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSizes.p16,
+                  AppSizes.p8,
+                  AppSizes.p16,
+                  AppSizes.p0,
+                ),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: SpesaOcrButton(
+                    onPressed: () async {
+                      final result = await Navigator.of(context).push<OcrMockDati>(
+                        MaterialPageRoute<OcrMockDati>(
+                          builder: (_) => const OcrRicevutaScreen(),
+                        ),
+                      );
+                      if (result != null && mounted) {
+                        setState(() => _hasScontrino = true);
+                        _importoCtrl.text = result.importo;
+                        _descCtrl.text = result.descrizione;
+                        final ctrl = ref.read(
+                          speseCreateFormProvider.notifier,
+                        );
+                        ctrl.setImporto(result.importo);
+                        ctrl.setDescrizione(result.descrizione);
+                        ctrl.setDataSpesa(result.data);
+                      }
+                    },
+                  ),
+                ),
+              ),
               // CTA pinned — shared widget
               Padding(
                 padding: const EdgeInsets.fromLTRB(
@@ -301,6 +345,7 @@ class InserisciSpesaPopupContent extends ConsumerStatefulWidget {
 class _InserisciSpesaPopupContentState
     extends ConsumerState<InserisciSpesaPopupContent> {
   final _descrizioneController = TextEditingController();
+  bool _hasScontrino = false;
 
   @override
   void dispose() {
@@ -388,7 +433,13 @@ class _InserisciSpesaPopupContentState
             controller: _descrizioneController,
             onChanged: controller.setDescrizione,
           ),
-          const SizedBox(height: AppSizes.p18),
+          const SizedBox(height: AppSizes.p10),
+          SpesaAllegaScontrinoButton(
+            hasAttachment: _hasScontrino,
+            onTap: () => setState(() => _hasScontrino = true),
+            onRemove: () => setState(() => _hasScontrino = false),
+          ),
+          const SizedBox(height: AppSizes.p10),
           inquiliniAsync.when(
             loading: () => const _DivisioneLoading(),
             error: (_, _) => _PopupDivisioneSection(
@@ -427,7 +478,28 @@ class _InserisciSpesaPopupContentState
             const SizedBox(height: AppSizes.p10),
             _ErrorLine(message: 'Dati mancanti: compila i campi necessari'),
           ],
-          const SizedBox(height: AppSizes.p14),
+          const SizedBox(height: AppSizes.p10),
+          Align(
+            alignment: Alignment.centerRight,
+            child: SpesaOcrButton(
+              onPressed: () async {
+                final result = await Navigator.of(context).push<OcrMockDati>(
+                  MaterialPageRoute<OcrMockDati>(
+                    builder: (_) => const OcrRicevutaScreen(),
+                  ),
+                );
+                if (result != null && mounted) {
+                  setState(() => _hasScontrino = true);
+                  _descrizioneController.text = result.descrizione;
+                  final ctrl = ref.read(speseCreateFormProvider.notifier);
+                  ctrl.setImporto(result.importo);
+                  ctrl.setDescrizione(result.descrizione);
+                  ctrl.setDataSpesa(result.data);
+                }
+              },
+            ),
+          ),
+          const SizedBox(height: AppSizes.p10),
           FabSaveButton(
             label: 'Salva spesa',
             onPressed: form.canSubmit ? _submit : null,

@@ -69,6 +69,7 @@ class CoinCasaApp extends ConsumerWidget {
           NessunaSpeseRegistrataScreen.routeName: (_) =>
               const NessunaSpeseRegistrataScreen(),
           InserisciSpesaScreen.routeName: (_) => const InserisciSpesaScreen(),
+          OcrRicevutaScreen.routeName: (_) => const OcrRicevutaScreen(),
           InserisciSpesaMembroScreen.routeName: (_) =>
               const InserisciSpesaMembroScreen(),
           InserisciSpesaSuccessoScreen.routeName: (_) =>

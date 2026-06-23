@@ -269,6 +269,8 @@ class _DetailContent extends StatelessWidget {
                   isPaying: isPaying,
                   onPayQuota: onPayQuota,
                 ),
+                const SizedBox(height: AppSizes.p32),
+                const _ScontrinoAllegatoMock(),
               ],
             ),
           ),
@@ -531,6 +533,125 @@ class _SummaryRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Mock receipt section
+// ---------------------------------------------------------------------------
+
+class _ScontrinoAllegatoMock extends StatelessWidget {
+  const _ScontrinoAllegatoMock();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'SCONTRINO ALLEGATO',
+          style: AppTextStyles.screenTitleStrong.copyWith(
+            color: AppColors.textDisabled,
+            fontSize: AppSizes.p21,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: AppSizes.p10),
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(AppSizes.radius8),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.14),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.all(AppSizes.p14),
+          child: const Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'ESSELUNGA',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Color(0xFF1E1B2E),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2.5,
+                ),
+              ),
+              SizedBox(height: AppSizes.p2),
+              Text(
+                'Via Roma, 15 – Milano',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Color(0xFF8D889C), fontSize: 9),
+              ),
+              Divider(height: 16, color: Color(0xFFD6D2E6)),
+              _ReceiptRow(label: 'Pasta 500g', value: '€ 1,59'),
+              _ReceiptRow(label: 'Latte intero', value: '€ 2,10'),
+              _ReceiptRow(label: 'Pane casereccio', value: '€ 2,80'),
+              _ReceiptRow(label: 'Verdura mista', value: '€ 5,30'),
+              _ReceiptRow(label: 'Succo di frutta', value: '€ 4,20'),
+              _ReceiptRow(label: 'Biscotti assortiti', value: '€ 2,41'),
+              Divider(height: 14, color: Color(0xFFD6D2E6)),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'TOTALE',
+                    style: TextStyle(
+                      color: Color(0xFF1E1B2E),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                  Text(
+                    '€ 18,40',
+                    style: TextStyle(
+                      color: Color(0xFF1E1B2E),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ReceiptRow extends StatelessWidget {
+  const _ReceiptRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSizes.p2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(color: Color(0xFF5B5668), fontSize: 10),
+          ),
+          Text(
+            value,
+            style: const TextStyle(color: Color(0xFF5B5668), fontSize: 10),
+          ),
+        ],
+      ),
     );
   }
 }

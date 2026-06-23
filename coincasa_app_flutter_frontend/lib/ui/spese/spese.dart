@@ -1,4 +1,7 @@
 export 'screens/elimina_spesa.dart';
+export 'screens/ocr_ricevuta_screen.dart';
+export 'widgets/spesa_ocr_button.dart';
+export 'widgets/spesa_allega_scontrino_button.dart';
 export 'screens/form_modifica_spesa.dart';
 export 'screens/dettaglio_spesa.dart';
 export 'screens/dettaglio_spesa_debitore.dart';
