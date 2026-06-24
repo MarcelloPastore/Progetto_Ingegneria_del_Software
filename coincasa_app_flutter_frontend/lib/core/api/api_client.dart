@@ -51,6 +51,11 @@ class ApiClient {
   /// persistente e reindirizzare al login. Va registrato in main().
   Future<void> Function()? onUnauthorized;
 
+  /// Chiamato quando il server risponde 403 con code ROLE_OUTDATED.
+  /// Il token contiene un ruolo non più valido: il frontend deve
+  /// rifare selectCasa per aggiornarlo. Va registrato in main().
+  void Function()? onRoleOutdated;
+
   // ── Interceptor autenticazione ───────────────────────────────────────────
 
   InterceptorsWrapper _authInterceptor() {
@@ -243,6 +248,13 @@ class ApiClient {
       // ignore: discarded_futures
       onUnauthorized?.call();
       throw ApiException(statusCode: 401, body: response.data?.toString());
+    }
+    if (status == 403) {
+      final data = response.data;
+      if (data is Map<String, dynamic> && data['code'] == 'ROLE_OUTDATED') {
+        onRoleOutdated?.call();
+      }
+      throw ApiException(statusCode: 403, body: response.data?.toString());
     }
     if (status < 200 || status >= 300) {
       throw ApiException(

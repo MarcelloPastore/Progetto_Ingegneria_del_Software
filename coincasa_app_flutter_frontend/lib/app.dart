@@ -28,6 +28,9 @@ final RouteObserver<ModalRoute<dynamic>> appRouteObserver =
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
+final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();
+
 class CoinCasaApp extends ConsumerWidget {
   const CoinCasaApp({super.key});
 
@@ -42,6 +45,7 @@ class CoinCasaApp extends ConsumerWidget {
         darkTheme: AppTheme.darkTheme,
         themeMode: themeMode,
         navigatorKey: navigatorKey,
+        scaffoldMessengerKey: scaffoldMessengerKey,
         navigatorObservers: [appRouteObserver],
         home: const _AppStartupScreen(),
         routes: {

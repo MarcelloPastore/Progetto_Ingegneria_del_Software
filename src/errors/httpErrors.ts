@@ -26,3 +26,9 @@ export class NotFoundError extends HttpError {
     super(404, message, "NOT_FOUND");
   }
 }
+
+export class RoleOutdatedError extends HttpError {
+  constructor(message = "Ruolo non aggiornato: riseleziona la casa.") {
+    super(403, message, "ROLE_OUTDATED");
+  }
+}
