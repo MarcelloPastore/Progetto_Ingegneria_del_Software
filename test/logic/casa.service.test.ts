@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   deleteCasa: vi.fn(),
   findMembroCasaByCasaAndUtente: vi.fn(),
   findMembroCasaByCasaAndUtenteOrThrow: vi.fn(),
+  getCasaCreator: vi.fn(),
   addMembroCasa: vi.fn(),
   updateMembroCasaRole: vi.fn(),
   removeMembroCasa: vi.fn(),
@@ -45,6 +46,9 @@ vi.mock("../../src/repository/CasaRepository", () => ({
     }
     findMembroCasaByCasaAndUtenteOrThrow(...args: unknown[]) {
       return mocks.findMembroCasaByCasaAndUtenteOrThrow(...args);
+    }
+    getCasaCreator(...args: unknown[]) {
+      return mocks.getCasaCreator(...args);
     }
     addMembroCasa(...args: unknown[]) {
       return mocks.addMembroCasa(...args);
@@ -143,5 +147,181 @@ describe("CasaService", () => {
     expect(mocks.addMembroCasa).toHaveBeenCalledWith("c1", "u3");
     expect(result.utente.id).toBe("u3");
     expect(result.ruolo).toBe(Ruolo.Inquilino);
+  });
+
+  it("getCase maps houses for the authenticated user", async () => {
+    mocks.findCaseByUser.mockResolvedValue([baseCasa]);
+
+    const service = new CasaService();
+    const result = await service.getCase("u1");
+
+    expect(mocks.findCaseByUser).toHaveBeenCalledWith("u1");
+    expect(result[0]).toEqual(
+      expect.objectContaining({
+        id: "c1",
+        nome: "Casa Milano",
+        ruoloUtente: Ruolo.HomeAdmin,
+        membriTotali: 2,
+      }),
+    );
+  });
+
+  it("getCasa validates membership before returning house details", async () => {
+    mocks.findMembroCasaByCasaAndUtenteOrThrow.mockResolvedValue(
+      baseCasa.membri[0],
+    );
+    mocks.findCasaByIdOrThrow.mockResolvedValue(baseCasa);
+
+    const service = new CasaService();
+    const result = await service.getCasa("c1", "u1");
+
+    expect(mocks.findMembroCasaByCasaAndUtenteOrThrow).toHaveBeenCalledWith(
+      "c1",
+      "u1",
+    );
+    expect(result.membri).toHaveLength(2);
+  });
+
+  it("modificaCasa and eliminaCasa require HomeAdmin membership", async () => {
+    mocks.findMembroCasaByCasaAndUtenteOrThrow.mockResolvedValue(
+      baseCasa.membri[0],
+    );
+    mocks.updateCasa.mockResolvedValue({ ...baseCasa, nome: "Casa nuova" });
+    mocks.deleteCasa.mockResolvedValue(undefined);
+
+    const service = new CasaService();
+    const updated = await service.modificaCasa("c1", "u1", {
+      nome: "Casa nuova",
+    });
+    await service.eliminaCasa("c1", "u1");
+
+    expect(mocks.updateCasa).toHaveBeenCalledWith("c1", {
+      nome: "Casa nuova",
+    });
+    expect(updated.nome).toBe("Casa nuova");
+    expect(mocks.deleteCasa).toHaveBeenCalledWith("c1");
+  });
+
+  it("rejects admin operations from non HomeAdmin members", async () => {
+    mocks.findMembroCasaByCasaAndUtenteOrThrow.mockResolvedValue(
+      baseCasa.membri[1],
+    );
+
+    const service = new CasaService();
+
+    await expect(
+      service.modificaCasa("c1", "u2", { nome: "No" }),
+    ).rejects.toThrow("Solo un HomeAdmin");
+    expect(mocks.updateCasa).not.toHaveBeenCalled();
+  });
+
+  it("returns all members and a single member after membership validation", async () => {
+    mocks.findMembroCasaByCasaAndUtenteOrThrow
+      .mockResolvedValueOnce(baseCasa.membri[0])
+      .mockResolvedValueOnce(baseCasa.membri[0])
+      .mockResolvedValueOnce(baseCasa.membri[1]);
+    mocks.findCasaByIdOrThrow.mockResolvedValue(baseCasa);
+
+    const service = new CasaService();
+    const all = await service.getAllInquilini("c1", "u1");
+    const one = await service.getInquilino("c1", "u2", "u1");
+
+    expect(all).toHaveLength(2);
+    expect(one.utente.id).toBe("u2");
+  });
+
+  it("rejects adding an already present tenant", async () => {
+    mocks.findCasaByIdAndInviteLinkOrThrow.mockResolvedValue(baseCasa);
+    mocks.findMembroCasaByCasaAndUtente.mockResolvedValue(baseCasa.membri[1]);
+
+    const service = new CasaService();
+
+    await expect(
+      service.aggiungiInquilino("c1", { inviteLink: "invite-123" }, "u2"),
+    ).rejects.toThrow("gia parte");
+    expect(mocks.addMembroCasa).not.toHaveBeenCalled();
+  });
+
+  it("rimuoviInquilino blocks owner removal and removes normal members", async () => {
+    mocks.findMembroCasaByCasaAndUtenteOrThrow.mockResolvedValue(
+      baseCasa.membri[0],
+    );
+    mocks.getCasaCreator.mockResolvedValueOnce("u1").mockResolvedValueOnce("u1");
+    mocks.removeMembroCasa.mockResolvedValue(undefined);
+
+    const service = new CasaService();
+
+    await expect(service.rimuoviInquilino("c1", "u1", "u1")).rejects.toThrow(
+      "proprietario",
+    );
+    await service.rimuoviInquilino("c1", "u2", "u1");
+
+    expect(mocks.removeMembroCasa).toHaveBeenCalledWith("c1", "u2");
+  });
+
+  it("modificaRuolo blocks owner role changes and updates normal members", async () => {
+    mocks.findMembroCasaByCasaAndUtenteOrThrow.mockResolvedValue(
+      baseCasa.membri[0],
+    );
+    mocks.getCasaCreator.mockResolvedValueOnce("u1").mockResolvedValueOnce("u1");
+    mocks.updateMembroCasaRole.mockResolvedValue({
+      ...baseCasa.membri[1],
+      ruolo: Ruolo.HomeAdmin,
+    });
+
+    const service = new CasaService();
+
+    await expect(
+      service.modificaRuolo("c1", "u1", { ruolo: Ruolo.Inquilino }, "u1"),
+    ).rejects.toThrow("ruolo del proprietario");
+
+    const updated = await service.modificaRuolo(
+      "c1",
+      "u2",
+      { ruolo: Ruolo.HomeAdmin },
+      "u1",
+    );
+
+    expect(mocks.updateMembroCasaRole).toHaveBeenCalledWith(
+      "c1",
+      "u2",
+      Ruolo.HomeAdmin,
+    );
+    expect(updated.ruolo).toBe(Ruolo.HomeAdmin);
+  });
+
+  it("generaLink reuses existing invite link or regenerates it", async () => {
+    mocks.findMembroCasaByCasaAndUtenteOrThrow.mockResolvedValue(
+      baseCasa.membri[0],
+    );
+    mocks.findCasaByIdOrThrow.mockResolvedValue(baseCasa);
+    mocks.updateCasa.mockResolvedValue({
+      ...baseCasa,
+      inviteLink: "invite-123",
+    });
+
+    const service = new CasaService();
+
+    await expect(service.generaLink("c1", "u1", false)).resolves.toEqual({
+      inviteLink: "invite-123",
+    });
+    await expect(service.generaLink("c1", "u1", true)).resolves.toEqual({
+      inviteLink: "invite-123",
+    });
+    expect(mocks.updateCasa).toHaveBeenCalledWith("c1", {
+      inviteLink: "invite-123",
+    });
+  });
+
+  it("selectCasa returns the selected house role", async () => {
+    mocks.findMembroCasaByCasaAndUtenteOrThrow.mockResolvedValue(
+      baseCasa.membri[0],
+    );
+
+    const service = new CasaService();
+    await expect(service.selectCasa("c1", "u1")).resolves.toEqual({
+      idCasa: "c1",
+      ruoloCasa: Ruolo.HomeAdmin,
+    });
   });
 });
