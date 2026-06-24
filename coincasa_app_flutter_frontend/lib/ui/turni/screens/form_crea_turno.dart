@@ -327,24 +327,28 @@ class _AssigneeSection extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSizes.p15),
-          Row(
-            children: List.generate(inquilini.take(4).length, (index) {
-              final inquilino = inquilini[index];
-              final label = _initials(inquilino);
-              final selected = inquilino.id == selectedId;
-              return Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(right: AppSizes.p10),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: List.generate(inquilini.length, (index) {
+                final inquilino = inquilini[index];
+                final label = _initials(inquilino);
+                final selected = inquilino.id == selectedId;
+                return Padding(
+                  padding: EdgeInsets.only(
+                    right: index < inquilini.length - 1 ? AppSizes.p10 : 0,
+                  ),
                   child: _AssigneeChip(
                     label: label,
+                    username: inquilino.username,
                     color: userAvatarColorsForSeed(inquilino.id).background,
                     selected: selected,
                     showError: showError,
                     onTap: () => onSelected(inquilino.id),
                   ),
-                ),
-              );
-            }),
+                );
+              }),
+            ),
           ),
         ],
       ),
@@ -445,6 +449,7 @@ class _AssignMeButton extends StatelessWidget {
 class _AssigneeChip extends StatelessWidget {
   const _AssigneeChip({
     required this.label,
+    required this.username,
     required this.color,
     required this.selected,
     required this.showError,
@@ -452,6 +457,7 @@ class _AssigneeChip extends StatelessWidget {
   });
 
   final String label;
+  final String username;
   final Color color;
   final bool selected;
   final bool showError;
@@ -459,38 +465,65 @@ class _AssigneeChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final borderColor = showError
+        ? AppColors.errorStrong
+        : selected
+        ? AppColors.textOnDark
+        : AppColors.transparent;
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppSizes.radius12),
-      child: Container(
-        height: AppSizes.p34,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(AppSizes.radius12),
-          border: Border.all(
-            color: showError
-                ? AppColors.errorStrong
-                : selected
-                ? _textColor(label)
-                : AppColors.transparent,
-            width: AppSizes.p2_2,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: AppSizes.p56,
+            height: AppSizes.p56,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              border: Border.all(color: borderColor, width: AppSizes.p2_2),
+              boxShadow: selected
+                  ? [
+                      BoxShadow(
+                        color: color.withValues(alpha: 0.45),
+                        blurRadius: AppSizes.p10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Text(
+              label,
+              style: AppTextStyles.bodyStrong.copyWith(
+                color: AppColors.textOnDark,
+                fontSize: AppSizes.p18,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
           ),
-        ),
-        child: Text(
-          label,
-          style: AppTextStyles.bodyStrong.copyWith(
-            color: _textColor(label),
-            fontSize: AppSizes.p16,
-            fontWeight: FontWeight.w800,
+          const SizedBox(height: AppSizes.p4),
+          SizedBox(
+            width: AppSizes.p64,
+            child: Text(
+              username,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: AppTextStyles.bodyStrong.copyWith(
+                color: selected
+                    ? Theme.of(context).colorScheme.onSurface
+                    : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                fontSize: AppSizes.p11,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
           ),
-        ),
+        ],
       ),
     );
-  }
-
-  static Color _textColor(String label) {
-    return AppColors.textOnDark;
   }
 }
 
