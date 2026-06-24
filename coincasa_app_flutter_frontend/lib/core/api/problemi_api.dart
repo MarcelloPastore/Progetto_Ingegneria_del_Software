@@ -1,4 +1,4 @@
-import '../models/problema.dart';
+import '../../data/models/problema.dart';
 import 'api_client.dart';
 
 class ProblemiApi {

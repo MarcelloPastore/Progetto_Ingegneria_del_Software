@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:coincasa_app/core/theme/app_theme.dart';
-import 'package:coincasa_app/features/problemi/screens/segnala_problema_screen.dart';
+import 'package:coincasa_app/ui/problemi/screens/segnala_problema_screen.dart';
 
 class HouseQuickNav extends StatelessWidget {
   const HouseQuickNav({super.key, required this.currentRoute});
@@ -39,7 +39,7 @@ class HouseQuickNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 88,
+      height: AppSizes.p88,
       decoration: const BoxDecoration(
         color: AppColors.surfaceDark,
         borderRadius: BorderRadius.vertical(top: Radius.circular(7)),
@@ -100,10 +100,9 @@ class _HouseBottomNavItem extends StatelessWidget {
 
     // Naviga a una sezione diversa: rimuove tutto lo stack corrente
     // e sostituisce con la root della nuova sezione, senza animazione.
-    Navigator.of(context).pushNamedAndRemoveUntil(
-      entry.route,
-      (route) => false,
-    );
+    Navigator.of(
+      context,
+    ).pushNamedAndRemoveUntil(entry.route, (route) => false);
   }
 
   @override
@@ -136,7 +135,7 @@ class _HouseBottomNavItem extends StatelessWidget {
                   softWrap: false,
                   style: TextStyle(
                     color: color,
-                    fontSize: 15,
+                    fontSize: AppSizes.p15,
                     height: 1,
                     fontWeight: FontWeight.w500,
                     decoration: selected

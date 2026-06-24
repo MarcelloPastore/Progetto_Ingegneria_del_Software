@@ -5,12 +5,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/api/casa_api.dart';
 import 'package:coincasa_app/core/api/problemi_api.dart';
-import 'package:coincasa_app/core/models/casa.dart';
-import 'package:coincasa_app/core/models/inquilino.dart';
-import 'package:coincasa_app/core/models/problema.dart';
+import 'package:coincasa_app/data/models/casa.dart';
+import 'package:coincasa_app/data/models/inquilino.dart';
+import 'package:coincasa_app/data/models/problema.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
-import 'package:coincasa_app/features/problemi/screens/modifica_problema_screen.dart';
-import 'package:coincasa_app/features/problemi/screens/segnala_problema_screen.dart';
+import 'package:coincasa_app/ui/problemi/screens/modifica_problema_screen.dart';
+import 'package:coincasa_app/ui/problemi/screens/segnala_problema_screen.dart';
 
 const _casa = Casa(
   id: 'casa-1',

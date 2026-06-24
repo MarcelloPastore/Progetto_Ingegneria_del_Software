@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/core/api/api_client.dart';
 import 'package:coincasa_app/core/api/auth_api.dart';
-import 'package:coincasa_app/features/auth/auth.dart';
+import 'package:coincasa_app/ui/auth/auth.dart';
 
 class FakeAuthApi extends AuthApi {
   FakeAuthApi() : super(ApiProvider.client);

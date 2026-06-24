@@ -1,5 +1,5 @@
-import 'package:coincasa_app/core/api/api_provider.dart';
-import 'package:coincasa_app/core/models/casa.dart';
+﻿import 'package:coincasa_app/core/api/api_provider.dart';
+import 'package:coincasa_app/data/models/casa.dart';
 import 'package:coincasa_app/core/services/session_manager.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 

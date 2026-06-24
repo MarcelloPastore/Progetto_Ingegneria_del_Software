@@ -1,4 +1,4 @@
-import '../models/scadenza.dart';
+import '../../data/models/scadenza.dart';
 import 'api_client.dart';
 
 class ScadenzeApi {

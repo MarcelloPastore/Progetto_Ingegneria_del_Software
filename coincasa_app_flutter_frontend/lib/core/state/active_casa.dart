@@ -1,7 +1,8 @@
-import 'package:flutter/widgets.dart';
+﻿import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:coincasa_app/core/models/casa.dart';
+import 'package:coincasa_app/data/models/casa.dart';
+import 'package:coincasa_app/domain/value_objects/ruolo_casa.dart';
 
 @immutable
 class ActiveCasaState {
@@ -15,7 +16,7 @@ class ActiveCasaState {
   final String? ruoloCasa;
   final Casa? selectedCasa;
 
-  bool get isHomeAdmin => ruoloCasa == 'HomeAdmin' || ruoloCasa == 'SysAdmin';
+  bool get isHomeAdmin => RuoloCasa.isAdmin(ruoloCasa);
 
   ActiveCasaState copyWith({
     String? selectedCasaId,

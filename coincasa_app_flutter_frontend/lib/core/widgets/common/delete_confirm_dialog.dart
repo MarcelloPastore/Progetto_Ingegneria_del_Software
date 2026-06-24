@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../theme/app_theme.dart';
+import 'app_cancel_button_primary.dart';
 
 Future<void> showDeleteConfirmDialog({
   required BuildContext context,
@@ -13,15 +14,16 @@ Future<void> showDeleteConfirmDialog({
     context: context,
     barrierDismissible: true,
     barrierLabel: 'Chiudi',
-    barrierColor: Colors.white.withValues(alpha: 0.18),
+    barrierColor: AppColors.textOnDark.withValues(alpha: 0.18),
     transitionDuration: const Duration(milliseconds: 200),
     transitionBuilder: (context, animation, _, child) {
       return FadeTransition(
         opacity: animation,
         child: ScaleTransition(
-          scale: Tween<double>(begin: 0.92, end: 1).animate(
-            CurvedAnimation(parent: animation, curve: Curves.easeOut),
-          ),
+          scale: Tween<double>(
+            begin: 0.92,
+            end: 1,
+          ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut)),
           child: child,
         ),
       );
@@ -83,20 +85,25 @@ class _DeleteConfirmDialogState extends State<_DeleteConfirmDialog> {
       onTap: () => Navigator.of(context).pop(),
       behavior: HitTestBehavior.opaque,
       child: Scaffold(
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.transparent,
         body: Center(
           child: GestureDetector(
             onTap: () {},
             child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 28),
-              padding: const EdgeInsets.fromLTRB(32, 24, 32, 28),
+              margin: const EdgeInsets.symmetric(horizontal: AppSizes.p28),
+              padding: const EdgeInsets.fromLTRB(
+                AppSizes.p32,
+                AppSizes.p24,
+                AppSizes.p32,
+                AppSizes.p28,
+              ),
               decoration: BoxDecoration(
-                color: const Color(0xFF2D293B),
-                borderRadius: BorderRadius.circular(18),
+                color: AppColors.surfaceDarkElevated,
+                borderRadius: BorderRadius.circular(AppSizes.radius18),
                 boxShadow: const [
                   BoxShadow(
-                    color: Color(0x66000000),
-                    blurRadius: 24,
+                    color: AppColors.shadowStrong,
+                    blurRadius: AppSizes.p24,
                     offset: Offset(0, 8),
                   ),
                 ],
@@ -105,112 +112,86 @@ class _DeleteConfirmDialogState extends State<_DeleteConfirmDialog> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const CircleAvatar(
-                    radius: 30,
-                    backgroundColor: Color(0xFFFF7075),
+                    radius: AppSizes.p30,
+                    backgroundColor: AppColors.error,
                     child: Icon(
                       Icons.delete_rounded,
-                      color: Color(0xFF5A141D),
-                      size: 34,
+                      color: AppColors.errorContainerStrong,
+                      size: AppSizes.p34,
                     ),
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: AppSizes.p18),
                   Text(
                     widget.title,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontFamily: 'Inter',
+                    style: AppTextStyles.title.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSizes.p12),
                   Text(
                     widget.description,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Color(0xFFC1BFC8),
-                      fontSize: 16,
-                      fontFamily: 'Inter',
+                    style: AppTextStyles.bodyMutedRelaxed.copyWith(
+                      color: AppColors.textMutedLight,
                       fontWeight: FontWeight.w500,
-                      height: 1.4,
                     ),
                   ),
                   if (_error != null) ...[
-                    const SizedBox(height: 12),
+                    const SizedBox(height: AppSizes.p12),
                     Text(
                       _error!,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Color(0xFFFF5252),
-                        fontSize: 14,
-                        fontFamily: 'Inter',
+                      style: AppTextStyles.error.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
-                  const SizedBox(height: 24),
+                  const SizedBox(height: AppSizes.p24),
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton(
                       onPressed: _loading ? null : _handleConfirm,
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(
-                          color: Color(0xFFFF3B44),
-                          width: 2,
+                          color: AppColors.errorStrong,
+                          width: AppSizes.p2,
                         ),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSizes.p16,
+                          vertical: AppSizes.p14,
+                        ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(
+                            AppSizes.radius16,
+                          ),
                         ),
                       ),
                       child: _loading
                           ? const SizedBox(
-                              width: 22,
-                              height: 22,
+                              width: AppSizes.p22,
+                              height: AppSizes.p22,
                               child: CircularProgressIndicator(
-                                color: Color(0xFFFF3B44),
+                                color: AppColors.errorStrong,
                                 strokeWidth: 2.4,
                               ),
                             )
-                          : const Text(
-                              'Sì, elimina definitivamente',
-                              style: TextStyle(
-                                color: Color(0xFFFF3B44),
-                                fontSize: 18,
-                                fontFamily: 'Inter',
-                                fontWeight: FontWeight.w800,
+                          : FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                'Sì, elimina definitivamente',
+                                style: AppTextStyles.buttonCompact.copyWith(
+                                  color: AppColors.errorStrong,
+                                  fontWeight: FontWeight.w800,
+                                ),
                               ),
                             ),
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton(
-                      onPressed: _loading
-                          ? null
-                          : () => Navigator.of(context).pop(),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(
-                          color: AppColors.brandPrimary,
-                          width: 2,
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      child: const Text(
-                        'Annulla',
-                        style: TextStyle(
-                          color: AppColors.brandPrimary,
-                          fontSize: 18,
-                          fontFamily: 'Inter',
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
+                  const SizedBox(height: AppSizes.p10),
+                  AppCancelButtonPrimary(
+                    enabled: !_loading,
+                    onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
               ),

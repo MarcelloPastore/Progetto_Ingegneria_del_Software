@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../utils/user_initials.dart';
+import '../../theme/app_theme.dart';
 
 class UserAvatar extends StatelessWidget {
   const UserAvatar({
@@ -11,10 +12,10 @@ class UserAvatar extends StatelessWidget {
     this.lastName,
     this.fullName,
     this.displayName,
-    this.radius = 18,
+    this.radius = AppSizes.radius18,
     this.fallback = '??',
     this.showPresenceDot = false,
-    this.presenceDotColor = const Color(0xFFFF7B6D),
+    this.presenceDotColor = AppColors.statusNegative,
     this.borderColor,
     this.borderWidth = 0,
   });
@@ -92,14 +93,14 @@ class UserAvatar extends StatelessWidget {
       children: [
         avatar,
         Positioned(
-          top: 2,
-          right: 2,
+          top: AppSizes.p2,
+          right: AppSizes.p2,
           child: Container(
             width: radius * 0.42,
             height: radius * 0.42,
             decoration: BoxDecoration(
               color: presenceDotColor,
-              borderRadius: BorderRadius.circular(99),
+              borderRadius: BorderRadius.circular(AppSizes.radius99),
             ),
           ),
         ),

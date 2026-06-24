@@ -1,5 +1,5 @@
-import '../models/quota.dart';
-import '../models/spesa.dart';
+import '../../data/models/quota.dart';
+import '../../data/models/spesa.dart';
 import 'api_client.dart';
 
 class SpeseApi {

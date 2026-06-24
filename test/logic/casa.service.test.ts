@@ -14,8 +14,9 @@ const mocks = vi.hoisted(() => ({
   removeMembroCasa: vi.fn(),
 }));
 
-vi.mock("crypto", () => ({
+vi.mock("node:crypto", () => ({
   randomUUID: vi.fn(() => "invite-123"),
+  randomInt: vi.fn(() => 0),
 }));
 
 /* eslint-disable @typescript-eslint/no-unused-vars */

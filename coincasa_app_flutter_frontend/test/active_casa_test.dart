@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:coincasa_app/core/models/casa.dart';
-import 'package:coincasa_app/core/models/turno.dart';
+import 'package:coincasa_app/data/models/casa.dart';
+import 'package:coincasa_app/data/models/turno.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
 
 void main() {

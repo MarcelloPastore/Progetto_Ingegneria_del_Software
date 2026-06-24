@@ -86,6 +86,7 @@ describe("AuthService", () => {
       nome: "Mario",
       cognome: "Rossi",
       passwordHash: "hash",
+      emailVerificata: true,
     });
     mocks.argon2.verify.mockResolvedValue(true);
 
@@ -102,6 +103,7 @@ describe("AuthService", () => {
       username: "mario",
       nome: "Mario",
       cognome: "Rossi",
+      emailVerificata: true,
     });
   });
 
