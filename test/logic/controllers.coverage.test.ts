@@ -37,7 +37,7 @@ function makeRequest(overrides: Record<string, unknown> = {}) {
     },
     body: {},
     query: {},
-    user: { idUtente: "u1" },
+    user: { idUtente: "u1", ruoloCasa: Ruolo.HomeAdmin },
     server: {
       jwt: { sign: vi.fn(() => "signed-token") },
     },
@@ -243,7 +243,7 @@ describe("Controller success paths", () => {
     );
 
     await expectControllerResult(controller.eliminaProblema, makeRequest(), 204);
-    expect(service.eliminaProblema).toHaveBeenCalledWith("c1", "p1");
+    expect(service.eliminaProblema).toHaveBeenCalledWith("c1", "p1", "u1");
 
     await expectControllerResult(
       controller.autoassegnaProblema,
@@ -257,18 +257,24 @@ describe("Controller success paths", () => {
       makeRequest({ body: { idUtente: "u2" } }),
       200,
     );
-    expect(service.assegnaProblema).toHaveBeenCalledWith("c1", "p1", {
-      idUtente: "u2",
-    });
+    expect(service.assegnaProblema).toHaveBeenCalledWith(
+      "c1",
+      "p1",
+      { idUtente: "u2" },
+      "u1",
+    );
 
     await expectControllerResult(
       controller.aggiornaStato,
       makeRequest({ body: { stato: "Risolto" } }),
       200,
     );
-    expect(service.aggiornaStato).toHaveBeenCalledWith("c1", "p1", {
-      stato: "Risolto",
-    });
+    expect(service.aggiornaStato).toHaveBeenCalledWith(
+      "c1",
+      "p1",
+      { stato: "Risolto" },
+      "u1",
+    );
 
     await expectControllerResult(
       controller.aggiornaPriorita,
@@ -307,6 +313,7 @@ describe("Controller success paths", () => {
     expect(service.creaScadenza).toHaveBeenCalledWith(
       "c1",
       expect.objectContaining({ nome: "Affitto" }),
+      "u1",
     );
 
     await expectControllerResult(
@@ -318,10 +325,12 @@ describe("Controller success paths", () => {
       "c1",
       "s1",
       { descrizione: "Aggiornata" },
+      "u1",
+      Ruolo.HomeAdmin,
     );
 
     await expectControllerResult(controller.eliminaScadenza, makeRequest(), 204);
-    expect(service.eliminaScadenza).toHaveBeenCalledWith("c1", "s1");
+    expect(service.eliminaScadenza).toHaveBeenCalledWith("c1", "s1", "u1");
 
     await expectControllerResult(
       controller.aggiornaRicorrenza,
@@ -369,6 +378,7 @@ describe("Controller success paths", () => {
       makeRequest({
         body: {
           task: "Pulizia",
+          dataTurno: "2026-06-30T00:00:00.000Z",
           cadenzaGiorni: 7,
           assegnatario: "u1",
         },

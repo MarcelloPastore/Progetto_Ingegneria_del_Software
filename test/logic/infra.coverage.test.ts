@@ -304,4 +304,37 @@ describe("Mail utility coverage", () => {
       }),
     );
   });
+
+  it("rethrows mail delivery failures after logging them", async () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    mocks.sendMail.mockRejectedValueOnce(new Error("SMTP verification down"));
+    await expect(
+      sendVerificationEmail({
+        to: "mario@example.com",
+        username: "mario",
+        verificationToken: "token-123",
+      }),
+    ).rejects.toThrow("SMTP verification down");
+    expect(consoleSpy).toHaveBeenCalledWith(
+      "Failed to send verification email:",
+      expect.any(Error),
+    );
+
+    mocks.sendMail.mockRejectedValueOnce(new Error("SMTP reset down"));
+    await expect(
+      sendPasswordResetEmail({
+        to: "mario@example.com",
+        username: "mario",
+        resetCode: "123456",
+        expiresAt: "2026-06-30T00:00:00.000Z",
+      }),
+    ).rejects.toThrow("SMTP reset down");
+    expect(consoleSpy).toHaveBeenCalledWith(
+      "Failed to send password reset email:",
+      expect.any(Error),
+    );
+
+    consoleSpy.mockRestore();
+  });
 });

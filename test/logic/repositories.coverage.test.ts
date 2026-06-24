@@ -30,7 +30,15 @@ const mocks = vi.hoisted(() => ({
       findMany: vi.fn(),
       update: vi.fn(),
     },
-    quotaSpesa: { deleteMany: vi.fn() },
+    quotaSpesa: {
+      aggregate: vi.fn(),
+      createMany: vi.fn(),
+      deleteMany: vi.fn(),
+      findFirstOrThrow: vi.fn(),
+      findMany: vi.fn(),
+      update: vi.fn(),
+      updateMany: vi.fn(),
+    },
     scadenza: {
       create: vi.fn(),
       delete: vi.fn(),
@@ -39,8 +47,26 @@ const mocks = vi.hoisted(() => ({
       findMany: vi.fn(),
       update: vi.fn(),
     },
-    spesa: { deleteMany: vi.fn() },
-    turno: { deleteMany: vi.fn() },
+    spesa: {
+      create: vi.fn(),
+      delete: vi.fn(),
+      deleteMany: vi.fn(),
+      findFirstOrThrow: vi.fn(),
+      findMany: vi.fn(),
+      update: vi.fn(),
+    },
+    storico: {
+      create: vi.fn(),
+      deleteMany: vi.fn(),
+    },
+    turno: {
+      create: vi.fn(),
+      delete: vi.fn(),
+      deleteMany: vi.fn(),
+      findFirstOrThrow: vi.fn(),
+      findMany: vi.fn(),
+      update: vi.fn(),
+    },
   },
 }));
 
@@ -51,6 +77,8 @@ vi.mock("../../src/config/db", () => ({
 import { CasaRepository } from "../../src/repository/CasaRepository";
 import { ProblemaRepository } from "../../src/repository/ProblemaRepository";
 import { ScadenzaRepository } from "../../src/repository/ScadenzaRepository";
+import { SpesaRepository } from "../../src/repository/SpesaRepository";
+import { TurnoRepository } from "../../src/repository/TurnoRepository";
 
 describe("Repository query builders", () => {
   beforeEach(() => {
@@ -259,6 +287,141 @@ describe("Repository query builders", () => {
     await repository.deleteScadenza("c1", "s1");
     expect(mocks.prisma.scadenza.delete).toHaveBeenCalledWith({
       where: { id: "s1", idCasa: "c1" },
+    });
+  });
+
+  it("SpesaRepository builds expense queries and transactions", async () => {
+    const repository = new SpesaRepository();
+    const date = new Date("2026-06-30T00:00:00.000Z");
+    mocks.prisma.spesa.create.mockResolvedValue({ id: "sp1" });
+    mocks.prisma.spesa.update.mockResolvedValue({ id: "sp1" });
+    mocks.prisma.spesa.findFirstOrThrow.mockResolvedValue({ id: "sp1" });
+    mocks.prisma.spesa.findMany.mockResolvedValue([{ id: "sp1" }]);
+    mocks.prisma.quotaSpesa.findFirstOrThrow.mockResolvedValue({ id: "q1" });
+    mocks.prisma.quotaSpesa.findMany.mockResolvedValue([{ id: "q1" }]);
+    mocks.prisma.quotaSpesa.update.mockResolvedValue({ id: "q1" });
+    mocks.prisma.quotaSpesa.updateMany.mockResolvedValue({ count: 2 });
+    mocks.prisma.quotaSpesa.aggregate.mockResolvedValue({ _sum: { quota: 15 } });
+
+    await repository.createSpesa({
+      idCasa: "c1",
+      descrizione: "Spesa",
+      importo: 30,
+      owner: "u1",
+      anticipataDa: "u2",
+      partecipanti: ["u1", "u2"],
+      scadenza: {
+        nome: "Spesa",
+        descrizione: "",
+        dataScadenza: date,
+        isRicorrente: false,
+        cadenzaGiorni: null,
+      },
+      quote: [
+        { idUtente: "u1", quota: 15, dataPagamento: date },
+        { idUtente: "u2", quota: 15 },
+      ],
+    });
+    expect(mocks.prisma.spesa.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          anticipataDaRel: { connect: { id: "u2" } },
+          partecipantiRel: { connect: [{ id: "u1" }, { id: "u2" }] },
+        }),
+      }),
+    );
+
+    await repository.updateSpesa(
+      "c1",
+      "sp1",
+      {
+        descrizione: "Spesa aggiornata",
+        importo: 40,
+        anticipataDa: null,
+        partecipanti: ["u2"],
+      },
+      [{ idUtente: "u2", quota: 40 }],
+      {
+        nome: "Spesa aggiornata",
+        descrizione: "",
+        dataScadenza: date,
+        isRicorrente: true,
+        cadenzaGiorni: null,
+      },
+    );
+    expect(mocks.prisma.spesa.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "sp1" },
+        data: expect.objectContaining({
+          anticipataDaRel: { disconnect: true },
+          partecipantiRel: { set: [{ id: "u2" }] },
+        }),
+      }),
+    );
+    expect(mocks.prisma.quotaSpesa.createMany).toHaveBeenCalledWith({
+      data: [{ idCasa: "c1", idSpesa: "sp1", idUtente: "u2", quota: 40 }],
+    });
+
+    await repository.deleteSpesa("c1", "sp1", "s1");
+    expect(mocks.prisma.scadenza.delete).toHaveBeenCalledWith({
+      where: { id: "s1" },
+    });
+
+    await repository.findSpeseByCasa("c1");
+    await repository.findSpesaByIdOrThrow("c1", "sp1");
+    await repository.findQuoteByIdOrThrow("c1", "sp1", "q1");
+    await repository.findQuoteBySpesa("c1", "sp1");
+    await repository.markQuotaPagata("q1");
+    await expect(
+      repository.saldaQuoteVersoCreditori("c1", "u1", ["u2"]),
+    ).resolves.toBe(2);
+    await expect(repository.sumDebito("c1", "u1")).resolves.toBe(15);
+    await expect(repository.sumCredito("c1", "u1")).resolves.toBe(15);
+    await expect(
+      repository.sumCreditoVersoUtente("c1", "u1", "u2"),
+    ).resolves.toBe(15);
+    await expect(
+      repository.sumDebitoVersoUtente("c1", "u1", "u2"),
+    ).resolves.toBe(15);
+  });
+
+  it("TurnoRepository builds shift queries", async () => {
+    const repository = new TurnoRepository();
+    mocks.prisma.turno.create.mockResolvedValue({ id: "t1" });
+    mocks.prisma.turno.update.mockResolvedValue({ id: "t1" });
+    mocks.prisma.turno.findMany.mockResolvedValue([{ id: "t1" }]);
+    mocks.prisma.turno.findFirstOrThrow.mockResolvedValue({ id: "t1" });
+    mocks.prisma.turno.delete.mockResolvedValue({ id: "t1" });
+
+    await repository.createTurno({
+      idCasa: "c1",
+      task: "Pulizia",
+      cadenzaGiorni: 7,
+      rotazioneAttiva: true,
+      assegnatarioCorrente: "u1",
+      ordineRotazione: ["u1", "u2"],
+      indiceRotazioneCorrente: 0,
+      idCreatore: "u1",
+    });
+    expect(mocks.prisma.turno.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ idCasa: "c1", task: "Pulizia" }),
+      }),
+    );
+
+    await repository.updateTurno("t1", { task: "Bagno" });
+    expect(mocks.prisma.turno.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "t1" },
+        data: { task: "Bagno" },
+      }),
+    );
+
+    await repository.findTurniByCasa("c1");
+    await repository.findTurnoByIdOrThrow("c1", "t1");
+    await repository.deleteTurno("c1", "t1");
+    expect(mocks.prisma.turno.delete).toHaveBeenCalledWith({
+      where: { id: "t1", idCasa: "c1" },
     });
   });
 });

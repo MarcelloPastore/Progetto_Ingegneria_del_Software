@@ -16,7 +16,6 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("node:crypto", () => ({
-  randomUUID: vi.fn(() => "invite-123"),
   randomInt: vi.fn(() => 0),
 }));
 
@@ -297,7 +296,7 @@ describe("CasaService", () => {
     mocks.findCasaByIdOrThrow.mockResolvedValue(baseCasa);
     mocks.updateCasa.mockResolvedValue({
       ...baseCasa,
-      inviteLink: "invite-123",
+      inviteLink: "CX-AAAAAAAA",
     });
 
     const service = new CasaService();
@@ -306,10 +305,10 @@ describe("CasaService", () => {
       inviteLink: "invite-123",
     });
     await expect(service.generaLink("c1", "u1", true)).resolves.toEqual({
-      inviteLink: "invite-123",
+      inviteLink: "CX-AAAAAAAA",
     });
     expect(mocks.updateCasa).toHaveBeenCalledWith("c1", {
-      inviteLink: "invite-123",
+      inviteLink: "CX-AAAAAAAA",
     });
   });
 

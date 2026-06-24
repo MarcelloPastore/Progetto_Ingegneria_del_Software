@@ -42,6 +42,20 @@ describe("config and utility coverage", () => {
     );
   });
 
+  it("parses empty MAIL_SECURE as false", async () => {
+    vi.resetModules();
+    process.env = {
+      ...originalEnv,
+      JWT_SECRET: "secret",
+      MAIL_SECURE: "",
+      MONGODB_URI: "mongodb://localhost:27017/coincasa_test",
+    };
+
+    const { env } = await import("../../src/config/env");
+
+    expect(env.MAIL_SECURE).toBe(false);
+  });
+
   it("returns registered JWT plugin or throws a clear setup error", () => {
     const jwt = {
       sign: vi.fn(() => "token"),

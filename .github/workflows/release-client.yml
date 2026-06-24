@@ -3,34 +3,51 @@ name: Release Client
 on:
   push:
     tags:
-      - 'client/v*'
+      - "client/v*"
+
+permissions:
+  contents: write
 
 jobs:
   build-android:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
-      - uses: subosito/flutter-action@v2
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
-          flutter-version: '3.x'
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.38.4"
           channel: stable
 
       - name: Install dependencies
         working-directory: coincasa_app_flutter_frontend
         run: flutter pub get
 
-      - name: Build APK
-        working-directory: coincasa_app_flutter_frontend
-        run: flutter build apk --release
-
       - name: Extract version
         id: version
-        run: echo "VERSION=${GITHUB_REF_NAME#client/}" >> $GITHUB_OUTPUT
+        run: |
+          VERSION="${GITHUB_REF_NAME#client/}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "build_name=${VERSION#v}" >> "$GITHUB_OUTPUT"
 
-      - name: Create GitHub Release with APK
-        uses: softprops/action-gh-release@v1
+      - name: Build APK
+        working-directory: coincasa_app_flutter_frontend
+        run: |
+          flutter build apk --release \
+            --build-name "${{ steps.version.outputs.build_name }}" \
+            --build-number "${{ github.run_number }}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: "Client ${{ steps.version.outputs.VERSION }}"
-          files: coincasa_app_flutter_frontend/build/app/outputs/flutter-apk/app-release.apk
+          name: Client ${{ steps.version.outputs.version }}
           tag_name: ${{ github.ref_name }}
+          files: coincasa_app_flutter_frontend/build/app/outputs/flutter-apk/app-release.apk
