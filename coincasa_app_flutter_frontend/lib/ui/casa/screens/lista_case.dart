@@ -41,10 +41,12 @@ class ListaCaseScreen extends ConsumerWidget {
                   const SizedBox(height: 20),
                   Expanded(
                     child: caseUtente.isEmpty
-                        ? const Center(
+                        ? Center(
                             child: Text(
                               'Nessuna casa attiva.',
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
                             ),
                           )
                         : RefreshIndicator(
@@ -60,17 +62,17 @@ class ListaCaseScreen extends ConsumerWidget {
                                 final casa = caseUtente[index];
                                 final effectiveRuolo =
                                     casa.id == activeCasaState.selectedCasaId
-                                        ? activeCasaState.ruoloCasa ??
-                                              casa.ruolo
-                                        : casa.ruolo;
+                                    ? activeCasaState.ruoloCasa ?? casa.ruolo
+                                    : casa.ruolo;
                                 return _HouseCard(
                                   casa: casa,
                                   effectiveRuolo: effectiveRuolo,
                                   onTap: () async {
                                     try {
                                       final ruolo = await ref
-                                          .read(listaCaseViewModelProvider
-                                              .notifier)
+                                          .read(
+                                            listaCaseViewModelProvider.notifier,
+                                          )
                                           .selectCasa(casa.id);
                                       ref
                                           .read(activeCasaProvider.notifier)
@@ -81,7 +83,9 @@ class ListaCaseScreen extends ConsumerWidget {
                                               selectedCasa: casa,
                                             ),
                                           );
-                                      ref.invalidate(dashboardViewModelProvider);
+                                      ref.invalidate(
+                                        dashboardViewModelProvider,
+                                      );
                                     } catch (_) {}
                                     if (!context.mounted) return;
                                     Navigator.of(context).push(
@@ -161,11 +165,15 @@ class _ErrorState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.wifi_off, color: Colors.white, size: 42),
+          Icon(
+            Icons.wifi_off,
+            color: Theme.of(context).colorScheme.onSurface,
+            size: 42,
+          ),
           const SizedBox(height: 12),
-          const Text(
+          Text(
             'Non e possibile caricare le case.',
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
           ),
           const SizedBox(height: 16),
           FilledButton(onPressed: onRetry, child: const Text('Riprova')),
@@ -193,9 +201,9 @@ class _Header extends StatelessWidget {
             alignment: Alignment.centerLeft,
             onPressed: () =>
                 Navigator.of(context).pushReplacementNamed('/dashboard'),
-            icon: const Icon(
+            icon: Icon(
               Icons.arrow_back_ios_new,
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onSurface,
               size: 20,
             ),
           ),
@@ -209,7 +217,7 @@ class _Header extends StatelessWidget {
               Text(
                 'Le mie case',
                 style: AppTextStyles.dashboardHeaderTitle.copyWith(
-                  color: AppColors.textOnDark,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 6),
@@ -327,8 +335,7 @@ class _HouseCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                 decoration: BoxDecoration(
                   color: AppColors.brandPrimary,
                   borderRadius: BorderRadius.circular(4),
@@ -365,7 +372,7 @@ class _OrDivider extends StatelessWidget {
           child: Text(
             'oppure',
             style: TextStyle(
-              color: AppColors.textMutedLight,
+              color: AppColors.textPrimary,
               fontSize: 15,
               fontWeight: FontWeight.w600,
             ),
@@ -400,15 +407,15 @@ class _InviteLinkButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: AppColors.brandAccent, width: 2),
           ),
-          child: const Row(
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.vpn_key, color: AppColors.keyYellow, size: 22),
-              SizedBox(width: 12),
+              const Icon(Icons.vpn_key, color: AppColors.keyYellow, size: 22),
+              const SizedBox(width: 12),
               Text(
                 'Entra con link invito',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontSize: 17,
                   fontWeight: FontWeight.w800,
                 ),

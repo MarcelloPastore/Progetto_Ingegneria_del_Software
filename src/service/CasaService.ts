@@ -177,7 +177,13 @@ export class CasaService {
     idInquilino: string,
     idUtente: string,
   ): Promise<void> {
-    await this.assertHomeAdmin(idCasa, idUtente);
+    // Se non è l'utente stesso che sta cercando di lasciare la casa,
+    // allora deve essere un HomeAdmin per rimuovere qualcun altro.
+    if (idInquilino !== idUtente) {
+      await this.assertHomeAdmin(idCasa, idUtente);
+    } else {
+      await this.assertMembroCasa(idCasa, idUtente);
+    }
 
     const ownerIdCasa = await casaRepository.getCasaCreator(idCasa);
     if (ownerIdCasa && idInquilino === ownerIdCasa) {

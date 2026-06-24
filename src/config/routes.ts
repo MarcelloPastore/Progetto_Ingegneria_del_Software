@@ -414,14 +414,14 @@ export function casaRoutes(app: FastifyInstance) {
    * @api  RimuoviInquilino
    * @route DELETE /case/:idCasa/inquilini/:idInquilino
    *
-   * @summary Rimuove un inquilino dalla casa. Solo per HomeAdmin.
+   * @summary Rimuove un inquilino dalla casa. Consente a un inquilino di lasciare la casa o a un HomeAdmin di rimuovere altri.
    *
    * @version 1.0.0
    * @author Lorenzo Tedino
    */
   app.delete<{ Params: InquilinoParams }>(
     "/case/:idCasa/inquilini/:idInquilino",
-    { preHandler: requireRole(Ruolo.HomeAdmin) },
+    { preHandler: requireRole(Ruolo.Inquilino) },
     casaController.rimuoviInquilino,
   );
   /**

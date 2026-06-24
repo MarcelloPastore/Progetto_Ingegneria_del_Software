@@ -295,7 +295,7 @@ class _GestioneAccountScreenState extends ConsumerState<GestioneAccountScreen> {
                         Container(
                           width: double.infinity,
                           decoration: BoxDecoration(
-                            color: isDark ? colorScheme.surfaceContainerLow : colorScheme.surfaceContainerHighest,
+                            color: isDark ? colorScheme.surfaceContainerLow : AppColors.surfaceDark,
                             borderRadius: BorderRadius.circular(15),
                           ),
                           child: Column(
@@ -306,7 +306,7 @@ class _GestioneAccountScreenState extends ConsumerState<GestioneAccountScreen> {
                                 onModifica: _startEditUsername,
                               ),
                               _AccountDivider(
-                                color: colorScheme.outlineVariant,
+                                color: isDark ? colorScheme.outlineVariant : AppColors.dividerDark,
                               ),
                               _AccountRow(
                                 label: 'Email',
@@ -314,7 +314,7 @@ class _GestioneAccountScreenState extends ConsumerState<GestioneAccountScreen> {
                                 onModifica: _startEditEmail,
                               ),
                               _AccountDivider(
-                                color: colorScheme.outlineVariant,
+                                color: isDark ? colorScheme.outlineVariant : AppColors.dividerDark,
                               ),
                               _AccountRow(
                                 label: 'Password',
@@ -860,6 +860,7 @@ class _AccountRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       child: Column(
@@ -868,7 +869,7 @@ class _AccountRow extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              color: colorScheme.onSurface.withValues(alpha: 0.55),
+              color: isDark ? colorScheme.onSurface.withValues(alpha: 0.55) : Colors.white70,
               fontSize: 13,
               fontWeight: FontWeight.w500,
             ),
@@ -880,7 +881,7 @@ class _AccountRow extends StatelessWidget {
                 child: Text(
                   value,
                   style: TextStyle(
-                    color: colorScheme.onSurface,
+                    color: isDark ? colorScheme.onSurface : Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                   ),
