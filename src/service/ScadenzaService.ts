@@ -93,10 +93,7 @@ export class ScadenzaService {
       idScadenza,
     );
 
-    if (
-      esistente.idCreatore !== idUtente &&
-      ruoloCasa !== Ruolo.SysAdmin
-    ) {
+    if (esistente.idCreatore !== idUtente && ruoloCasa !== Ruolo.SysAdmin) {
       throw new ForbiddenError(
         "Solo chi ha creato la scadenza può modificarla",
       );

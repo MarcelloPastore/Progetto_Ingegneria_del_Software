@@ -308,7 +308,7 @@ describe("ProblemaService", () => {
     mocks.updateProblema.mockResolvedValue(baseProblema);
 
     const service = new ProblemaService();
-    await service.aggiornaPriorita("c1", "p1", {});
+    await service.aggiornaPriorita("c1", "p1", { priorita: "Media" });
 
     expect(mocks.updateProblema).toHaveBeenCalledWith("p1", {
       priorita: Priorita.Media,
