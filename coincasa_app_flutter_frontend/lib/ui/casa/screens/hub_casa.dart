@@ -26,7 +26,26 @@ class HubCasaAdminScreen extends ConsumerStatefulWidget {
   ConsumerState<HubCasaAdminScreen> createState() => _HubCasaAdminScreenState();
 }
 
-class _HubCasaAdminScreenState extends ConsumerState<HubCasaAdminScreen> {
+class _HubCasaAdminScreenState extends ConsumerState<HubCasaAdminScreen>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.invalidate(hubCasaViewModelProvider(widget.casaId));
+    }
+  }
   Future<void> _deleteCasa(HubCasaState state) async {
     final confirmed = await showEliminaCasaDialog(
       context,
@@ -115,6 +134,26 @@ class _HubCasaAdminScreenState extends ConsumerState<HubCasaAdminScreen> {
   @override
   Widget build(BuildContext context) {
     final vmAsync = ref.watch(hubCasaViewModelProvider(widget.casaId));
+
+    // Se il provider torna in errore, verifica se la casa è stata eliminata.
+    ref.listen<AsyncValue<HubCasaState>>(
+      hubCasaViewModelProvider(widget.casaId),
+      (_, next) async {
+        if (next is! AsyncError) return;
+        try {
+          final caseUtente =
+              await ref.read(listaCaseViewModelProvider.future);
+          final casaEsiste = caseUtente.any((c) => c.id == widget.casaId);
+          if (casaEsiste || !mounted) return;
+          ref.invalidate(listaCaseViewModelProvider);
+          ref.invalidate(dashboardViewModelProvider);
+          // ignore: use_build_context_synchronously
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute<void>(builder: (_) => const ListaCaseScreen()),
+          );
+        } catch (_) {}
+      },
+    );
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,

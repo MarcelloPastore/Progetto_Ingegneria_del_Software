@@ -39,6 +39,10 @@ final activeCasaProvider = StateProvider<ActiveCasaState>(
   (ref) => const ActiveCasaState(),
 );
 
+/// Segnale one-shot: true se il ruolo dell'utente è cambiato durante una
+/// sincronizzazione. La dashboard lo ascolta e reindirizza alla selezione casa.
+final ruoloCambiatoProvider = StateProvider<bool>((ref) => false);
+
 class ActiveCasaController {
   ActiveCasaController(this._container);
 

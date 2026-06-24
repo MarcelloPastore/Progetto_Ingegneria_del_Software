@@ -22,6 +22,7 @@ import 'package:coincasa_app/domain/viewmodel/scadenze_viewmodel.dart';
 import 'package:coincasa_app/domain/viewmodel/spese_viewmodel.dart';
 import 'package:coincasa_app/domain/viewmodel/turni_viewmodel.dart';
 import 'package:coincasa_app/ui/casa/screens/casa_welcome_screen.dart';
+import 'package:coincasa_app/ui/casa/screens/lista_case.dart';
 import 'package:coincasa_app/ui/dashboard_crea_popup.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
@@ -32,7 +33,13 @@ class DashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen>
-    with RouteAware {
+    with RouteAware, WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -44,8 +51,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     appRouteObserver.unsubscribe(this);
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.read(dashboardViewModelProvider.notifier).refresh();
+    }
   }
 
   @override
@@ -100,6 +115,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       if (next case AsyncError(:final error) when error is StateError) {
         _navigateToWelcome();
       }
+    });
+
+    ref.listen<bool>(ruoloCambiatoProvider, (_, changed) {
+      if (!changed) return;
+      ref.read(ruoloCambiatoProvider.notifier).state = false;
+      ActiveCasaScope.read(context).clear();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Il tuo ruolo è cambiato. Riseleziona la casa.'),
+          duration: Duration(seconds: 4),
+        ),
+      );
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute<void>(builder: (_) => const ListaCaseScreen()),
+      );
     });
 
     final vmAsync = ref.watch(dashboardViewModelProvider);

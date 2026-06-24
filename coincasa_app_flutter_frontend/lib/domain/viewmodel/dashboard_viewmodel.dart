@@ -4,6 +4,7 @@ import 'package:coincasa_app/data/models/casa.dart';
 import 'package:coincasa_app/data/models/salute_casa_item.dart';
 import 'package:coincasa_app/data/models/turno.dart';
 import 'package:coincasa_app/core/state/active_casa.dart';
+import 'package:coincasa_app/domain/value_objects/ruolo_casa.dart';
 import 'package:coincasa_app/data/repository/casa_repository_impl.dart';
 import 'package:coincasa_app/data/repository/dashboard_repository_impl.dart';
 import 'package:coincasa_app/data/models/dashboard_data.dart';
@@ -166,15 +167,23 @@ class DashboardViewModel extends AsyncNotifier<DashboardState> {
     final activeCasa = ref.read(activeCasaProvider);
     final casaId = _resolveActiveCasaId(activeCasa, caseUtente);
 
-    // Stabilisce/conferma la sessione per questa casa.
-    // Salta la chiamata se casa e ruolo sono già corretti in activeCasaProvider.
-    final alreadyActive = activeCasa.selectedCasaId == casaId &&
-        activeCasa.ruoloCasa != null;
-    if (!alreadyActive) {
-      final ruolo = await _selectCasa(casaId);
-      ref.read(activeCasaProvider.notifier).update(
-            (s) => s.copyWith(selectedCasaId: casaId, ruoloCasa: ruolo),
-          );
+    // Aggiorna sempre il ruolo tramite il backend per intercettare promozioni
+    // e retrocessioni effettuate da un altro utente.
+    final storedRuolo = activeCasa.selectedCasaId == casaId
+        ? activeCasa.ruoloCasa
+        : null;
+    final freshRuolo = await _selectCasa(casaId);
+    ref.read(activeCasaProvider.notifier).update(
+          (s) => s.copyWith(selectedCasaId: casaId, ruoloCasa: freshRuolo),
+        );
+
+    // Segnala il cambio di ruolo significativo (Inquilino ↔ Admin) alla UI.
+    if (storedRuolo != null && storedRuolo != freshRuolo) {
+      final wasAdmin = RuoloCasa.isAdmin(storedRuolo);
+      final isAdmin = RuoloCasa.isAdmin(freshRuolo);
+      if (wasAdmin != isAdmin) {
+        ref.read(ruoloCambiatoProvider.notifier).state = true;
+      }
     }
 
     final casa = caseUtente.firstWhere(

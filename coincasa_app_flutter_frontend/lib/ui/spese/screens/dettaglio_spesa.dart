@@ -269,8 +269,10 @@ class _DetailContent extends StatelessWidget {
                   isPaying: isPaying,
                   onPayQuota: onPayQuota,
                 ),
-                const SizedBox(height: AppSizes.p32),
-                const _ScontrinoAllegatoMock(),
+                if (_spesaHasImmagine(data.spesa)) ...[
+                  const SizedBox(height: AppSizes.p32),
+                  const _ScontrinoAllegatoMock(),
+                ],
               ],
             ),
           ),
@@ -540,6 +542,13 @@ class _SummaryRow extends StatelessWidget {
 // ---------------------------------------------------------------------------
 // Mock receipt section
 // ---------------------------------------------------------------------------
+
+bool _spesaHasImmagine(Spesa spesa) {
+  final img = spesa.raw['immagine'];
+  if (img == null) return false;
+  if (img is String) return img.trim().isNotEmpty;
+  return img == true;
+}
 
 class _ScontrinoAllegatoMock extends StatelessWidget {
   const _ScontrinoAllegatoMock();

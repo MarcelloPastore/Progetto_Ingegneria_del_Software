@@ -47,8 +47,26 @@ class ListaCoinquiliniScreen extends ConsumerStatefulWidget {
       _ListaCoinquiliniScreenState();
 }
 
-class _ListaCoinquiliniScreenState
-    extends ConsumerState<ListaCoinquiliniScreen> {
+class _ListaCoinquiliniScreenState extends ConsumerState<ListaCoinquiliniScreen>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.invalidate(hubCasaViewModelProvider(widget.casaId));
+    }
+  }
   Future<void> _promuovi(Inquilino inquilino) async {
     try {
       await ref
