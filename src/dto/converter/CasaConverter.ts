@@ -4,6 +4,9 @@ import { CasaResponseDto, CasaSummaryDto, InquilinoDto } from "../CasaDto";
 interface UtenteInfo {
   id: string;
   username: string;
+  nome?: string;
+  cognome?: string;
+  email?: string;
 }
 
 interface MembroForDto {
@@ -30,6 +33,9 @@ function toUtenteInfo(rel?: UtenteInfo | null, fallbackId = ""): UtenteInfo {
   return {
     id: rel?.id ?? fallbackId,
     username: rel?.username ?? "",
+    ...(rel?.nome !== undefined && { nome: rel.nome }),
+    ...(rel?.cognome !== undefined && { cognome: rel.cognome }),
+    ...(rel?.email !== undefined && { email: rel.email }),
   };
 }
 

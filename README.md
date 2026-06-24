@@ -1,220 +1,86 @@
-# CoinCasa
+# CoinCasa 🏠
 
-Progetto per il corso di Ingegneria del Software. Il repository contiene:
-- Backend API in Node.js/TypeScript (Fastify + Prisma + MongoDB).
-- App Flutter per la UI mobile.
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=MarcelloPastore_Progetto_Ingegneria_del_Software&metric=alert_status&organization=marcellopastore)](https://sonarcloud.io/summary/new_code?id=MarcelloPastore_Progetto_Ingegneria_del_Software)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=MarcelloPastore_Progetto_Ingegneria_del_Software&metric=coverage)](https://sonarcloud.io/summary/new_code?id=MarcelloPastore_Progetto_Ingegneria_del_Software)
 
-## Struttura del repository
+**CoinCasa** è una piattaforma progettata per semplificare la convivenza in case condivise. Permette agli inquilini di gestire in modo coordinato spese, turni, scadenze e problemi domestici.
 
-Nota: per mantenere la lista leggibile sono esclusi file generati e cache (build/, .dart_tool/, .gradle/, Pods/, .idea/, .DS_Store, *.iml).
+---
 
-```
-.
-|-- .env.example
-|-- .gitignore
-|-- Dockerfile
-|-- HttpRequests/
-|   `-- turni.http
-|-- README.md
-|-- eslint.config.ts
-|-- index.ts
-|-- package-lock.json
-|-- package.json
-|-- prisma/
-|   `-- schema.prisma
-|-- src/
-|   |-- config/
-|   |   |-- db.ts
-|   |   `-- routes.ts
-|   |-- controller/
-|   |   |-- ProblemaController.ts
-|   |   |-- SpeseController.ts
-|   |   `-- TurnoController.ts
-|   |-- dto/
-|   |   |-- AssegnatarioDto.ts
-|   |   |-- TurnoDto.ts
-|   |   `-- converter/
-|   |       `-- TurnoConverter.ts
-|   |-- errors/
-|   |   |-- errorMapper.ts
-|   |   `-- httpErrors.ts
-|   |-- middleware/
-|   |   `-- RoleMiddleware.ts
-|   |-- repository/
-|   |   |-- CasaRepository.ts
-|   |   `-- TurnoRepository.ts
-|   |-- service/
-|   |   `-- TurnoService.ts
-|   `-- types/
-|       |-- fastify.d.ts
-|       `-- params.ts
-|-- test/
-|   |-- turno.converter.test.ts
-|   `-- turno.service.test.ts
-|-- tsconfig.json
-|-- vitest.config.ts
-`-- coincasa_app_flutter_frontend/
-	|-- .gitignore
-	|-- analysis_options.yaml
-	|-- pubspec.lock
-	|-- pubspec.yaml
-	|-- lib/
-	|   |-- app.dart
-	|   |-- main.dart
-	|   |-- core/
-	|   |   |-- api/
-	|   |   |   |-- api_client.dart
-	|   |   |   |-- api_provider.dart
-	|   |   |   |-- auth_api.dart
-	|   |   |   |-- casa_api.dart
-	|   |   |   |-- spese_api.dart
-	|   |   |   `-- turni_api.dart
-	|   |   |-- config/
-	|   |   |   `-- env.dart
-	|   |   `-- models/
-	|   |       |-- casa.dart
-	|   |       |-- inquilino.dart
-	|   |       |-- quota.dart
-	|   |       |-- spesa.dart
-	|   |       `-- turno.dart
-	|   `-- ui/
-	|       |-- Icons/
-	|       |   |-- home.png
-	|       |   |-- home_auth_icon.png
-	|       |   |-- problemi.png
-	|       |   |-- reminder.png
-	|       |   |-- spese.png
-	|       |   `-- turni.png
-	|       |-- screens/
-	|       |   |-- casa/
-	|       |   |   `-- casa_screen.dart
-	|       |   |-- dashboard/
-	|       |   |   `-- dashboard_screen.dart
-	|       |   |-- login/
-	|       |   |   `-- login_screen.dart
-	|       |   |-- register/
-	|       |   |   `-- register_screen.dart
-	|       |   |-- spese/
-	|       |   |   `-- spese_screen.dart
-	|       |   `-- turni/
-	|       |       |-- codice_claude.dart
-	|       |       |-- turni_home_screen.dart
-	|       |       `-- turno_create_screen.dart
-	|       |-- theme/
-	|       |   `-- app_theme.dart
-	|       `-- widgets/
-	|           `-- common/
-	|               |-- app_top_bar.dart
-	|               |-- info_card.dart
-	|               `-- primary_button.dart
-	|-- test/
-	|   `-- widget_test.dart
-	|-- web/
-	|   |-- favicon.png
-	|   |-- index.html
-	|   |-- manifest.json
-	|   `-- icons/
-	|       |-- Icon-192.png
-	|       |-- Icon-512.png
-	|       |-- Icon-maskable-192.png
-	|       `-- Icon-maskable-512.png
-	|-- android/
-	|   |-- app/
-	|   |-- build.gradle.kts
-	|   |-- gradle/
-	|   |-- gradle.properties
-	|   |-- gradlew
-	|   |-- gradlew.bat
-	|   |-- local.properties
-	|   `-- settings.gradle.kts
-	|-- ios/
-	|   |-- Flutter/
-	|   |-- Podfile
-	|   |-- Podfile.lock
-	|   |-- Runner/
-	|   |-- Runner.xcodeproj/
-	|   |-- Runner.xcworkspace/
-	|   `-- RunnerTests/
-	|-- macos/
-	|   |-- Flutter/
-	|   |-- Podfile
-	|   |-- Runner/
-	|   |-- Runner.xcodeproj/
-	|   |-- Runner.xcworkspace/
-	|   `-- RunnerTests/
-	|-- linux/
-	|   |-- CMakeLists.txt
-	|   |-- flutter/
-	|   `-- runner/
-	`-- windows/
-		|-- CMakeLists.txt
-		|-- flutter/
-		`-- runner/
+## 🚀 Funzionalità principali
+- **🏠 Gestione Case:** Crea o unisciti a una casa tramite link d'invito.
+- **💰 Spese e Quote:** Traccia spese comuni, anticipi e quote individuali.
+- **📅 Scadenze:** Gestione di bollette, affitti e promemoria ricorrenti.
+- **🧹 Turni:** Organizzazione rotativa delle pulizie e dei compiti.
+- **⚠️ Problemi:** Sistema di segnalazione per problemi tecnici o manutenzione della casa.
+- **📂 Documenti:** archivio condiviso per contratti e documenti della casa.
+
+## 🛠️ Tech Stack
+- **Backend:** Node.js, TypeScript, Fastify, Prisma (MongoDB).
+- **Frontend:** Flutter (iOS/Android/Web).
+- **DevOps/QA:** Vitest, SonarCloud, Docker.
+
+---
+
+## 📦 Guida all'avvio
+
+### 1. Backend (Node.js)
+Il backend gestisce l'API e la persistenza dei dati.
+
+```bash
+# Installa le dipendenze
+npm install
+
+# Configura l'ambiente (.env)
+cp .env.example .env
+# Modifica .env con la tua MONGODB_URI e JWT_SECRET
+
+### 📧 Configurazione Email (Autenticazione)
+Per abilitare l'invio delle email di verifica e recupero password tramite Gmail, configura i seguenti campi nel file `.env`:
+
+1. Inserisci lo stesso indirizzo Gmail in `MAIL_USER` e `MAIL_FROM_EMAIL`.
+2. Genera una **Password per le app** da questo link: [App Passwords - Google](https://myaccount.google.com/apppasswords).
+3. Copia la password generata nel campo `MAIL_PASSWORD`.
+
+# Genera il client database
+npx prisma generate
+
+# Avvia l'applicazione
+npx tsx index.ts
 ```
 
-## Backend API (Node/TypeScript)
+### 2. Frontend (Flutter)
+L'interfaccia utente per i dispositivi mobili.
 
-- Entry point: index.ts
-- Database: Prisma con MongoDB (variabile `MONGODB_URI` in .env)
-- Porta: `PORT` (default 3000 se non impostata)
-
-### Script disponibili
-
-- `npm run build` compila TypeScript.
-- `npm test` esegue i test con Vitest.
-
-## Frontend (Flutter)
-
-- Entry point: lib/main.dart
-- UI: lib/ui/
-
-## Guida rapida per vedere le schermate su emulatore (macOS)
-
-### Cosa installare
-
-- Flutter SDK (canale stable)
-- Xcode (per iOS Simulator)
-- Android Studio + Android SDK (per emulator Android, opzionale)
-- CocoaPods (necessario per build iOS se richiesto da `flutter doctor`)
-
-### Passi rapidi
-
-1) Verifica l'ambiente:
-
-```
-flutter doctor
-```
-
-2) Risolvi eventuali problemi segnalati da `flutter doctor`:
-- Apri Xcode almeno una volta per installare i componenti richiesti.
-- Accetta la licenza Xcode se richiesto.
-- Per Android, installa Android Studio e accetta le licenze Android.
-
-3) Scarica le dipendenze Flutter:
-
-```
+```bash
 cd coincasa_app_flutter_frontend
 flutter pub get
+flutter run
 ```
 
-4) Avvia un emulatore:
-- iOS: apri Simulator da Xcode (Open Developer Tool > Simulator) oppure `open -a Simulator`.
-- Android: crea e avvia un AVD da Android Studio (Device Manager).
+### 3. Docker (Alternativa Backend)
+Avvia il backend e un server mail di test (Mailpit) tramite Docker Compose:
 
-5) Verifica i device disponibili:
-
-```
-flutter devices
+```bash
+docker-compose up --build
 ```
 
-6) Avvia l'iphone 14 nel simulator:
+---
 
+## 🧪 Testing
+Per eseguire i test unitari e di integrazione del backend:
+```bash
+npm test
 ```
-xcrun simctl boot "iPhone 14"
+Per visualizzare la copertura dei test:
+```bash
+npm run test:coverage
 ```
 
-avvia l'app con run & debug su main.dart
+---
 
-```
+## 📄 Licenza
+Questo progetto è rilasciato sotto la licenza **MIT**. Consulta il file [LICENSE](LICENSE) per maggiori informazioni.
 
-```
+---
+*Progetto sviluppato per il corso di Ingegneria del Software.*

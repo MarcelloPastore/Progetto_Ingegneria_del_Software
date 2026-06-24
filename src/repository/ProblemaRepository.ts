@@ -8,6 +8,10 @@ export const INCLUDE_PROBLEMA_REL = {
   assegnatarioRel: {
     select: { id: true, username: true },
   },
+  storicoStato: {
+    include: { utenteRel: { select: { id: true, username: true } } },
+    orderBy: { data: "asc" as const },
+  },
 } as const;
 
 const _problemaQuery = () =>
@@ -39,7 +43,12 @@ export class ProblemaRepository {
     data: ProblemaCreateData,
   ): Promise<ProblemaConRelazioni> {
     return prisma.problema.create({
-      data,
+      data: {
+        ...data,
+        storicoStato: {
+          create: { stato: Stato.Segnalato, utente: data.segnalataDa },
+        },
+      },
       include: INCLUDE_PROBLEMA_REL,
     });
   }
@@ -82,6 +91,17 @@ export class ProblemaRepository {
   }
 
   async deleteProblema(idCasa: string, idProblema: string): Promise<void> {
+    await prisma.storico.deleteMany({ where: { idProblema } });
     await prisma.problema.delete({ where: { id: idProblema, idCasa } });
+  }
+
+  async createStorico(
+    idProblema: string,
+    stato: Stato,
+    idUtente: string,
+  ): Promise<void> {
+    await prisma.storico.create({
+      data: { idProblema, stato, utente: idUtente },
+    });
   }
 }

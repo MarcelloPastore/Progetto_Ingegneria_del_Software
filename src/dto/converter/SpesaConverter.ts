@@ -21,6 +21,7 @@ interface SpesaInfoForDto {
 
 interface SpesaForDto extends SpesaInfoForDto {
   dataCreazione: Date;
+  idScadenza?: string | null;
   owner?: string | null;
   ownerRel?: AssegnatarioInfo | null;
   partecipanti?: string[] | null;
@@ -125,6 +126,7 @@ export class SpesaConverter {
       dataScadenza: toDateOnlyString(scadenza?.dataScadenza),
       isRicorrente: scadenza?.isRicorrente ?? false,
       cadenzaMesi: toCadenzaMesi(scadenza?.cadenzaGiorni),
+      idScadenza: spesa.idScadenza ?? null,
       owner: toAssegnatario(spesa.ownerRel, spesa.owner),
       anticipataDa: spesa.anticipataDa
         ? toAssegnatario(spesa.anticipataDaRel, spesa.anticipataDa)

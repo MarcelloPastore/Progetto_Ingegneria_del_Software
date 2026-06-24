@@ -2,6 +2,7 @@
  * LOGIC TESTS — ScadenzaService
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { Ruolo } from "@prisma/client";
 import { ConflictError } from "../../src/errors/httpErrors";
 
 const mocks = vi.hoisted(() => ({
@@ -26,6 +27,16 @@ vi.mock("../../src/repository/ScadenzaRepository", () => ({
   },
 }));
 
+const casaMocks = vi.hoisted(() => ({
+  findMembroCasaByCasaAndUtenteOrThrow: vi.fn().mockResolvedValue({ ruolo: "HomeAdmin" }),
+}));
+
+vi.mock("../../src/repository/CasaRepository", () => ({
+  CasaRepository: class {
+    findMembroCasaByCasaAndUtenteOrThrow = casaMocks.findMembroCasaByCasaAndUtenteOrThrow;
+  },
+}));
+
 import { ScadenzaService } from "../../src/service/ScadenzaService";
 
 const baseScadenza = {
@@ -37,6 +48,7 @@ const baseScadenza = {
   cadenzaGiorni: null,
   idCasa: "c1",
   dataCreazione: new Date("2026-06-01T00:00:00.000Z"),
+  idCreatore: "user1",
 };
 
 describe("ScadenzaService", () => {
@@ -69,7 +81,7 @@ describe("ScadenzaService", () => {
       descrizione: "Pagamento utenze",
       isRicorrente: false,
       dataScadenza: new Date("2026-06-10T00:00:00.000Z"),
-    });
+    }, "user1");
 
     expect(mocks.createScadenza).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -88,7 +100,7 @@ describe("ScadenzaService", () => {
         descrizione: "Pagamento utenze",
         dataScadenza: new Date("2026-06-10T00:00:00.000Z"),
         isRicorrente: true,
-      }),
+      }, "user1"),
     ).rejects.toBeInstanceOf(ConflictError);
   });
 
@@ -100,7 +112,7 @@ describe("ScadenzaService", () => {
     });
 
     const service = new ScadenzaService();
-    await service.modificaScadenza("c1", "s1", { nome: "Bolletta gas" });
+    await service.modificaScadenza("c1", "s1", { nome: "Bolletta gas" }, "user1");
 
     expect(mocks.updateScadenza).toHaveBeenCalledWith(
       "s1",
@@ -169,7 +181,7 @@ describe("ScadenzaService", () => {
     mocks.deleteScadenza.mockResolvedValue(undefined);
 
     const service = new ScadenzaService();
-    await service.eliminaScadenza("c1", "s1");
+    await service.eliminaScadenza("c1", "s1", "user1");
 
     expect(mocks.findScadenzaByIdOrThrow).toHaveBeenCalledWith("c1", "s1");
     expect(mocks.deleteScadenza).toHaveBeenCalledWith("c1", "s1");

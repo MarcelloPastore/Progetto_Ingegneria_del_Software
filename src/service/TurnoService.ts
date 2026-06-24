@@ -1,3 +1,4 @@
+import { Ruolo } from "@prisma/client";
 import {
   CreaTurnoDto,
   ModificaTurnoDto,
@@ -26,6 +27,15 @@ function shuffleTurni(ids: string[]): string[] {
     [copy[i], copy[j]] = [copy[j], copy[i]];
   }
   return copy;
+}
+
+function riferimentoPerPrimaScadenza(
+  dataTurno: string,
+  cadenzaGiorni: number,
+): Date {
+  const riferimento = new Date(dataTurno);
+  riferimento.setDate(riferimento.getDate() - cadenzaGiorni);
+  return riferimento;
 }
 
 function isToday(isoString: string): boolean {
@@ -106,6 +116,10 @@ export class TurnoService {
       assegnatarioCorrente: dto.assegnatario,
       ordineRotazione: idsRotazione,
       indiceRotazioneCorrente: 0,
+      dataUltimaPulizia: riferimentoPerPrimaScadenza(
+        dto.dataTurno,
+        dto.cadenzaGiorni,
+      ),
       idCreatore,
     });
 
@@ -141,6 +155,7 @@ export class TurnoService {
           (oggi.getTime() - t.dataUltimaPulizia!.getTime()) /
             (1000 * 60 * 60 * 24),
         ),
+        cadenzaGiorni: t.cadenzaGiorni,
       }));
   }
 
@@ -182,7 +197,17 @@ export class TurnoService {
     idTurno: string,
     idUtente: string,
   ): Promise<void> {
-    await this.assertIdCreatoreTurno(idCasa, idTurno, idUtente);
+    const membro = await casaRepository.findMembroCasaByCasaAndUtenteOrThrow(
+      idCasa,
+      idUtente,
+    );
+    const isAdmin =
+      membro.ruolo === Ruolo.HomeAdmin || membro.ruolo === Ruolo.SysAdmin;
+    if (!isAdmin) {
+      await this.assertIdCreatoreTurno(idCasa, idTurno, idUtente);
+    } else {
+      await turnoRepository.findTurnoByIdOrThrow(idCasa, idTurno);
+    }
 
     await turnoRepository.deleteTurno(idCasa, idTurno);
   }

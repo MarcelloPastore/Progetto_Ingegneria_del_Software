@@ -32,8 +32,9 @@ export class TurnoConverter {
     const assegnatarioRel = turno.assegnatarioCorrenteRel;
 
     return {
+      id: turno.id,
       task: turno.task,
-      assegnatarioCorrente: {
+      assegnatario: {
         id: assegnatarioRel?.id ?? turno.assegnatarioCorrente ?? "",
         username: assegnatarioRel?.username ?? "",
       },

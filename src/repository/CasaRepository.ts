@@ -100,6 +100,15 @@ export class CasaRepository {
     });
   }
 
+  async findCasaByInviteCodeOrThrow(
+    inviteCode: string,
+  ): Promise<CasaConRelazioni> {
+    return prisma.casa.findFirstOrThrow({
+      where: { inviteLink: inviteCode },
+      include: INCLUDE_CASA_CON_REL,
+    });
+  }
+
   async findCasaByIdAndInviteLinkOrThrow(
     idCasa: string,
     inviteLink: string,
@@ -210,5 +219,21 @@ export class CasaRepository {
     );
 
     await prisma.membroCasa.delete({ where: { id: membro.id } });
+  }
+
+  async getHubCounts(idCasa: string): Promise<{
+    speseCount: number;
+    scadenzeCount: number;
+    problemiCount: number;
+    turniCount: number;
+  }> {
+    const [speseCount, scadenzeCount, problemiCount, turniCount] =
+      await Promise.all([
+        prisma.spesa.count({ where: { idCasa } }),
+        prisma.scadenza.count({ where: { idCasa } }),
+        prisma.problema.count({ where: { idCasa } }),
+        prisma.turno.count({ where: { idCasa } }),
+      ]);
+    return { speseCount, scadenzeCount, problemiCount, turniCount };
   }
 }

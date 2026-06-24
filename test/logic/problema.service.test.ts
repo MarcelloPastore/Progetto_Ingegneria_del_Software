@@ -2,7 +2,7 @@
  * LOGIC TESTS — ProblemaService
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { Priorita, Stato } from "@prisma/client";
+import { Priorita, Ruolo, Stato } from "@prisma/client";
 
 const mocks = vi.hoisted(() => ({
   findProblemiByCasa: vi.fn(),
@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   createProblema: vi.fn(),
   updateProblema: vi.fn(),
   deleteProblema: vi.fn(),
+  createStorico: vi.fn(),
 }));
 
 vi.mock("../../src/repository/ProblemaRepository", () => ({
@@ -23,6 +24,7 @@ vi.mock("../../src/repository/ProblemaRepository", () => ({
         createProblema: mocks.createProblema,
         updateProblema: mocks.updateProblema,
         deleteProblema: mocks.deleteProblema,
+        createStorico: mocks.createStorico,
       });
     }
   },
@@ -68,7 +70,11 @@ describe("ProblemaService", () => {
 
     await service.segnalaProblema(
       "c1",
-      { nome: "Rubinetto", descrizione: "Perde acqua", priorita: Priorita.Urgente },
+      {
+        nome: "Rubinetto",
+        descrizione: "Perde acqua",
+        priorita: Priorita.Urgente,
+      },
       "u1",
     );
 
@@ -99,12 +105,56 @@ describe("ProblemaService", () => {
     );
   });
 
+  it("modificaProblema updates only the provided fields", async () => {
+    mocks.findProblemaByIdOrThrow.mockResolvedValue(baseProblema);
+    mocks.updateProblema.mockResolvedValue({
+      ...baseProblema,
+      nome: "Rubinetto cucina",
+      priorita: Priorita.Urgente,
+    });
+
+    const service = new ProblemaService();
+    await service.modificaProblema(
+      "c1",
+      "p1",
+      {
+        nome: "Rubinetto cucina",
+        priorita: Priorita.Urgente,
+      },
+      "u1",
+      Ruolo.Inquilino,
+    );
+
+    expect(mocks.updateProblema).toHaveBeenCalledWith("p1", {
+      nome: "Rubinetto cucina",
+      priorita: Priorita.Urgente,
+    });
+  });
+
+  it("rinunciaProblema clears the current assignee", async () => {
+    mocks.findProblemaByIdOrThrow.mockResolvedValue({
+      ...baseProblema,
+      stato: Stato.Assegnato,
+      assegnatario: "u2",
+    });
+    mocks.updateProblema.mockResolvedValue(baseProblema);
+
+    const service = new ProblemaService();
+    await service.rinunciaProblema("c1", "p1", "u2");
+
+    expect(mocks.updateProblema).toHaveBeenCalledWith("p1", {
+      assegnatario: null,
+      stato: Stato.Segnalato,
+      dataRisoluzione: null,
+    });
+  });
+
   it("assegnaProblema sets stato based on idUtente (null => Segnalato)", async () => {
     mocks.findProblemaByIdOrThrow.mockResolvedValue(baseProblema);
     mocks.updateProblema.mockResolvedValue(baseProblema);
 
     const service = new ProblemaService();
-    await service.assegnaProblema("c1", "p1", { idUtente: null });
+    await service.assegnaProblema("c1", "p1", { idUtente: null }, "u1");
 
     expect(mocks.updateProblema).toHaveBeenCalledWith(
       "p1",
@@ -113,7 +163,7 @@ describe("ProblemaService", () => {
 
     mocks.updateProblema.mockClear();
 
-    await service.assegnaProblema("c1", "p1", { idUtente: "u2" });
+    await service.assegnaProblema("c1", "p1", { idUtente: "u2" }, "u1");
     expect(mocks.updateProblema).toHaveBeenCalledWith(
       "p1",
       expect.objectContaining({ assegnatario: "u2", stato: Stato.Assegnato }),
@@ -132,14 +182,16 @@ describe("ProblemaService", () => {
     });
 
     const service = new ProblemaService();
-    await service.aggiornaStato("c1", "p1", { stato: Stato.Risolto });
+    await service.aggiornaStato("c1", "p1", { stato: Stato.Risolto }, "u1");
 
     expect(mocks.updateProblema).toHaveBeenCalledWith(
       "p1",
-      expect.objectContaining({ stato: Stato.Risolto, dataRisoluzione: expect.any(Date) }),
+      expect.objectContaining({
+        stato: Stato.Risolto,
+        dataRisoluzione: expect.any(Date),
+      }),
     );
 
     vi.useRealTimers();
   });
 });
-

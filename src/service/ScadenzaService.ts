@@ -1,3 +1,4 @@
+import { Ruolo } from "@prisma/client";
 import {
   CreaScadenzaDto,
   ModificaScadenzaDto,
@@ -8,9 +9,11 @@ import {
   ScadenzaBase,
   ScadenzaRepository,
 } from "../repository/ScadenzaRepository";
-import { ConflictError } from "../errors/httpErrors";
+import { CasaRepository } from "../repository/CasaRepository";
+import { ConflictError, ForbiddenError } from "../errors/httpErrors";
 
 const scadenzaRepository = new ScadenzaRepository();
+const casaRepository = new CasaRepository();
 
 function toDto(scadenza: ScadenzaBase): ScadenzaResponseDto {
   return {
@@ -22,6 +25,7 @@ function toDto(scadenza: ScadenzaBase): ScadenzaResponseDto {
     cadenzaGiorni: scadenza.cadenzaGiorni ?? null,
     idCasa: scadenza.idCasa,
     dataCreazione: scadenza.dataCreazione,
+    idCreatore: scadenza.idCreatore ?? null,
   };
 }
 
@@ -58,6 +62,7 @@ export class ScadenzaService {
   async creaScadenza(
     idCasa: string,
     dto: CreaScadenzaDto,
+    idCreatore: string,
   ): Promise<ScadenzaResponseDto> {
     const isRicorrente = dto.isRicorrente ?? false;
     const cadenzaGiorni = isRicorrente ? (dto.cadenzaGiorni ?? null) : null;
@@ -70,6 +75,7 @@ export class ScadenzaService {
       dataScadenza: dto.dataScadenza,
       isRicorrente,
       cadenzaGiorni,
+      idCreatore,
     });
 
     return toDto(scadenza);
@@ -79,8 +85,22 @@ export class ScadenzaService {
     idCasa: string,
     idScadenza: string,
     dto: ModificaScadenzaDto,
+    idUtente: string,
+    ruoloCasa?: Ruolo,
   ): Promise<ScadenzaResponseDto> {
-    await scadenzaRepository.findScadenzaByIdOrThrow(idCasa, idScadenza);
+    const esistente = await scadenzaRepository.findScadenzaByIdOrThrow(
+      idCasa,
+      idScadenza,
+    );
+
+    if (
+      esistente.idCreatore !== idUtente &&
+      ruoloCasa !== Ruolo.SysAdmin
+    ) {
+      throw new ForbiddenError(
+        "Solo chi ha creato la scadenza può modificarla",
+      );
+    }
 
     const scadenza = await scadenzaRepository.updateScadenza(idScadenza, {
       ...(dto.nome !== undefined && { nome: dto.nome }),
@@ -93,8 +113,26 @@ export class ScadenzaService {
     return toDto(scadenza);
   }
 
-  async eliminaScadenza(idCasa: string, idScadenza: string): Promise<void> {
-    await scadenzaRepository.findScadenzaByIdOrThrow(idCasa, idScadenza);
+  async eliminaScadenza(
+    idCasa: string,
+    idScadenza: string,
+    idUtente: string,
+  ): Promise<void> {
+    const scadenza = await scadenzaRepository.findScadenzaByIdOrThrow(
+      idCasa,
+      idScadenza,
+    );
+    const membro = await casaRepository.findMembroCasaByCasaAndUtenteOrThrow(
+      idCasa,
+      idUtente,
+    );
+    const isAdmin =
+      membro.ruolo === Ruolo.HomeAdmin || membro.ruolo === Ruolo.SysAdmin;
+    if (!isAdmin && scadenza.idCreatore !== idUtente) {
+      throw new ForbiddenError(
+        "Solo chi ha creato la scadenza o un HomeAdmin può eliminarla",
+      );
+    }
     await scadenzaRepository.deleteScadenza(idCasa, idScadenza);
   }
 

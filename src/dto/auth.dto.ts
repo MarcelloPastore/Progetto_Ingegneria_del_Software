@@ -12,6 +12,7 @@ export interface PublicUser {
   username: string;
   nome: string;
   cognome: string;
+  emailVerificata: boolean;
 }
 
 export interface VerifyEmailData {

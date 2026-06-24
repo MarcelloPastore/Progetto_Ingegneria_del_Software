@@ -39,6 +39,8 @@ import {
 import {
   AggiungiInquilinoDto,
   CreaCasaDto,
+  HubCasaDto,
+  JoinCasaDto,
   ModificaCasaDto,
   CasaResponseDto,
   ModificaRuoloDto,
@@ -54,6 +56,7 @@ import {
   AggiornaStatoDto,
   AssegnaProblemaDto,
   CreaProblemaDto,
+  ModificaProblemaDto,
   ProblemaResponseDto,
 } from "../dto/ProblemaDto";
 import { RegisterData, PublicUser } from "../dto/auth.dto";
@@ -67,6 +70,7 @@ import {
 import {
   ModificaUsernameDto,
   ModificaEmailDto,
+  ModificaPasswordDto,
   UserProfileDto,
 } from "../dto/AccountDto";
 
@@ -199,6 +203,14 @@ export function authRoutes(app: FastifyInstance) {
     authController.verificaEmail,
   );
 
+  app.get(
+    "/auth/email-verificata",
+    {
+      config: { rateLimit: { max: 60, timeWindow: "1 minute" } },
+    },
+    authController.emailVerificata,
+  );
+
   // Supporta il click diretto dal link email (querystring token+email)
   app.get(
     "/auth/verifica-email",
@@ -256,6 +268,23 @@ export function casaRoutes(app: FastifyInstance) {
     },
     casaController.creaCasa,
   );
+
+  /**
+   * @api  JoinCasaConInviteCode
+   * @route POST /case/join
+   *
+   * @summary Entra in una casa tramite codice invito (formato CX-XXXXXXXX).
+   *
+   * @see {@link JoinCasaDto}
+   * @see {@link CasaResponseDto}
+   */
+  app.post<{ Body: JoinCasaDto }>(
+    "/case/join",
+    {
+      config: { rateLimit: { max: 5, timeWindow: "1 minute" } },
+    },
+    casaController.joinCasaConInviteCode,
+  );
   /**
    * @api  GetCase
    * @route GET /case
@@ -283,6 +312,22 @@ export function casaRoutes(app: FastifyInstance) {
     "/case/:idCasa",
     { preHandler: requireRole(Ruolo.Inquilino) },
     casaController.getCasa,
+  );
+  /**
+   * @api  GetHubCasa
+   * @route GET /case/:idCasa/hub
+   *
+   * @summary Restituisce i dati aggregati dell'hub casa: dettagli, inquilini, ruolo utente e conteggi di spese, scadenze, problemi e turni.
+   *
+   * @see {@link HubCasaDto}
+   *
+   * @version 1.0.0
+   * @author Mauro Cavasinni
+   */
+  app.get<{ Params: CasaParams }>(
+    "/case/:idCasa/hub",
+    { preHandler: requireRole(Ruolo.Inquilino) },
+    casaController.getHubCasa,
   );
   /**
    * @api  ModificaCasa
@@ -369,14 +414,14 @@ export function casaRoutes(app: FastifyInstance) {
    * @api  RimuoviInquilino
    * @route DELETE /case/:idCasa/inquilini/:idInquilino
    *
-   * @summary Rimuove un inquilino dalla casa. Solo per HomeAdmin.
+   * @summary Rimuove un inquilino dalla casa. Consente a un inquilino di lasciare la casa o a un HomeAdmin di rimuovere altri.
    *
    * @version 1.0.0
    * @author Lorenzo Tedino
    */
   app.delete<{ Params: InquilinoParams }>(
     "/case/:idCasa/inquilini/:idInquilino",
-    { preHandler: requireRole(Ruolo.HomeAdmin) },
+    { preHandler: requireRole(Ruolo.Inquilino) },
     casaController.rimuoviInquilino,
   );
   /**
@@ -424,9 +469,6 @@ export function casaRoutes(app: FastifyInstance) {
    */
   app.post<{ Params: CasaParams }>(
     "/case/:idCasa/select",
-    {
-      config: { rateLimit: { max: 1, timeWindow: "1 minute" } },
-    },
     casaController.selectCasa,
   );
 }
@@ -914,6 +956,20 @@ export function problemiRoutes(app: FastifyInstance) {
     problemaController.segnalaProblema,
   );
   /**
+   * @api  ModificaProblema
+   * @route PUT /case/:idCasa/problemi/:idProblema
+   *
+   * @summary Modifica nome, descrizione e priorità di un problema.
+   *
+   * @see {@link ModificaProblemaDto}
+   * @see {@link ProblemaResponseDto}
+   */
+  app.put<{ Params: ProblemaParams; Body: ModificaProblemaDto }>(
+    "/case/:idCasa/problemi/:idProblema",
+    { preHandler: requireRole(Ruolo.Inquilino) },
+    problemaController.modificaProblema,
+  );
+  /**
    * @api  EliminaProblema
    * @route DELETE /case/:idCasa/problemi/:idProblema
    *
@@ -924,7 +980,7 @@ export function problemiRoutes(app: FastifyInstance) {
    */
   app.delete<{ Params: ProblemaParams }>(
     "/case/:idCasa/problemi/:idProblema",
-    { preHandler: requireRole(Ruolo.HomeAdmin) },
+    { preHandler: requireRole(Ruolo.Inquilino) },
     problemaController.eliminaProblema,
   );
   /**
@@ -942,6 +998,19 @@ export function problemiRoutes(app: FastifyInstance) {
     "/case/:idCasa/problemi/:idProblema/autoassegna",
     { preHandler: requireRole(Ruolo.Inquilino) },
     problemaController.autoassegnaProblema,
+  );
+  /**
+   * @api  RinunciaProblema
+   * @route PUT /case/:idCasa/problemi/:idProblema/rinuncia
+   *
+   * @summary Rimuove l'assegnazione dell'utente corrente dal problema.
+   *
+   * @see {@link ProblemaResponseDto}
+   */
+  app.put<{ Params: ProblemaParams }>(
+    "/case/:idCasa/problemi/:idProblema/rinuncia",
+    { preHandler: requireRole(Ruolo.Inquilino) },
+    problemaController.rinunciaProblema,
   );
   /**
    * @api  AssegnaProblema
@@ -1160,6 +1229,19 @@ export function accountRoutes(app: FastifyInstance) {
   app.patch<{ Body: ModificaEmailDto }>(
     "/account/email",
     accountController.modificaEmail,
+  );
+
+  /**
+   * @api  ModificaPassword
+   * @route PATCH /account/password
+   *
+   * @summary Modifica la password dell'utente autenticato. Richiede la vecchia password.
+   *
+   * @see {@link ModificaPasswordDto}
+   */
+  app.patch<{ Body: ModificaPasswordDto }>(
+    "/account/password",
+    accountController.modificaPassword,
   );
 
   /**

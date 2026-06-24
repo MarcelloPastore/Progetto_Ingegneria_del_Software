@@ -19,6 +19,7 @@ import {
   PasswordResetEmailDeliveryError,
   InvalidEmailVerificationTokenError,
   DatabaseCleanupError,
+  EmailVerifyedError,
 } from "../errors/appErrors";
 import type { VerificationMailInput } from "../utils/mail";
 import {
@@ -128,6 +129,10 @@ export class AuthService {
       throw new InvalidCredentialsError();
     }
 
+    if (!user.emailVerificata) {
+      throw new EmailVerifyedError();
+    }
+
     return {
       user,
       shouldSign: true,
@@ -140,14 +145,6 @@ export class AuthService {
     });
 
     if (existingByEmail) {
-      throw new DuplicateUserError("L'email è già in uso.");
-    }
-
-    const existingByUsername = await prisma.utente.findFirst({
-      where: { username: data.username },
-    });
-
-    if (existingByUsername) {
       throw new DuplicateUserError("L'email è già in uso.");
     }
 
@@ -184,6 +181,7 @@ export class AuthService {
       username: user.username,
       nome: user.nome,
       cognome: user.cognome,
+      emailVerificata: user.emailVerificata,
     };
   }
 
@@ -226,7 +224,17 @@ export class AuthService {
     return {
       ok: true,
       date: now.toISOString(),
+      //user: {
+      //  id: user.id,
+      //  nome: user.nome,
+      //  username: user.username,
+      //},
     };
+  }
+
+  async checkEmailVerificata(email: string): Promise<{ verificata: boolean }> {
+    const user = await prisma.utente.findUnique({ where: { email } });
+    return { verificata: user?.emailVerificata ?? false };
   }
 
   async requestPasswordResetWithValidation(

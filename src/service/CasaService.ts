@@ -1,12 +1,13 @@
-import { randomUUID } from "node:crypto";
 import { Ruolo } from "@prisma/client";
 import {
   AggiungiInquilinoDto,
   CasaResponseDto,
   CasaSummaryDto,
   CreaCasaDto,
+  HubCasaDto,
   InquilinoDto,
   InviteLinkDto,
+  JoinCasaDto,
   ModificaCasaDto,
   ModificaRuoloDto,
 } from "../dto/CasaDto";
@@ -16,6 +17,17 @@ import {
   MembroCasaConUtente,
 } from "../repository/CasaRepository";
 import { ConflictError, ForbiddenError } from "../errors/httpErrors";
+import { randomInt } from "node:crypto";
+
+function generateInviteCode(): string {
+  // eslint-disable-next-line no-secrets/no-secrets
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let code = "CX-";
+  for (let i = 0; i < 8; i++) {
+    code += chars[randomInt(0, chars.length)];
+  }
+  return code;
+}
 
 const casaRepository = new CasaRepository();
 const casaConverter = new CasaConverter();
@@ -55,7 +67,7 @@ export class CasaService {
       citta,
       tipoCasa,
       creator: idCreatore,
-      inviteLink: randomUUID(),
+      inviteLink: generateInviteCode(),
     });
 
     return casaConverter.toCasaDto(casa, idCreatore);
@@ -115,6 +127,28 @@ export class CasaService {
     return casaConverter.toInquilinoDto(membro);
   }
 
+  async joinCasaConInviteCode(
+    dto: JoinCasaDto,
+    idUtente: string,
+  ): Promise<CasaResponseDto> {
+    const casa = await casaRepository.findCasaByInviteCodeOrThrow(
+      dto.inviteCode,
+    );
+
+    const giaPresente = await casaRepository.findMembroCasaByCasaAndUtente(
+      casa.id,
+      idUtente,
+    );
+
+    if (giaPresente) {
+      throw new ConflictError("L'utente fa già parte della casa");
+    }
+
+    await casaRepository.addMembroCasa(casa.id, idUtente);
+    const casaAggiornata = await casaRepository.findCasaByIdOrThrow(casa.id);
+    return casaConverter.toCasaDto(casaAggiornata, idUtente);
+  }
+
   async aggiungiInquilino(
     idCasa: string,
     dto: AggiungiInquilinoDto,
@@ -143,7 +177,13 @@ export class CasaService {
     idInquilino: string,
     idUtente: string,
   ): Promise<void> {
-    await this.assertHomeAdmin(idCasa, idUtente);
+    // Se non è l'utente stesso che sta cercando di lasciare la casa,
+    // allora deve essere un HomeAdmin per rimuovere qualcun altro.
+    if (idInquilino !== idUtente) {
+      await this.assertHomeAdmin(idCasa, idUtente);
+    } else {
+      await this.assertMembroCasa(idCasa, idUtente);
+    }
 
     const ownerIdCasa = await casaRepository.getCasaCreator(idCasa);
     if (ownerIdCasa && idInquilino === ownerIdCasa) {
@@ -192,7 +232,7 @@ export class CasaService {
     }
 
     const aggiornata = await casaRepository.updateCasa(idCasa, {
-      inviteLink: randomUUID(),
+      inviteLink: generateInviteCode(),
     });
 
     return { inviteLink: aggiornata.inviteLink };
@@ -204,5 +244,18 @@ export class CasaService {
   ): Promise<{ idCasa: string; ruoloCasa: Ruolo }> {
     const membro = await this.assertMembroCasa(idCasa, idUtente);
     return { idCasa, ruoloCasa: membro.ruolo };
+  }
+
+  async getHubCasa(idCasa: string, idUtente: string): Promise<HubCasaDto> {
+    const membro = await this.assertMembroCasa(idCasa, idUtente);
+    const [casa, counts] = await Promise.all([
+      casaRepository.findCasaByIdOrThrow(idCasa),
+      casaRepository.getHubCounts(idCasa),
+    ]);
+    return {
+      casa: casaConverter.toCasaDto(casa, idUtente),
+      ruolo: membro.ruolo,
+      ...counts,
+    };
   }
 }

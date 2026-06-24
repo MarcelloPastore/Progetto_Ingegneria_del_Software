@@ -19,11 +19,12 @@ describe("SpesaDto - validation", () => {
     }
   });
 
-  it("CreaSpesaSchema requires cadenzaGiorni when isRicorrente=true", () => {
+  it("CreaSpesaSchema requires cadenzaGiorni when isRicorrente=true and dataScadenza is set", () => {
     const result = CreaSpesaSchema.safeParse({
       descrizione: "Affitto",
       importo: 100,
       partecipanti: ["u1", "u2"],
+      dataScadenza: "2026-12-31",
       isRicorrente: true,
     });
 
@@ -37,8 +38,9 @@ describe("SpesaDto - validation", () => {
     expect(result.success).toBe(true);
   });
 
-  it("ModificaSpesaSchema rejects isRicorrente=true without cadenzaGiorni", () => {
+  it("ModificaSpesaSchema rejects isRicorrente=true without cadenzaGiorni when dataScadenza is set", () => {
     const result = ModificaSpesaSchema.safeParse({
+      dataScadenza: "2026-12-31",
       isRicorrente: true,
     });
     expect(result.success).toBe(false);

@@ -1,7 +1,7 @@
 /tmp
 /out-tsc
+/build
 
-/coincasa_app_flutter_frontend
 /node_modules
 /dist
 npm-debug.log*
@@ -19,3 +19,4 @@ yarn-error.log*
 /.scannerwork/.sonar_lock
 /.scannerwork/report-task.txt
 /scripts/
+

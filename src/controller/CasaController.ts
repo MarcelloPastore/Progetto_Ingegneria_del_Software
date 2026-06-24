@@ -4,6 +4,8 @@ import {
   AggiungiInquilinoSchema,
   CreaCasaDto,
   CreaCasaSchema,
+  JoinCasaDto,
+  JoinCasaSchema,
   ModificaCasaDto,
   ModificaCasaSchema,
   ModificaRuoloDto,
@@ -121,6 +123,22 @@ export class CasaController {
     }
   };
 
+  joinCasaConInviteCode = async (
+    request: FastifyRequest<{ Body: JoinCasaDto }>,
+    reply: FastifyReply,
+  ) => {
+    try {
+      const dto = JoinCasaSchema.parse(request.body);
+      const casa = await this.casaService.joinCasaConInviteCode(
+        dto,
+        request.user.idUtente,
+      );
+      return reply.status(200).send(casa);
+    } catch (error) {
+      return this.handleFailure(reply, error);
+    }
+  };
+
   aggiungiInquilino = async (
     request: FastifyRequest<{ Params: CasaParams; Body: AggiungiInquilinoDto }>,
     reply: FastifyReply,
@@ -215,6 +233,21 @@ export class CasaController {
         type: "access",
       });
       return reply.status(200).send({ token });
+    } catch (error) {
+      return this.handleFailure(reply, error);
+    }
+  };
+
+  getHubCasa = async (
+    request: FastifyRequest<{ Params: CasaParams }>,
+    reply: FastifyReply,
+  ) => {
+    try {
+      const hub = await this.casaService.getHubCasa(
+        request.params.idCasa,
+        request.user.idUtente,
+      );
+      return reply.status(200).send(hub);
     } catch (error) {
       return this.handleFailure(reply, error);
     }

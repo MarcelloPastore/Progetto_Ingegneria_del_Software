@@ -76,12 +76,9 @@ async function getTransporter(): Promise<MailTransporter> {
     };
 
     transporter = nodemailerModule.createTransport(transportOptions);
-    try {
-      await transporter.verify?.();
-    } catch (err) {
+    transporter.verify?.().catch((err) => {
       console.error("[MAIL] Transporter verification failed:", err);
-      throw err;
-    }
+    });
   }
 
   return transporter;

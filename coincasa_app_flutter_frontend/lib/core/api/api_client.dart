@@ -1,6 +1,8 @@
-import 'dart:convert';
-
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
+import 'package:coincasa_app/app.dart';
+import 'package:coincasa_app/core/widgets/common/no_connection_screen.dart';
+import 'package:coincasa_app/core/widgets/common/no_internet_dialog.dart';
+import 'package:coincasa_app/domain/value_objects/ruolo_casa.dart';
 
 import '../config/env.dart';
 
@@ -15,67 +17,198 @@ class ApiException implements Exception {
 }
 
 class ApiClient {
-  ApiClient({String? baseUrl, http.Client? httpClient})
-    : baseUrl = baseUrl ?? Env.baseUrl,
-      _httpClient = httpClient ?? http.Client();
+  ApiClient({String? baseUrl, Dio? dio})
+      : baseUrl = baseUrl ?? Env.baseUrl {
+    _dio = dio ??
+        Dio(
+          BaseOptions(
+            baseUrl: this.baseUrl,
+            connectTimeout: const Duration(seconds: 15),
+            receiveTimeout: const Duration(seconds: 30),
+            headers: const {'Accept': 'application/json'},
+            // Accetta tutti i codici di stato: li gestiamo manualmente
+            validateStatus: (_) => true,
+          ),
+        );
+    _dio.interceptors.add(_authInterceptor());
+  }
 
   final String baseUrl;
-  final http.Client _httpClient;
-  String? _authToken;
+  late final Dio _dio;
 
-  void setAuthToken(String? token) {
-    _authToken = token;
+  String? _authToken;
+  String? _currentUserId;
+  String? _currentUserEmail;
+  String? _currentUserDisplayName;
+  String? _currentUserFirstName;
+  String? _currentUserLastName;
+  String? _currentUserAvatarSeed;
+  String? _currentUserUsername;
+  String? _currentCasaId;
+  String? _currentCasaRuolo;
+
+  /// Chiamato quando il server risponde 401. Deve pulire la sessione
+  /// persistente e reindirizzare al login. Va registrato in main().
+  Future<void> Function()? onUnauthorized;
+
+  /// Chiamato quando il server risponde 403 con code ROLE_OUTDATED.
+  /// Il token contiene un ruolo non più valido: il frontend deve
+  /// rifare selectCasa per aggiornarlo. Va registrato in main().
+  void Function()? onRoleOutdated;
+
+  // ── Interceptor autenticazione ───────────────────────────────────────────
+
+  InterceptorsWrapper _authInterceptor() {
+    return InterceptorsWrapper(
+      onRequest: (options, handler) {
+        if (_authToken != null && _authToken!.isNotEmpty) {
+          options.headers['Authorization'] = 'Bearer $_authToken';
+        }
+        handler.next(options);
+      },
+      onError: (DioException error, handler) {
+        switch (error.type) {
+          case DioExceptionType.connectionError:
+            NoInternetDialog.show();
+          case DioExceptionType.connectionTimeout:
+          case DioExceptionType.sendTimeout:
+          case DioExceptionType.receiveTimeout:
+            _handleConnectionError();
+          default:
+            break;
+        }
+        handler.next(error);
+      },
+    );
   }
 
-  Uri buildUri(String path, [Map<String, String>? queryParameters]) {
-    final merged = _mergePath(baseUrl, path);
-    final uri = Uri.parse(merged);
+  // ── Sessione ─────────────────────────────────────────────────────────────
 
-    if (queryParameters == null || queryParameters.isEmpty) {
-      return uri;
+  void setAuthToken(String? token) => _authToken = token;
+
+  void setCurrentUserIdentity({
+    String? id,
+    String? email,
+    String? name,
+    String? surname,
+    String? displayName,
+    String? username,
+  }) {
+    if (id != null) {
+      final normalized = id.trim();
+      _currentUserId = normalized.isEmpty ? null : normalized;
+      _currentUserAvatarSeed = _currentUserId;
+    }
+    if (email != null) {
+      final normalized = email.trim().toLowerCase();
+      _currentUserEmail = normalized.isEmpty ? null : normalized;
+    }
+    if (name != null) {
+      final normalized = name.trim();
+      _currentUserFirstName = normalized.isEmpty ? null : normalized;
+    }
+    if (surname != null) {
+      final normalized = surname.trim();
+      _currentUserLastName = normalized.isEmpty ? null : normalized;
+    }
+    if (username != null) {
+      final normalized = username.trim();
+      _currentUserUsername = normalized.isEmpty ? null : normalized;
     }
 
-    return uri.replace(queryParameters: queryParameters);
+    final fullName = [_currentUserFirstName, _currentUserLastName]
+        .whereType<String>()
+        .where((p) => p.isNotEmpty)
+        .join(' ')
+        .trim();
+
+    if (fullName.isNotEmpty) {
+      _currentUserDisplayName = fullName;
+      return;
+    }
+
+    final normalizedDisplay = displayName?.trim() ?? '';
+    if (normalizedDisplay.isNotEmpty) {
+      _currentUserDisplayName = normalizedDisplay;
+      return;
+    }
+
+    final emailLocal = _currentUserEmail?.split('@').first.trim() ?? '';
+    _currentUserDisplayName = emailLocal.isNotEmpty ? emailLocal : null;
   }
+
+  void setCasaContext({required String casaId, required String ruolo}) {
+    _currentCasaId = casaId.trim().isEmpty ? null : casaId.trim();
+    _currentCasaRuolo = ruolo.trim().isEmpty ? null : ruolo.trim();
+  }
+
+  void clearCasaContext() {
+    _currentCasaId = null;
+    _currentCasaRuolo = null;
+  }
+
+  void clearSession() {
+    _authToken = null;
+    _currentUserId = null;
+    _currentUserEmail = null;
+    _currentUserDisplayName = null;
+    _currentUserFirstName = null;
+    _currentUserLastName = null;
+    _currentUserAvatarSeed = null;
+    _currentUserUsername = null;
+    clearCasaContext();
+  }
+
+  String? get authToken => _authToken;
+  String? get currentUserId => _currentUserId;
+  String? get currentUserEmail => _currentUserEmail;
+  String? get currentUserName => _currentUserDisplayName;
+  String? get currentUserDisplayName => _currentUserDisplayName;
+  String? get currentUserFirstName => _currentUserFirstName;
+  String? get currentUserLastName => _currentUserLastName;
+  String? get currentUserAvatarSeed => _currentUserAvatarSeed;
+  String? get currentUserUsername => _currentUserUsername;
+  String? get currentCasaId => _currentCasaId;
+  String? get currentCasaRuolo => _currentCasaRuolo;
+  bool get isHomeAdmin => RuoloCasa.isAdmin(_currentCasaRuolo);
+
+  // ── Metodi HTTP pubblici ─────────────────────────────────────────────────
 
   Future<dynamic> getJson(
     String path, {
     Map<String, String>? queryParameters,
-  }) async {
-    return _send('GET', path, queryParameters: queryParameters);
-  }
+  }) =>
+      _send('GET', path, queryParameters: queryParameters);
 
   Future<dynamic> postJson(
     String path, {
     Object? body,
     Map<String, String>? queryParameters,
-  }) async {
-    return _send('POST', path, body: body, queryParameters: queryParameters);
-  }
+  }) =>
+      _send('POST', path, body: body, queryParameters: queryParameters);
 
   Future<dynamic> putJson(
     String path, {
     Object? body,
     Map<String, String>? queryParameters,
-  }) async {
-    return _send('PUT', path, body: body, queryParameters: queryParameters);
-  }
+  }) =>
+      _send('PUT', path, body: body, queryParameters: queryParameters);
 
   Future<dynamic> patchJson(
     String path, {
     Object? body,
     Map<String, String>? queryParameters,
-  }) async {
-    return _send('PATCH', path, body: body, queryParameters: queryParameters);
-  }
+  }) =>
+      _send('PATCH', path, body: body, queryParameters: queryParameters);
 
   Future<dynamic> deleteJson(
     String path, {
     Object? body,
     Map<String, String>? queryParameters,
-  }) async {
-    return _send('DELETE', path, body: body, queryParameters: queryParameters);
-  }
+  }) =>
+      _send('DELETE', path, body: body, queryParameters: queryParameters);
+
+  // ── Internals ────────────────────────────────────────────────────────────
 
   Future<dynamic> _send(
     String method,
@@ -83,81 +216,75 @@ class ApiClient {
     Object? body,
     Map<String, String>? queryParameters,
   }) async {
-    final uri = buildUri(path, queryParameters);
-    final headers = <String, String>{'Accept': 'application/json'};
-
-    if (body != null) {
-      headers['Content-Type'] = 'application/json';
-    }
-    if (_authToken != null && _authToken!.isNotEmpty) {
-      headers['Authorization'] = 'Bearer ${_authToken!}';
-    }
-
-    final encodedBody = body == null ? null : jsonEncode(body);
-    late http.Response response;
-
-    switch (method) {
-      case 'GET':
-        response = await _httpClient.get(uri, headers: headers);
-        break;
-      case 'POST':
-        response = await _httpClient.post(
-          uri,
-          headers: headers,
-          body: encodedBody,
+    try {
+      final response = await _dio.request<dynamic>(
+        path,
+        data: body,
+        queryParameters: queryParameters,
+        options: Options(
+          method: method,
+          contentType:
+              body != null ? 'application/json' : null,
+        ),
+      );
+      return _processResponse(response);
+    } on DioException catch (e) {
+      // L'interceptor onError ha già gestito no-internet / timeout.
+      // Rilanciamo come ApiException se c'è una risposta HTTP.
+      if (e.response != null) {
+        throw ApiException(
+          statusCode: e.response!.statusCode ?? 0,
+          body: e.response!.data?.toString(),
         );
-        break;
-      case 'PUT':
-        response = await _httpClient.put(
-          uri,
-          headers: headers,
-          body: encodedBody,
-        );
-        break;
-      case 'PATCH':
-        response = await _httpClient.patch(
-          uri,
-          headers: headers,
-          body: encodedBody,
-        );
-        break;
-      case 'DELETE':
-        response = await _httpClient.delete(
-          uri,
-          headers: headers,
-          body: encodedBody,
-        );
-        break;
-      default:
-        throw ArgumentError('Unsupported method: $method');
+      }
+      rethrow;
     }
-
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException(statusCode: response.statusCode, body: response.body);
-    }
-
-    if (response.body.isEmpty) {
-      return null;
-    }
-
-    final decoded = jsonDecode(response.body);
-    return _extractData(decoded);
   }
 
-  dynamic _extractData(dynamic decoded) {
-    if (decoded is Map<String, dynamic> && decoded.containsKey('data')) {
-      return decoded['data'];
+  dynamic _processResponse(Response<dynamic> response) {
+    final status = response.statusCode ?? 0;
+    if (status == 401) {
+      clearSession();
+      // ignore: discarded_futures
+      onUnauthorized?.call();
+      throw ApiException(statusCode: 401, body: response.data?.toString());
     }
-    return decoded;
+    if (status == 403) {
+      final data = response.data;
+      if (data is Map<String, dynamic> && data['code'] == 'ROLE_OUTDATED') {
+        onRoleOutdated?.call();
+      }
+      throw ApiException(statusCode: 403, body: response.data?.toString());
+    }
+    if (status < 200 || status >= 300) {
+      throw ApiException(
+        statusCode: status,
+        body: response.data?.toString(),
+      );
+    }
+    if (response.data == null) return null;
+    return _extractData(response.data);
   }
 
-  String _mergePath(String base, String path) {
-    if (base.endsWith('/') && path.startsWith('/')) {
-      return base + path.substring(1);
+  dynamic _extractData(dynamic data) {
+    if (data is Map<String, dynamic> && data.containsKey('data')) {
+      return data['data'];
     }
-    if (!base.endsWith('/') && !path.startsWith('/')) {
-      return '$base/$path';
+    return data;
+  }
+
+  void _handleConnectionError() {
+    if (!NoConnectionScreen.isShowing) {
+      navigatorKey.currentState?.pushNamed(NoConnectionScreen.routeName);
     }
-    return base + path;
+  }
+
+  /// Esposto per compatibilità con codice esistente che costruisce URI custom.
+  Uri buildUri(String path, [Map<String, String>? queryParameters]) {
+    final base = baseUrl.endsWith('/') ? baseUrl : '$baseUrl/';
+    final p = path.startsWith('/') ? path.substring(1) : path;
+    final uri = Uri.parse('$base$p');
+    if (queryParameters == null || queryParameters.isEmpty) return uri;
+    return uri.replace(queryParameters: queryParameters);
   }
 }

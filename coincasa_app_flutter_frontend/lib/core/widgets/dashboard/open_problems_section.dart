@@ -1,17 +1,44 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:coincasa_app/core/api/api_provider.dart';
+import 'package:coincasa_app/data/models/problema.dart';
+import 'package:coincasa_app/core/state/active_casa.dart';
 import 'package:coincasa_app/core/theme/app_theme.dart';
-import 'dashboard_section_title.dart';
+import 'package:coincasa_app/ui/problemi/screens/dettaglio_problema_dashboard_screen.dart';
 
-class OpenProblemsSection extends StatelessWidget {
+final problemiRevisionProvider = StateProvider<int>((ref) => 0);
+
+final openProblemsProvider = FutureProvider.autoDispose
+    .family<List<Problema>, String?>((ref, casaId) {
+      ref.watch(problemiRevisionProvider);
+      if (casaId == null || casaId.isEmpty) return const [];
+      return ApiProvider.problemi.listNonRisolti(casaId);
+    });
+
+class OpenProblemsSection extends ConsumerWidget {
   const OpenProblemsSection({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final casaId = ref.watch(
+      activeCasaProvider.select((state) => state.selectedCasaId),
+    );
+    final problemiAsync = ref.watch(openProblemsProvider(casaId));
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const DashboardSectionTitle('PROBLEMI APERTI'),
+        Center(
+          child: Text(
+            'PROBLEMI APERTI',
+            style: AppTextStyles.dashboardSectionTitle.copyWith(
+              color: AppColors.textMuted,
+              fontSize: 18,
+              letterSpacing: 0,
+            ),
+          ),
+        ),
         const SizedBox(height: AppSizes.p14),
         Container(
           decoration: BoxDecoration(
@@ -29,35 +56,60 @@ class OpenProblemsSection extends StatelessWidget {
             horizontal: AppSizes.p18,
             vertical: AppSizes.p16,
           ),
-          child: Column(
-            children: [
-              const _ProblemRow(
-                initials: 'FP',
-                title: 'Lavatrice rotta',
-                status: 'urgente',
-                color: AppColors.statusNegative,
+          child: problemiAsync.when(
+            loading: () => const Padding(
+              padding: EdgeInsets.all(AppSizes.p16),
+              child: CircularProgressIndicator(color: AppColors.brandAccent),
+            ),
+            error: (_, _) => const Padding(
+              padding: EdgeInsets.all(AppSizes.p12),
+              child: Text(
+                'Problemi non disponibili',
+                style: TextStyle(color: AppColors.textMutedDark),
               ),
-              const _ProblemRow(
-                initials: 'AL',
-                title: 'Perdita rubinetto',
-                status: 'media',
-                color: AppColors.statusWarning,
-              ),
-              const _ProblemRow(
-                initials: 'MC',
-                title: 'Caldaia rotta',
-                status: 'oggi',
-                color: AppColors.statusSuccess,
-              ),
-              const SizedBox(height: AppSizes.p10),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Vedi tutti',
-                  style: AppTextStyles.dashboardSectionLink,
-                ),
-              ),
-            ],
+            ),
+            data: (problemi) {
+              final sortedProblemi = List<Problema>.from(problemi)
+                ..sort(Problema.compareByPriority);
+
+              final visible = sortedProblemi.take(3).toList(growable: false);
+              return Column(
+                children: [
+                  if (visible.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.all(AppSizes.p12),
+                      child: Text(
+                        'Nessun problema aperto',
+                        style: TextStyle(color: AppColors.textMutedDark),
+                      ),
+                    ),
+                  for (var i = 0; i < visible.length; i++) ...[
+                    _ProblemRow(problema: visible[i]),
+                    if (i < visible.length - 1)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSizes.p10,
+                        ),
+                        child: Divider(
+                          height: 1,
+                          thickness: 0.5,
+                          color: Colors.white.withValues(alpha: 0.15),
+                        ),
+                      ),
+                  ],
+                  const SizedBox(height: AppSizes.p14),
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pushNamed('/problemi'),
+                    child: Center(
+                      child: Text(
+                        'Vedi tutti',
+                        style: AppTextStyles.dashboardSectionLink,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ],
@@ -66,41 +118,113 @@ class OpenProblemsSection extends StatelessWidget {
 }
 
 class _ProblemRow extends StatelessWidget {
-  const _ProblemRow({
-    required this.initials,
-    required this.title,
-    required this.status,
-    required this.color,
-  });
+  const _ProblemRow({required this.problema});
 
-  final String initials;
-  final String title;
-  final String status;
-  final Color color;
+  final Problema problema;
+
+  Color get _priorityColor {
+    switch (problema.priorita.toLowerCase()) {
+      case 'urgente':
+        return AppColors.problemPriorityUrgent;
+      case 'media':
+        return AppColors.problemPriorityMedium;
+      default:
+        return AppColors.problemPriorityLow;
+    }
+  }
+
+  IconData get _priorityIcon {
+    switch (problema.priorita.toLowerCase()) {
+      case 'urgente':
+        return Icons.priority_high_rounded;
+      case 'media':
+        return Icons.remove_rounded;
+      default:
+        return Icons.arrow_downward_rounded;
+    }
+  }
+
+  String? get _segnalatoData {
+    final raw = problema.raw['segnalatoData']?.toString();
+    if (raw != null && raw.isNotEmpty) return raw;
+    final iso = problema.raw['dataCreazione']?.toString();
+    if (iso == null || iso.isEmpty) return null;
+    final dt = DateTime.tryParse(iso);
+    if (dt == null) return null;
+    return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
+  }
 
   @override
   Widget build(BuildContext context) {
+    final segnalato = _segnalatoData;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSizes.p8),
+      padding: const EdgeInsets.symmetric(vertical: AppSizes.p12),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
-            radius: AppSizes.p23,
-            backgroundColor: color.withOpacity(0.18),
-            child: Text(
-              initials,
-              style: AppTextStyles.dashboardProblemInitials.copyWith(
-                color: color,
-              ),
+          Container(
+            width: AppSizes.p22 * 2,
+            height: AppSizes.p22 * 2,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: _priorityColor.withValues(alpha: 0.18),
+              border: Border.all(color: _priorityColor, width: 1.5),
+            ),
+            child: Icon(
+              _priorityIcon,
+              color: _priorityColor,
+              size: AppSizes.p22,
             ),
           ),
           const SizedBox(width: AppSizes.p14),
           Expanded(
-            child: Text(title, style: AppTextStyles.dashboardCardTitleOnDark),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  problema.titolo,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.dashboardCardTitleOnDark.copyWith(
+                    color: _priorityColor,
+                  ),
+                ),
+                if (segnalato != null) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    'segnalato il $segnalato',
+                    style: TextStyle(
+                      color: AppColors.textMutedDark,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
-          Text(
-            status,
-            style: AppTextStyles.dashboardListStatus.copyWith(color: color),
+          const SizedBox(width: AppSizes.p8),
+          GestureDetector(
+            onTap: () => showProblemaDettaglio(context, problema),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.brandAccent.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: AppColors.brandAccent.withValues(alpha: 0.5),
+                  width: 1,
+                ),
+              ),
+              child: Text(
+                'Vedi',
+                style: TextStyle(
+                  color: AppColors.brandAccent,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
           ),
         ],
       ),

@@ -15,6 +15,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/nodemailer": "^8.0.0",
     "@vitest/coverage-v8": "4.1.7",
+    "dependency-cruiser": "^17.4.3",
     "eslint": "^10.3.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-ai-guard": "^1.1.13",

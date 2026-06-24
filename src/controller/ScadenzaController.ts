@@ -62,6 +62,7 @@ export class ScadenzaController {
       const scadenza = await this.scadenzeService.creaScadenza(
         request.params.idCasa,
         dto,
+        request.user.idUtente,
       );
       return reply.status(201).send(scadenza);
     } catch (error) {
@@ -82,6 +83,8 @@ export class ScadenzaController {
         request.params.idCasa,
         request.params.idScadenza,
         dto,
+        request.user.idUtente,
+        request.user.ruoloCasa,
       );
       return reply.status(200).send(scadenza);
     } catch (error) {
@@ -100,6 +103,7 @@ export class ScadenzaController {
       await this.scadenzeService.eliminaScadenza(
         request.params.idCasa,
         request.params.idScadenza,
+        request.user.idUtente,
       );
       return reply.status(204).send();
     } catch (error) {

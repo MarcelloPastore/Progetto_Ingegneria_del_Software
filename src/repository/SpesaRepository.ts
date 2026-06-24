@@ -199,10 +199,6 @@ export class SpesaRepository {
               idSpesa,
               idUtente: q.idUtente,
               quota: q.quota,
-              OR: [
-                { dataPagamento: null },
-                { dataPagamento: { isSet: false } },
-              ],
             })),
           });
         }

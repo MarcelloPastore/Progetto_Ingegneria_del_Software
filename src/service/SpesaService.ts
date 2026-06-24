@@ -1,8 +1,8 @@
+import { Ruolo } from "@prisma/client";
 import {
   CreaSpesaDto,
   ModificaSpesaDto,
   QuotaSpesaDto,
-  SpesaListItemDto,
   SpesaResponseDto,
   SaldoResponseDto,
   CreditoResponseDto,
@@ -14,10 +14,12 @@ import {
   SpesaRepository,
 } from "../repository/SpesaRepository";
 import { SpesaConverter } from "../dto/converter/SpesaConverter";
+import { CasaRepository } from "../repository/CasaRepository";
 import { ConflictError, ForbiddenError } from "../errors/httpErrors";
 
 const spesaRepository = new SpesaRepository();
 const spesaConverter = new SpesaConverter();
+const casaRepository = new CasaRepository();
 
 function ensurePartecipantiValidi(
   partecipanti: string[],
@@ -135,10 +137,10 @@ export class SpesaService {
     return spesa;
   }
 
-  async getAllSpese(idCasa: string): Promise<SpesaListItemDto[]> {
+  async getAllSpese(idCasa: string): Promise<SpesaResponseDto[]> {
     const spese = await spesaRepository.findSpeseByCasa(idCasa);
 
-    return spese.map((spesa) => spesaConverter.toSpesaListItemDto(spesa));
+    return spese.map((spesa) => spesaConverter.toSpesaDto(spesa));
   }
 
   async getSpesa(idCasa: string, idSpesa: string): Promise<SpesaResponseDto> {
@@ -248,9 +250,17 @@ export class SpesaService {
     idSpesa: string,
     idUtente: string,
   ): Promise<void> {
-    const spesa = await this.assertIdCreatoreSpesa(idCasa, idSpesa, idUtente);
+    const membro = await casaRepository.findMembroCasaByCasaAndUtenteOrThrow(
+      idCasa,
+      idUtente,
+    );
+    const isAdmin =
+      membro.ruolo === Ruolo.HomeAdmin || membro.ruolo === Ruolo.SysAdmin;
+    const spesa = isAdmin
+      ? await spesaRepository.findSpesaByIdOrThrow(idCasa, idSpesa)
+      : await this.assertIdCreatoreSpesa(idCasa, idSpesa, idUtente);
 
-    if (hasPagamentiNonAnticipatari(spesa)) {
+    if (!isAdmin && hasPagamentiNonAnticipatari(spesa)) {
       throw new ConflictError(
         "Non puoi eliminare una spesa con pagamenti gia effettuati",
       );

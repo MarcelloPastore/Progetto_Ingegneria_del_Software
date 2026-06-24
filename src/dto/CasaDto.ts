@@ -20,6 +20,13 @@ export const AggiungiInquilinoSchema = z.object({
 });
 export type AggiungiInquilinoDto = z.infer<typeof AggiungiInquilinoSchema>;
 
+export const JoinCasaSchema = z.object({
+  inviteCode: z
+    .string()
+    .regex(/^CX-[A-Z0-9]{8}$/, "Formato codice non valido (es. CX-MDLE4H58)"),
+});
+export type JoinCasaDto = z.infer<typeof JoinCasaSchema>;
+
 export const ModificaRuoloSchema = z.object({
   ruolo: ruoloSchema,
 });
@@ -56,3 +63,13 @@ export const InviteLinkSchema = z.object({
   inviteLink: z.string(),
 });
 export type InviteLinkDto = z.infer<typeof InviteLinkSchema>;
+
+export const HubCasaSchema = z.object({
+  casa: CasaResponseSchema,
+  ruolo: ruoloSchema,
+  speseCount: z.number().int().nonnegative(),
+  scadenzeCount: z.number().int().nonnegative(),
+  problemiCount: z.number().int().nonnegative(),
+  turniCount: z.number().int().nonnegative(),
+});
+export type HubCasaDto = z.infer<typeof HubCasaSchema>;

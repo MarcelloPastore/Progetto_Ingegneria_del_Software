@@ -23,7 +23,7 @@ export const CreaSpesaSchema = z
     cadenzaGiorni: z.number().int().positive().optional(),
   })
   .superRefine((data, ctx) => {
-    if (data.isRicorrente && !data.cadenzaGiorni) {
+    if (data.dataScadenza && data.isRicorrente && !data.cadenzaGiorni) {
       ctx.addIssue({
         code: "custom",
         path: ["cadenzaGiorni"],
@@ -44,7 +44,11 @@ export const ModificaSpesaSchema = z
     cadenzaGiorni: z.number().int().positive().optional(),
   })
   .superRefine((data, ctx) => {
-    if (data.isRicorrente === true && !data.cadenzaGiorni) {
+    if (
+      data.dataScadenza &&
+      data.isRicorrente === true &&
+      !data.cadenzaGiorni
+    ) {
       ctx.addIssue({
         code: "custom",
         path: ["cadenzaGiorni"],
@@ -95,6 +99,7 @@ export const SpesaResponseSchema = z.object({
   dataScadenza: isoDateString.nullable(),
   isRicorrente: z.boolean(),
   cadenzaMesi: z.number().int().positive().nullable(),
+  idScadenza: z.string().nullable(),
   owner: AssegnatarioInfoSchema,
   anticipataDa: AssegnatarioInfoSchema.nullable(),
   partecipanti: z.array(PartecipanteSaldoSchema),

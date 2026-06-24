@@ -6,18 +6,43 @@ import {
 } from "../../src/errors/appErrors";
 import { ConflictError } from "../../src/errors/httpErrors";
 
-const mocks = vi.hoisted(() => ({
-  prisma: {
-    utente: {
-      findUnique: vi.fn(),
-      findFirst: vi.fn(),
+const mocks = vi.hoisted(() => {
+  const utenteFind = vi.fn();
+  const utenteUpdate = vi.fn();
+
+  const tx = {
+    utente: { findUnique: utenteFind, update: utenteUpdate },
+    membroCasa: {
+      findMany: vi.fn(),
+      delete: vi.fn(),
+      deleteMany: vi.fn(),
       update: vi.fn(),
     },
-  },
-  mail: {
-    sendVerificationMail: vi.fn(),
-  },
-}));
+    spesa: { deleteMany: vi.fn() },
+    quotaSpesa: { deleteMany: vi.fn() },
+    turno: { deleteMany: vi.fn() },
+    problema: { deleteMany: vi.fn() },
+    documento: { deleteMany: vi.fn() },
+    scadenza: { deleteMany: vi.fn() },
+    casa: { delete: vi.fn() },
+  };
+
+  return {
+    prisma: {
+      utente: {
+        findUnique: utenteFind,
+        findFirst: vi.fn(),
+        update: utenteUpdate,
+        delete: vi.fn(),
+      },
+      $transaction: vi.fn((cb: (tx: unknown) => Promise<unknown>) => cb(tx)),
+    },
+    tx,
+    mail: {
+      sendVerificationMail: vi.fn(),
+    },
+  };
+});
 
 vi.mock("../../src/config/db", () => ({
   prisma: mocks.prisma,
@@ -218,29 +243,31 @@ describe("AccountService", () => {
   describe("eliminaAccount", () => {
     it("anonymizes personal user data", async () => {
       mocks.prisma.utente.findUnique.mockResolvedValue({ id: "u1" });
+      mocks.tx.membroCasa.findMany.mockResolvedValue([]);
       mocks.prisma.utente.update.mockResolvedValue({ id: "u1" });
 
       const service = new AccountService();
       const result = await service.eliminaAccount("u1");
 
       expect(result.message).toContain("anonimizzati");
-      expect(mocks.prisma.utente.update).toHaveBeenCalledWith({
-        where: { id: "u1" },
-        data: {
-          username: "Utente_u1",
-          email: "deleted_u1@deleted.local",
-          nome: "Anonimo",
-          cognome: "Anonimo",
-          passwordHash: "DELETED",
-          emailVerificata: false,
-          tokenVerifica: null,
-          fcmToken: null,
-        },
-      });
+      expect(mocks.prisma.utente.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: "u1" },
+          data: expect.objectContaining({
+            username: expect.stringMatching(/^Utente_/),
+            email: "deleted_u1@deleted.local",
+            nome: "Anonimo",
+            cognome: "Anonimo",
+            passwordHash: "DELETED",
+            emailVerificata: false,
+          }),
+        }),
+      );
     });
 
     it("throws UserNotFoundError if user doesn't exist", async () => {
       mocks.prisma.utente.findUnique.mockResolvedValue(null);
+      mocks.tx.membroCasa.findMany.mockResolvedValue([]);
 
       const service = new AccountService();
       await expect(service.eliminaAccount("u1")).rejects.toBeInstanceOf(

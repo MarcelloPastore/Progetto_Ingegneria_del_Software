@@ -1,5 +1,5 @@
-import '../models/casa.dart';
-import '../models/inquilino.dart';
+import '../../data/models/casa.dart';
+import '../../data/models/inquilino.dart';
 import 'api_client.dart';
 
 class CasaApi {
@@ -22,8 +22,31 @@ class CasaApi {
     return Casa.fromJson(_asMap(data));
   }
 
+  Future<void> update(String casaId, Map<String, dynamic> payload) async {
+    await _client.putJson('/case/$casaId', body: payload);
+  }
+
   Future<void> delete(String casaId) async {
     await _client.deleteJson('/case/$casaId');
+  }
+
+  Future<Inquilino> addSelfWithInvite(
+    String casaId, {
+    required String inviteCodeOrLink,
+  }) async {
+    final data = await _client.postJson(
+      '/case/$casaId/inquilini',
+      body: {'inviteCode': inviteCodeOrLink},
+    );
+    return Inquilino.fromJson(_asMap(data));
+  }
+
+  Future<Casa> joinWithInviteCode(String inviteCodeOrLink) async {
+    final data = await _client.postJson(
+      '/case/join',
+      body: {'inviteCode': inviteCodeOrLink},
+    );
+    return Casa.fromJson(_asMap(data));
   }
 
   Future<List<Inquilino>> listInquilini(String casaId) async {
@@ -55,8 +78,37 @@ class CasaApi {
     );
   }
 
+  /// Chiama POST /case/:casaId/select e ritorna il nuovo token JWT
+  /// che include idCasa e ruoloCasa, da usare per tutte le chiamate successive.
+  Future<String> selectCasa(String casaId) async {
+    final data = await _client.postJson('/case/$casaId/select');
+    if (data is Map<String, dynamic>) {
+      final token = data['token'];
+      if (token is String && token.isNotEmpty) {
+        return token;
+      }
+    }
+    throw const FormatException('Expected a token in selectCasa response.');
+  }
+
+  Future<Map<String, dynamic>> getHub(String casaId) async {
+    final data = await _client.getJson('/case/$casaId/hub');
+    return _asMap(data);
+  }
+
   Future<String> getInviteLink(String casaId) async {
     final data = await _client.getJson('/case/$casaId/invite-link');
+    return _parseInviteLinkResponse(data);
+  }
+
+  Future<String> regenerateInviteLink(String casaId) async {
+    final data = await _client.getJson(
+      '/case/$casaId/invite-link?rigenera=true',
+    );
+    return _parseInviteLinkResponse(data);
+  }
+
+  String _parseInviteLinkResponse(dynamic data) {
     if (data is String) {
       return data;
     }

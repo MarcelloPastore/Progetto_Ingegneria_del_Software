@@ -1,17 +1,3 @@
-/**
- * BOUNDARIES / EDGE CASES — TurnoConverter + TurnoService
- *
- * Scopo:
- * - verificare casi al limite (min/max, array vuoti, transizioni mese/anno, leap year, ecc.)
- * - assicurare che la logica continui a funzionare con input "strani ma validi"
- *
- * Perché è utile:
- * - molti bug emergono solo ai limiti (indice fuori range, date su fine mese, null/undefined)
- * - documenta esplicitamente decisioni di dominio (fallback a 1 giorno, ordine rotazione, wrap-around)
- *
- * Nota:
- * - la parte TurnoService usa mock dei repository per isolare i comportamenti.
- */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -600,6 +586,7 @@ describe("TurnoService - Boundary and Edge Cases", () => {
         "c1",
         {
           task: "Daily task",
+          dataTurno: "2026-07-01T00:00:00.000Z",
           cadenzaGiorni: 1,
           assegnatario: "u1",
           rotazioneTurno: true,
@@ -626,6 +613,7 @@ describe("TurnoService - Boundary and Edge Cases", () => {
         "c1",
         {
           task: "Yearly task",
+          dataTurno: "2026-07-01T00:00:00.000Z",
           cadenzaGiorni: 365,
           assegnatario: "u1",
           rotazioneTurno: true,
@@ -654,6 +642,7 @@ describe("TurnoService - Boundary and Edge Cases", () => {
         "c1",
         {
           task: "Single person task",
+          dataTurno: "2026-07-01T00:00:00.000Z",
           cadenzaGiorni: 7,
           assegnatario: "u1",
           rotazioneTurno: false,
@@ -681,6 +670,7 @@ describe("TurnoService - Boundary and Edge Cases", () => {
         "c1",
         {
           task: "Single member rotation",
+          dataTurno: "2026-07-01T00:00:00.000Z",
           cadenzaGiorni: 7,
           assegnatario: "u1",
           rotazioneTurno: true,
@@ -741,6 +731,7 @@ describe("TurnoService - Boundary and Edge Cases", () => {
         "c1",
         {
           task: "Pulizia 🧹 & igiene ✨",
+          dataTurno: "2026-07-01T00:00:00.000Z",
           cadenzaGiorni: 7,
           assegnatario: "u1",
           rotazioneTurno: true,
@@ -768,6 +759,7 @@ describe("TurnoService - Boundary and Edge Cases", () => {
         "c1",
         {
           task: longTask,
+          dataTurno: "2026-07-01T00:00:00.000Z",
           cadenzaGiorni: 7,
           assegnatario: "u1",
           rotazioneTurno: true,
@@ -782,4 +774,3 @@ describe("TurnoService - Boundary and Edge Cases", () => {
     });
   });
 });
-

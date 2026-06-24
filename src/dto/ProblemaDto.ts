@@ -35,6 +35,20 @@ export const AggiornaPrioritaSchema = z.object({
 });
 export type AggiornaPrioritaDto = z.infer<typeof AggiornaPrioritaSchema>;
 
+export const ModificaProblemaSchema = z.object({
+  nome: z.string().min(1, "Campo obbligatorio").optional(),
+  descrizione: z.string().min(1, "Campo obbligatorio").optional(),
+  priorita: PrioritaSchema.optional(),
+});
+export type ModificaProblemaDto = z.infer<typeof ModificaProblemaSchema>;
+
+export const StoricoItemSchema = z.object({
+  stato: StatoSchema,
+  data: isoDateTimeString,
+  utente: z.object({ id: z.string(), username: z.string() }),
+});
+export type StoricoItemDto = z.infer<typeof StoricoItemSchema>;
+
 export const ProblemaResponseSchema = z.object({
   id: z.string(),
   nome: z.string(),
@@ -45,10 +59,13 @@ export const ProblemaResponseSchema = z.object({
   assegnatario: AssegnatarioInfoSchema.nullable(),
   dataCreazione: isoDateTimeString,
   dataRisoluzione: isoDateTimeString.nullable(),
+  storicoStato: z.array(StoricoItemSchema),
 });
 export type ProblemaResponseDto = z.infer<typeof ProblemaResponseSchema>;
 
 export const ProblemaListItemSchema = z.object({
+  id: z.string(),
+  nome: z.string(),
   descrizione: z.string(),
   assegnatario: AssegnatarioInfoSchema.nullable(),
   stato: StatoSchema,

@@ -1,5 +1,5 @@
-import '../models/quota.dart';
-import '../models/spesa.dart';
+import '../../data/models/quota.dart';
+import '../../data/models/spesa.dart';
 import 'api_client.dart';
 
 class SpeseApi {
@@ -49,20 +49,15 @@ class SpeseApi {
     return _parseList(data, Quota.fromJson, key: 'quote');
   }
 
-  Future<void> pagaQuota(
-    String casaId,
-    String spesaId,
-    String quotaId,
-    Map<String, dynamic> payload,
-  ) async {
-    await _client.postJson(
-      '/case/$casaId/spese/$spesaId/quote/$quotaId/paga',
-      body: payload,
-    );
+  Future<void> pagaQuota(String casaId, String spesaId, String quotaId) async {
+    await _client.postJson('/case/$casaId/spese/$spesaId/quote/$quotaId/paga');
   }
 
-  Future<void> pareggia(String casaId, Map<String, dynamic> payload) async {
-    await _client.postJson('/case/$casaId/spese/pareggia', body: payload);
+  Future<void> pareggia(String casaId, List<String> idUtentiCreditori) async {
+    await _client.postJson(
+      '/case/$casaId/spese/pareggia',
+      body: {'idUtentiCreditori': idUtentiCreditori},
+    );
   }
 
   Future<double> getSaldo(String casaId) async {
