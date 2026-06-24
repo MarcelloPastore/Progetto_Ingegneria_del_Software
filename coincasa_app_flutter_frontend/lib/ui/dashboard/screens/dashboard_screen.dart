@@ -1078,10 +1078,20 @@ class _EmptyCalendarSection extends ConsumerWidget {
 
     final casaId = data.casaSelezionataId;
     List<Scadenza> scadenze = data.scadenze;
+    List<Spesa> spese = data.spese;
+    List<Turno> turni = data.turni;
     if (casaId != null && casaId.isNotEmpty) {
       final scadenzeAsync = ref.watch(scadenzeViewModelProvider(casaId));
       if (scadenzeAsync.hasValue) {
         scadenze = scadenzeAsync.requireValue.scadenze;
+      }
+      final speseAsync = ref.watch(speseViewModelProvider(casaId));
+      if (speseAsync.hasValue) {
+        spese = speseAsync.requireValue.spese;
+      }
+      final turniAsync = ref.watch(turniViewModelProvider(casaId));
+      if (turniAsync.hasValue) {
+        turni = turniAsync.requireValue.turni;
       }
     }
 
@@ -1166,8 +1176,8 @@ class _EmptyCalendarSection extends ConsumerWidget {
                             final markers = inMonth
                                 ? _markersForDate(
                                     date,
-                                    data.turni,
-                                    data.spese,
+                                    turni,
+                                    spese,
                                     scadenze,
                                   )
                                 : const <Color>[];
