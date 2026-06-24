@@ -5,6 +5,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Priorita, Ruolo, Stato } from "@prisma/client";
 
 const mocks = vi.hoisted(() => ({
+  findMembroCasaByCasaAndUtenteOrThrow: vi.fn(),
   findProblemiByCasa: vi.fn(),
   findProblemiNonRisolti: vi.fn(),
   findProblemaByIdOrThrow: vi.fn(),
@@ -12,6 +13,17 @@ const mocks = vi.hoisted(() => ({
   updateProblema: vi.fn(),
   deleteProblema: vi.fn(),
   createStorico: vi.fn(),
+}));
+
+vi.mock("../../src/repository/CasaRepository", () => ({
+  CasaRepository: class {
+    constructor() {
+      Object.assign(this as any, {
+        findMembroCasaByCasaAndUtenteOrThrow:
+          mocks.findMembroCasaByCasaAndUtenteOrThrow,
+      });
+    }
+  },
 }));
 
 vi.mock("../../src/repository/ProblemaRepository", () => ({
@@ -51,6 +63,24 @@ describe("ProblemaService", () => {
     dataCreazione: new Date("2026-05-18T10:30:00.000Z"),
     dataRisoluzione: null,
   };
+
+  it("returns problem lists and details through converters", async () => {
+    mocks.findProblemiByCasa.mockResolvedValue([baseProblema]);
+    mocks.findProblemiNonRisolti.mockResolvedValue([baseProblema]);
+    mocks.findProblemaByIdOrThrow.mockResolvedValue(baseProblema);
+
+    const service = new ProblemaService();
+
+    await expect(service.getAllProblemi("c1")).resolves.toEqual([
+      expect.objectContaining({ id: "p1", nome: "Rubinetto" }),
+    ]);
+    await expect(service.getProblemiIrrisolti("c1")).resolves.toEqual([
+      expect.objectContaining({ id: "p1", nome: "Rubinetto" }),
+    ]);
+    await expect(service.getProblema("c1", "p1")).resolves.toEqual(
+      expect.objectContaining({ id: "p1", descrizione: "Perde acqua" }),
+    );
+  });
 
   it("segnalaProblema passes priorita only if provided", async () => {
     mocks.createProblema.mockResolvedValue(baseProblema);
@@ -131,6 +161,52 @@ describe("ProblemaService", () => {
     });
   });
 
+  it("modificaProblema rejects users who are neither reporter nor admin", async () => {
+    mocks.findProblemaByIdOrThrow.mockResolvedValue(baseProblema);
+
+    const service = new ProblemaService();
+
+    await expect(
+      service.modificaProblema(
+        "c1",
+        "p1",
+        { nome: "No" },
+        "u2",
+        Ruolo.Inquilino,
+      ),
+    ).rejects.toThrow("modificarlo");
+    expect(mocks.updateProblema).not.toHaveBeenCalled();
+  });
+
+  it("eliminaProblema allows reporters and admins but rejects unrelated tenants", async () => {
+    mocks.findProblemaByIdOrThrow.mockResolvedValue(baseProblema);
+    mocks.findMembroCasaByCasaAndUtenteOrThrow.mockResolvedValueOnce({
+      ruolo: Ruolo.Inquilino,
+    });
+    mocks.deleteProblema.mockResolvedValue(undefined);
+
+    const service = new ProblemaService();
+
+    await expect(
+      service.eliminaProblema("c1", "p1", "u1"),
+    ).resolves.toBeUndefined();
+    expect(mocks.deleteProblema).toHaveBeenCalledWith("c1", "p1");
+
+    mocks.findMembroCasaByCasaAndUtenteOrThrow.mockResolvedValueOnce({
+      ruolo: Ruolo.HomeAdmin,
+    });
+    await expect(
+      service.eliminaProblema("c1", "p1", "admin"),
+    ).resolves.toBeUndefined();
+
+    mocks.findMembroCasaByCasaAndUtenteOrThrow.mockResolvedValueOnce({
+      ruolo: Ruolo.Inquilino,
+    });
+    await expect(service.eliminaProblema("c1", "p1", "u2")).rejects.toThrow(
+      "può eliminarlo",
+    );
+  });
+
   it("rinunciaProblema clears the current assignee", async () => {
     mocks.findProblemaByIdOrThrow.mockResolvedValue({
       ...baseProblema,
@@ -147,6 +223,21 @@ describe("ProblemaService", () => {
       stato: Stato.Segnalato,
       dataRisoluzione: null,
     });
+  });
+
+  it("rinunciaProblema rejects users who are not the current assignee", async () => {
+    mocks.findProblemaByIdOrThrow.mockResolvedValue({
+      ...baseProblema,
+      stato: Stato.Assegnato,
+      assegnatario: "u2",
+    });
+
+    const service = new ProblemaService();
+
+    await expect(service.rinunciaProblema("c1", "p1", "u1")).rejects.toThrow(
+      "assegnatario corrente",
+    );
+    expect(mocks.updateProblema).not.toHaveBeenCalled();
   });
 
   it("assegnaProblema sets stato based on idUtente (null => Segnalato)", async () => {
@@ -193,5 +284,34 @@ describe("ProblemaService", () => {
     );
 
     vi.useRealTimers();
+  });
+
+  it("aggiornaStato clears dataRisoluzione for non resolved states", async () => {
+    mocks.findProblemaByIdOrThrow.mockResolvedValue(baseProblema);
+    mocks.updateProblema.mockResolvedValue({
+      ...baseProblema,
+      stato: Stato.Assegnato,
+      dataRisoluzione: null,
+    });
+
+    const service = new ProblemaService();
+    await service.aggiornaStato("c1", "p1", { stato: Stato.Assegnato }, "u1");
+
+    expect(mocks.updateProblema).toHaveBeenCalledWith("p1", {
+      stato: Stato.Assegnato,
+      dataRisoluzione: null,
+    });
+  });
+
+  it("aggiornaPriorita falls back to Media when priority is omitted", async () => {
+    mocks.findProblemaByIdOrThrow.mockResolvedValue(baseProblema);
+    mocks.updateProblema.mockResolvedValue(baseProblema);
+
+    const service = new ProblemaService();
+    await service.aggiornaPriorita("c1", "p1", {});
+
+    expect(mocks.updateProblema).toHaveBeenCalledWith("p1", {
+      priorita: Priorita.Media,
+    });
   });
 });

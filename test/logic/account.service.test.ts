@@ -219,7 +219,9 @@ describe("AccountService", () => {
         .mockResolvedValueOnce(null); // check duplicate email
 
       mocks.prisma.utente.update.mockResolvedValue({ id: "u1" });
-      mocks.mail.sendVerificationMail.mockRejectedValue(new Error("SMTP error"));
+      mocks.mail.sendVerificationMail.mockRejectedValue(
+        new Error("SMTP error"),
+      );
 
       const service = new AccountService();
       await expect(
@@ -273,6 +275,51 @@ describe("AccountService", () => {
       await expect(service.eliminaAccount("u1")).rejects.toBeInstanceOf(
         UserNotFoundError,
       );
+    });
+
+    it("deletes the whole house when the user is the last member", async () => {
+      mocks.prisma.utente.findUnique.mockResolvedValue({ id: "u1" });
+      mocks.tx.membroCasa.findMany
+        .mockResolvedValueOnce([{ id: "m1", idCasa: "c1", ruolo: "HomeAdmin" }])
+        .mockResolvedValueOnce([
+          { id: "m1", idUtente: "u1", ruolo: "HomeAdmin" },
+        ]);
+      mocks.prisma.utente.update.mockResolvedValue({ id: "u1" });
+
+      const service = new AccountService();
+      await service.eliminaAccount("u1");
+
+      expect(mocks.tx.quotaSpesa.deleteMany).toHaveBeenCalledWith({
+        where: { idCasa: "c1" },
+      });
+      expect(mocks.tx.membroCasa.deleteMany).toHaveBeenCalledWith({
+        where: { idCasa: "c1" },
+      });
+      expect(mocks.tx.casa.delete).toHaveBeenCalledWith({
+        where: { id: "c1" },
+      });
+    });
+
+    it("promotes another tenant when deleting the only HomeAdmin in a shared house", async () => {
+      mocks.prisma.utente.findUnique.mockResolvedValue({ id: "u1" });
+      mocks.tx.membroCasa.findMany
+        .mockResolvedValueOnce([{ id: "m1", idCasa: "c1", ruolo: "HomeAdmin" }])
+        .mockResolvedValueOnce([
+          { id: "m1", idUtente: "u1", ruolo: "HomeAdmin" },
+          { id: "m2", idUtente: "u2", ruolo: "Inquilino" },
+        ]);
+      mocks.prisma.utente.update.mockResolvedValue({ id: "u1" });
+
+      const service = new AccountService();
+      await service.eliminaAccount("u1");
+
+      expect(mocks.tx.membroCasa.update).toHaveBeenCalledWith({
+        where: { id: "m2" },
+        data: { ruolo: "HomeAdmin" },
+      });
+      expect(mocks.tx.membroCasa.delete).toHaveBeenCalledWith({
+        where: { id: "m1" },
+      });
     });
   });
 });

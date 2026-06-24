@@ -20,3 +20,4 @@ yarn-error.log*
 /.scannerwork/report-task.txt
 /scripts/
 
+/coverage

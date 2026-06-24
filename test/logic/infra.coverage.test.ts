@@ -5,6 +5,9 @@ import { JsonWebTokenError, TokenExpiredError } from "jsonwebtoken";
 
 const mocks = vi.hoisted(() => ({
   prisma: {
+    membroCasa: {
+      findFirst: vi.fn(),
+    },
     utente: {
       findUnique: vi.fn(),
     },
@@ -173,12 +176,57 @@ describe("Middleware coverage", () => {
       ForbiddenError,
     );
   });
+
+  it("requireRole checks admin roles against the database and handles missing path house", async () => {
+    const inquilinoOnly = requireRole(Ruolo.Inquilino);
+    const homeAdminOnly = requireRole(Ruolo.HomeAdmin);
+
+    await inquilinoOnly(
+      {
+        params: {},
+        user: { idCasa: "c1", ruoloCasa: Ruolo.Inquilino },
+      } as any,
+      makeReply(),
+    );
+    expect(mocks.sendErrorReply).not.toHaveBeenCalled();
+
+    mocks.prisma.membroCasa.findFirst.mockResolvedValueOnce({
+      ruolo: Ruolo.HomeAdmin,
+    });
+    await homeAdminOnly(
+      {
+        params: { idCasa: "c1" },
+        user: { idUtente: "u1", idCasa: "c1", ruoloCasa: Ruolo.HomeAdmin },
+      } as any,
+      makeReply(),
+    );
+    expect(mocks.prisma.membroCasa.findFirst).toHaveBeenCalledWith({
+      where: { idCasa: "c1", idUtente: "u1" },
+      select: { ruolo: true },
+    });
+    expect(mocks.sendErrorReply).not.toHaveBeenCalled();
+
+    mocks.prisma.membroCasa.findFirst.mockResolvedValueOnce({
+      ruolo: Ruolo.Inquilino,
+    });
+    await homeAdminOnly(
+      {
+        params: { idCasa: "c1" },
+        user: { idUtente: "u1", idCasa: "c1", ruoloCasa: Ruolo.HomeAdmin },
+      } as any,
+      makeReply(),
+    );
+    expect(mocks.sendErrorReply).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("Error mapper coverage", () => {
   it("maps validation, token, auth, http and generic errors", () => {
     const zodResult = z
-      .object({ email: z.string().email(), profile: z.object({ age: z.number() }) })
+      .object({
+        email: z.string().email(),
+        profile: z.object({ age: z.number() }),
+      })
       .safeParse({ email: "bad", profile: { age: "old" } });
     const zodPayload = mapErrorToHttp(
       zodResult.success ? new ZodError([]) : zodResult.error,
@@ -194,7 +242,9 @@ describe("Error mapper coverage", () => {
       }),
     );
 
-    expect(mapErrorToHttp(new TokenExpiredError("expired", new Date()))).toEqual(
+    expect(
+      mapErrorToHttp(new TokenExpiredError("expired", new Date())),
+    ).toEqual(
       expect.objectContaining({ statusCode: 401, code: "TOKEN_EXPIRED" }),
     );
     expect(mapErrorToHttp(new JsonWebTokenError("bad"))).toEqual(
