@@ -1,4 +1,6 @@
-﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
+﻿import 'dart:async';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/data/models/casa.dart';
 import 'package:coincasa_app/data/models/salute_casa_item.dart';
@@ -155,6 +157,10 @@ class DashboardViewModel extends AsyncNotifier<DashboardState> {
     _completaTurno = CompletaTurnoUseCase(_repository);
     _getCase = GetCasePerDashboardUseCase(_repository);
     _selectCasa = SelectCasaUseCase(ref.read(casaRepositoryProvider));
+
+    final timer = Timer.periodic(const Duration(seconds: 30), (_) => refresh());
+    ref.onDispose(timer.cancel);
+
     return _fetch();
   }
 

@@ -1,4 +1,6 @@
-﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
+﻿import 'dart:async';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:coincasa_app/data/models/auth_user.dart';
 import 'package:coincasa_app/core/api/spese_repository_provider.dart';
@@ -370,14 +372,12 @@ class SpeseViewModel extends FamilyAsyncNotifier<SpeseState, String> {
       GetDebitoVersoUseCase(_repository);
   GetInquiliniUseCase get _getInquilini => GetInquiliniUseCase(_casaRepository);
 
-  @override
-  Future<SpeseState> build(String casaId) async {
+  Future<SpeseState> _fetchAll(String casaId) async {
     final spese = await _getSpese(casaId);
     final saldo = await _getSaldo(casaId);
     final creditoTotale = await _getCreditoTotale(casaId);
     final debitoTotale = await _getDebitoTotale(casaId);
     final inquilini = await _getInquilini(casaId);
-
     return SpeseState(
       spese: spese,
       saldo: saldo,
@@ -385,6 +385,19 @@ class SpeseViewModel extends FamilyAsyncNotifier<SpeseState, String> {
       debitoTotale: debitoTotale,
       inquilini: inquilini,
     );
+  }
+
+  @override
+  Future<SpeseState> build(String casaId) async {
+    final timer = Timer.periodic(const Duration(seconds: 30), (_) async {
+      if (!state.hasValue) return;
+      try {
+        state = AsyncData(await _fetchAll(casaId));
+      } catch (_) {}
+    });
+    ref.onDispose(timer.cancel);
+
+    return _fetchAll(casaId);
   }
 
   Future<Spesa> getSpesaById(String idSpesa) => _getSpesaById(arg, idSpesa);

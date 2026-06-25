@@ -1,4 +1,6 @@
-﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
+﻿import 'dart:async';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:coincasa_app/core/api/api_provider.dart';
 import 'package:coincasa_app/data/models/problema.dart';
 import 'package:coincasa_app/data/repository/problemi_repository_impl.dart';
@@ -45,6 +47,16 @@ class ProblemiViewModel extends FamilyAsyncNotifier<ProblemiState, String> {
     _getProblemi = GetProblemiUseCase(_repo);
     _createProblema = CreateProblemaUseCase(_repo);
     _autoAssegnaUseCase = AutoAssegnaProblemaUseCase(_repo);
+
+    final timer = Timer.periodic(const Duration(seconds: 30), (_) async {
+      if (!state.hasValue) return;
+      try {
+        final current = state.requireValue;
+        final tutti = await _getProblemi(casaId);
+        state = AsyncData(current.copyWith(tutti: tutti));
+      } catch (_) {}
+    });
+    ref.onDispose(timer.cancel);
 
     final tutti = await _getProblemi(casaId);
     return ProblemiState(tutti: tutti);

@@ -1,4 +1,6 @@
-﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
+﻿import 'dart:async';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:coincasa_app/data/models/auth_user.dart';
 import 'package:coincasa_app/core/api/turni_repository_provider.dart';
@@ -171,19 +173,30 @@ class TurniViewModel extends FamilyAsyncNotifier<TurniState, String> {
   CompletaTurnoUseCase get _completaTurno => CompletaTurnoUseCase(_repository);
   GetInquiliniUseCase get _getInquilini => GetInquiliniUseCase(_casaRepository);
 
-  @override
-  Future<TurniState> build(String casaId) async {
+  Future<TurniState> _fetchAll(String casaId) async {
     final turni = await _getTurni(casaId);
     final turniOggi = await _getTurniOggi(casaId);
     final saluteCasa = await _getSaluteCasa(casaId);
     final inquilini = await _getInquilini(casaId);
-
     return TurniState(
       turni: turni,
       turniOggi: turniOggi,
       saluteCasa: saluteCasa,
       inquilini: inquilini,
     );
+  }
+
+  @override
+  Future<TurniState> build(String casaId) async {
+    final timer = Timer.periodic(const Duration(seconds: 30), (_) async {
+      if (!state.hasValue) return;
+      try {
+        state = AsyncData(await _fetchAll(casaId));
+      } catch (_) {}
+    });
+    ref.onDispose(timer.cancel);
+
+    return _fetchAll(casaId);
   }
 
   Future<Turno> getTurnoById(String idTurno) => _getTurnoById(arg, idTurno);

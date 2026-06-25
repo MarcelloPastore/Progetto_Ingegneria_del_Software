@@ -1,4 +1,6 @@
-﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
+﻿import 'dart:async';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:coincasa_app/data/models/scadenza.dart';
 import 'package:coincasa_app/data/repository/scadenze_repository_impl.dart';
 import 'package:coincasa_app/domain/repositories/i_scadenze_repository.dart';
@@ -38,8 +40,15 @@ class ScadenzeViewModel extends FamilyAsyncNotifier<ScadenzeState, String> {
     _updateRicorrenza = UpdateRicorrenzaUseCase(_repo);
     _deleteScadenza = DeleteScadenzaUseCase(_repo);
 
-    final scadenze = await _getScadenze(casaId);
-    return ScadenzeState(scadenze: scadenze);
+    final timer = Timer.periodic(const Duration(seconds: 30), (_) async {
+      if (!state.hasValue) return;
+      try {
+        state = AsyncData(ScadenzeState(scadenze: await _getScadenze(casaId)));
+      } catch (_) {}
+    });
+    ref.onDispose(timer.cancel);
+
+    return ScadenzeState(scadenze: await _getScadenze(casaId));
   }
 
   Future<Scadenza> createScadenza(Map<String, dynamic> payload) async {
