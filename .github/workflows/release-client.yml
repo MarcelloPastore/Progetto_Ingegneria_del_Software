@@ -44,7 +44,7 @@ jobs:
           flutter build apk --release \
             --build-name "${{ steps.version.outputs.build_name }}" \
             --build-number "${{ github.run_number }}" \
-            --dart-define=API_BASE_URL=http://10.137.139.36/api/v1
+            --dart-define=API_BASE_URL=http://10.137.139.36:23109/api/v1
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
